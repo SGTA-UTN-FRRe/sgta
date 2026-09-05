@@ -1,32 +1,219 @@
 @import "tailwindcss";
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* Colors - Brand Anchors */
+  --brand-navy: #0B172E;
+  --brand-blue: #0284C7;
+  --brand-orange: #F59E0B;
+
+  /* Colors - Base Canvas & Surfaces */
+  --canvas: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --surface-subtle: #F1F5F9;
+
+  /* Colors - Typography & Foreground */
+  --foreground: #0F1D38;
+  --foreground-secondary: #475569;
+  --foreground-muted: #64748B;
+
+  /* Colors - Borders */
+  --border-subtle: #F1F5F9;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+
+  /* Colors - Brand Actions */
+  --primary: #0284C7;
+  --primary-hover: #0369A1;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #0F1D38;
+  --accent: #F59E0B;
+  --accent-hover: #D97706;
+  --accent-foreground: #92400E;
+  --accent-surface: #FFFBEB;
+
+  /* Colors - Navigation */
+  --nav-background: #0B172E;
+  --nav-foreground: #F8FAFC;
+  --nav-muted: #94A3B8;
+  --nav-active: #16274E;
+  --nav-active-marker: #F59E0B;
+
+  /* Colors - Feedback & Semantics */
+  --success: #16A34A;
+  --success-surface: #F0FDF4;
+  --warning: #D97706;
+  --warning-surface: #FFFBEB;
+  --danger: #DC2626;
+  --danger-surface: #FEF2F2;
+  --info: #0284C7;
+  --info-surface: #F0F9FF;
+
+  /* Typography - Families */
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-sans);
+  --font-numeric: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Typography - Type Scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2rem;
+
+  /* Typography - Line Heights */
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* Typography - Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Spacing Scale */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --spacing-2xl: 2rem;
+
+  /* Geometry & Radii */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-pill: 9999px;
+
+  /* Control Heights */
+  --control-height-sm: 2rem;
+  --control-height-md: 2.5rem;
+  --control-height-lg: 2.75rem;
+
+  /* Layout Widths & Gutters */
+  --max-width: 100rem;
+  --sidebar-width: 15.5rem;
+  --sidebar-width-collapsed: 4.5rem;
+  --topbar-height: 4rem;
+  --gutter-desktop: 2rem;
+  --gutter-tablet: 1.5rem;
+  --gutter-mobile: 1rem;
+
+  /* Focus */
+  --focus-ring: 0 0 0 3px rgb(2 132 199 / 0.28);
+
+  /* Motion Durations & Easing */
+  --motion-fast: 140ms cubic-bezier(0.2, 0, 0, 1);
+  --motion-normal: 200ms cubic-bezier(0.2, 0, 0, 1);
+  --motion-slow: 280ms cubic-bezier(0.2, 0, 0, 1);
+
+  /* Elevation & Shadows (Midnight Navy Tinted) */
+  --shadow-xs: 0 1px 2px rgb(11 23 46 / 0.05);
+  --shadow-sm: 0 2px 5px rgb(11 23 46 / 0.07);
+  --shadow-hover: 0 4px 12px rgb(11 23 46 / 0.09);
+  --shadow-raised: 0 10px 25px rgb(11 23 46 / 0.12);
+  --shadow-dialog: 0 18px 45px rgb(11 23 46 / 0.16);
+
+  /* shadcn/ui Component Variable Mappings */
+  --background: var(--canvas);
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --muted: var(--surface-subtle);
+  --muted-foreground: var(--foreground-muted);
+  --destructive: var(--danger);
+  --destructive-foreground: #FFFFFF;
+  --input: var(--border);
+  --ring: rgb(2 132 199 / 0.28);
+  --radius: var(--radius-md);
+
+  /* Tailwind theme aliases use distinct names to avoid self-referential tokens. */
+  --sgta-font-sans: var(--font-sans);
+  --sgta-font-numeric: var(--font-numeric);
+  --sgta-radius-sm: var(--radius-sm);
+  --sgta-radius-md: var(--radius-md);
+  --sgta-radius-lg: var(--radius-lg);
+  --sgta-radius-pill: var(--radius-pill);
+  --sgta-shadow-xs: var(--shadow-xs);
+  --sgta-shadow-sm: var(--shadow-sm);
+  --sgta-shadow-hover: var(--shadow-hover);
+  --sgta-shadow-raised: var(--shadow-raised);
+  --sgta-shadow-dialog: var(--shadow-dialog);
 }
 
 @theme inline {
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-orange: var(--brand-orange);
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-subtle: var(--surface-subtle);
+
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-foreground-muted: var(--foreground-muted);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-primary-hover: var(--primary-hover);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-surface: var(--accent-surface);
+
+  --color-nav-background: var(--nav-background);
+  --color-nav-foreground: var(--nav-foreground);
+  --color-nav-muted: var(--nav-muted);
+  --color-nav-active: var(--nav-active);
+  --color-nav-active-marker: var(--nav-active-marker);
+
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
+  --color-info: var(--info);
+  --color-info-surface: var(--info-surface);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--sgta-font-sans);
+  --font-numeric: var(--sgta-font-numeric);
+  --radius-sm: var(--sgta-radius-sm);
+  --radius-md: var(--sgta-radius-md);
+  --radius-lg: var(--sgta-radius-lg);
+  --radius-pill: var(--sgta-radius-pill);
+  --shadow-xs: var(--sgta-shadow-xs);
+  --shadow-sm: var(--sgta-shadow-sm);
+  --shadow-hover: var(--sgta-shadow-hover);
+  --shadow-raised: var(--sgta-shadow-raised);
+  --shadow-dialog: var(--sgta-shadow-dialog);
 }
 
 * {
@@ -35,5 +222,21 @@
 
 body {
   background: var(--background);
+  background-color: var(--canvas);
   color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Accessible global focus ring */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Mandatory tabular figures for tables and numeric/balance computations */
+table,
+.tabular-nums,
+.font-numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
