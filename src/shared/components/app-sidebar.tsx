@@ -16,6 +16,7 @@ import {
   User,
 } from 'lucide-react';
 import { cn } from '@/shared/utils';
+import { FaroIcon } from '@/shared/components/faro-icon';
 
 export interface AppSidebarProps {
   variant: 'admin' | 'tutor';
@@ -62,10 +63,11 @@ export function AppSidebar({ variant }: AppSidebarProps) {
 
   const navContent = (
     <div className="flex flex-col h-full bg-[#0B172E] text-[#F8FAFC]">
+      {/* Brand Lockup con Faro Oficial UTN FRRe */}
       <div className="flex items-center justify-between h-16 px-4 border-b border-[#16274E]">
-        <Link href={homeHref} className="flex items-center gap-3 overflow-hidden">
-          <div className="flex items-center justify-center w-8 h-8 rounded bg-[#0284C7] text-white font-bold shrink-0">
-            T
+        <Link href={homeHref} className="flex items-center gap-3 overflow-hidden group">
+          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#16274E] border border-[#F59E0B]/30 shrink-0 group-hover:border-[#F59E0B] transition-colors">
+            <FaroIcon className="w-6 h-6 text-[#F59E0B]" />
           </div>
           <div className="flex flex-col overflow-hidden md:hidden lg:flex">
             <span className="text-sm font-semibold tracking-wide text-white truncate">
@@ -88,6 +90,7 @@ export function AppSidebar({ variant }: AppSidebarProps) {
         )}
       </div>
 
+      {/* Navegación Primaria */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto" aria-label="Navegación principal">
         {primaryItems.map((item) => {
           const active = isLinkActive(item.href);
@@ -104,6 +107,7 @@ export function AppSidebar({ variant }: AppSidebarProps) {
                   : 'text-[#94A3B8] hover:bg-[#16274E]/50 hover:text-white'
               )}
             >
+              {/* Faro Marker: indicador activo ámbar */}
               {active && (
                 <span
                   data-testid="faro-marker"
@@ -118,6 +122,7 @@ export function AppSidebar({ variant }: AppSidebarProps) {
         })}
       </nav>
 
+      {/* Navegación Secundaria y Pie */}
       <div className="p-3 border-t border-[#16274E] space-y-1">
         {secondaryItems.map((item) => {
           const active = isLinkActive(item.href);
