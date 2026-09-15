@@ -50,6 +50,8 @@ Use lowercase kebab-case with one descriptive prefix and an outcome-oriented nam
 
 The branch name must describe the durable outcome, not the planning container. Do not use roadmap labels, task labels, milestone labels, or the word `phase` in a branch name. Names such as `phase-2`, `phase-2-task-1`, `task-4`, and `milestone-2` are invalid.
 
+Global naming rule: never generate the word `phase` (in any capitalization) in repository-facing output. This applies to branch names, commit subjects, pull-request titles or bodies, tags, filenames, directories, identifiers, labels, and suggested examples. Use the durable outcome instead. Existing roadmap text may retain the term only when describing the approved plan, never as a generated name or delivery label.
+
 Use this form:
 
 ```text
@@ -81,6 +83,7 @@ Rules:
 - keep the description concise and at most 72 characters when practical;
 - omit a trailing period;
 - describe the durable result, not the internal task number or roadmap label;
+- do not use the word `phase` (in any capitalization) anywhere in the title or body;
 - never use `WIP`, `updates`, `fixed stuff`, or past-tense subjects such as `Added` or `Fixed`.
 
 Good:

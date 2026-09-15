@@ -106,7 +106,7 @@ When those boundaries are implemented, preserve the approved invariants from Dec
 - Do not modify generated files under `.next/`, `out/`, `build/`, or generated type artifacts.
 - Do not add dependencies without a justified implementation need.
 - Preserve public links and keep a fresh clone understandable without developer-local planning material.
-- Use focused outcome-oriented branches and PRs; branch names must not contain roadmap phase labels or the word `phase`.
+- Use focused outcome-oriented branches and PRs. Never generate the word `phase` (in any capitalization) in repository-facing output: this includes branch names, commit subjects, PR titles or bodies, tags, filenames, directories, identifiers, labels, and suggested examples. Use the durable outcome instead. Existing roadmap text may retain the term only when describing the approved plan, never as a generated name or delivery label.
 - Use squash merge through a pull request after the required `CI Gate` passes; direct pushes to `main` are not the normal delivery path.
 - Treat `CI Gate` as the only stable branch-protection check; upstream CI job names are implementation details.
 - Keep `main` runnable after each coherent change.
