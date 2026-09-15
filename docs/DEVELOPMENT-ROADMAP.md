@@ -3,112 +3,150 @@ document: DEVELOPMENT-ROADMAP
 mode: decision
 type: project-roadmap
 status: active
-scope: single-project
+scope: SGTA first production-worthy release
 authority: planning-and-execution
-project: SGTA
 ---
 
-# SGTA — Development Roadmap
+# SGTA - Development Roadmap
 
-> Actionable execution roadmap: phase sequencing, deliverables, dependencies, and exit criteria.
+> Outcome-oriented sequencing from the current scaffold to a production-worthy first SGTA release.
 
-# AI READING CONTRACT
+# AI reading contract
 
-Mode: **decision**. This document defines the approved implementation sequence for the first SGTA release.
+Mode: **decision**.
 
 Rules:
-1. `PROJECT.md` and `ARCHITECTURE.md` remain authoritative for product/domain rules.
-2. `STACK.md` and `TECHNICAL-ARCHITECTURE.md` remain authoritative for technical architecture.
-3. `PROJECT-DESIGN.md` defines visual direction and canonical tokens.
-4. `UI-SPEC.md` defines implementation-level views, states, and interactions.
-5. Roadmap tasks are execution scope; GitHub Issues are the daily work units.
-6. Do not maintain a second competing execution roadmap. If an older `ROADMAP.md` exists, replace it with this document or keep only a short pointer to this file.
 
----
+1. This roadmap defines outcomes, sequencing, scope boundaries, and phase exit criteria.
+2. It is not an issue tracker and must not prescribe unnecessary file-level implementation.
+3. `PROJECT-DESIGN.md` is authoritative for visual direction and tokens.
+4. `UI-SPEC.md` is authoritative for views, states, interactions, and responsive behavior.
+5. Existing code is baseline, not target.
+6. Do not lower target quality because an earlier scaffold is easier to preserve.
+7. Do not add features merely to increase feature count.
+8. There is no late visual polish phase. Every product phase includes its own UI, responsive, state, accessibility, and visual quality.
+9. A phase may use multiple small PRs while keeping `main` runnable.
+10. Phase sequencing may be adjusted when a real dependency or validated requirement changes, but the roadmap must be updated in the same decision.
+11. GitHub Issues and local execution plans may decompose a phase just in time without rewriting this roadmap into task bureaucracy.
 
-## 1. Project Objective & Focus
+## 1. Objective and quality bar
 
 ### 1.1 Objective
 
-Build SGTA as a greenfield, feature-first modular monolith that replaces repetitive spreadsheet administration with a trustworthy operational system for tutors, schedules, attendance, hour balances, consultation intake, and reports.
+Transform the current SGTA scaffold into a coherent operational product for Tutorias UTN FRRe with:
 
-The first release must be useful to the Área de Tutorías, visually coherent with Tutorías UTN FRRe, inexpensive to operate, and transferable to future maintainers.
+- high-quality tutor and academic administration;
+- traceable hour accounting;
+- strong scheduling and attendance UX;
+- polished tutor self-service;
+- safe consultation intake;
+- useful reporting;
+- secure authorization;
+- reproducible testing and CI;
+- backup/restore and maintainer continuity.
 
-### 1.2 Current Focus
+### 1.2 Quality bar
 
-- **Active Phase:** Phase 1 — Foundation & Product Shell
-- **Immediate Outcome:** A reproducible Next.js project with CI, canonical visual tokens, shared shell, and enough design-system infrastructure to implement the first vertical feature without redesigning the application structure.
+Target:
 
----
+> **9 to 10 out of 10 in functional coherence, usability, and visual execution inside the approved scope.**
 
-## 2. Roadmap Overview
+This does not mean adding more features.
 
-| Phase | Milestone / Outcome | Priority | Status |
-|---|---|:---:|:---:|
-| **Phase 1** | Foundation & Product Shell | P0 | Active |
-| **Phase 2** | Database, Identity, Authorization & Audit Foundation | P0 | Next |
-| **Phase 3** | Tutors, Academic Catalog & Administrative Cycles | P0 | Planned |
-| **Phase 4** | Hour Ledger, Activities & Recovery | P0 | Planned |
-| **Phase 5** | Scheduling & Attendance | P0 | Planned |
-| **Phase 6** | Tutor Self-Service Portal | P0 | Planned |
-| **Phase 7** | Consultation Intake & Data Curation | P0 | Planned |
-| **Phase 8** | Reporting, Lifecycle & Hardening | P0 | Planned |
-| **Phase 9** | Migration, Production Pilot & First Release | P0 | Planned |
+It means:
 
-**Parallelization note:** after Phase 3, Hour Ledger (Phase 4), the independent portions of Scheduling (Phase 5), and Consultation Intake (Phase 7) can be distributed across developers. Phase numbers express release organization, not a rule that all work must be sequential.
+- implemented workflows feel complete;
+- critical states are designed, not improvised;
+- accessibility and responsive behavior are part of delivery;
+- business results are explainable;
+- visual quality is established early and preserved;
+- every phase leaves the product in a stronger, runnable state.
 
----
+## 2. Current baseline
 
-## 3. Phase Specifications
+The repository already has a useful scaffold:
 
-### Phase 1 — Foundation & Product Shell
+- Next.js / React / TypeScript / pnpm;
+- lint, typecheck, unit tests, Playwright baseline, and CI;
+- feature-first placeholder boundaries;
+- shared UI primitives;
+- design tokens;
+- Admin and Tutor route skeletons;
+- responsive navigation.
+
+The actual SGTA domain, PostgreSQL schema, authentication, and operational workflows are not yet implemented.
+
+Therefore the project continues from the scaffold rather than restarting from zero.
+
+## 3. Roadmap overview
+
+| Phase | Outcome | Priority | Status |
+|---|---|---:|---|
+| 1 | Documentation and baseline re-alignment | P0 | Active |
+| 2 | Engineering quality and repository governance baseline | P0 | Next |
+| 3 | Golden Screens and visual-system recalibration | P0 | Planned |
+| 4 | Persistence, identity, authorization, cycle, and audit foundation | P0 | Planned |
+| 5 | Tutor and academic operations | P0 | Planned |
+| 6 | Hour ledger, activities, and recovery | P0 | Planned |
+| 7 | Scheduling and attendance | P0 | Planned |
+| 8 | Tutor self-service | P0 | Planned |
+| 9 | Consultation intake and data curation | P0 | Planned |
+| 10 | Admin overview and reporting | P0 | Planned |
+| 11 | Cross-surface hardening and lifecycle completion | P0 | Planned |
+| 12 | Migration, production readiness, pilot, and first release | P0 | Planned |
+
+Parallelization:
+
+- after Phase 4, independent vertical slices may be distributed across developers;
+- Phases 6, 7, and 9 contain meaningful independent work;
+- integration dependencies still govern merge order;
+- phase numbers organize release outcomes, not team ownership.
+
+## 4. Phase specifications
+
+### Phase 1 - Documentation and baseline re-alignment
 
 - **Priority:** P0
 - **Status:** Active
-- **Depends on:** None
+- **Depends on:** current repository scaffold
 
 #### Objective
 
-Create the reproducible engineering and visual foundation from which every SGTA feature can be implemented consistently.
+Start the next iteration line with one shared design/roadmap contract, honest current-state public documentation, and a preserved baseline.
 
-#### In Scope (Deliverables)
+#### In scope
 
-- Bootstrap Next.js App Router + TypeScript on Node.js LTS with `pnpm`.
-- Configure Tailwind CSS, `shadcn/ui`, ESLint, Vitest, Testing Library, and Playwright baseline.
-- Create feature-first structure: `src/features`, `src/db`, `src/auth`, `src/shared`.
-- Add canonical tokens from `PROJECT-DESIGN.md`: Midnight Navy (`#0B172E`), Beacon Blue (`#0284C7`), Faro Amber (`#F59E0B`), Porcelain Canvas (`#F8FAFC`), and tabular figures (`tabular-nums`).
-- Implement shared application primitives:
-  - Admin shell with responsive sidebar;
-  - Tutor shell skeleton;
-  - `AppSidebar` featuring active Faro Marker navigation;
-  - `PageHeader` with context title and dominant action slot;
-  - Button, input, badge, and status foundations;
-  - Global focus ring and feedback behavior.
-- Implement the five Admin navigation destinations (Tutores, Horarios, Horas, Consultas, Reportes) as route skeletons without fake feature content.
-- Configure CI: install -> lint -> typecheck -> test -> build.
-- Add `.env.example` without secrets and document local setup.
-- Confirm repository ownership, `main` protection, and contributor workflow.
+Shared `docs/`:
 
-#### Out of Scope
+- replace/update `PROJECT-DESIGN.md`;
+- replace/update `UI-SPEC.md`;
+- replace/update `DEVELOPMENT-ROADMAP.md`.
 
-Authentication behavior, database domain models, real CRUD, schedule library, chart library, and Google Sheets integration.
+Current-state repository material:
 
-#### Technical Dependencies
+- rebaseline README and agent instructions where they claim unimplemented runtime facts;
+- keep public links valid;
+- preserve useful existing shell/primitives;
+- verify the current project remains runnable.
 
-GitHub Organization/repository, Node.js LTS, `pnpm`, Next.js, Tailwind, `shadcn/ui`.
+Personal/local execution material stays outside `docs/`.
 
-#### Exit Criteria
+#### Out of scope
 
-- [ ] Fresh clone can install, build, and run.
-- [ ] CI passes.
-- [ ] Canonical tokens are implemented once and consumed by shared primitives.
-- [ ] Admin shell matches `PROJECT-DESIGN.md` / `UI-SPEC.md` at Wide, Medium, and Compact tiers.
-- [ ] No placeholder dashboard metrics or feature logic have been invented.
-- [ ] `README.md` documents setup and development commands.
+- domain implementation;
+- major UI redesign;
+- dependency migration;
+- production work.
 
----
+#### Exit criteria
 
-### Phase 2 — Database, Identity, Authorization & Audit Foundation
+- [ ] The three shared decision documents are versioned and consistent.
+- [ ] Public current-state documentation does not present unimplemented auth/database/domain behavior as runtime fact.
+- [ ] No duplicate shared target authority exists.
+- [ ] Current baseline verification passes.
+- [ ] `main` remains runnable.
+
+### Phase 2 - Engineering quality and repository governance baseline
 
 - **Priority:** P0
 - **Status:** Next
@@ -116,40 +154,35 @@ GitHub Organization/repository, Node.js LTS, `pnpm`, Next.js, Tailwind, `shadcn/
 
 #### Objective
 
-Establish secure persistence, Google-based authentication, SGTA authorization, and a reusable audit mechanism before administrative data is exposed.
+Align SGTA with the current engineering playbook before broad domain implementation.
 
-#### In Scope (Deliverables)
+#### In scope
 
-- PostgreSQL + Drizzle ORM/Kit configuration.
-- Versioned SQL migrations and schema composition.
-- Better Auth + Google OAuth.
-- SGTA user model with exact roles `ADMIN | TUTOR`.
-- Enabled-user provisioning with no public signup.
-- Server-side authorization helpers.
-- Admin/Tutor route protection.
-- `features/audit` foundation for actor/action/time/reference.
-- Authentication and authorization tests.
+- audit locked dependency installation;
+- align scripts and local verification with CI;
+- evolve CI toward the current conceptual gate standard only where real boundaries exist;
+- configure a stable required `CI Gate` when repository rules are enforced;
+- apply the current small-team GitHub ruleset standard;
+- maintain deterministic tests and isolated test data;
+- add workflow timeouts/concurrency/artifacts where useful;
+- add automated dependency maintenance if justified.
 
-#### Out of Scope
+#### Out of scope
 
-Tutor domain CRUD, schedule rules, hour movements, and business reporting.
+- fake integration gates before integration exists;
+- speculative production checks;
+- domain features.
 
-#### Technical Dependencies
+#### Exit criteria
 
-PostgreSQL, Drizzle, Better Auth, Google OAuth project/configuration.
+- [ ] Clean locked install succeeds.
+- [ ] Local verification matches CI intent.
+- [ ] Current tests are deterministic.
+- [ ] Repository governance matches the small-team standard.
+- [ ] Required technical check is stable rather than tied to a version-specific job name.
+- [ ] CI does not depend on personal secrets or production data.
 
-#### Exit Criteria
-
-- [ ] Empty database can be migrated reproducibly.
-- [ ] Enabled Admin and Tutor users authenticate and land in the correct shell.
-- [ ] Non-enabled Google account cannot enter SGTA.
-- [ ] Tutor cannot reach Admin routes.
-- [ ] Audit foundation can record a test administrative event without sensitive payload leakage.
-- [ ] lint, typecheck, tests, and build pass.
-
----
-
-### Phase 3 — Tutors, Academic Catalog & Administrative Cycles
+### Phase 3 - Golden Screens and visual-system recalibration
 
 - **Priority:** P0
 - **Status:** Planned
@@ -157,39 +190,53 @@ PostgreSQL, Drizzle, Better Auth, Google OAuth project/configuration.
 
 #### Objective
 
-Deliver the canonical people/catalog foundation reused by hours, scheduling, consultation normalization, and reports.
+Prove the target visual language before broad feature implementation.
 
-#### In Scope (Deliverables)
+#### In scope
 
-- `Tutor`, `Career`, `Subject`, `TutorSubject`.
-- `AdministrativeCycle`, `TutorCycleMembership`.
-- Scholarship reference entities approved by the domain.
-- Tutor Admin view from `UI-SPEC.md`.
-- Tutor create/edit/inactivate/reactivate flow.
-- Materias subview derived from canonical relations.
-- Search/filter and empty/error states.
-- Relevant audit events and domain tests.
+Golden Screens:
 
-#### Out of Scope
+1. Login
+2. Admin overview
+3. Tutores
+4. Horas with bulk movement dialog
+5. Horarios
 
-Hard deletion of historical tutors, formal scholarship certification, balances, attendance, and report dashboards.
+Recalibrate:
 
-#### Technical Dependencies
+- Manrope typography;
+- light shell/navigation;
+- page header;
+- forms;
+- tables/lists;
+- filters;
+- sheets/dialogs;
+- status and balance components;
+- empty/error states;
+- Faro Beam;
+- responsive transformations;
+- accessibility fundamentals.
 
-Phase 2 database/auth/audit foundation.
+Use realistic synthetic Spanish data.
 
-#### Exit Criteria
+#### Out of scope
 
-- [ ] Admin can manage tutors and subject assignments.
-- [ ] Historical tutor records are inactivated rather than destructively deleted.
-- [ ] Subject coverage view is derived, not manually duplicated.
-- [ ] Cycle association is preserved in data contracts.
-- [ ] UI matches responsive and accessibility rules.
+- real tutor CRUD;
+- real OAuth/database;
+- permanent fixture architecture;
+- chart library;
+- schedule library unless needed only for a bounded interaction spike.
+
+#### Exit criteria
+
+- [ ] Five Golden Screens look like one coherent product.
+- [ ] No Golden Screen resembles an uncustomized component-library demo.
+- [ ] Wide and Compact review pass.
+- [ ] Shared patterns are reusable without becoming a generic internal framework.
+- [ ] Fixture data can be replaced cleanly by live features.
 - [ ] lint, typecheck, tests, and build pass.
 
----
-
-### Phase 4 — Hour Ledger, Activities & Recovery
+### Phase 4 - Persistence, identity, authorization, cycle, and audit foundation
 
 - **Priority:** P0
 - **Status:** Planned
@@ -197,274 +244,395 @@ Phase 2 database/auth/audit foundation.
 
 #### Objective
 
-Make hour status traceable and operationally efficient, including the teammate-requested bulk add/subtract workflow without sacrificing ledger integrity.
+Create the real secure platform foundation without degrading the visual contract.
 
-#### In Scope (Deliverables)
+#### In scope
 
-- `HourCategory` and `HourMovement`.
-- Derived balance per Tutor and cycle.
-- Base categories: Inasistencia, Recuperación, Reunión, Taller, Actividad extraordinaria.
-- Admin Hours view and movement history.
-- `BalanceStatus` component.
-- `BulkTutorSelector` with Select all + deselect exceptions.
-- Individual and bulk movement registration.
-- Movement reversal/void workflow.
-- `Activity` and recovery credit flow where independent from scheduling.
-- Ledger tests and audit events.
+- PostgreSQL;
+- Drizzle ORM and migrations;
+- Better Auth with Google OAuth;
+- enabled-user provisioning;
+- roles `ADMIN | TUTOR`;
+- server-side authorization;
+- Admin/Tutor route guards;
+- AdministrativeCycle;
+- audit mechanism;
+- isolated PostgreSQL-backed integration tests;
+- environment/configuration contract.
 
-#### Out of Scope
+#### Out of scope
 
-Automatic attendance debits, direct balance editing, formal scholarship compliance, and hidden bulk mutations.
+- full Tutor CRUD;
+- hour ledger;
+- scheduling;
+- consultation import.
 
-#### Technical Dependencies
+#### Exit criteria
 
-Tutor/cycle foundation from Phase 3.
+- [ ] Empty database migrates reproducibly.
+- [ ] Integration tests use isolated non-production PostgreSQL.
+- [ ] Enabled Admin and Tutor authenticate correctly.
+- [ ] Unenabled identity cannot enter.
+- [ ] Tutor cannot access Admin data/actions.
+- [ ] Audit can persist a representative event safely.
+- [ ] Golden Screen shell remains intact with real auth state.
 
-#### Exit Criteria
-
-- [ ] Every displayed balance can be reconstructed from movements.
-- [ ] Admin can register a meeting credit for many tutors and exclude absentees before confirming.
-- [ ] Direction, category, minutes, date, and selected tutors are explicit before submission.
-- [ ] Balance cannot be directly edited.
-- [ ] Reversed movement remains traceable.
-- [ ] lint, typecheck, tests, and build pass.
-
----
-
-### Phase 5 — Scheduling & Attendance
+### Phase 5 - Tutor and academic operations
 
 - **Priority:** P0
 - **Status:** Planned
-- **Depends on:** Phase 3; Hour Ledger integration requires Phase 4
+- **Depends on:** Phase 4
 
 #### Objective
 
-Replace spreadsheet schedule manipulation with structured regular/special plans and connect duty occurrences to fast attendance.
+Deliver the first complete production-quality operational vertical slice.
 
-#### In Scope (Deliverables)
+#### In scope
 
-- `SchedulePlan`, `ScheduleAssignment`, `DutyOccurrence`.
-- Regular and special plan lifecycle.
-- Plan tabs and schedule workspace from `UI-SPEC.md`.
-- Evaluation/selection of a calendar/grid dependency only at this phase.
-- Accessible form-based schedule editing.
-- Drag/resize only if the selected implementation is reliable and accessible.
-- `AttendanceRecord` with `PENDING | PRESENT | ABSENT`.
-- Fast Present/Falta flow.
-- Falta -> proposed debit -> Admin confirmation -> HourMovement integration.
-- Schedule/attendance audit events.
-- Critical E2E: guard -> absence -> debit -> recovery -> balance.
+- Career;
+- Subject;
+- Tutor;
+- TutorSubject;
+- TutorCycleMembership;
+- scholarship reference data;
+- Tutor list/search/filter;
+- create/edit;
+- inactivate/reactivate;
+- derived Materias coverage;
+- authorization and audit;
+- full states/responsive/accessibility.
 
-#### Out of Scope
+#### Out of scope
 
-Automatic hour credit for presence, schedule sizing by consultation demand, and complex absence categories without validated rules.
+- hard deletion with history;
+- formal scholarship certification;
+- hour movements;
+- schedule assignments.
 
-#### Technical Dependencies
+#### Exit criteria
 
-Tutor/catalog/cycle foundation; Hour Ledger for final absence/recovery integration.
+- [ ] Admin manages tutors and academic relationships end to end.
+- [ ] Historical tutors are inactivated, not destructively deleted.
+- [ ] Materias is derived from canonical data.
+- [ ] Compact/Medium/Wide behavior matches UI-SPEC.
+- [ ] Golden Screen quality is preserved with live data.
+- [ ] Relevant tests and CI gates pass.
 
-#### Exit Criteria
+### Phase 6 - Hour ledger, activities, and recovery
 
-- [ ] Special plan can temporarily replace regular plan without deleting it.
-- [ ] Schedule works without drag-and-drop.
-- [ ] Present does not modify hour balance.
-- [ ] Falta cannot modify balance without Admin confirmation.
-- [ ] Compact layout provides a usable day/list alternative.
+- **Priority:** P0
+- **Status:** Planned
+- **Depends on:** Phase 5
+
+#### Objective
+
+Make hour status understandable, traceable, and efficient for individual and bulk administrative work.
+
+#### Locked accounting rule
+
+Confirmed hour movements are immutable accounting facts.
+
+A correction never overwrites the original amount.
+
+It creates a traceable reversal referencing the original movement, then a new corrected movement when a replacement fact is required.
+
+The original remains visible as reversed.
+
+No direct mutable balance exists.
+
+#### In scope
+
+- HourCategory;
+- HourMovement;
+- derived balance;
+- movement history;
+- reversal behavior;
+- bulk movement workflow;
+- atomic bulk movement transaction;
+- Select all + deselect exceptions;
+- Activity;
+- meeting/workshop/extraordinary activity credit;
+- recovery recognition;
+- audit and authorization;
+- full states/responsive/accessibility.
+
+#### Exit criteria
+
+- [ ] Every balance is reconstructable from movements.
+- [ ] Confirmed movement values are not updated in place.
+- [ ] Reversal references the original and remains visible.
+- [ ] Admin can safely register a bulk meeting movement atomically.
+- [ ] A failed bulk movement commits zero selected tutor movements.
+- [ ] Direction, category, duration, date, and selected tutors are explicit before confirmation.
+- [ ] UI quality matches the Golden Screen contract.
+
+### Phase 7 - Scheduling and attendance
+
+- **Priority:** P0
+- **Status:** Planned
+- **Depends on:** Phase 5; hour integration depends on Phase 6
+
+#### Objective
+
+Replace schedule spreadsheet editing with a structured planner and connect effective duty occurrences to fast attendance.
+
+#### Locked scheduling rule
+
+For the first release, scheduling scope is the active AdministrativeCycle for the Tutorias area.
+
+Within that cycle:
+
+- the regular plan remains intact;
+- an active special plan applies only inside its validity period;
+- at most one active special plan may be effective for any calendar date;
+- overlapping active special plans are prohibited;
+- when no special plan applies, the regular plan is effective.
+
+#### In scope
+
+- SchedulePlan;
+- ScheduleAssignment;
+- stable DutyOccurrence identity;
+- regular and special plans;
+- plan switching;
+- schedule workspace;
+- form-based editing;
+- drag/resize only as progressive enhancement;
+- AttendanceRecord;
+- Present/Falta;
+- absence debit proposal;
+- Admin confirmation;
+- persisted ABSENT state even when the debit proposal is cancelled;
+- recovery scheduling integration;
+- audit;
+- critical real-stack E2E.
+
+#### Exit criteria
+
+- [ ] Special plans never destroy the regular plan.
+- [ ] Ambiguous overlapping special plans are prevented.
+- [ ] Schedule is complete without drag-and-drop.
+- [ ] Present never changes hour balance.
+- [ ] Falta remains recorded even when the proposed debit is cancelled.
+- [ ] Falta never changes balance without Admin confirmation.
+- [ ] Compact day/list mode is usable.
 - [ ] Critical E2E passes.
 
----
-
-### Phase 6 — Tutor Self-Service Portal
+### Phase 8 - Tutor self-service
 
 - **Priority:** P0
 - **Status:** Planned
-- **Depends on:** Phases 3–5
+- **Depends on:** Phases 5 to 7
 
 #### Objective
 
-Allow each tutor to inspect their own current information without administrative assistance or mutation access.
+Give tutors a polished read-only product that answers routine questions without Admin intervention.
 
-#### In Scope (Deliverables)
+#### In scope
 
-- `Mi resumen`.
-- `Mi horario`.
-- `Mis horas`.
-- Read-only subjects/scholarship reference.
-- Mobile-first Tutor presentation.
-- Ownership authorization tests.
+- Mi resumen;
+- Mi horario;
+- Mis horas;
+- subjects;
+- current cycle/scholarship reference;
+- mobile-first layouts;
+- ownership authorization tests.
 
-#### Out of Scope
+#### Out of scope
 
-Tutor editing, general student consultation data, messaging, notifications, and account self-registration.
+- Tutor mutations;
+- consultation identity;
+- messaging;
+- notifications;
+- public registration.
 
-#### Technical Dependencies
+#### Exit criteria
 
-Tutor, schedule, cycle, and hour modules.
+- [ ] Tutor sees only own information.
+- [ ] Compact experience is production-ready.
+- [ ] No Admin mutation path is reachable or rendered.
+- [ ] Student identity/contact is not exposed.
 
-#### Exit Criteria
-
-- [ ] Tutor sees only their own data.
-- [ ] Tutor can understand schedule and hour status on mobile.
-- [ ] No Admin mutation path is reachable/rendered.
-- [ ] Student identity/contact is never exposed.
-- [ ] lint, typecheck, tests, and build pass.
-
----
-
-### Phase 7 — Consultation Intake & Data Curation
+### Phase 9 - Consultation intake and data curation
 
 - **Priority:** P0
 - **Status:** Planned
-- **Depends on:** Phase 3
-- **Can run in parallel with:** Phases 4–6 after Phase 3
+- **Depends on:** Phase 5
+- **Can run in parallel with:** independent parts of Phases 6 to 8
 
 #### Objective
 
-Integrate the external Google Form/Sheet source through a read-only, reviewable, idempotent intake pipeline.
+Integrate the external consultation source through a safe, reviewable, read-only pipeline.
 
-#### In Scope (Deliverables)
+#### In scope
 
-- Google Sheets read-only adapter behind `ConsultationSourceReader`.
-- `ConsultationStaging`.
-- Selection of approved columns only.
-- Normalization for career, tutor alias, modality, and academic stage.
-- Date validation, missing-data flags, possible duplicate detection.
-- Admin review UI.
-- Canonical `Consultation`.
-- `SUBJECT` / `GENERAL` classification with temporary `PENDING_CLASSIFICATION`.
-- `Actualizar consultas` action and import result summary.
-- Import/review/classification audit events.
+- Google Sheets read-only adapter;
+- ConsultationStaging;
+- source-row idempotency;
+- approved field selection;
+- normalization;
+- anomaly flags;
+- duplicate candidates;
+- Admin review;
+- canonical Consultation;
+- SUBJECT / GENERAL classification;
+- temporary PENDING_CLASSIFICATION;
+- on-demand import summary;
+- degraded source behavior;
+- audit.
 
-#### Out of Scope
+#### Out of scope
 
-Writing to Google Sheets, replacing Google Forms, automatic ambiguous correction, periodic sync, and a standalone “QR module”.
+- writing to Sheet;
+- replacing Form;
+- periodic sync;
+- silent fuzzy correction;
+- standalone QR module.
 
-#### Technical Dependencies
+#### Exit criteria
 
-Google Cloud/Sheets access, Tutor/Career/Subject canonical data.
+- [ ] Integration is read-only.
+- [ ] Reimport is idempotent.
+- [ ] Ambiguous data goes to review.
+- [ ] Every consolidated consultation is SUBJECT or GENERAL.
+- [ ] Pending rows do not contaminate subject metrics.
+- [ ] Canonical consultations remain usable when Sheets is unavailable.
 
-#### Exit Criteria
-
-- [ ] Source is read-only.
-- [ ] Re-running import does not duplicate consolidated rows.
-- [ ] Ambiguous records enter review instead of being guessed.
-- [ ] Every consolidated Consultation is `SUBJECT` or `GENERAL`.
-- [ ] Existing canonical data remains usable when Sheets is unavailable.
-- [ ] lint, typecheck, tests, and build pass.
-
----
-
-### Phase 8 — Reporting, Lifecycle & Hardening
+### Phase 10 - Admin overview and reporting
 
 - **Priority:** P0
 - **Status:** Planned
-- **Depends on:** Operational modules and Consultation Intake
+- **Depends on:** canonical operational and consultation modules
 
 #### Objective
 
-Turn canonical operation into reliable indicators and close the lifecycle/privacy/security rules required before production.
+Turn daily operation into useful attention states and reports without decorative dashboard noise.
 
-#### In Scope (Deliverables)
+#### In scope
 
-- Report filters and canonical aggregations.
-- Consultation indicators.
-- Operational indicators for tutors, coverage, attendance, balances, and activities.
-- Accessible charts only where they materially improve comprehension.
-- Manual cycle-close workflow.
-- New-cycle zero-balance behavior.
-- Privacy review for student identity/contact.
-- Audit coverage review.
-- Authorization matrix regression.
-- Constraint, transaction, and index review.
-- UI degraded/error states for reports and external-source failures.
+Admin overview:
 
-#### Out of Scope
+- current cycle;
+- pending attendance;
+- negative balances;
+- consultations requiring review;
+- today/upcoming schedule.
 
-Causal academic claims, bespoke institutional reports not yet requested, automatic balance carry-over, advanced observability, and new roles.
+Reports:
 
-#### Technical Dependencies
+- reusable filters;
+- consultation demand;
+- subject/career/tutor/modality/stage breakdown;
+- temporal demand;
+- operational coverage;
+- attendance;
+- balance state;
+- activities.
 
-Canonical operational and consultation modules.
+Visualization:
 
-#### Exit Criteria
+- select a chart library only if approved charts require one;
+- accessible table equivalents;
+- restrained product palette.
 
-- [ ] Reports derive from canonical data; no manual report store exists.
-- [ ] Pending consultation classifications do not contaminate subject metrics.
-- [ ] Cycle close is explicit and preserves history.
-- [ ] Student contact remains Admin-only.
-- [ ] All approved auditable events are covered.
-- [ ] Security/authorization regression passes.
+#### Exit criteria
 
----
+- [ ] Attention items link to relevant workflows.
+- [ ] Metrics derive only from canonical data.
+- [ ] No manual reporting source of truth exists.
+- [ ] Charts exist only where they improve comprehension.
+- [ ] Degraded external-source behavior is deliberate.
 
-### Phase 9 — Migration, Production Pilot & First Release
+### Phase 11 - Cross-surface hardening and lifecycle completion
 
 - **Priority:** P0
 - **Status:** Planned
-- **Depends on:** Phase 8
+- **Depends on:** first-release user surfaces
 
 #### Objective
 
-Move the approved initial data/workflows into production, prove recovery and continuity, validate the application with Tutorías, and cut the first stable release.
+Verify the already-polished product as a whole and remove cross-surface weaknesses before production.
 
-#### In Scope (Deliverables)
+This is not a visual rescue phase.
 
-- Initial data migration scripts/process where useful.
-- Neon production database.
-- Initial hosting deployment defined by `STACK.md`.
-- Production OAuth and Sheets configuration.
-- `pg_dump` -> private Cloudflare R2 backup process.
-- Retention policy implementation.
-- Full restore drill on temporary PostgreSQL.
-- Production smoke test.
-- Admin pilot using real workflow.
-- Tutor pilot.
-- UX/rule corrections required to operate.
-- Operational documentation and handover.
-- First stable release/tag.
+#### In scope
 
-#### Out of Scope
+- WCAG 2.2 AA audit;
+- keyboard-only critical workflows;
+- focus visibility;
+- Compact/Medium/Wide review;
+- reduced motion;
+- loading/error/degraded-state audit;
+- server/client boundary review;
+- query/index review from real access patterns;
+- dependency audit;
+- performance review where meaningful;
+- E2E stability;
+- privacy/logging review;
+- authorization regression;
+- cycle close completion;
+- audit coverage review.
 
-Non-blocking enhancement ideas, advanced scholarship rules, mobile client, public API, microservices, and speculative infrastructure.
+#### Exit criteria
 
-#### Technical Dependencies
+- [ ] No P0 accessibility blocker remains.
+- [ ] Critical workflows work by keyboard.
+- [ ] Tutor Compact experience is production-ready.
+- [ ] Admin core remains usable at supported widths.
+- [ ] No sensitive data leaks through logs/errors/routes.
+- [ ] Authorization regression passes.
+- [ ] CI remains stable and reproducible.
 
-Production provider access, stable migrations, approved data sources, completed hardening.
+### Phase 12 - Migration, production readiness, pilot, and first release
 
-#### Exit Criteria
+- **Priority:** P0
+- **Status:** Planned
+- **Depends on:** Phase 11
+
+#### Objective
+
+Prove production deployment, data transition, recovery, maintainer continuity, and real Tutorias operation.
+
+#### In scope
+
+- initial data migration where useful;
+- production PostgreSQL;
+- production hosting;
+- production OAuth;
+- production read-only Sheets access;
+- environment configuration;
+- pg_dump to private external storage;
+- retention;
+- restore drill;
+- smoke test;
+- Admin pilot;
+- Tutor pilot;
+- workflow corrections required to operate;
+- runtime documentation sync;
+- handover;
+- first stable release.
+
+#### Exit criteria
 
 - [ ] Production deploy is reproducible.
-- [ ] Initial data is validated.
-- [ ] Backup exists outside the DB provider.
-- [ ] Restore drill succeeds and is documented.
-- [ ] Admin completes the critical workflow without spreadsheet duplication for migrated scope.
+- [ ] Migrated data is validated.
+- [ ] External backup exists.
+- [ ] Restore drill succeeds.
+- [ ] Admin completes the main operational loop.
 - [ ] Tutor self-service works.
-- [ ] Another maintainer can clone, deploy, locate backups, and follow handover documentation.
-- [ ] Pilot blockers are resolved and first stable release is tagged.
+- [ ] Migrated scope no longer needs a duplicate operational spreadsheet source of truth.
+- [ ] Another maintainer can clone, verify, deploy, and locate restore instructions.
+- [ ] First stable release is tagged.
 
----
+## 5. Roadmap maintenance
 
-## 4. Roadmap Maintenance
+Update this roadmap when:
 
-- **When to update:** when a phase completes, a real technical constraint appears, or validated product priorities change.
-- **How to update:** edit this document in place; mark completed phases `Completed`, promote the next relevant phase to `Active`, and keep deferred ideas outside the critical path.
-- **Team execution:** create GitHub Milestones from phases and Issues from small vertical work units. An Issue should have one responsible owner, acceptance criteria, dependencies, and a Pull Request.
-- **Avoid duplicate planning:** GitHub Projects tracks live work state; this file remains the project-level execution contract.
-- **Change control:** if implementation reveals a functional, architectural, or visual decision change, update the corresponding canonical document (`PROJECT`, `ARCHITECTURE`, `STACK`, `PROJECT-DESIGN`, or `UI-SPEC`) instead of silently changing behavior in code.
+- a phase completes;
+- a real technical constraint changes sequencing;
+- a target product decision changes;
+- a validated institutional requirement changes first-release scope.
 
-### Explicitly deferred unless a real requirement appears
+Do not convert this file into detailed backlog bureaucracy.
 
-- microservices;
-- Redis;
-- queues/workers;
-- separate public API;
-- generic repositories;
-- distributed event bus;
-- Kubernetes;
-- business file storage;
-- periodic Sheets synchronization;
-- email/password fallback;
-- SSO institutional;
-- formal scholarship certification;
-- additional roles;
-- standalone mobile app.
+A complex active phase may be decomposed in a local execution plan without changing the roadmap unless the target outcome itself changes.
