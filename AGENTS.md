@@ -108,4 +108,5 @@ When those boundaries are implemented, preserve the approved invariants from Dec
 - Preserve public links and keep a fresh clone understandable without developer-local planning material.
 - Use focused outcome-oriented branches and PRs; branch names must not contain roadmap phase labels or the word `phase`.
 - Use squash merge through a pull request after the required `CI Gate` passes; direct pushes to `main` are not the normal delivery path.
+- Treat `CI Gate` as the only stable branch-protection check; upstream CI job names are implementation details.
 - Keep `main` runnable after each coherent change.

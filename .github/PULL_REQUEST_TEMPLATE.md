@@ -8,7 +8,7 @@
 
 ## Verification
 
-<!-- List exact commands, tests, manual checks, screenshots, or CI evidence. -->
+<!-- List exact commands and outcomes, tests, manual checks, screenshots, or CI evidence. Do not claim a check ran unless it actually did. -->
 
 ## Risk or notes
 

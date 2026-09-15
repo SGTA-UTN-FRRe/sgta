@@ -34,6 +34,8 @@ latest main → outcome branch → implement → verify → pull request → CI 
 
 Direct pushes to `main` are not the normal delivery path.
 
+`CI Gate` is the only stable technical status check intended for branch protection. `Quality`, `Tests`, `E2E`, `Production`, and future upstream jobs remain implementation details and must not become separate branch-protection contracts.
+
 ## 2. Branch naming
 
 Use lowercase kebab-case with one descriptive prefix and an outcome-oriented name:
