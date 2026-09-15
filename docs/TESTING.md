@@ -55,7 +55,7 @@ The current suite has no PostgreSQL, authentication, or external-service integra
 
 Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The current suite contains the landing-page smoke test. As domain workflows become real, add one representative critical journey per meaningful boundary instead of duplicating unit coverage in the browser.
 
-E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Failure diagnostics may include `playwright-report/` and `test-results/`; CI uploads them only when the E2E job fails.
+E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
 
 ### Integration and contract checks
 
