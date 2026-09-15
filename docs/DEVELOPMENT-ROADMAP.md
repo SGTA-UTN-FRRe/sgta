@@ -21,13 +21,15 @@ Rules:
 2. It is not an issue tracker and must not prescribe unnecessary file-level implementation.
 3. `PROJECT-DESIGN.md` is authoritative for visual direction and tokens.
 4. `UI-SPEC.md` is authoritative for views, states, interactions, and responsive behavior.
-5. Existing code is baseline, not target.
-6. Do not lower target quality because an earlier scaffold is easier to preserve.
-7. Do not add features merely to increase feature count.
-8. There is no late visual polish phase. Every product phase includes its own UI, responsive, state, accessibility, and visual quality.
-9. A phase may use multiple small PRs while keeping `main` runnable.
-10. Phase sequencing may be adjusted when a real dependency or validated requirement changes, but the roadmap must be updated in the same decision.
-11. GitHub Issues and local execution plans may decompose a phase just in time without rewriting this roadmap into task bureaucracy.
+5. `TESTING.md` records the current SGTA testing and CI adaptation of the engineering-playbook.
+6. `GIT-DELIVERY-WRITING-STANDARD.md` is authoritative for SGTA branch, PR, commit, and squash language.
+7. Existing code is baseline, not target.
+8. Do not lower target quality because an earlier scaffold is easier to preserve.
+9. Do not add features merely to increase feature count.
+10. There is no late visual polish phase. Every product phase includes its own UI, responsive, state, accessibility, and visual quality.
+11. A phase may use multiple small PRs while keeping `main` runnable.
+12. Phase sequencing may be adjusted when a real dependency or validated requirement changes, but the roadmap must be updated in the same decision.
+13. GitHub Issues and local execution plans may decompose a phase just in time without rewriting this roadmap into task bureaucracy.
 
 ## 1. Objective and quality bar
 
@@ -149,38 +151,55 @@ Personal/local execution material stays outside `docs/`.
 ### Phase 2 - Engineering quality and repository governance baseline
 
 - **Priority:** P0
-- **Status:** Next
+- **Status:** Complete
 - **Depends on:** Phase 1
 
 #### Objective
 
-Align SGTA with the current engineering playbook before broad domain implementation.
+Establish reproducible verification, stable CI semantics, and durable Git delivery language before broad domain implementation.
 
 #### In scope
 
-- audit locked dependency installation;
-- align scripts and local verification with CI;
-- evolve CI toward the current conceptual gate standard only where real boundaries exist;
-- configure a stable required `CI Gate` when repository rules are enforced;
-- apply the current small-team GitHub ruleset standard;
-- maintain deterministic tests and isolated test data;
-- add workflow timeouts/concurrency/artifacts where useful;
-- add automated dependency maintenance if justified.
+- adapt the engineering-playbook CI/testing vocabulary to the real SGTA boundaries in `docs/TESTING.md`;
+- keep the primary workflow name as `CI`;
+- expose the conceptual jobs `Quality`, `Tests`, `E2E`, `Production`, and the stable aggregate `CI Gate`;
+- define `Quality` as lint and strict TypeScript checking;
+- define `Tests` as the co-located Vitest and Testing Library suite;
+- define `E2E` as critical browser workflows through the running application;
+- define `Production` as the deployable Next.js build;
+- keep `Integration`, `Contract`, and `Docker` absent until SGTA has real boundaries that justify them;
+- install dependencies reproducibly with the committed lockfile and explicit Node.js/pnpm versions;
+- make the local Playwright web server use the pinned package-manager invocation;
+- use explicit job timeouts, obsolete-run cancellation, least-privilege permissions, and failure diagnostics;
+- make `CI Gate` fail when any required upstream job fails, is cancelled, or is skipped;
+- document the project-adapted branch, PR, commit, squash, and cleanup rules in `docs/GIT-DELIVERY-WRITING-STANDARD.md`;
+- provide a PR template with `Summary`, `Changes`, `Verification`, `Risk or notes`, and `Checklist` sections;
+- keep branch names outcome-oriented and free of roadmap labels or the word `phase`;
+- apply the small-team GitHub Ruleset and squash-only governance when repository settings are available to configure.
 
 #### Out of scope
 
-- fake integration gates before integration exists;
-- speculative production checks;
+- fake `Integration`, `Contract`, or `Docker` gates before the corresponding boundary exists;
+- coverage thresholds or tests added only to increase a metric;
+- production credentials, production services, or production data in CI;
+- speculative deployment or release checks;
 - domain features.
 
 #### Exit criteria
 
-- [ ] Clean locked install succeeds.
-- [ ] Local verification matches CI intent.
-- [ ] Current tests are deterministic.
-- [ ] Repository governance matches the small-team standard.
-- [ ] Required technical check is stable rather than tied to a version-specific job name.
-- [ ] CI does not depend on personal secrets or production data.
+- [x] Clean locked install succeeds.
+- [x] Local verification commands and CI commands represent the same meaningful gates.
+- [x] Public CI names are exactly `Quality`, `Tests`, `E2E`, `Production`, and `CI Gate`.
+- [x] `CI Gate` is the only stable aggregate check intended for branch protection.
+- [x] Current unit/component and E2E tests are deterministic and use synthetic data.
+- [x] E2E failures retain useful report and test-result diagnostics.
+- [x] Workflow runs have explicit timeouts, concurrency cancellation, and least-privilege permissions.
+- [x] No implementation-specific runtime, framework, browser, or database name appears in a public gate name.
+- [x] No speculative `Integration`, `Contract`, or `Docker` gate has been added.
+- [x] The project delivery standard and PR template define focused PR structure, exact verification evidence, squash wording, and post-merge cleanup.
+- [x] Branch naming is outcome-oriented and does not use roadmap labels or the word `phase`.
+- [x] Repository governance is documented against the small-team standard, with `CI Gate` as the technical requirement.
+- [x] CI does not depend on personal secrets or production data.
 
 ### Phase 3 - Golden Screens and visual-system recalibration
 
