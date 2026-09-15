@@ -151,7 +151,7 @@ Personal/local execution material stays outside `docs/`.
 ### Phase 2 - Engineering quality and repository governance baseline
 
 - **Priority:** P0
-- **Status:** Next
+- **Status:** Complete
 - **Depends on:** Phase 1
 
 #### Objective
@@ -187,19 +187,19 @@ Establish reproducible verification, stable CI semantics, and durable Git delive
 
 #### Exit criteria
 
-- [ ] Clean locked install succeeds.
-- [ ] Local verification commands and CI commands represent the same meaningful gates.
-- [ ] Public CI names are exactly `Quality`, `Tests`, `E2E`, `Production`, and `CI Gate`.
-- [ ] `CI Gate` is the only stable aggregate check intended for branch protection.
-- [ ] Current unit/component and E2E tests are deterministic and use synthetic data.
-- [ ] E2E failures retain useful report and test-result diagnostics.
-- [ ] Workflow runs have explicit timeouts, concurrency cancellation, and least-privilege permissions.
-- [ ] No implementation-specific runtime, framework, browser, or database name appears in a public gate name.
-- [ ] No speculative `Integration`, `Contract`, or `Docker` gate has been added.
-- [ ] The project delivery standard and PR template define focused PR structure, exact verification evidence, squash wording, and post-merge cleanup.
-- [ ] Branch naming is outcome-oriented and does not use roadmap labels or the word `phase`.
-- [ ] Repository governance is documented against the small-team standard, with `CI Gate` as the technical requirement.
-- [ ] CI does not depend on personal secrets or production data.
+- [x] Clean locked install succeeds.
+- [x] Local verification commands and CI commands represent the same meaningful gates.
+- [x] Public CI names are exactly `Quality`, `Tests`, `E2E`, `Production`, and `CI Gate`.
+- [x] `CI Gate` is the only stable aggregate check intended for branch protection.
+- [x] Current unit/component and E2E tests are deterministic and use synthetic data.
+- [x] E2E failures retain useful report and test-result diagnostics.
+- [x] Workflow runs have explicit timeouts, concurrency cancellation, and least-privilege permissions.
+- [x] No implementation-specific runtime, framework, browser, or database name appears in a public gate name.
+- [x] No speculative `Integration`, `Contract`, or `Docker` gate has been added.
+- [x] The project delivery standard and PR template define focused PR structure, exact verification evidence, squash wording, and post-merge cleanup.
+- [x] Branch naming is outcome-oriented and does not use roadmap labels or the word `phase`.
+- [x] Repository governance is documented against the small-team standard, with `CI Gate` as the technical requirement.
+- [x] CI does not depend on personal secrets or production data.
 
 ### Phase 3 - Golden Screens and visual-system recalibration
 
