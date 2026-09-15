@@ -104,14 +104,16 @@ Open [http://localhost:3000](http://localhost:3000). The current scaffold does n
 ## Verification
 
 ```bash
+corepack pnpm install --frozen-lockfile
 corepack pnpm lint        # Run ESLint checks
 corepack pnpm typecheck   # Validate TypeScript without emitting files
 corepack pnpm test        # Run Vitest unit/component tests
+corepack pnpm exec playwright install chromium  # First-time local browser setup
 corepack pnpm test:e2e    # Run the configured Playwright test
 corepack pnpm build       # Run the production build
 ```
 
-The CI workflow installs from the lockfile and runs lint, typecheck, unit/component tests, and the production build. It does not currently provision a database or exercise authenticated domain flows.
+The CI workflow exposes the conceptual checks `Quality`, `Tests`, `E2E`, `Production`, and the stable aggregate `CI Gate`. It installs from the lockfile, uses the project's Node.js/pnpm versions, and does not currently provision a database or exercise authenticated domain flows. `Integration`, `Contract`, and `Docker` checks are intentionally absent because those boundaries do not exist in the current scaffold.
 
 ## Documentation
 
@@ -119,5 +121,8 @@ The CI workflow installs from the lockfile and runs lint, typecheck, unit/compon
 - [AGENTS.md](AGENTS.md) — repository instructions for coding agents and contributors.
 - [docs/PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) — approved product visual direction and design tokens.
 - [docs/UI-SPEC.md](docs/UI-SPEC.md) — approved route, state, interaction, responsive, and accessibility contracts.
+- [docs/TESTING.md](docs/TESTING.md) — current project testing boundaries, CI gates, and reproducible verification.
+- [docs/GIT-DELIVERY-WRITING-STANDARD.md](docs/GIT-DELIVERY-WRITING-STANDARD.md) — branch, commit, PR, squash, and cleanup conventions.
+- [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) — required PR description structure.
 
-The source code, package manifest, runtime configuration, and tests are the authority for current behavior. The three documents under `docs/` describe approved target decisions and implementation direction.
+The source code, package manifest, runtime configuration, tests, and `docs/TESTING.md` are the authority for current behavior. `PROJECT-DESIGN.md`, `UI-SPEC.md`, `DEVELOPMENT-ROADMAP.md`, and the delivery standard describe approved project decisions and implementation direction.

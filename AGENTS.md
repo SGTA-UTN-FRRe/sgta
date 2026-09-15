@@ -30,7 +30,10 @@ Decision Mode documents define approved future direction:
 
 - `docs/PROJECT-DESIGN.md` — product visual direction and canonical design tokens;
 - `docs/UI-SPEC.md` — route, state, interaction, responsive, and accessibility contracts;
-- `docs/DEVELOPMENT-ROADMAP.md` — phase sequencing, scope, dependencies, and exit criteria.
+- `docs/DEVELOPMENT-ROADMAP.md` — phase sequencing, scope, dependencies, and exit criteria;
+- `docs/GIT-DELIVERY-WRITING-STANDARD.md` — project branch, commit, PR, squash, and cleanup language.
+
+`docs/TESTING.md` is the Evidence Mode project guide for the current test boundaries and CI adaptation.
 
 Use these documents when implementing the target. Existing code is the baseline to transform, not proof that a target feature already exists. Do not create a competing shared specification.
 
@@ -50,10 +53,11 @@ Use these documents when implementing the target. Existing code is the baseline 
 | Lint | `corepack pnpm lint` |
 | Type check | `corepack pnpm typecheck` |
 | Unit/component tests | `corepack pnpm test` |
+| Playwright browser setup | `corepack pnpm exec playwright install chromium` |
 | E2E tests | `corepack pnpm test:e2e` |
 | Production build | `corepack pnpm build` |
 
-The CI workflow currently runs locked install, lint, typecheck, unit/component tests, and build. Do not assume database or authenticated integration checks exist until they are added and verified.
+The CI workflow exposes `Quality`, `Tests`, `E2E`, `Production`, and `CI Gate`. It runs locked install, lint, typecheck, unit/component tests, the configured browser smoke suite, and the production build. `Integration`, `Contract`, and `Docker` gates are not active because their underlying boundaries do not exist yet.
 
 ## Key paths
 
@@ -64,8 +68,9 @@ The CI workflow currently runs locked install, lint, typecheck, unit/component t
 - `src/auth/` — future authentication and authorization boundary;
 - `src/db/` — future persistence, schema, and migration boundary;
 - `tests/` — Playwright end-to-end tests;
-- `docs/` — shared Decision Mode documents;
-- `.github/workflows/ci.yml` — current CI verification.
+- `docs/` — shared Decision Mode documents and the current testing guide;
+- `.github/workflows/ci.yml` — current CI verification and `CI Gate` aggregate;
+- `.github/PULL_REQUEST_TEMPLATE.md` — required pull-request structure.
 
 ## Code conventions
 
@@ -91,6 +96,8 @@ When those boundaries are implemented, preserve the approved invariants from Dec
 - Test current scaffold behavior against the actual rendered routes and components.
 - Add integration or authorization tests only when the corresponding runtime boundary exists.
 - Never use secrets, production data, real student information, or real consultation exports in tests or fixtures.
+- Map checks to the project gates documented in `docs/TESTING.md`; do not invent a gate for a boundary that does not exist.
+- Treat flaky tests as defects; do not hide instability with routine retries or order-dependent data.
 
 ## Repository rules
 
@@ -99,4 +106,6 @@ When those boundaries are implemented, preserve the approved invariants from Dec
 - Do not modify generated files under `.next/`, `out/`, `build/`, or generated type artifacts.
 - Do not add dependencies without a justified implementation need.
 - Preserve public links and keep a fresh clone understandable without developer-local planning material.
+- Use focused outcome-oriented branches and PRs; branch names must not contain roadmap phase labels or the word `phase`.
+- Use squash merge through a pull request after the required `CI Gate` passes; direct pushes to `main` are not the normal delivery path.
 - Keep `main` runnable after each coherent change.
