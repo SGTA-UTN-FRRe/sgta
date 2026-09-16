@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import type { BetterAuthOptions } from "better-auth";
 
 import type { ServerEnv } from "@/config/env";
+import { recordAuditEvent } from "@/db/audit-core";
 import type { Database } from "@/db/client-core";
 import { account, session, user, verification } from "@/db/schema";
 
@@ -239,6 +240,15 @@ export function createAuthOptions(env: AuthEnvironment, db: Database) {
           before: async (data) => {
             const identity = await findProvisionedUserById(db, data.userId);
             return canCreateSessionForIdentity(identity);
+          },
+          after: async (createdSession) => {
+            await recordAuditEvent(db, {
+              actorId: createdSession.userId,
+              action: "session.created",
+              entityType: "session",
+              entityId: createdSession.id,
+              metadata: {},
+            });
           },
         },
       },

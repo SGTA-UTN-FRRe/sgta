@@ -3,6 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import type { ServerEnv } from "@/config/env";
 import type { Database } from "@/db/client-core";
 
+const auditMocks = vi.hoisted(() => ({
+  recordAuditEvent: vi.fn(),
+}));
+
+vi.mock("@/db/audit-core", () => auditMocks);
+
 import { AUTH_ERROR_CODES } from "./identity";
 import { createAuthOptions } from "./options";
 
@@ -116,6 +122,23 @@ describe("Better Auth options", () => {
 
     expect(deleteSession).toHaveBeenCalledWith("session-1");
     expect(result).toMatchObject({ response: null });
+  });
+
+  it("records a session audit after Better Auth creates the session", async () => {
+    const { db } = createSelectMock([]);
+    const options = createAuthOptions(environment, db);
+    const after = options.databaseHooks?.session?.create?.after;
+
+    auditMocks.recordAuditEvent.mockResolvedValue({ id: "audit-1" });
+    await after?.({ id: "session-1", userId: "user-1" } as never);
+
+    expect(auditMocks.recordAuditEvent).toHaveBeenCalledWith(db, {
+      actorId: "user-1",
+      action: "session.created",
+      entityType: "session",
+      entityId: "session-1",
+      metadata: {},
+    });
   });
 
   it("blocks role and enabled changes in Better Auth user updates", async () => {
