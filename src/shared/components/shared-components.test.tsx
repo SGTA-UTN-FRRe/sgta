@@ -40,7 +40,7 @@ describe("Shared UI Primitives (SGTA)", () => {
           title="Tutores"
           breadcrumbs={[
             { label: "Inicio", href: "/admin" },
-            { label: "Área Académica", href: "/admin/tutores" },
+            { label: "Área Académica", href: "/admin/tutors" },
             { label: "Detalle" },
           ]}
         />,
@@ -119,7 +119,7 @@ describe("Shared UI Primitives (SGTA)", () => {
     it("throws error if no descriptive text is provided (enforcing strict a11y)", () => {
       // @ts-expect-error - testing missing label runtime guard
       expect(() => render(<StatusBadge variant="success" />)).toThrow(
-        /StatusBadge requiere obligatoriamente un texto descriptivo/,
+        /StatusBadge requires descriptive text/,
       );
     });
   });
@@ -185,7 +185,7 @@ describe("Shared UI Primitives (SGTA)", () => {
 
       const container = screen.getByTestId("container");
       expect(container).toHaveClass("w-full");
-      expect(container).toHaveClass("max-w-[100rem]");
+      expect(container).toHaveClass("max-w-[var(--max-width)]");
       expect(container).toHaveClass("px-4");
       expect(container).toHaveClass("md:px-6");
       expect(container).toHaveClass("lg:px-8");
@@ -200,8 +200,7 @@ describe("Shared UI Primitives (SGTA)", () => {
 
       const main = screen.getByRole("main", { name: "Área principal" });
       expect(main).toBeInTheDocument();
-      expect(main).toHaveClass("max-w-[100rem]");
+      expect(main).toHaveClass("max-w-[var(--max-width)]");
     });
   });
 });
-
