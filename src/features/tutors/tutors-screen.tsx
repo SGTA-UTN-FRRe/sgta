@@ -1057,14 +1057,16 @@ export function TutorsScreen({
 
   const closeSheet = useCallback(() => {
     setSheet(null);
-    const trigger = lastSheetTriggerRef.current;
-    if (trigger) {
-      window.requestAnimationFrame(() => {
-        trigger.focus();
-        lastSheetTriggerRef.current = null;
-      });
-    }
   }, []);
+
+  useEffect(() => {
+    if (sheet !== null || !lastSheetTriggerRef.current) {
+      return;
+    }
+
+    lastSheetTriggerRef.current.focus();
+    lastSheetTriggerRef.current = null;
+  }, [sheet]);
 
   const handlePreviewSaved = useCallback(() => {
     setAnnouncement(
