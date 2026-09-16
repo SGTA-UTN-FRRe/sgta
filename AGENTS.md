@@ -8,131 +8,105 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# SGTA - Agent Instructions
+# SGTA — Agent Instructions
 
-## Project
+## Repository reality
 
-SGTA is an executable Next.js scaffold for the Tutorias UTN FRRe interface. The current runtime includes the public login route with a root redirect, Admin and Tutor route/layout skeletons, responsive navigation, shared UI components, local UI primitives, Vitest/Testing Library coverage, and a Playwright UI smoke suite.
+SGTA is currently an executable Next.js scaffold for the Tutorias UTN FRRe interface. The implemented runtime includes:
 
-The current runtime does not include PostgreSQL, Drizzle, Better Auth, Google OAuth, server-side role guards, SGTA domain persistence, Google Sheets access, or operational workflows. The reserved `src/auth/`, `src/db/`, and `src/features/` boundaries do not prove that those subsystems exist.
+- a public landing page at `/`;
+- Admin and Tutor route/layout skeletons under `src/app/`;
+- responsive navigation and shared UI components under `src/shared/`;
+- local UI primitives under `src/components/ui/`;
+- Vitest/Testing Library component tests and a baseline Playwright test.
 
-## Instruction hierarchy
+The current runtime does not include PostgreSQL, Drizzle, Better Auth, Google OAuth, server-side role guards, SGTA domain persistence, Google Sheets access, or operational workflows. `src/auth/`, `src/db/`, and `src/features/` are reserved boundaries with guidance files, not implemented subsystems.
 
-Use this order when instructions overlap:
+Evidence Mode means that `README.md`, the source code, package/configuration files, tests, and CI describe what currently exists. Do not describe target behavior as a completed runtime capability.
 
-1. explicit user request;
-2. nearest applicable `AGENTS.md`;
-3. invoked repository skill under `.agents/skills/`;
-4. approved project decision documents;
-5. current source, tests, manifests, runtime configuration, and CI as evidence of what exists now.
+## Shared target decisions
 
-Do not infer repository workflow from task wording when an explicit rule or skill exists.
+Decision Mode documents define approved future direction:
 
-## Language boundary
+- `docs/PROJECT-DESIGN.md` — product visual direction and canonical design tokens;
+- `docs/UI-SPEC.md` — route, state, interaction, responsive, and accessibility contracts;
+- `docs/DEVELOPMENT-ROADMAP.md` — phase sequencing, scope, dependencies, and exit criteria;
+- `docs/GIT-DELIVERY-WRITING-STANDARD.md` — project branch, commit, PR, squash, and cleanup language.
 
-Engineering artifacts are written in English, including repository documentation, code identifiers and technical comments, test names and technical fixtures, filenames, directory names, route segments, branch names, commit messages, pull request titles and descriptions, and squash merge text.
+`docs/TESTING.md` is the Evidence Mode project guide for the current test boundaries and CI adaptation.
 
-User-facing SGTA product copy may remain Spanish. Product language does not change engineering language.
+Use these documents when implementing the target. Existing code is the baseline to transform, not proof that a target feature already exists. Do not create a competing shared specification.
 
-SGTA's product locale and writing register are separate. The `es-AR` locale controls Argentina-specific formatting and localization behavior; it does not authorize Rioplatense or colloquial Argentine writing. Follow `docs/PROJECT-DESIGN.md` for the approved writing voice and `docs/UI-SPEC.md` for concrete product microcopy.
+## Current technology and commands
 
-## Planning and delivery boundary
-
-`docs/DEVELOPMENT-ROADMAP.md` is the planning authority for outcomes, sequencing, scope boundaries, and exit criteria. Roadmap labels, phase numbers, task numbers, milestone labels, and `PHASE-XX.md` names are planning metadata. They may be used in the roadmap, local execution plans, and prompts to locate work.
-
-Planning metadata must not leak into branches, commit subjects, pull request titles or bodies, squash messages, tags, filenames, directories, identifiers, labels, or product-facing names. Derive the durable implementation outcome before creating delivery text.
-
-## Repository skills
-
-Use the installed skills for their owned procedures:
-
-- `$plan-implementation` turns roadmap or product intent into a decision-complete execution plan.
-- `$implement-task` implements one concrete approved task and verifies its boundaries.
-- `$git-delivery` creates outcome-oriented branch, commit, pull request, and squash-delivery text when requested.
-
-Do not duplicate those procedures in project documentation.
-
-## Sources of truth
-
-### Current state and evidence
-
-Current source code, tests, manifests, runtime configuration, and CI are the strongest evidence for implemented behavior. `README.md` and `docs/TESTING.md` are public current-state documentation and must not claim target behavior as a completed runtime capability.
-
-### Approved target decisions
-
-- `docs/PROJECT-DESIGN.md` owns visual direction and canonical design tokens.
-- `docs/UI-SPEC.md` owns routes, states, interactions, responsive behavior, accessibility contracts, and product microcopy.
-- `docs/DEVELOPMENT-ROADMAP.md` owns planning outcomes and sequencing.
-
-Use existing decision documents instead of creating competing specifications. Update current-state documentation only when implementation makes a new fact true.
-
-### Local planning material
-
-`local-docs/` is a private boundary for planning, execution packets, screenshots, audits, and personal routing notes. It is not product authority and a fresh clone must remain understandable without it.
-
-## Technology and architecture
-
-- TypeScript 5 with strict mode;
+- TypeScript 5, strict mode;
 - Node.js 22 LTS (`>=22.0.0 <25`);
 - Next.js 16 App Router and React 19;
 - Tailwind CSS 4 with local UI primitives;
-- Corepack pnpm 11.
-
-Key boundaries:
-
-```text
-src/app/              App Router routes, layouts, metadata, and global styles
-src/features/         feature-owned UI and future vertical slices
-src/shared/           small cross-feature product components and utilities
-src/components/ui/    low-level reusable UI primitives
-src/auth/             reserved authentication and authorization boundary
-src/db/               reserved persistence, schema, and migration boundary
-tests/e2e/            Playwright browser scenarios
-```
-
-Keep route composition thin and place feature-specific behavior under a feature-owned directory within `src/features/`.
-
-## Key paths
-
-- `src/app/` - routes, layouts, metadata, and global styles;
-- `src/features/` - future feature vertical slices;
-- `src/shared/` - shared product components and utilities;
-- `src/components/ui/` - low-level UI primitives;
-- `tests/` - Playwright end-to-end scenarios;
-- `docs/` - shared decisions and current testing contract;
-- `.github/workflows/ci.yml` - CI topology and `CI Gate`;
-- `.github/PULL_REQUEST_TEMPLATE.md` - pull request structure.
-
-## Commands
+- pnpm 11 through Corepack;
+- Vitest 3, React Testing Library, and Playwright.
 
 | Task | Command |
 | --- | --- |
 | Install | `corepack pnpm install --frozen-lockfile` |
-| Dev | `corepack pnpm dev` |
+| Dev server | `corepack pnpm dev` |
 | Lint | `corepack pnpm lint` |
 | Type check | `corepack pnpm typecheck` |
 | Unit/component tests | `corepack pnpm test` |
-| E2E | `corepack pnpm test:e2e` |
+| Playwright browser setup | `corepack pnpm exec playwright install chromium` |
+| E2E tests | `corepack pnpm test:e2e` |
 | Production build | `corepack pnpm build` |
 
-The E2E browser may require `corepack pnpm exec playwright install chromium` once per environment.
+The CI workflow exposes `Quality`, `Tests`, `E2E`, `Production`, and `CI Gate`. It runs locked install, lint, typecheck, unit/component tests, the configured browser smoke suite, and the production build. `Integration`, `Contract`, and `Docker` gates are not active because their underlying boundaries do not exist yet.
 
-## Code and domain invariants
+## Key paths
 
-- Use React Server Components by default; add Client Components only for hooks, event listeners, or browser interaction.
-- Keep `src/shared/` small and add code there only for real cross-feature consumers.
-- Maintain strict TypeScript, validate external and mutation inputs at their boundaries, and preserve established error handling.
-- When protected behavior is implemented, enforce authentication and authorization on the server rather than through client-only role checks.
-- Future domain work must preserve cycle-aware data, auditable changes, and movement-derived hour balances from the approved project decisions.
-- Do not add dependencies without a justified implementation need or edit generated artifacts manually.
+- `src/app/` — App Router routes, layouts, metadata, and global styles;
+- `src/components/ui/` — low-level UI primitives used by the scaffold;
+- `src/shared/` — shared product components, navigation, branding, and utilities;
+- `src/features/` — future feature vertical slices;
+- `src/auth/` — future authentication and authorization boundary;
+- `src/db/` — future persistence, schema, and migration boundary;
+- `tests/` — Playwright end-to-end tests;
+- `docs/` — shared Decision Mode documents and the current testing guide;
+- `.github/workflows/ci.yml` — current CI verification and `CI Gate` aggregate;
+- `.github/PULL_REQUEST_TEMPLATE.md` — required pull-request structure.
 
-## Testing and repository hygiene
+## Code conventions
 
-- Keep unit/component tests co-located with their implementation and Playwright scenarios under `tests/e2e/`.
-- Add integration or authorization checks only when the corresponding runtime boundary exists.
-- Use deterministic synthetic data; never commit secrets, credentials, personal data, production logs, or data exports.
-- Run the smallest relevant checks and use the CI contract documented in `docs/TESTING.md`.
-- Treat flaky tests as defects and never claim a check passed unless it actually ran successfully.
-- Keep generated directories and artifacts out of manual edits.
-- Use the normal protected-branch PR flow. Follow `$git-delivery` for delivery language; merge or squash remains a manual user action unless explicitly requested.
+- Use React Server Components by default; introduce a Client Component only when hooks, event listeners, or browser interaction require it.
+- Keep route composition under `src/app/` and place future feature-specific UI, server logic, validation, tests, and contracts under `src/features/<feature-name>/`.
+- Keep `src/shared/` small. Add code there only when it has real consumers across multiple features.
+- Keep low-level reusable primitives in `src/components/ui/` when they are not feature-owned.
+- Maintain strict TypeScript and avoid implicit `any`.
+- Validate future external and mutation inputs at their boundaries before passing them to domain logic.
+- When protected behavior is implemented, enforce authentication and authorization on the server; never rely on client-only role checks.
+- For UI implementation, consume only the approved Layer 3 documents: `docs/PROJECT-DESIGN.md` and `docs/UI-SPEC.md`.
+
+## Data and authentication status
+
+There is no active database schema, migration runner, authentication provider, session helper, role guard, or domain data source in the current repository. Do not add claims about those capabilities to Evidence Mode documentation until the corresponding implementation and verification exist.
+
+When those boundaries are implemented, preserve the approved invariants from Decision Mode, including server-side authorization, cycle-aware data, auditable changes, and movement-derived hour balances. Do not invent a different product rule in code without updating the authoritative decision document first.
+
+## Testing expectations
+
+- Keep unit/component tests co-located with the implementation under `src/`.
+- Keep Playwright scenarios under `tests/e2e/`.
+- Test current scaffold behavior against the actual rendered routes and components.
+- Add integration or authorization tests only when the corresponding runtime boundary exists.
+- Never use secrets, production data, real student information, or real consultation exports in tests or fixtures.
+- Map checks to the project gates documented in `docs/TESTING.md`; do not invent a gate for a boundary that does not exist.
+- Treat flaky tests as defects; do not hide instability with routine retries or order-dependent data.
+
+## Repository rules
+
+- Do not commit secrets, credentials, tokens, personal data, production logs, or data exports.
+- Keep local secrets in `.env.local`; use sanitized examples only if an environment contract is introduced.
+- Do not modify generated files under `.next/`, `out/`, `build/`, or generated type artifacts.
+- Do not add dependencies without a justified implementation need.
+- Preserve public links and keep a fresh clone understandable without developer-local planning material.
+- Use focused outcome-oriented branches and PRs. Never generate the word `phase` (in any capitalization) in repository-facing output: this includes branch names, commit subjects, PR titles or bodies, tags, filenames, directories, identifiers, labels, and suggested examples. Use the durable outcome instead. Existing roadmap text may retain the term only when describing the approved plan, never as a generated name or delivery label.
+- Use squash merge through a pull request after the required `CI Gate` passes; direct pushes to `main` are not the normal delivery path.
+- Treat `CI Gate` as the only stable branch-protection check; upstream CI job names are implementation details.
 - Keep `main` runnable after each coherent change.
