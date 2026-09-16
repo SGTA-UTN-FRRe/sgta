@@ -1,10 +1,13 @@
-﻿export default function AdminTutoresPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-foreground">Gestión de Tutores</h1>
-      <p className="mt-1 text-sm text-foreground-secondary">
-        Administración de tutores, asignación de materias y estados.
-      </p>
-    </div>
-  );
+import type { Metadata } from "next";
+
+import { goldenScreenFixtures } from "@/features/golden-screens/fixtures";
+import { TutorsScreen } from "@/features/tutors/tutors-screen";
+
+export const metadata: Metadata = {
+  title: "Tutores | SGTA",
+  description: goldenScreenFixtures.tutors.description,
+};
+
+export default function AdminTutoresPage() {
+  return <TutorsScreen fixture={goldenScreenFixtures.tutors} />;
 }
