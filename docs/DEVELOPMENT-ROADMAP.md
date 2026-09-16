@@ -4,7 +4,7 @@ mode: decision
 type: project-roadmap
 status: active
 scope: SGTA first production-worthy release
-authority: planning
+authority: planning-and-execution
 ---
 
 # SGTA - Development Roadmap
@@ -22,15 +22,14 @@ Rules:
 3. `PROJECT-DESIGN.md` is authoritative for visual direction and tokens.
 4. `UI-SPEC.md` is authoritative for views, states, interactions, and responsive behavior.
 5. `TESTING.md` records the current SGTA testing and CI adaptation of the engineering-playbook.
-6. Roadmap labels, phase numbers, task numbers, and milestone labels are planning metadata only. They may appear in this roadmap and local execution plans, but must not be copied into Git delivery artifacts or product/code naming.
-7. `$plan-implementation` derives durable implementation outcomes from roadmap items, and `$git-delivery` owns branch, commit, pull request, and squash language. This roadmap does not define those delivery procedures.
-8. Existing code is baseline, not target.
-9. Do not lower target quality because an earlier scaffold is easier to preserve.
-10. Do not add features merely to increase feature count.
-11. There is no late visual polish phase. Every product phase includes its own UI, responsive, state, accessibility, and visual quality.
-12. A phase may use multiple small PRs while keeping `main` runnable.
-13. Phase sequencing may be adjusted when a real dependency or validated requirement changes, but the roadmap must be updated in the same decision.
-14. GitHub Issues and local execution plans may decompose a phase just in time without rewriting this roadmap into task bureaucracy.
+6. `GIT-DELIVERY-WRITING-STANDARD.md` is authoritative for SGTA branch, PR, commit, and squash language.
+7. Existing code is baseline, not target.
+8. Do not lower target quality because an earlier scaffold is easier to preserve.
+9. Do not add features merely to increase feature count.
+10. There is no late visual polish phase. Every product phase includes its own UI, responsive, state, accessibility, and visual quality.
+11. A phase may use multiple small PRs while keeping `main` runnable.
+12. Phase sequencing may be adjusted when a real dependency or validated requirement changes, but the roadmap must be updated in the same decision.
+13. GitHub Issues and local execution plans may decompose a phase just in time without rewriting this roadmap into task bureaucracy.
 
 ## 1. Objective and quality bar
 
@@ -173,10 +172,9 @@ Establish reproducible verification, stable CI semantics, and durable Git delive
 - make the local Playwright web server use the pinned package-manager invocation;
 - use explicit job timeouts, obsolete-run cancellation, least-privilege permissions, and failure diagnostics;
 - make `CI Gate` fail when any required upstream job fails, is cancelled, or is skipped;
-- install the current repository skills under `.agents/skills/` from the engineering-playbook;
-- keep Git delivery procedure in `$git-delivery` instead of a duplicate project-specific standard;
-- provide a PR template with exactly `Summary` and `Changes` sections;
-- route branch, commit, pull request, and squash naming through `$git-delivery` so roadmap metadata stays in planning artifacts;
+- document the project-adapted branch, PR, commit, squash, and cleanup rules in `docs/GIT-DELIVERY-WRITING-STANDARD.md`;
+- provide a PR template with `Summary`, `Changes`, `Verification`, `Risk or notes`, and `Checklist` sections;
+- keep branch names outcome-oriented and free of roadmap labels or the word `phase`;
 - apply the small-team GitHub Ruleset and squash-only governance when repository settings are available to configure.
 
 #### Out of scope
@@ -198,9 +196,8 @@ Establish reproducible verification, stable CI semantics, and durable Git delive
 - [x] Workflow runs have explicit timeouts, concurrency cancellation, and least-privilege permissions.
 - [x] No implementation-specific runtime, framework, browser, or database name appears in a public gate name.
 - [x] No speculative `Integration`, `Contract`, or `Docker` gate has been added.
-- [x] `$git-delivery`, `$plan-implementation`, and `$implement-task` are installed under `.agents/skills/`.
-- [x] The repository skills and PR template define focused delivery structure and outcome-oriented wording.
-- [x] Delivery naming is delegated to `$git-delivery` and does not copy roadmap metadata.
+- [x] The project delivery standard and PR template define focused PR structure, exact verification evidence, squash wording, and post-merge cleanup.
+- [x] Branch naming is outcome-oriented and does not use roadmap labels or the word `phase`.
 - [x] Repository governance is documented against the small-team standard, with `CI Gate` as the technical requirement.
 - [x] CI does not depend on personal secrets or production data.
 

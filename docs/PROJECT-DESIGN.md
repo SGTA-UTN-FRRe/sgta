@@ -129,66 +129,24 @@ Design consequence:
 
 ### 2.5 Tone, voice, and terminology
 
-The SGTA product-copy contract is:
+User-facing copy is written first in Spanish for Argentina.
 
-- **Product language:** Spanish.
-- **Locale:** `es-AR`.
-- **Writing register:** neutral institutional Spanish.
-- **Regional voice:** neutral; avoid voseo and colloquial regionalisms.
-- **Terminology conventions:** use concrete, established Tutorias terms and direct interface commands; do not expose implementation terminology to users.
+Use:
 
-The `es-AR` locale is retained for Argentina-specific locale behavior, including appropriate date, number, currency, and similar regional formatting. It does not mean that the interface should imitate everyday Argentine speech.
+- direct verbs;
+- concrete nouns from Tutorias;
+- short confirmation summaries;
+- concise recovery language;
+- understandable administrative terminology.
 
-SGTA is an institutional operational product for Tutorias UTN FRRe. Its copy should be:
-
-- concise;
-- clear;
-- professional;
-- institutional without sounding bureaucratic;
-- natural Spanish;
-- direct when naming actions;
-- calm and actionable in errors and recovery messages.
-
-Avoid:
-
-- voseo;
-- Argentine slang;
-- deliberately Rioplatense expressions;
-- unnecessary second-person pronouns;
-- conversational filler;
-- exaggerated friendliness;
-- literal technical terminology exposed to users.
-
-Prefer action labels that work naturally as neutral interface commands, especially infinitive forms where appropriate:
+Preferred labels:
 
 - `Agregar tutor`
-- `Guardar cambios`
 - `Registrar movimiento`
 - `Marcar asistencia`
 - `Actualizar consultas`
 - `Crear horario especial`
 - `Cerrar ciclo`
-- `Reintentar`
-- `Cancelar`
-- `Confirmar`
-
-For explanatory and recovery copy, prefer neutral constructions such as:
-
-- `No se pudo guardar el registro.`
-- `El correo es obligatorio.`
-- `Los cambios se guardaron correctamente.`
-- `Contactar a la administración de Tutorías para solicitar acceso.`
-
-Avoid variants such as:
-
-- `Guardá los cambios.`
-- `Ingresá tu correo.`
-- `Podés volver a intentarlo.`
-- `Contactá a la administración.`
-- `Si necesitás acceso...`
-- `¿Querés continuar?`
-
-Do not mechanically rewrite every sentence into an impersonal form if that makes Spanish unnatural. The objective is neutral institutional Spanish, not robotic Spanish.
 
 Avoid user-facing implementation terms:
 

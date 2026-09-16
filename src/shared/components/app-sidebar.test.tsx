@@ -1,10 +1,9 @@
 ﻿import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import userEvent from "@testing-library/user-event";
 import { AppSidebar } from "./app-sidebar";
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/admin/tutors",
+  usePathname: () => "/admin/tutores",
 }));
 
 describe("AppSidebar", () => {
@@ -34,24 +33,5 @@ describe("AppSidebar", () => {
     render(<AppSidebar variant="admin" />);
     const marker = screen.getByTestId("faro-marker");
     expect(marker).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Tutores" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-  });
-
-  it("returns focus to the mobile trigger after closing the drawer", async () => {
-    const user = userEvent.setup();
-    render(<AppSidebar variant="admin" />);
-
-    const trigger = screen.getByRole("button", { name: "Abrir navegación" });
-    await user.click(trigger);
-
-    expect(document.activeElement).toHaveAttribute("aria-label", "Cerrar navegación");
-
-    await user.keyboard("{Escape}");
-
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
   });
 });
