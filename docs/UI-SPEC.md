@@ -21,7 +21,7 @@ Mode: **decision**.
 Rules:
 
 1. `PROJECT-DESIGN.md` owns visual identity and exact tokens.
-2. This file owns view composition, component behavior, interactions, reachable states, responsive transformations, and product microcopy.
+2. This file owns view composition, component behavior, interactions, reachable states, responsive transformations, and concrete product microcopy. It inherits product language, locale, writing register, regional voice, and terminology from `PROJECT-DESIGN.md`.
 3. Do not preserve weaker existing layout decisions merely because code already exists.
 4. Implement against real SGTA domain contracts. Do not invent extra business capabilities.
 5. Every implemented P0 view includes all reachable loading, empty, error, success, permission, required-action, unavailable, and degraded states that apply.
@@ -33,7 +33,7 @@ Rules:
 
 ### 1.1 Product language
 
-User-facing language is Spanish.
+User-facing language is Spanish. Product locale, writing register, regional voice, and terminology follow `PROJECT-DESIGN.md`; this document owns concrete view-level microcopy and does not redefine the voice policy.
 
 Technical names remain implementation details.
 
@@ -488,7 +488,7 @@ No product data is loaded before authorization succeeds.
 | Supporting text | Acceso para usuarios habilitados de Tutorias UTN FRRe. |
 | CTA | Continuar con Google |
 | Permission title | Esta cuenta no está habilitada en SGTA |
-| Recovery | Contactá a la administración de Tutorías si necesitás acceso. |
+| Recovery | Contactar a la administración de Tutorías para solicitar acceso. |
 
 #### Acceptance criteria
 
@@ -653,7 +653,7 @@ Wide:
 
 ```text
 Tutores                                      [Agregar tutor]
-Gestiona perfiles, carrera, materias y estado
+Gestionar perfiles, carrera, materias y estado
 
 [Buscar tutor...] [Carrera] [Estado]
 
@@ -781,7 +781,7 @@ It is never independently edited as another source of truth.
 | Element | Copy |
 |---|---|
 | Page title | Tutores |
-| Description | Gestioná perfiles, carrera, materias y estado. |
+| Description | Gestionar perfiles, carrera, materias y estado. |
 | CTA | Agregar tutor |
 | Empty title | Todavía no hay tutores |
 | Empty action | Agregar tutor |
@@ -834,7 +834,7 @@ Wide:
 
 ```text
 Horas                                  [Registrar movimiento]
-Consulta saldos y registra movimientos trazables
+Consultar saldos y registrar movimientos trazables
 
 [Buscar tutor] [Estado] [Categoria]
 
@@ -960,7 +960,7 @@ Confirmation explains:
 | Element | Copy |
 |---|---|
 | Page title | Horas |
-| Description | Consulta saldos y registra movimientos trazables. |
+| Description | Consultar saldos y registrar movimientos trazables. |
 | CTA | Registrar movimiento |
 | Owes label | Debe horas |
 | Current label | Al día |
@@ -1011,7 +1011,7 @@ Wide:
 
 ```text
 Horarios                               [Agregar asignación]
-Planifica guardias regulares y períodos especiales
+Planificar guardias regulares y períodos especiales
 
 [Regular - 2do cuatrimestre] [Bienal] [+ Nuevo plan]
 
@@ -1134,10 +1134,10 @@ Within that cycle:
 | Element | Copy |
 |---|---|
 | Page title | Horarios |
-| Description | Planificá guardias regulares y períodos especiales. |
+| Description | Planificar guardias regulares y períodos especiales. |
 | Primary CTA | Agregar asignación |
 | Secondary CTA | Nuevo plan |
-| Empty plan | Este horario todavía no tiene asignaciónes. |
+| Empty plan | Este horario todavía no tiene asignaciones. |
 
 #### Acceptance criteria
 
@@ -1660,7 +1660,7 @@ Default, Loading, Empty, Error, Required action.
 
 Empty copy:
 
-`No tenés guardias asignadas en el período actual.`
+`No hay guardias asignadas en el período actual.`
 
 Acceptance criteria:
 

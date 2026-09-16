@@ -34,6 +34,8 @@ Engineering artifacts are written in English, including repository documentation
 
 User-facing SGTA product copy may remain Spanish. Product language does not change engineering language.
 
+SGTA's product locale and writing register are separate. The `es-AR` locale controls Argentina-specific formatting and localization behavior; it does not authorize Rioplatense or colloquial Argentine writing. Follow `docs/PROJECT-DESIGN.md` for the approved writing voice and `docs/UI-SPEC.md` for concrete product microcopy.
+
 ## Planning and delivery boundary
 
 `docs/DEVELOPMENT-ROADMAP.md` is the planning authority for outcomes, sequencing, scope boundaries, and exit criteria. Roadmap labels, phase numbers, task numbers, milestone labels, and `PHASE-XX.md` names are planning metadata. They may be used in the roadmap, local execution plans, and prompts to locate work.
