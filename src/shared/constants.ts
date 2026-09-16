@@ -1,4 +1,7 @@
-/** Shared design constants for SGTA components. */
+/**
+ * Constantes de diseño transversal para componentes compartidos de SGTA.
+ */
 
-/** Shared Lucide icon stroke width for product controls. */
+/** Grosor de trazo uniforme para iconos de lucide-react en controles compartidos */
 export const ICON_STROKE_WIDTH = 2;
+

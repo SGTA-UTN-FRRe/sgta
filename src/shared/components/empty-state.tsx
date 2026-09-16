@@ -4,22 +4,22 @@ import { cn } from "@/shared/utils";
 import { FaroIllustration } from "./faro-illustration";
 
 export interface EmptyStateProps {
-  /** Concise title for the empty state. */
+  /** Título conciso del estado vacío */
   title: string;
-  /** Useful, approachable descriptive copy. */
+  /** Copia descriptiva útil y amigable */
   description?: ReactNode;
-  /** Contextual recovery action, such as a primary action button. */
+  /** Acción contextual de resolución (ej. botón de acción primaria) */
   action?: ReactNode;
-  /** Optional custom illustration; defaults to the Faro geometry. */
+  /** Ilustración personalizada opcional (por defecto usa la ilustración geométrica del Faro) */
   illustration?: ReactNode;
-  /** Additional CSS classes. */
+  /** Clases CSS adicionales */
   className?: string;
 }
 
 /**
- * Base component for views and tables without data.
- * Combines the Faro geometry with brand accents, informative copy, and room
- * for a contextual recovery action.
+ * Componente base para vistas y tablas sin datos.
+ * Integra la ilustración geométrica del Faro con acentos Midnight Navy y Faro Amber,
+ * copy informativo y espacio para una acción contextual de resolución.
  */
 export function EmptyState({
   title,
@@ -59,3 +59,4 @@ export function EmptyState({
     </div>
   );
 }
+

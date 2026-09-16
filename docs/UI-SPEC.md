@@ -21,7 +21,7 @@ Mode: **decision**.
 Rules:
 
 1. `PROJECT-DESIGN.md` owns visual identity and exact tokens.
-2. This file owns view composition, component behavior, interactions, reachable states, responsive transformations, and concrete product microcopy. It inherits product language, locale, writing register, regional voice, and terminology from `PROJECT-DESIGN.md`.
+2. This file owns view composition, component behavior, interactions, reachable states, responsive transformations, and product microcopy.
 3. Do not preserve weaker existing layout decisions merely because code already exists.
 4. Implement against real SGTA domain contracts. Do not invent extra business capabilities.
 5. Every implemented P0 view includes all reachable loading, empty, error, success, permission, required-action, unavailable, and degraded states that apply.
@@ -33,7 +33,7 @@ Rules:
 
 ### 1.1 Product language
 
-User-facing language is Spanish. Product locale, writing register, regional voice, and terminology follow `PROJECT-DESIGN.md`; this document owns concrete view-level microcopy and does not redefine the voice policy.
+User-facing language is Spanish.
 
 Technical names remain implementation details.
 
@@ -188,18 +188,18 @@ Offline-first behavior is not part of the first release.
 |---|---|---|---|---|
 | `/login` | Login | Public | Authenticate an enabled SGTA user | P0 |
 | `/admin` | Admin overview | Admin | Understand current operational attention | P0 |
-| `/admin/tutors` | Tutores | Admin | Manage tutors and academic assignments | P0 |
-| `/admin/tutors/subjects` | Materias | Admin | Inspect derived subject coverage | P1 |
-| `/admin/schedules` | Horarios | Admin | Manage regular and special schedule plans | P0 |
-| `/admin/schedules/attendance` | Asistencia | Admin | Register attendance by duty occurrence | P0 |
-| `/admin/hours` | Horas | Admin | Understand balances and register movements | P0 |
-| `/admin/hours/movements` | Movimientos | Admin | Inspect and reverse hour history | P0 |
-| `/admin/consultations` | Consultas | Admin | Import, review, classify, and inspect consultations | P0 |
-| `/admin/reports` | Reportes | Admin | Explore demand and operational indicators | P0 |
-| `/admin/settings` | Configuración | Admin | Low-frequency cycle and reference settings | P1 |
+| `/admin/tutores` | Tutores | Admin | Manage tutors and academic assignments | P0 |
+| `/admin/tutores/materias` | Materias | Admin | Inspect derived subject coverage | P1 |
+| `/admin/horarios` | Horarios | Admin | Manage regular and special schedule plans | P0 |
+| `/admin/horarios/asistencia` | Asistencia | Admin | Register attendance by duty occurrence | P0 |
+| `/admin/horas` | Horas | Admin | Understand balances and register movements | P0 |
+| `/admin/horas/movimientos` | Movimientos | Admin | Inspect and reverse hour history | P0 |
+| `/admin/consultas` | Consultas | Admin | Import, review, classify, and inspect consultations | P0 |
+| `/admin/reportes` | Reportes | Admin | Explore demand and operational indicators | P0 |
+| `/admin/configuracion` | Configuración | Admin | Low-frequency cycle and reference settings | P1 |
 | `/tutor` | Mi resumen | Tutor | Understand own current status | P0 |
-| `/tutor/schedule` | Mi horario | Tutor | Read own current schedule | P0 |
-| `/tutor/hours` | Mis horas | Tutor | Read own balance and movement history | P0 |
+| `/tutor/horario` | Mi horario | Tutor | Read own current schedule | P0 |
+| `/tutor/horas` | Mis horas | Tutor | Read own balance and movement history | P0 |
 
 ## 3. Golden screen set
 
@@ -488,7 +488,7 @@ No product data is loaded before authorization succeeds.
 | Supporting text | Acceso para usuarios habilitados de Tutorias UTN FRRe. |
 | CTA | Continuar con Google |
 | Permission title | Esta cuenta no está habilitada en SGTA |
-| Recovery | Contactar a la administración de Tutorías para solicitar acceso. |
+| Recovery | Contactá a la administración de Tutorías si necesitás acceso. |
 
 #### Acceptance criteria
 
@@ -620,7 +620,7 @@ External consultation source failure:
 #### Overview
 
 ```text
-Route: /admin/tutors
+Route: /admin/tutores
 Access: Admin
 Priority: P0
 Primary user: Admin
@@ -653,7 +653,7 @@ Wide:
 
 ```text
 Tutores                                      [Agregar tutor]
-Gestionar perfiles, carrera, materias y estado
+Gestiona perfiles, carrera, materias y estado
 
 [Buscar tutor...] [Carrera] [Estado]
 
@@ -744,7 +744,7 @@ Unsaved changes:
 
 #### Materias subview
 
-Route: `/admin/tutors/subjects`.
+Route: `/admin/tutores/materias`.
 
 Derived from canonical Subject, TutorSubject, and current relevant scheduling facts.
 
@@ -781,7 +781,7 @@ It is never independently edited as another source of truth.
 | Element | Copy |
 |---|---|
 | Page title | Tutores |
-| Description | Gestionar perfiles, carrera, materias y estado. |
+| Description | Gestioná perfiles, carrera, materias y estado. |
 | CTA | Agregar tutor |
 | Empty title | Todavía no hay tutores |
 | Empty action | Agregar tutor |
@@ -801,7 +801,7 @@ It is never independently edited as another source of truth.
 #### Overview
 
 ```text
-Route: /admin/hours
+Route: /admin/horas
 Access: Admin
 Priority: P0
 Primary user: Admin
@@ -834,7 +834,7 @@ Wide:
 
 ```text
 Horas                                  [Registrar movimiento]
-Consultar saldos y registrar movimientos trazables
+Consulta saldos y registra movimientos trazables
 
 [Buscar tutor] [Estado] [Categoria]
 
@@ -960,7 +960,7 @@ Confirmation explains:
 | Element | Copy |
 |---|---|
 | Page title | Horas |
-| Description | Consultar saldos y registrar movimientos trazables. |
+| Description | Consulta saldos y registra movimientos trazables. |
 | CTA | Registrar movimiento |
 | Owes label | Debe horas |
 | Current label | Al día |
@@ -980,7 +980,7 @@ Confirmation explains:
 #### Overview
 
 ```text
-Route: /admin/schedules
+Route: /admin/horarios
 Access: Admin
 Priority: P0
 Primary user: Admin
@@ -1011,7 +1011,7 @@ Wide:
 
 ```text
 Horarios                               [Agregar asignación]
-Planificar guardias regulares y períodos especiales
+Planifica guardias regulares y períodos especiales
 
 [Regular - 2do cuatrimestre] [Bienal] [+ Nuevo plan]
 
@@ -1134,10 +1134,10 @@ Within that cycle:
 | Element | Copy |
 |---|---|
 | Page title | Horarios |
-| Description | Planificar guardias regulares y períodos especiales. |
+| Description | Planificá guardias regulares y períodos especiales. |
 | Primary CTA | Agregar asignación |
 | Secondary CTA | Nuevo plan |
-| Empty plan | Este horario todavía no tiene asignaciones. |
+| Empty plan | Este horario todavía no tiene asignaciónes. |
 
 #### Acceptance criteria
 
@@ -1153,7 +1153,7 @@ Within that cycle:
 #### Overview
 
 ```text
-Route: /admin/schedules/attendance
+Route: /admin/horarios/asistencia
 Access: Admin
 Priority: P0
 Primary user: Admin
@@ -1260,7 +1260,7 @@ Required action examples:
 #### Overview
 
 ```text
-Route: /admin/consultations
+Route: /admin/consultas
 Access: Admin
 Priority: P0
 Primary user: Admin
@@ -1416,7 +1416,7 @@ Pending rows are excluded from subject-level metrics.
 #### Overview
 
 ```text
-Route: /admin/reports
+Route: /admin/reportes
 Access: Admin
 Priority: P0
 Primary user: Admin
@@ -1530,7 +1530,7 @@ Degraded:
 #### Overview
 
 ```text
-Route: /admin/settings
+Route: /admin/configuracion
 Access: Admin
 Priority: P1
 Primary user: Admin
@@ -1637,7 +1637,7 @@ Default, Loading, Empty, Error, Required action.
 #### Overview
 
 ```text
-Route: /tutor/schedule
+Route: /tutor/horario
 Access: Tutor
 Priority: P0
 Primary user: Tutor
@@ -1660,7 +1660,7 @@ Default, Loading, Empty, Error, Required action.
 
 Empty copy:
 
-`No hay guardias asignadas en el período actual.`
+`No tenés guardias asignadas en el período actual.`
 
 Acceptance criteria:
 
@@ -1673,7 +1673,7 @@ Acceptance criteria:
 #### Overview
 
 ```text
-Route: /tutor/hours
+Route: /tutor/horas
 Access: Tutor
 Priority: P0
 Primary user: Tutor

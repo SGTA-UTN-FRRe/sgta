@@ -30,9 +30,9 @@ type StatusBadgeContent =
 
 export type StatusBadgeProps = HTMLAttributes<HTMLSpanElement> &
   StatusBadgeContent & {
-    /** Semantic state variant. */
+    /** Variante semántica del estado */
     variant: StatusBadgeVariant;
-    /** Optional custom icon, either a Lucide component or JSX element. */
+    /** Icono personalizado opcional (componente de lucide-react o elemento JSX) */
     icon?: ComponentType<{ className?: string; strokeWidth?: number; "aria-hidden"?: boolean | "true" | "false" }> | ReactNode;
     className?: string;
   };
@@ -56,9 +56,9 @@ const VARIANT_STYLES: Record<StatusBadgeVariant, string> = {
 };
 
 /**
- * Visual and accessible indicator for system states.
- * Accessibility rule: always express meaning through descriptive text and a
- * supporting icon so no state is communicated by color alone.
+ * Indicador visual y accesible para estados del sistema.
+ * REGLA DE ACCESIBILIDAD: Expresa siempre la semántica mediante texto descriptivo + icono de apoyo,
+ * garantizando que ningún estado se comunique exclusivamente por color.
  */
 export function StatusBadge({
   variant,
@@ -72,7 +72,7 @@ export function StatusBadge({
 
   if (!content) {
     throw new Error(
-      "StatusBadge requires descriptive text through 'label' or 'children' for accessibility.",
+      "StatusBadge requiere obligatoriamente un texto descriptivo (vía 'label' o 'children') para cumplir con las normas de accesibilidad.",
     );
   }
 
