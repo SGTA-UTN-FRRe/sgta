@@ -117,12 +117,12 @@ The CI workflow exposes the conceptual checks `Quality`, `Tests`, `E2E`, `Produc
 
 ## Documentation
 
-- [docs/DEVELOPMENT-ROADMAP.md](docs/DEVELOPMENT-ROADMAP.md) — shared phased delivery plan and exit criteria.
+- [docs/DEVELOPMENT-ROADMAP.md](docs/DEVELOPMENT-ROADMAP.md) — shared planning roadmap and exit criteria.
 - [AGENTS.md](AGENTS.md) — repository instructions for coding agents and contributors.
+- [.agents/skills/](.agents/skills/) — repository skills for planning, implementation, and Git delivery.
 - [docs/PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) — approved product visual direction and design tokens.
 - [docs/UI-SPEC.md](docs/UI-SPEC.md) — approved route, state, interaction, responsive, and accessibility contracts.
 - [docs/TESTING.md](docs/TESTING.md) — current project testing boundaries, CI gates, and reproducible verification.
-- [docs/GIT-DELIVERY-WRITING-STANDARD.md](docs/GIT-DELIVERY-WRITING-STANDARD.md) — branch, commit, PR, squash, and cleanup conventions.
 - [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) — required PR description structure.
 
-The source code, package manifest, runtime configuration, tests, and `docs/TESTING.md` are the authority for current behavior. `PROJECT-DESIGN.md`, `UI-SPEC.md`, `DEVELOPMENT-ROADMAP.md`, and the delivery standard describe approved project decisions and implementation direction.
+The source code, package manifest, runtime configuration, tests, and `docs/TESTING.md` are the authority for current behavior. `PROJECT-DESIGN.md`, `UI-SPEC.md`, and `DEVELOPMENT-ROADMAP.md` describe approved project decisions and planning direction; repository skills own repeated planning, implementation, and Git delivery procedures.
