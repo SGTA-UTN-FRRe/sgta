@@ -27,6 +27,7 @@ The current repository uses these conceptual gates:
 | --- | --- | --- |
 | `Quality` | `corepack pnpm lint` and `corepack pnpm typecheck` | ESLint and strict TypeScript validation. |
 | `Tests` | `corepack pnpm test` | Co-located Vitest and Testing Library unit/component tests. |
+| `Integration` | `corepack pnpm test:integration` | PostgreSQL-backed foundation coverage against an isolated Testcontainers database. |
 | `E2E` | `corepack pnpm test:e2e` | Critical browser smoke coverage through the running Next.js application. |
 | `Production` | `corepack pnpm build` | Verification that the deployable Next.js build can be produced. |
 | `CI Gate` | aggregate workflow job | Stable final result for branch protection and pull-request merge readiness. |
@@ -36,6 +37,7 @@ The visible GitHub check names are intentionally conceptual:
 ```text
 CI / Quality
 CI / Tests
+CI / Integration
 CI / E2E
 CI / Production
 CI / CI Gate
@@ -49,7 +51,13 @@ Runtime versions, package managers, test frameworks, browser engines, and intern
 
 Tests live next to the implementation under `src/` and run in the Vitest `jsdom` environment. They verify shared primitives, route-level rendering, accessibility-oriented component behavior, and other behavior that does not require a running application or external infrastructure.
 
-The current suite has no PostgreSQL, authentication, or external-service integration boundary. Do not call these tests integration tests merely because they use React Testing Library.
+The unit/component suite remains independent of PostgreSQL, Docker, and external services. Do not call these tests integration tests merely because they use React Testing Library.
+
+### Integration tests
+
+Integration scenarios live under `tests/integration/` and run through the separate `vitest.integration.config.ts` configuration in the Node.js environment. Each run starts a fresh PostgreSQL container with Testcontainers, applies the committed Drizzle migration twice to prove rerunnability, uses deterministic synthetic fixtures, and tears down the pool and container after the suite.
+
+Docker is a local and CI prerequisite for this boundary. Testcontainers chooses an available host port; no fixed port, local database, production URL, Google credential, or personal data is used. There is no separate Docker check or public Docker gate.
 
 ### End-to-end tests
 
@@ -59,9 +67,9 @@ E2E tests must use synthetic, deterministic data and must not require production
 
 ### Integration and contract checks
 
-There is currently no `Integration` or `Contract` gate. They become appropriate when the repository introduces real database-backed behavior, migrations, API contracts, or another boundary whose behavior cannot be reliably verified at a lower layer.
+There is currently no `Contract` gate. The `Integration` gate covers the real database-backed behavior and migrations introduced by the foundation. A separate `Contract` gate remains deferred until an independent contract boundary needs it.
 
-There is currently no Docker gate because Docker is not part of the repository's deployment architecture.
+Docker is an execution prerequisite for `Integration`, not a separate public gate.
 
 ### Coverage and flakiness
 
@@ -78,6 +86,7 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm lint
 corepack pnpm typecheck
 corepack pnpm test
+corepack pnpm test:integration
 corepack pnpm exec playwright install chromium
 corepack pnpm test:e2e
 corepack pnpm build
@@ -94,6 +103,7 @@ The Playwright web server is invoked through `corepack pnpm dev` so local runs h
 ```text
 Quality ─────┐
 Tests ───────┤
+Integration ─┤
 E2E ─────────┼──> CI Gate
 Production ──┘
 ```
@@ -108,13 +118,13 @@ Each technical job has:
 
 The workflow also cancels obsolete runs for the same pull request or branch and uploads E2E diagnostics on failure.
 
-The repository Ruleset should require exactly `CI Gate`, not an implementation-specific upstream job. Upstream topology may evolve without changing that merge contract.
+The repository Ruleset should require exactly `CI Gate`, not an implementation-specific upstream job. Upstream topology may evolve without changing that merge contract. The GitHub-hosted Docker daemon is used by `Integration`; it does not create a separate public Docker job.
 
 ## 5. Naming rules
 
 - Workflow name: `CI`.
-- Public jobs: `Quality`, `Tests`, `E2E`, `Production`, and `CI Gate`.
-- Internal job IDs: lowercase, short, and YAML-safe (`quality`, `tests`, `e2e`, `production`, `ci-gate`).
+- Public jobs: `Quality`, `Tests`, `Integration`, `E2E`, `Production`, and `CI Gate`.
+- Internal job IDs: lowercase, short, and YAML-safe (`quality`, `tests`, `integration`, `e2e`, `production`, `ci-gate`).
 - Use `<Gate> / <Scope>` only when a stable product or architecture boundary genuinely requires subdivision.
 - Do not use names such as `Node 22`, `pnpm Tests`, `Vitest`, `Playwright E2E`, or `PostgreSQL Integration` as public checks.
 
