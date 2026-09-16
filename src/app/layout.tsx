@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
   display: "swap",
 });
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="es" className={`${inter.variable} h-full`}>
+    <html lang="es" className={`${manrope.variable} h-full`}>
       <body className="flex min-h-full flex-col font-sans antialiased">{children}</body>
     </html>
   );
