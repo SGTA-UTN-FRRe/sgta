@@ -1,195 +1,266 @@
-﻿'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
-  Users,
-  Calendar,
-  Clock,
-  MessageSquare,
   BarChart3,
-  Settings,
+  Calendar,
+  Clock3,
   LayoutDashboard,
   Menu,
+  MessageSquare,
+  Settings,
+  UserRound,
+  Users,
   X,
-  User,
-} from 'lucide-react';
-import { cn } from '@/shared/utils';
-import { FaroIcon } from '@/shared/components/faro-icon';
+  type LucideIcon,
+} from "lucide-react";
+
+import { cn } from "@/shared/utils";
+import { FaroIcon } from "@/shared/components/faro-icon";
+
+export type AppSidebarVariant =
+  | "admin"
+  | "admin-expanded"
+  | "admin-rail"
+  | "mobile-drawer"
+  | "tutor";
 
 export interface AppSidebarProps {
-  variant: 'admin' | 'tutor';
+  variant: AppSidebarVariant;
 }
 
 interface NavItem {
   label: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
 }
 
 const ADMIN_PRIMARY_NAV: NavItem[] = [
-  { label: 'Tutores', href: '/admin/tutores', icon: Users },
-  { label: 'Horarios', href: '/admin/horarios', icon: Calendar },
-  { label: 'Horas', href: '/admin/horas', icon: Clock },
-  { label: 'Consultas', href: '/admin/consultas', icon: MessageSquare },
-  { label: 'Reportes', href: '/admin/reportes', icon: BarChart3 },
+  { label: "Tutores", href: "/admin/tutores", icon: Users },
+  { label: "Horarios", href: "/admin/horarios", icon: Calendar },
+  { label: "Horas", href: "/admin/horas", icon: Clock3 },
+  { label: "Consultas", href: "/admin/consultas", icon: MessageSquare },
+  { label: "Reportes", href: "/admin/reportes", icon: BarChart3 },
 ];
 
 const ADMIN_SECONDARY_NAV: NavItem[] = [
-  { label: 'Configuración', href: '/admin/configuracion', icon: Settings },
+  { label: "Configuración", href: "/admin/configuracion", icon: Settings },
 ];
 
 const TUTOR_NAV: NavItem[] = [
-  { label: 'Mi resumen', href: '/tutor', icon: LayoutDashboard },
-  { label: 'Mi horario', href: '/tutor/horario', icon: Calendar },
-  { label: 'Mis horas', href: '/tutor/horas', icon: Clock },
+  { label: "Mi resumen", href: "/tutor", icon: LayoutDashboard },
+  { label: "Mi horario", href: "/tutor/horario", icon: Calendar },
+  { label: "Mis horas", href: "/tutor/horas", icon: Clock3 },
 ];
 
-export function AppSidebar({ variant }: AppSidebarProps) {
-  const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
+function isAdminVariant(variant: AppSidebarVariant) {
+  return variant !== "tutor";
+}
 
-  const primaryItems = variant === 'admin' ? ADMIN_PRIMARY_NAV : TUTOR_NAV;
-  const secondaryItems = variant === 'admin' ? ADMIN_SECONDARY_NAV : [];
-  const homeHref = variant === 'admin' ? '/admin' : '/tutor';
+export function AppSidebar({ variant }: AppSidebarProps) {
+  const pathname = usePathname() ?? "";
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileTriggerRef = useRef<HTMLButtonElement>(null);
+  const mobileCloseRef = useRef<HTMLButtonElement>(null);
+  const hasOpenedMobile = useRef(false);
+
+  const isAdmin = isAdminVariant(variant);
+  const primaryItems = isAdmin ? ADMIN_PRIMARY_NAV : TUTOR_NAV;
+  const secondaryItems = isAdmin ? ADMIN_SECONDARY_NAV : [];
+  const homeHref = isAdmin ? "/admin" : "/tutor";
+  const productLabel = isAdmin ? "Navegación de administración" : "Navegación del tutor";
+  const roleLabel = isAdmin ? "Administrador" : "Tutor";
 
   const isLinkActive = (href: string): boolean => {
-    if (href === '/admin' || href === '/tutor') {
+    if (href === "/admin" || href === "/tutor") {
       return pathname === href;
     }
+
     return pathname.startsWith(href);
   };
 
-  const navContent = (
-    <div className="flex flex-col h-full bg-[#0B172E] text-[#F8FAFC]">
-      {/* Brand Lockup con Faro Oficial UTN FRRe */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-[#16274E]">
-        <Link href={homeHref} className="flex items-center gap-3 overflow-hidden group">
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#16274E] border border-[#F59E0B]/30 shrink-0 group-hover:border-[#F59E0B] transition-colors">
-            <FaroIcon className="w-6 h-6 text-[#F59E0B]" />
-          </div>
-          <div className="flex flex-col overflow-hidden md:hidden lg:flex">
-            <span className="text-sm font-semibold tracking-wide text-white truncate">
-              Tutorías
+  const closeMobileNav = () => setMobileOpen(false);
+
+  useEffect(() => {
+    if (mobileOpen) {
+      hasOpenedMobile.current = true;
+      mobileCloseRef.current?.focus();
+      return;
+    }
+
+    if (hasOpenedMobile.current) {
+      hasOpenedMobile.current = false;
+      mobileTriggerRef.current?.focus();
+    }
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!mobileOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileOpen]);
+
+  const renderNavItem = (item: NavItem) => {
+    const active = isLinkActive(item.href);
+    const Icon = item.icon;
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={closeMobileNav}
+        aria-label={item.label}
+        aria-current={active ? "page" : undefined}
+        title={item.label}
+        data-active={active ? "true" : "false"}
+        className={cn(
+          "relative flex min-h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors",
+          "focus-visible:z-10 focus-visible:outline-none",
+          active
+            ? "bg-nav-active font-semibold text-nav-active-foreground"
+            : "text-nav-muted hover:bg-nav-hover hover:text-nav-foreground",
+        )}
+      >
+        {active && (
+          <span
+            data-testid="faro-marker"
+            className="absolute inset-y-2 left-0.5 w-1 rounded-r-full bg-nav-active-marker"
+            aria-hidden="true"
+          />
+        )}
+        <Icon className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden="true" />
+        <span className="truncate md:hidden lg:inline">{item.label}</span>
+      </Link>
+    );
+  };
+
+  const navContent = (isMobile = false) => (
+    <div className="flex h-full min-h-0 flex-col bg-nav-background text-nav-foreground">
+      <div className="flex min-h-20 items-center justify-between border-b border-border-subtle px-4 lg:px-5">
+        <Link
+          href={homeHref}
+          onClick={closeMobileNav}
+          aria-label="Tutorias UTN FRRe - inicio"
+          aria-current={isLinkActive(homeHref) ? "page" : undefined}
+          className="group flex min-w-0 items-center gap-3 rounded-md"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-accent/40 bg-accent-surface text-accent transition-colors group-hover:border-accent">
+            <FaroIcon className="h-7 w-7" />
+          </span>
+          <span className="min-w-0 md:hidden lg:flex lg:flex-col">
+            <span className="truncate text-sm font-bold tracking-tight text-nav-foreground">
+              Tutorias
             </span>
-            <span className="text-xs text-[#94A3B8] font-mono tracking-wider">
-              SGTA UTN FRRe
-            </span>
-          </div>
+            <span className="truncate text-xs font-medium text-nav-muted">UTN FRRe · SGTA</span>
+          </span>
         </Link>
-        {mobileOpen && (
+
+        {isMobile && mobileOpen && (
           <button
+            ref={mobileCloseRef}
             type="button"
-            onClick={() => setMobileOpen(false)}
-            className="p-1 rounded text-[#94A3B8] hover:text-white md:hidden"
+            onClick={closeMobileNav}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-nav-muted hover:bg-nav-hover hover:text-nav-foreground md:hidden"
             aria-label="Cerrar navegación"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
           </button>
         )}
       </div>
 
-      {/* Navegación Primaria */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto" aria-label="Navegación principal">
-        {primaryItems.map((item) => {
-          const active = isLinkActive(item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                'relative flex items-center gap-3 px-3 py-2 rounded text-sm font-medium transition-colors',
-                active
-                  ? 'bg-[#16274E] text-white'
-                  : 'text-[#94A3B8] hover:bg-[#16274E]/50 hover:text-white'
-              )}
-            >
-              {/* Faro Marker: indicador activo ámbar */}
-              {active && (
-                <span
-                  data-testid="faro-marker"
-                  className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-[#F59E0B]"
-                  aria-hidden="true"
-                />
-              )}
-              <Icon className="w-5 h-5 shrink-0" />
-              <span className="truncate md:hidden lg:inline">{item.label}</span>
-            </Link>
-          );
-        })}
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-5" aria-label={productLabel}>
+        <div className="space-y-1">{primaryItems.map(renderNavItem)}</div>
+
+        {secondaryItems.length > 0 && (
+          <div className="mt-6 border-t border-border-subtle pt-4">
+            <p className="mb-2 px-3 text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-nav-muted md:hidden lg:block">
+              Sistema
+            </p>
+            <div className="space-y-1">{secondaryItems.map(renderNavItem)}</div>
+          </div>
+        )}
       </nav>
 
-      {/* Navegación Secundaria y Pie */}
-      <div className="p-3 border-t border-[#16274E] space-y-1">
-        {secondaryItems.map((item) => {
-          const active = isLinkActive(item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                'relative flex items-center gap-3 px-3 py-2 rounded text-sm font-medium transition-colors',
-                active
-                  ? 'bg-[#16274E] text-white'
-                  : 'text-[#94A3B8] hover:bg-[#16274E]/50 hover:text-white'
-              )}
-            >
-              {active && (
-                <span
-                  data-testid="faro-marker"
-                  className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-[#F59E0B]"
-                  aria-hidden="true"
-                />
-              )}
-              <Icon className="w-5 h-5 shrink-0" />
-              <span className="truncate md:hidden lg:inline">{item.label}</span>
-            </Link>
-          );
-        })}
-
-        <div className="flex items-center gap-3 px-3 py-2 text-xs text-[#94A3B8] border-t border-[#16274E]/60 pt-2 mt-2">
-          <User className="w-4 h-4 shrink-0" />
-          <span className="truncate md:hidden lg:inline capitalize">
-            {variant === 'admin' ? 'Administrador' : 'Tutor'}
-          </span>
+      <div className="border-t border-border-subtle p-3">
+        <div className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm text-nav-muted">
+          <UserRound className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden="true" />
+          <span className="truncate md:hidden lg:inline">{roleLabel}</span>
         </div>
       </div>
     </div>
   );
 
+  const desktopSidebarClassName =
+    variant === "admin-expanded"
+      ? "flex w-[var(--sidebar-width)]"
+      : variant === "admin-rail"
+        ? "flex w-[var(--sidebar-width-collapsed)]"
+        : variant === "mobile-drawer"
+          ? "hidden"
+          : "hidden md:flex md:w-[var(--sidebar-width-collapsed)] lg:w-[var(--sidebar-width)]";
+
   return (
     <>
-      <div className="md:hidden fixed top-3 left-4 z-40">
+      <div className="fixed left-4 top-4 z-40 md:hidden">
         <button
+          ref={mobileTriggerRef}
           type="button"
           onClick={() => setMobileOpen(true)}
-          className="p-2 rounded bg-[#0B172E] text-white shadow focus:outline-none focus:ring-2 focus:ring-[#0284C7]"
           aria-label="Abrir navegación"
+          aria-controls="sgta-mobile-navigation"
+          aria-expanded={mobileOpen}
+          className="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-surface text-foreground shadow-sm hover:bg-surface-subtle"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex">
-          <div
-            className="fixed inset-0 bg-black/50 transition-opacity"
-            onClick={() => setMobileOpen(false)}
-            aria-hidden="true"
+        <div className="fixed inset-0 z-50 md:hidden" data-slot="mobile-drawer">
+          <button
+            type="button"
+            onClick={closeMobileNav}
+            className="absolute inset-0 h-full w-full bg-brand-navy/20"
+            aria-label="Cerrar navegación"
           />
-          <div className="relative w-64 max-w-[80vw] h-full shadow-xl">
-            {navContent}
-          </div>
+          <aside
+            id="sgta-mobile-navigation"
+            className="relative z-10 h-full w-[min(var(--sidebar-width),calc(100%-2rem))] shadow-dialog"
+            aria-label={productLabel}
+            role="dialog"
+            aria-modal="true"
+          >
+            {navContent(true)}
+          </aside>
         </div>
       )}
 
-      <aside className="hidden md:flex flex-col shrink-0 md:w-[4.5rem] lg:w-[15.5rem] h-screen sticky top-0 transition-all duration-200 z-30">
-        {navContent}
+      <aside
+        className={cn(
+          "sticky top-0 z-30 h-svh shrink-0 flex-col border-r border-border-subtle",
+          desktopSidebarClassName,
+        )}
+        aria-label={productLabel}
+        data-variant={
+          variant === "tutor"
+            ? "tutor"
+            : variant === "mobile-drawer"
+              ? "mobile-drawer"
+              : "admin-responsive"
+        }
+      >
+        {navContent(false)}
       </aside>
     </>
   );

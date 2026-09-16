@@ -185,7 +185,7 @@ describe("Shared UI Primitives (SGTA)", () => {
 
       const container = screen.getByTestId("container");
       expect(container).toHaveClass("w-full");
-      expect(container).toHaveClass("max-w-[100rem]");
+      expect(container).toHaveClass("max-w-[var(--max-width)]");
       expect(container).toHaveClass("px-4");
       expect(container).toHaveClass("md:px-6");
       expect(container).toHaveClass("lg:px-8");
@@ -200,8 +200,7 @@ describe("Shared UI Primitives (SGTA)", () => {
 
       const main = screen.getByRole("main", { name: "Área principal" });
       expect(main).toBeInTheDocument();
-      expect(main).toHaveClass("max-w-[100rem]");
+      expect(main).toHaveClass("max-w-[var(--max-width)]");
     });
   });
 });
-
