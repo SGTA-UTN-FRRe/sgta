@@ -122,6 +122,22 @@ export interface EligibleTutorGoldenFixture {
   career: string;
 }
 
+export type MovementReversalState = "confirmed" | "reversed";
+
+export interface MovementHistoryGoldenFixture {
+  id: string;
+  tutorId: string;
+  date: string;
+  category: string;
+  direction: MovementDirection;
+  directionLabel: string;
+  duration: string;
+  note: string;
+  actor: string;
+  reversalState: MovementReversalState;
+  reversalLabel: string;
+}
+
 export interface MovementDialogGoldenFixture {
   title: string;
   directionLabel: string;
@@ -147,6 +163,7 @@ export interface HoursGoldenFixture {
   statusFilterLabel: string;
   categoryFilterLabel: string;
   balances: BalanceGoldenFixture[];
+  history: MovementHistoryGoldenFixture[];
   categories: string[];
   movementDialog: MovementDialogGoldenFixture;
 }
@@ -348,6 +365,60 @@ export const goldenScreenFixtures = {
         signedBalance: "+00:45",
         state: "current",
         stateLabel: "Al día",
+      },
+    ],
+    history: [
+      {
+        id: "movement-marina-reunion",
+        tutorId: "tutor-marina-benitez",
+        date: "2026-09-15",
+        category: "Reunión de equipo",
+        direction: "credit",
+        directionLabel: "Crédito",
+        duration: "01:30",
+        note: "Coordinación de la cobertura semanal.",
+        actor: "Administración",
+        reversalState: "confirmed",
+        reversalLabel: "Confirmado",
+      },
+      {
+        id: "movement-marina-guardia",
+        tutorId: "tutor-marina-benitez",
+        date: "2026-09-10",
+        category: "Guardia",
+        direction: "debit",
+        directionLabel: "Débito",
+        duration: "00:45",
+        note: "Movimiento revertido por corrección de carga.",
+        actor: "Administración",
+        reversalState: "reversed",
+        reversalLabel: "Revertido",
+      },
+      {
+        id: "movement-tomas-guardia",
+        tutorId: "tutor-tomas-acosta",
+        date: "2026-09-12",
+        category: "Guardia",
+        direction: "credit",
+        directionLabel: "Crédito",
+        duration: "02:00",
+        note: "Cobertura de mesa de consultas.",
+        actor: "Administración",
+        reversalState: "confirmed",
+        reversalLabel: "Confirmado",
+      },
+      {
+        id: "movement-lucia-extraordinary",
+        tutorId: "tutor-lucia-funes",
+        date: "2026-09-11",
+        category: "Actividad extraordinaria",
+        direction: "credit",
+        directionLabel: "Crédito",
+        duration: "00:45",
+        note: "Acompañamiento en actividad institucional.",
+        actor: "Administración",
+        reversalState: "confirmed",
+        reversalLabel: "Confirmado",
       },
     ],
     categories: ["Reunión de equipo", "Guardia", "Actividad extraordinaria"],
