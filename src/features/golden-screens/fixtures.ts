@@ -14,6 +14,23 @@ export type GoldenScreenId =
   | "hours"
   | "schedules";
 
+export type GoldenScreenState =
+  | "loading"
+  | "empty"
+  | "search-empty"
+  | "error"
+  | "required-action"
+  | "degraded"
+  | "conflict"
+  | "permission-denied";
+
+export interface GoldenStateFixture {
+  state: GoldenScreenState;
+  title: string;
+  description: string;
+  actionLabel?: string;
+}
+
 export type AttentionTone = "warning" | "danger" | "info";
 export type TutorStatus = "active" | "inactive";
 export type BalanceState = "current" | "owes";
@@ -171,6 +188,8 @@ export interface GoldenScreenFixtureBundle {
   hours: HoursGoldenFixture;
   schedules: SchedulesGoldenFixture;
 }
+
+export type GoldenScreenStateFixtureBundle = Record<GoldenScreenId, GoldenStateFixture[]>;
 
 export const goldenScreenFixtures = {
   login: {
@@ -435,3 +454,153 @@ export const goldenScreenFixtures = {
     emptyPlanLabel: "Este horario todavía no tiene asignaciones.",
   },
 } satisfies GoldenScreenFixtureBundle;
+
+/**
+ * Reachable presentation states for each Golden Screen.
+ *
+ * These copies are deliberately separate from the populated data above so a
+ * future live adapter can replace rows without changing state composition.
+ */
+export const goldenScreenStateFixtures = {
+  login: [
+    {
+      state: "loading",
+      title: "Conectando con Google",
+      description: "Esperá un momento mientras verificamos tu acceso.",
+    },
+    {
+      state: "error",
+      title: "No pudimos iniciar sesión",
+      description: "Reintentá en unos instantes para volver a intentar.",
+      actionLabel: "Reintentar",
+    },
+    {
+      state: "permission-denied",
+      title: "Esta cuenta no está habilitada en SGTA",
+      description: "Contactá a la administración de Tutorías si necesitás acceso.",
+    },
+  ],
+  "admin-overview": [
+    {
+      state: "loading",
+      title: "Cargando el inicio",
+      description: "Estamos preparando el ciclo y las tareas pendientes.",
+    },
+    {
+      state: "empty",
+      title: "No hay acciones pendientes.",
+      description: "La operación del ciclo está al día.",
+    },
+    {
+      state: "error",
+      title: "No se pudo cargar la atención",
+      description: "Reintentá para volver a consultar la información operativa.",
+      actionLabel: "Reintentar",
+    },
+    {
+      state: "degraded",
+      title: "Consultas temporalmente no disponibles",
+      description: "La fuente de consultas no responde. El resto de la operación sigue disponible.",
+      actionLabel: "Reintentar consultas",
+    },
+    {
+      state: "required-action",
+      title: "Abrí un ciclo para comenzar a operar.",
+      description: "Necesitás un ciclo abierto para ver la atención y las guardias.",
+      actionLabel: "Configurar ciclo",
+    },
+  ],
+  tutors: [
+    {
+      state: "loading",
+      title: "Cargando tutores",
+      description: "Estamos preparando la lista de tutores.",
+    },
+    {
+      state: "empty",
+      title: "Todavía no hay tutores",
+      description: "Agregá el primer tutor para comenzar a organizar la cobertura.",
+      actionLabel: "Agregar tutor",
+    },
+    {
+      state: "search-empty",
+      title: "No encontramos tutores",
+      description: "Probá con otro nombre o limpiá los filtros.",
+      actionLabel: "Limpiar filtros",
+    },
+    {
+      state: "error",
+      title: "No se pudo cargar la lista",
+      description: "Reintentá para volver a consultar los tutores.",
+      actionLabel: "Reintentar",
+    },
+    {
+      state: "required-action",
+      title: "Abrí un ciclo para gestionar tutores",
+      description: "Necesitás un ciclo abierto para incorporar tutores al período actual.",
+      actionLabel: "Configurar ciclo",
+    },
+  ],
+  hours: [
+    {
+      state: "loading",
+      title: "Cargando saldos",
+      description: "Estamos preparando los balances del ciclo actual.",
+    },
+    {
+      state: "empty",
+      title: "Todavía no hay saldos",
+      description: "Los movimientos del ciclo aparecerán cuando se registren.",
+      actionLabel: "Registrar movimiento",
+    },
+    {
+      state: "search-empty",
+      title: "No encontramos balances",
+      description: "Probá con otro nombre o limpiá los filtros.",
+      actionLabel: "Limpiar filtros",
+    },
+    {
+      state: "error",
+      title: "No se pudieron cargar las horas",
+      description: "Reintentá para volver a consultar los saldos.",
+      actionLabel: "Reintentar",
+    },
+    {
+      state: "required-action",
+      title: "Abrí un ciclo para consultar horas",
+      description: "El balance se calcula dentro de un ciclo administrativo abierto.",
+      actionLabel: "Configurar ciclo",
+    },
+  ],
+  schedules: [
+    {
+      state: "loading",
+      title: "Cargando horarios",
+      description: "Estamos preparando el plan y sus asignaciones.",
+    },
+    {
+      state: "empty",
+      title: "Este horario todavía no tiene asignaciones.",
+      description: "Agregá una asignación para comenzar a organizar las guardias.",
+      actionLabel: "Agregar asignación",
+    },
+    {
+      state: "error",
+      title: "No se pudo cargar el horario",
+      description: "Reintentá para volver a consultar el plan seleccionado.",
+      actionLabel: "Reintentar",
+    },
+    {
+      state: "required-action",
+      title: "No hay un plan de horario activo",
+      description: "Creá o activá un plan para comenzar a organizar las guardias.",
+      actionLabel: "Crear plan",
+    },
+    {
+      state: "conflict",
+      title: "Hay asignaciones superpuestas",
+      description: "Revisá los horarios señalados antes de continuar.",
+      actionLabel: "Revisar conflicto",
+    },
+  ],
+} satisfies GoldenScreenStateFixtureBundle;
