@@ -77,7 +77,10 @@ The repository already has a useful scaffold:
 - Admin and Tutor route skeletons;
 - responsive navigation.
 
-The actual SGTA domain, PostgreSQL schema, authentication, and operational workflows are not yet implemented.
+The secure platform foundation is now implemented: PostgreSQL/Drizzle persistence,
+provisioned Google-only authentication, server-side role authorization,
+AdministrativeCycle lifecycle controls, safe audit events, and isolated
+integration coverage. The later operational workflows remain unimplemented.
 
 Therefore the project continues from the scaffold rather than restarting from zero.
 
@@ -88,7 +91,7 @@ Therefore the project continues from the scaffold rather than restarting from ze
 | 1 | Documentation and baseline re-alignment | P0 | Active |
 | 2 | Engineering quality and repository governance baseline | P0 | Next |
 | 3 | Golden Screens and visual-system recalibration | P0 | Planned |
-| 4 | Persistence, identity, authorization, cycle, and audit foundation | P0 | Planned |
+| 4 | Persistence, identity, authorization, cycle, and audit foundation | P0 | Complete |
 | 5 | Tutor and academic operations | P0 | Planned |
 | 6 | Hour ledger, activities, and recovery | P0 | Planned |
 | 7 | Scheduling and attendance | P0 | Planned |
@@ -261,7 +264,7 @@ Use realistic synthetic Spanish data.
 ### Phase 4 - Persistence, identity, authorization, cycle, and audit foundation
 
 - **Priority:** P0
-- **Status:** Planned
+- **Status:** Complete
 - **Depends on:** Phase 3
 
 #### Objective
@@ -291,13 +294,13 @@ Create the real secure platform foundation without degrading the visual contract
 
 #### Exit criteria
 
-- [ ] Empty database migrates reproducibly.
-- [ ] Integration tests use isolated non-production PostgreSQL.
-- [ ] Enabled Admin and Tutor authenticate correctly.
-- [ ] Unenabled identity cannot enter.
-- [ ] Tutor cannot access Admin data/actions.
-- [ ] Audit can persist a representative event safely.
-- [ ] Golden Screen shell remains intact with real auth state.
+- [x] Empty database migrates reproducibly.
+- [x] Integration tests use isolated non-production PostgreSQL.
+- [x] Enabled Admin and Tutor authenticate correctly.
+- [x] Unenabled identity cannot enter.
+- [x] Tutor cannot access Admin data/actions.
+- [x] Audit can persist a representative event safely.
+- [x] Golden Screen shell remains intact with real auth state.
 
 ### Phase 5 - Tutor and academic operations
 

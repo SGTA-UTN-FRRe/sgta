@@ -3,7 +3,7 @@ document: TESTING
 mode: evidence
 type: project-testing-and-ci-guide
 status: active
-scope: current SGTA scaffold
+scope: current SGTA runtime and verification boundaries
 authority: repository-evidence
 ---
 
