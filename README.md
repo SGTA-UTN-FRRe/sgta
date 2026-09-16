@@ -10,12 +10,12 @@ SGTA is the planned operational workspace for the Tutorias area at UTN FRRe. The
 
 The current scaffold provides:
 
-- a public `/login` route, with `/` redirecting to `/login`;
+- a public landing page at `/` that exercises the shared UI foundation with synthetic content;
 - Admin route skeletons for the overview, tutors, schedules, hours, consultations, reports, and configuration;
 - Tutor route skeletons for the overview, schedule, and hours;
 - responsive Admin and Tutor navigation shells;
 - shared components for navigation, page headers, empty states, status badges, Faro branding, buttons, cards, inputs, and tables;
-- unit/component tests and a Playwright UI smoke suite for the main scaffold journeys.
+- unit/component tests and a baseline Playwright test for the landing page.
 
 The route labels describe the intended product areas, but the current pages do not yet read or write SGTA domain data. All current routes are reachable without authentication, and no role-based access check is active.
 
@@ -63,17 +63,17 @@ The directories `src/auth/`, `src/db/`, and `src/features/` currently provide re
 
 | Route | Current purpose |
 | --- | --- |
-| `/` | Redirects to `/login`. |
+| `/` | Landing page and shared UI foundation sample. |
 | `/admin` | Admin shell with overview skeleton. |
-| `/admin/tutors` | Tutor-management route skeleton. |
-| `/admin/schedules` | Schedule and attendance route skeleton. |
-| `/admin/hours` | Hour-ledger route skeleton. |
-| `/admin/consultations` | Consultation route skeleton. |
-| `/admin/reports` | Reporting route skeleton. |
-| `/admin/settings` | Configuration route skeleton. |
+| `/admin/tutores` | Tutor-management route skeleton. |
+| `/admin/horarios` | Schedule and attendance route skeleton. |
+| `/admin/horas` | Hour-ledger route skeleton. |
+| `/admin/consultas` | Consultation route skeleton. |
+| `/admin/reportes` | Reporting route skeleton. |
+| `/admin/configuracion` | Configuration route skeleton. |
 | `/tutor` | Tutor shell with overview skeleton. |
-| `/tutor/schedule` | Tutor schedule route skeleton. |
-| `/tutor/hours` | Tutor hours route skeleton. |
+| `/tutor/horario` | Tutor schedule route skeleton. |
+| `/tutor/horas` | Tutor hours route skeleton. |
 
 ## Repository structure
 
@@ -81,7 +81,6 @@ The directories `src/auth/`, `src/db/`, and `src/features/` currently provide re
 | --- | --- |
 | `src/app/` | App Router pages, layouts, metadata, and global styles. |
 | `src/components/ui/` | Local low-level UI primitives used by the scaffold. |
-| `src/mocks/` | Synthetic development data used by the current screen implementations. |
 | `src/shared/` | Shared navigation, branding, page, state, and utility components. |
 | `src/features/` | Reserved location for future vertical feature slices. |
 | `src/auth/` | Reserved location with guidance for future authentication and authorization. |
@@ -118,12 +117,12 @@ The CI workflow exposes the conceptual checks `Quality`, `Tests`, `E2E`, `Produc
 
 ## Documentation
 
-- [docs/DEVELOPMENT-ROADMAP.md](docs/DEVELOPMENT-ROADMAP.md) — shared planning roadmap and exit criteria.
+- [docs/DEVELOPMENT-ROADMAP.md](docs/DEVELOPMENT-ROADMAP.md) — shared phased delivery plan and exit criteria.
 - [AGENTS.md](AGENTS.md) — repository instructions for coding agents and contributors.
-- [.agents/skills/](.agents/skills/) — repository skills for planning, implementation, and Git delivery.
 - [docs/PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) — approved product visual direction and design tokens.
 - [docs/UI-SPEC.md](docs/UI-SPEC.md) — approved route, state, interaction, responsive, and accessibility contracts.
 - [docs/TESTING.md](docs/TESTING.md) — current project testing boundaries, CI gates, and reproducible verification.
+- [docs/GIT-DELIVERY-WRITING-STANDARD.md](docs/GIT-DELIVERY-WRITING-STANDARD.md) — branch, commit, PR, squash, and cleanup conventions.
 - [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) — required PR description structure.
 
-The source code, package manifest, runtime configuration, tests, and `docs/TESTING.md` are the authority for current behavior. `PROJECT-DESIGN.md`, `UI-SPEC.md`, and `DEVELOPMENT-ROADMAP.md` describe approved project decisions and planning direction; repository skills own repeated planning, implementation, and Git delivery procedures.
+The source code, package manifest, runtime configuration, tests, and `docs/TESTING.md` are the authority for current behavior. `PROJECT-DESIGN.md`, `UI-SPEC.md`, `DEVELOPMENT-ROADMAP.md`, and the delivery standard describe approved project decisions and implementation direction.

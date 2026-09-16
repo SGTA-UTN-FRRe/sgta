@@ -11,22 +11,21 @@ export interface BreadcrumbItem {
 }
 
 export interface PageHeaderProps {
-  /** Primary contextual page title. */
+  /** Título contextual principal de la página */
   title: ReactNode;
-  /** Optional supporting description or operational context. */
+  /** Descripción o contexto operativo de soporte (opcional) */
   description?: ReactNode;
-  /** Breadcrumb items for contextual navigation. */
+  /** Lista de migas de pan para navegación contextual */
   breadcrumbs?: BreadcrumbItem[];
-  /** Single slot for the view's dominant action, such as a primary button. */
+  /** Ranura única para la acción dominante de la vista (ej. botón primario) */
   action?: ReactNode;
-  /** Additional container classes. */
+  /** Clases adicionales para el contenedor */
   className?: string;
 }
 
 /**
- * Standard header for SGTA views.
- * Provides clear context, accessible breadcrumbs, and an exclusive slot for
- * the dominant action.
+ * Encabezado estándar para vistas de SGTA.
+ * Provee contexto claro, migas de pan accesibles y una ranura exclusiva para la acción dominante.
  */
 export function PageHeader({
   title,
@@ -95,3 +94,4 @@ export function PageHeader({
     </header>
   );
 }
+

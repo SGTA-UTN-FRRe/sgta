@@ -1,7 +1,5 @@
-import type { ReactNode } from "react";
-
-import { AppSidebar } from "@/shared/components/app-sidebar";
-import { PageContainer } from "@/shared/components/page-container";
+﻿import type { ReactNode } from 'react';
+import { AppSidebar } from '@/shared/components/app-sidebar';
 
 export default function TutorLayout({
   children,
@@ -9,22 +7,17 @@ export default function TutorLayout({
   children: ReactNode;
 }>) {
   return (
-    <div className="flex min-h-svh bg-canvas">
+    <div className="flex min-h-screen bg-[#F8FAFC]">
       <AppSidebar variant="tutor" />
-      <div className="min-w-0 flex-1">
-        <a
-          href="#tutor-main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-60 focus:rounded-md focus:bg-surface focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-foreground focus:shadow-sm"
-        >
-          Saltar al contenido principal
-        </a>
-        <PageContainer
-          as="main"
-          id="tutor-main-content"
-          className="min-h-svh pt-20 md:pt-6"
-        >
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="h-16 border-b border-[#E2E8F0] bg-white flex items-center justify-between px-6 md:px-8">
+          <span className="text-xs font-semibold text-[#64748B] uppercase tracking-wider">
+            Portal del Tutor • SGTA
+          </span>
+        </header>
+        <main className="flex-1 p-6 md:p-8 max-w-[100rem] w-full">
           {children}
-        </PageContainer>
+        </main>
       </div>
     </div>
   );
