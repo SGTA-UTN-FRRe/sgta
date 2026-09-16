@@ -7,7 +7,7 @@ import { isEnabledIdentity, normalizeEmail, type ProvisionedIdentity } from "./i
 
 type UserLookupDatabase = Pick<Database, "select">;
 
-export type AuthenticatedIdentity = ProvisionedIdentity & {
+export type AuthorizedIdentity = ProvisionedIdentity & {
   name: string;
 };
 
@@ -46,6 +46,29 @@ export async function findProvisionedUserById(
   const [record] = await db
     .select({
       id: user.id,
+      email: user.email,
+      role: user.role,
+      enabled: user.enabled,
+    })
+    .from(user)
+    .where(eq(user.id, id))
+    .limit(1);
+
+  return record ?? null;
+}
+
+export async function findAuthorizedUserById(
+  db: UserLookupDatabase,
+  id: string,
+): Promise<AuthorizedIdentity | null> {
+  if (id.trim().length === 0) {
+    return null;
+  }
+
+  const [record] = await db
+    .select({
+      id: user.id,
+      name: user.name,
       email: user.email,
       role: user.role,
       enabled: user.enabled,

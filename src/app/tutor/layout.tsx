@@ -1,16 +1,22 @@
 import type { ReactNode } from "react";
 
+import { requireRole } from "@/auth/authorization";
 import { AppSidebar } from "@/shared/components/app-sidebar";
 import { PageContainer } from "@/shared/components/page-container";
 
-export default function TutorLayout({
+export default async function TutorLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const user = await requireRole("TUTOR");
+
   return (
     <div className="flex min-h-svh bg-canvas">
-      <AppSidebar variant="tutor" />
+      <AppSidebar
+        variant="tutor"
+        user={{ name: user.name, role: user.role }}
+      />
       <div className="min-w-0 flex-1">
         <a
           href="#tutor-main-content"
