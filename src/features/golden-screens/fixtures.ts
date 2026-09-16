@@ -220,7 +220,7 @@ export const goldenScreenFixtures = {
         label: "Asistencia pendiente",
         count: 3,
         description: "Guardias de los últimos dos días esperan registro.",
-        href: "/admin/horarios/asistencia",
+        href: "/admin/horarios?view=attendance",
         tone: "warning",
       },
       {
