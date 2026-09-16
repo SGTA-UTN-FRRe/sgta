@@ -1,6 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("golden screen journeys", () => {
+test.describe("UI smoke journeys", () => {
+  test("redirects the root route to login", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  });
+
   test("renders the institutional login route", async ({ page }) => {
     await page.goto("/login");
 
@@ -22,7 +29,7 @@ test.describe("golden screen journeys", () => {
   });
 
   test("renders the tutor directory search landmark", async ({ page }) => {
-    await page.goto("/admin/tutores");
+    await page.goto("/admin/tutors");
 
     await expect(page.getByRole("heading", { name: "Tutores" })).toBeVisible();
     await expect(
@@ -32,7 +39,7 @@ test.describe("golden screen journeys", () => {
   });
 
   test("opens and closes the movement dialog", async ({ page }) => {
-    await page.goto("/admin/horas");
+    await page.goto("/admin/hours");
 
     await page.getByRole("button", { name: /Registrar movimiento/ }).click();
 
@@ -47,7 +54,7 @@ test.describe("golden screen journeys", () => {
 
   test("switches schedule plans and compact days", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/admin/horarios");
+    await page.goto("/admin/schedules");
 
     await expect(page.getByRole("heading", { name: "Horarios" })).toBeVisible();
 

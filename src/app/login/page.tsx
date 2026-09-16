@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { goldenScreenFixtures } from "@/features/golden-screens/fixtures";
+import { loginScreenData } from "@/mocks/login.mock";
 
 import { LoginScreen } from "./login-screen";
 
@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-  return <LoginScreen fixture={goldenScreenFixtures.login} />;
+  return <LoginScreen data={loginScreenData} />;
 }

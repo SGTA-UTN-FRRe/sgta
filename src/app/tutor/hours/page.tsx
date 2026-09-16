@@ -1,4 +1,4 @@
-﻿export default function TutorHorasPage() {
+export default function TutorHoursPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-foreground">Mis Horas</h1>

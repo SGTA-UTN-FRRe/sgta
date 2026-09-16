@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Project
 
-SGTA is an executable Next.js scaffold for the Tutorias UTN FRRe interface. The current runtime includes the public landing page, Admin and Tutor route/layout skeletons, responsive navigation, shared UI components, local UI primitives, Vitest/Testing Library coverage, and a baseline Playwright suite.
+SGTA is an executable Next.js scaffold for the Tutorias UTN FRRe interface. The current runtime includes the public login route with a root redirect, Admin and Tutor route/layout skeletons, responsive navigation, shared UI components, local UI primitives, Vitest/Testing Library coverage, and a Playwright UI smoke suite.
 
 The current runtime does not include PostgreSQL, Drizzle, Better Auth, Google OAuth, server-side role guards, SGTA domain persistence, Google Sheets access, or operational workflows. The reserved `src/auth/`, `src/db/`, and `src/features/` boundaries do not prove that those subsystems exist.
 
@@ -30,7 +30,7 @@ Do not infer repository workflow from task wording when an explicit rule or skil
 
 ## Language boundary
 
-Engineering artifacts are written in English, including repository documentation, code identifiers and technical comments, test names and technical fixtures, branch names, commit messages, pull request titles and descriptions, and squash merge text.
+Engineering artifacts are written in English, including repository documentation, code identifiers and technical comments, test names and technical fixtures, filenames, directory names, route segments, branch names, commit messages, pull request titles and descriptions, and squash merge text.
 
 User-facing SGTA product copy may remain Spanish. Product language does not change engineering language.
 

@@ -40,7 +40,7 @@ describe("Shared UI Primitives (SGTA)", () => {
           title="Tutores"
           breadcrumbs={[
             { label: "Inicio", href: "/admin" },
-            { label: "Área Académica", href: "/admin/tutores" },
+            { label: "Área Académica", href: "/admin/tutors" },
             { label: "Detalle" },
           ]}
         />,
@@ -119,7 +119,7 @@ describe("Shared UI Primitives (SGTA)", () => {
     it("throws error if no descriptive text is provided (enforcing strict a11y)", () => {
       // @ts-expect-error - testing missing label runtime guard
       expect(() => render(<StatusBadge variant="success" />)).toThrow(
-        /StatusBadge requiere obligatoriamente un texto descriptivo/,
+        /StatusBadge requires descriptive text/,
       );
     });
   });

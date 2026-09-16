@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { AppSidebar } from "./app-sidebar";
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/admin/tutores",
+  usePathname: () => "/admin/tutors",
 }));
 
 describe("AppSidebar", () => {

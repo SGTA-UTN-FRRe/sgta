@@ -8,7 +8,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import type { LoginGoldenFixture } from "@/features/golden-screens/fixtures";
+import type { LoginScreenData } from "@/mocks/login.mock";
 import { Button } from "@/components/ui/button";
 import { FaroIcon } from "@/shared/components/faro-icon";
 
@@ -19,7 +19,7 @@ export type LoginPreviewState =
   | "permission-denied";
 
 export interface LoginScreenProps {
-  fixture: LoginGoldenFixture;
+  data: LoginScreenData;
   state?: LoginPreviewState;
   /**
    * Presentational preview boundary: identity integration is intentionally
@@ -45,9 +45,9 @@ function FaroBeam() {
 }
 
 function LoginFeedback({
-  fixture,
+  data,
   state,
-}: Pick<LoginScreenProps, "fixture" | "state">) {
+}: Pick<LoginScreenProps, "data" | "state">) {
   if (state === "loading") {
     return (
       <div
@@ -61,10 +61,10 @@ function LoginFeedback({
         />
         <div>
           <p className="text-sm font-semibold text-foreground">
-            {fixture.states.loadingLabel}
+            {data.states.loadingLabel}
           </p>
           <p className="mt-1 text-sm leading-6 text-foreground-secondary">
-            Esperá un momento mientras verificamos tu acceso.
+            Verificando el acceso. Espere un momento.
           </p>
         </div>
       </div>
@@ -85,10 +85,10 @@ function LoginFeedback({
         />
         <div>
           <p className="text-sm font-semibold text-foreground">
-            {fixture.states.errorTitle}
+            {data.states.errorTitle}
           </p>
           <p className="mt-1 text-sm leading-6 text-foreground-secondary">
-            {fixture.states.errorDescription}
+            {data.states.errorDescription}
           </p>
         </div>
       </div>
@@ -109,10 +109,10 @@ function LoginFeedback({
         />
         <div>
           <p className="text-sm font-semibold text-foreground">
-            {fixture.states.permissionDeniedTitle}
+            {data.states.permissionDeniedTitle}
           </p>
           <p className="mt-1 text-sm leading-6 text-foreground-secondary">
-            {fixture.states.permissionDeniedDescription}
+            {data.states.permissionDeniedDescription}
           </p>
         </div>
       </div>
@@ -138,14 +138,14 @@ function LoginFeedback({
 }
 
 export function LoginScreen({
-  fixture,
+  data,
   state = "default",
   onContinue,
   onRetry,
 }: LoginScreenProps) {
   const isLoading = state === "loading";
   const isError = state === "error";
-  const buttonLabel = isError ? "Reintentar" : fixture.ctaLabel;
+  const buttonLabel = isError ? "Reintentar" : data.ctaLabel;
   const handleContinue = isError ? onRetry : onContinue;
 
   return (
@@ -171,20 +171,20 @@ export function LoginScreen({
                   SGTA
                 </p>
                 <p className="text-xs text-white/70">
-                  {fixture.institutionalContext}
+                  {data.institutionalContext}
                 </p>
               </div>
             </div>
 
             <div className="max-w-lg lg:pb-10">
               <p className="text-sm font-bold tracking-[0.08em] text-accent">
-                {fixture.institutionalContext}
+                {data.institutionalContext}
               </p>
               <h2 className="mt-4 max-w-md text-3xl font-extrabold tracking-[-0.035em] text-white sm:text-4xl lg:text-[2.75rem] lg:leading-[1.08]">
                 Un espacio claro para acompañar cada trayectoria.
               </h2>
               <p className="mt-5 max-w-md text-sm leading-7 text-white/75 sm:text-base">
-                Organizá tutorías, horarios y horas con una mirada compartida
+                Organizar tutorías, horarios y horas con una mirada compartida
                 sobre el acompañamiento institucional.
               </p>
             </div>
@@ -208,10 +208,10 @@ export function LoginScreen({
                 className="text-3xl font-extrabold tracking-[-0.035em] text-foreground sm:text-4xl"
                 id="login-title"
               >
-                {fixture.title}
+                {data.title}
               </h1>
               <p className="mt-4 max-w-xl text-base leading-7 text-foreground-secondary">
-                {fixture.supportingText}
+                {data.supportingText}
               </p>
             </div>
 
@@ -220,7 +220,7 @@ export function LoginScreen({
               aria-describedby="login-status login-recovery login-access-note"
               className="rounded-[var(--radius-xl)] border border-border-subtle bg-surface p-6 shadow-sm sm:p-8"
             >
-              <LoginFeedback fixture={fixture} state={state} />
+              <LoginFeedback data={data} state={state} />
 
               <Button
                 className="mt-7 w-full"
@@ -243,7 +243,7 @@ export function LoginScreen({
                 className="mt-5 text-center text-sm leading-6 text-foreground-secondary"
                 id="login-recovery"
               >
-                {fixture.recoveryText}
+                {data.recoveryText}
               </p>
             </div>
 

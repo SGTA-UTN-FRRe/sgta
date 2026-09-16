@@ -36,12 +36,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  goldenScreenStateFixtures,
-  type GoldenStateFixture,
-  type TutorGoldenFixture,
-  type TutorsGoldenFixture,
+  tutorsStateFixtures,
+  type TutorRow,
+  type TutorsScreenData,
   type TutorStatus,
-} from "@/features/golden-screens/fixtures";
+} from "@/mocks/tutors.mock";
+import type { ScreenStateFixture } from "@/mocks/screen-state";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import { StatusBadge, type StatusBadgeVariant } from "@/shared/components/status-badge";
@@ -57,13 +57,13 @@ export type TutorsScreenState =
   | "required-action";
 
 export interface TutorsScreenProps {
-  fixture: TutorsGoldenFixture;
+  data: TutorsScreenData;
   state?: TutorsScreenState;
 }
 
 type FilterStatus = TutorStatus | "all";
 type SheetMode = "add" | "edit" | "view";
-type SheetState = { mode: SheetMode; tutor?: TutorGoldenFixture } | null;
+type SheetState = { mode: SheetMode; tutor?: TutorRow } | null;
 
 const selectClassName =
   "h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
@@ -82,13 +82,13 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
-function findStateFixture(state: TutorsScreenState): GoldenStateFixture | undefined {
+function findStateData(state: TutorsScreenState): ScreenStateFixture | undefined {
   if (state === "default" || state === "success") {
     return undefined;
   }
 
-  return goldenScreenStateFixtures.tutors.find(
-    (stateFixture) => stateFixture.state === state,
+  return tutorsStateFixtures.find(
+    (stateData) => stateData.state === state,
   );
 }
 
@@ -99,7 +99,7 @@ function normalizeSearchValue(value: string) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function tutorSearchText(tutor: TutorGoldenFixture) {
+function tutorSearchText(tutor: TutorRow) {
   return normalizeSearchValue(
     [tutor.name, tutor.career, tutor.scholarship].join(" "),
   );
@@ -109,7 +109,7 @@ function formatTutorCount(count: number) {
   return `${count} ${count === 1 ? "tutor" : "tutores"}`;
 }
 
-function TutorStatus({ tutor }: { tutor: TutorGoldenFixture }) {
+function TutorStatus({ tutor }: { tutor: TutorRow }) {
   return (
     <StatusBadge
       label={tutor.statusLabel}
@@ -123,7 +123,7 @@ function TutorIdentity({
   tutor,
 }: {
   showScholarship?: boolean;
-  tutor: TutorGoldenFixture;
+  tutor: TutorRow;
 }) {
   return (
     <div className="min-w-0">
@@ -280,13 +280,13 @@ function TutorActionsMenu({
   menuKey: string;
   onOpenSheet: (
     mode: Exclude<SheetMode, "add">,
-    tutor: TutorGoldenFixture,
+    tutor: TutorRow,
     trigger: HTMLElement,
   ) => void;
-  onPreviewAction: (action: string, tutor: TutorGoldenFixture) => void;
+  onPreviewAction: (action: string, tutor: TutorRow) => void;
   onToggle: (menuKey: string | null) => void;
   openMenuKey: string | null;
-  tutor: TutorGoldenFixture;
+  tutor: TutorRow;
   view: "compact" | "medium" | "wide";
 }) {
   const isOpen = openMenuKey === menuKey;
@@ -377,13 +377,13 @@ function TutorWideTable({
 }: {
   onOpenSheet: (
     mode: Exclude<SheetMode, "add">,
-    tutor: TutorGoldenFixture,
+    tutor: TutorRow,
     trigger: HTMLElement,
   ) => void;
-  onPreviewAction: (action: string, tutor: TutorGoldenFixture) => void;
+  onPreviewAction: (action: string, tutor: TutorRow) => void;
   onToggleMenu: (menuKey: string | null) => void;
   openMenuKey: string | null;
-  rows: TutorGoldenFixture[];
+  rows: TutorRow[];
 }) {
   return (
     <div className="hidden overflow-x-auto rounded-md border border-border bg-surface lg:block">
@@ -461,13 +461,13 @@ function TutorMediumTable({
 }: {
   onOpenSheet: (
     mode: Exclude<SheetMode, "add">,
-    tutor: TutorGoldenFixture,
+    tutor: TutorRow,
     trigger: HTMLElement,
   ) => void;
-  onPreviewAction: (action: string, tutor: TutorGoldenFixture) => void;
+  onPreviewAction: (action: string, tutor: TutorRow) => void;
   onToggleMenu: (menuKey: string | null) => void;
   openMenuKey: string | null;
-  rows: TutorGoldenFixture[];
+  rows: TutorRow[];
 }) {
   return (
     <div className="hidden overflow-x-auto rounded-md border border-border bg-surface md:block lg:hidden">
@@ -537,13 +537,13 @@ function TutorCompactList({
 }: {
   onOpenSheet: (
     mode: Exclude<SheetMode, "add">,
-    tutor: TutorGoldenFixture,
+    tutor: TutorRow,
     trigger: HTMLElement,
   ) => void;
-  onPreviewAction: (action: string, tutor: TutorGoldenFixture) => void;
+  onPreviewAction: (action: string, tutor: TutorRow) => void;
   onToggleMenu: (menuKey: string | null) => void;
   openMenuKey: string | null;
-  rows: TutorGoldenFixture[];
+  rows: TutorRow[];
 }) {
   return (
     <ul className="divide-y divide-border-subtle overflow-hidden rounded-md border border-border bg-surface md:hidden">
@@ -600,13 +600,13 @@ function TutorList({
 }: {
   onOpenSheet: (
     mode: Exclude<SheetMode, "add">,
-    tutor: TutorGoldenFixture,
+    tutor: TutorRow,
     trigger: HTMLElement,
   ) => void;
-  onPreviewAction: (action: string, tutor: TutorGoldenFixture) => void;
+  onPreviewAction: (action: string, tutor: TutorRow) => void;
   onToggleMenu: (menuKey: string | null) => void;
   openMenuKey: string | null;
-  rows: TutorGoldenFixture[];
+  rows: TutorRow[];
 }) {
   return (
     <div className="mt-4">
@@ -749,7 +749,7 @@ function TutorSheet({
   onClose: () => void;
   onPreviewSaved: () => void;
   open: boolean;
-  tutor?: TutorGoldenFixture;
+  tutor?: TutorRow;
 }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -815,8 +815,8 @@ function TutorSheet({
     ? "Agregar tutor"
     : `${mode === "edit" ? "Editar" : "Detalle de"} ${tutor?.name ?? "tutor"}`;
   const description = isAdd
-    ? "Completá la ficha para revisar la estructura del registro."
-    : "Consultá el contexto académico y la información vigente del tutor.";
+    ? "Completar la ficha para revisar la estructura del registro."
+    : "Consultar el contexto académico y la información vigente del tutor.";
   const [lastName = "", firstName = ""] = tutor?.name
     .split(",")
     .map((part) => part.trim()) ?? [];
@@ -916,7 +916,7 @@ function TutorSheet({
                     disabled={isView}
                     id="tutor-career-sheet"
                   >
-                    <option value="">Seleccioná una carrera</option>
+                    <option value="">Seleccionar una carrera</option>
                     {careers.map((career) => (
                       <option key={career} value={career}>
                         {career}
@@ -996,7 +996,7 @@ function TutorSheet({
             </div>
             {!isView && (
               <p className="mt-3 text-center text-xs leading-5 text-foreground-muted sm:text-right">
-                Este preview no persiste cambios ni modifica tutores reales.
+                Esta vista previa no persiste cambios ni modifica tutores reales.
               </p>
             )}
           </div>
@@ -1007,7 +1007,7 @@ function TutorSheet({
 }
 
 export function TutorsScreen({
-  fixture,
+  data,
   state = "default",
 }: TutorsScreenProps) {
   const [search, setSearch] = useState("");
@@ -1019,14 +1019,14 @@ export function TutorsScreen({
   const lastSheetTriggerRef = useRef<HTMLElement | null>(null);
 
   const careers = useMemo(
-    () => Array.from(new Set(fixture.rows.map((tutor) => tutor.career))),
-    [fixture.rows],
+    () => Array.from(new Set(data.rows.map((tutor) => tutor.career))),
+    [data.rows],
   );
 
   const filteredRows = useMemo(() => {
     const normalizedSearch = normalizeSearchValue(search.trim());
 
-    return fixture.rows.filter((tutor) => {
+    return data.rows.filter((tutor) => {
       const matchesSearch =
         !normalizedSearch || tutorSearchText(tutor).includes(normalizedSearch);
       const matchesCareer = !career || tutor.career === career;
@@ -1034,18 +1034,18 @@ export function TutorsScreen({
 
       return matchesSearch && matchesCareer && matchesStatus;
     });
-  }, [career, fixture.rows, search, status]);
+  }, [data.rows, career, search, status]);
 
   const hasActiveFilters = Boolean(search || career || status !== "all");
   const shouldShowSearchEmpty =
     state === "search-empty" ||
     (state === "default" && hasActiveFilters && filteredRows.length === 0);
-  const stateFixture = findStateFixture(state);
+  const stateData = findStateData(state);
 
   const openSheet = useCallback(
     (
       mode: SheetMode,
-      tutor: TutorGoldenFixture | undefined,
+      tutor: TutorRow | undefined,
       trigger: HTMLElement,
     ) => {
       lastSheetTriggerRef.current = trigger;
@@ -1073,10 +1073,10 @@ export function TutorsScreen({
   }, []);
 
   const handlePreviewAction = useCallback(
-    (action: string, tutor: TutorGoldenFixture) => {
+    (action: string, tutor: TutorRow) => {
       setOpenMenuKey(null);
       setAnnouncement(
-        `${action} para ${tutor.name} queda fuera de este preview. No se modificaron datos.`,
+        `${action} para ${tutor.name} queda fuera de esta vista previa. No se modificaron datos.`,
       );
     },
     [],
@@ -1106,7 +1106,7 @@ export function TutorsScreen({
 
   const headerAction =
     state === "required-action" ? (
-      <PreviewActionLink href="/admin/configuracion" label="Configurar ciclo" />
+      <PreviewActionLink href="/admin/settings" label="Configurar ciclo" />
     ) : (
       <Button
         disabled={state === "loading"}
@@ -1114,7 +1114,7 @@ export function TutorsScreen({
         type="button"
       >
         <Plus aria-hidden="true" />
-        {fixture.emptyAction}
+        {data.emptyAction}
       </Button>
     );
 
@@ -1129,7 +1129,7 @@ export function TutorsScreen({
       >
         <PageHeader
           action={headerAction}
-          description={fixture.description}
+          description={data.description}
           title="Tutores"
         />
 
@@ -1153,32 +1153,32 @@ export function TutorsScreen({
           </div>
         )}
 
-        {state === "error" && stateFixture && (
+        {state === "error" && stateData && (
           <InlineStateNotice
             action={
               <PreviewActionLink
-                href="/admin/tutores"
-                label={stateFixture.actionLabel ?? "Reintentar"}
+                href="/admin/tutors"
+                label={stateData.actionLabel ?? "Reintentar"}
               />
             }
-            description={stateFixture.description}
+            description={stateData.description}
             icon={<CircleAlert aria-hidden="true" className="h-5 w-5" />}
-            title={stateFixture.title}
+            title={stateData.title}
             tone="danger"
           />
         )}
 
-        {state === "required-action" && stateFixture && (
+        {state === "required-action" && stateData && (
           <InlineStateNotice
             action={
               <PreviewActionLink
-                href="/admin/configuracion"
-                label={stateFixture.actionLabel ?? "Configurar ciclo"}
+                href="/admin/settings"
+                label={stateData.actionLabel ?? "Configurar ciclo"}
               />
             }
-            description={stateFixture.description}
+            description={stateData.description}
             icon={<Settings2 aria-hidden="true" className="h-5 w-5" />}
-            title={stateFixture.title}
+            title={stateData.title}
             tone="warning"
           />
         )}
@@ -1187,7 +1187,7 @@ export function TutorsScreen({
           <>
             <FilterToolbar
               career={career}
-              careerLabel={fixture.careerFilterLabel}
+              careerLabel={data.careerFilterLabel}
               careers={careers}
               disabled={state === "loading" || state === "empty"}
               onCareerChange={setCareer}
@@ -1195,9 +1195,9 @@ export function TutorsScreen({
               onSearchChange={setSearch}
               onStatusChange={setStatus}
               search={search}
-              searchPlaceholder={fixture.searchPlaceholder}
+              searchPlaceholder={data.searchPlaceholder}
               status={status}
-              statusLabel={fixture.statusFilterLabel}
+              statusLabel={data.statusFilterLabel}
             />
 
             <p
@@ -1226,11 +1226,11 @@ export function TutorsScreen({
                       type="button"
                     >
                       <Plus aria-hidden="true" />
-                      {fixture.emptyAction}
+                      {data.emptyAction}
                     </Button>
                   }
-                  description="Agregá el primer tutor para comenzar a organizar la cobertura."
-                  title={fixture.emptyTitle}
+                  description="Agregar el primer tutor para comenzar a organizar la cobertura."
+                  title={data.emptyTitle}
                 />
               </div>
             )}
@@ -1244,10 +1244,10 @@ export function TutorsScreen({
                     </Button>
                   }
                   description={
-                    stateFixture?.description ??
-                    "Probá con otro nombre o limpiá los filtros."
+                    stateData?.description ??
+                    "Probar con otro nombre o limpiar los filtros."
                   }
-                  title={stateFixture?.title ?? "No encontramos tutores"}
+                  title={stateData?.title ?? "No encontramos tutores"}
                 />
               </div>
             )}

@@ -35,14 +35,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  goldenScreenStateFixtures,
-  type BalanceGoldenFixture,
+  hoursStateFixtures,
+  type BalanceRow,
   type BalanceState,
-  type GoldenStateFixture,
-  type HoursGoldenFixture,
+  type HoursScreenData,
   type MovementDirection,
-  type MovementHistoryGoldenFixture,
-} from "@/features/golden-screens/fixtures";
+  type MovementHistoryRow,
+} from "@/mocks/hours.mock";
+import type { ScreenStateFixture } from "@/mocks/screen-state";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import {
@@ -61,7 +61,7 @@ export type HoursScreenState =
   | "required-action";
 
 export interface HoursScreenProps {
-  fixture: HoursGoldenFixture;
+  data: HoursScreenData;
   state?: HoursScreenState;
 }
 
@@ -79,13 +79,13 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
-function findStateFixture(state: HoursScreenState): GoldenStateFixture | undefined {
+function findStateData(state: HoursScreenState): ScreenStateFixture | undefined {
   if (state === "default" || state === "success") {
     return undefined;
   }
 
-  return goldenScreenStateFixtures.hours.find(
-    (stateFixture) => stateFixture.state === state,
+  return hoursStateFixtures.find(
+    (stateData) => stateData.state === state,
   );
 }
 
@@ -121,7 +121,7 @@ function balanceStatusVariant(state: BalanceState): StatusBadgeVariant {
   return state === "current" ? "success" : "danger";
 }
 
-function balanceSearchText(balance: BalanceGoldenFixture) {
+function balanceSearchText(balance: BalanceRow) {
   return normalizeSearchValue([balance.tutor, balance.cycle].join(" "));
 }
 
@@ -292,7 +292,7 @@ function FilterToolbar({
   );
 }
 
-function BalanceStatus({ balance }: { balance: BalanceGoldenFixture }) {
+function BalanceStatus({ balance }: { balance: BalanceRow }) {
   return (
     <StatusBadge
       label={balance.stateLabel}
@@ -322,7 +322,7 @@ function HistoryButton({
   );
 }
 
-function BalanceIdentity({ balance }: { balance: BalanceGoldenFixture }) {
+function BalanceIdentity({ balance }: { balance: BalanceRow }) {
   return (
     <div className="min-w-0">
       <p className="truncate font-semibold text-foreground">{balance.tutor}</p>
@@ -331,7 +331,7 @@ function BalanceIdentity({ balance }: { balance: BalanceGoldenFixture }) {
   );
 }
 
-function BalanceValue({ balance }: { balance: BalanceGoldenFixture }) {
+function BalanceValue({ balance }: { balance: BalanceRow }) {
   return (
     <div>
       <p
@@ -351,8 +351,8 @@ function BalanceLists({
   balances,
   onHistory,
 }: {
-  balances: BalanceGoldenFixture[];
-  onHistory: (balance: BalanceGoldenFixture, trigger: HTMLElement) => void;
+  balances: BalanceRow[];
+  onHistory: (balance: BalanceRow, trigger: HTMLElement) => void;
 }) {
   return (
     <div className="mt-4 overflow-hidden rounded-md border border-border bg-surface">
@@ -572,8 +572,8 @@ function MovementHistorySheet({
   onClose,
   open,
 }: {
-  balance: BalanceGoldenFixture | null;
-  entries: MovementHistoryGoldenFixture[];
+  balance: BalanceRow | null;
+  entries: MovementHistoryRow[];
   onClose: () => void;
   open: boolean;
 }) {
@@ -731,7 +731,7 @@ function MovementDialog({
   direction,
   durationHours,
   durationMinutes,
-  fixture,
+  data,
   note,
   onCategoryChange,
   onClose,
@@ -751,7 +751,7 @@ function MovementDialog({
   direction: MovementDirection;
   durationHours: string;
   durationMinutes: string;
-  fixture: HoursGoldenFixture;
+  data: HoursScreenData;
   note: string;
   onCategoryChange: (value: string) => void;
   onClose: () => void;
@@ -769,7 +769,7 @@ function MovementDialog({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
-  const eligibleTutors = fixture.movementDialog.eligibleTutors;
+  const eligibleTutors = data.movementDialog.eligibleTutors;
   const allSelected =
     eligibleTutors.length > 0 && selectedTutorIds.length === eligibleTutors.length;
   const hasPartialSelection = selectedTutorIds.length > 0 && !allSelected;
@@ -778,7 +778,7 @@ function MovementDialog({
     Number.parseInt(durationMinutes || "0", 10) > 0;
   const canSubmit = Boolean(category && date && selectedTutorIds.length && hasPositiveDuration);
   const directionLabel =
-    fixture.movementDialog.directionOptions.find((option) => option.value === direction)?.label ??
+    data.movementDialog.directionOptions.find((option) => option.value === direction)?.label ??
     direction;
   const summary = `${directionLabel} — ${category || "Sin categoría"} — ${formatDuration(
     durationHours,
@@ -830,13 +830,13 @@ function MovementDialog({
               className="mt-2 text-xl font-bold tracking-tight text-foreground"
               id="hours-movement-title"
             >
-              {fixture.movementDialog.title}
+              {data.movementDialog.title}
             </h2>
             <p
               className="mt-2 text-sm leading-6 text-foreground-secondary"
               id="hours-movement-description"
             >
-              Completá los datos para revisar el resumen antes de una futura integración.
+              Completar los datos para revisar el resumen antes de una futura integración.
             </p>
           </div>
           <button
@@ -854,14 +854,14 @@ function MovementDialog({
           <div className="min-h-0 flex-1 space-y-7 overflow-y-auto px-6 py-6">
             <fieldset>
               <legend className="text-sm font-bold text-foreground">
-                {fixture.movementDialog.directionLabel}
+                {data.movementDialog.directionLabel}
               </legend>
               <div
-                aria-label={fixture.movementDialog.directionLabel}
+                aria-label={data.movementDialog.directionLabel}
                 className="mt-3 grid grid-cols-2 gap-2"
                 role="radiogroup"
               >
-                {fixture.movementDialog.directionOptions.map((option) => {
+                {data.movementDialog.directionOptions.map((option) => {
                   const isSelected = option.value === direction;
 
                   return (
@@ -891,7 +891,7 @@ function MovementDialog({
 
             <div className="space-y-1.5">
               <label className="text-sm font-bold text-foreground" htmlFor="movement-category">
-                {fixture.movementDialog.categoryLabel}
+                {data.movementDialog.categoryLabel}
               </label>
               <select
                 className={selectClassName}
@@ -900,7 +900,7 @@ function MovementDialog({
                 required
                 value={category}
               >
-                {fixture.categories.map((categoryOption) => (
+                {data.categories.map((categoryOption) => (
                   <option key={categoryOption} value={categoryOption}>
                     {categoryOption}
                   </option>
@@ -910,7 +910,7 @@ function MovementDialog({
 
             <fieldset>
               <legend className="text-sm font-bold text-foreground">
-                {fixture.movementDialog.durationLabel}
+                {data.movementDialog.durationLabel}
               </legend>
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -946,7 +946,7 @@ function MovementDialog({
 
             <div className="space-y-1.5">
               <label className="text-sm font-bold text-foreground" htmlFor="movement-date">
-                {fixture.movementDialog.dateLabel}
+                {data.movementDialog.dateLabel}
               </label>
               <div className="relative">
                 <CalendarDays
@@ -966,39 +966,39 @@ function MovementDialog({
 
             <div className="space-y-1.5">
               <label className="text-sm font-bold text-foreground" htmlFor="movement-note">
-                {fixture.movementDialog.noteLabel}
+                {data.movementDialog.noteLabel}
               </label>
               <textarea
                 className="min-h-24 w-full resize-y rounded-sm border border-border bg-surface px-3 py-2 text-sm leading-6 text-foreground shadow-xs outline-none transition-colors placeholder:text-foreground-muted focus-visible:ring-3 focus-visible:ring-ring"
                 id="movement-note"
                 onChange={(event) => onNoteChange(event.target.value)}
-                placeholder="Agregá contexto opcional"
+                placeholder="Agregar contexto opcional"
                 value={note}
               />
             </div>
 
             <fieldset>
               <legend className="text-sm font-bold text-foreground">
-                {fixture.movementDialog.tutorsLabel}
+                {data.movementDialog.tutorsLabel}
               </legend>
               <div className="mt-3 rounded-md border border-border-subtle bg-surface-subtle/60">
                 <label className="flex items-center gap-3 border-b border-border-subtle px-4 py-3 text-sm font-semibold text-foreground">
                   <input
                     aria-checked={hasPartialSelection ? "mixed" : allSelected}
-                    aria-label={fixture.movementDialog.selectAllLabel}
+                    aria-label={data.movementDialog.selectAllLabel}
                     checked={allSelected}
                     className="h-4 w-4 rounded border-border text-primary accent-primary focus-visible:ring-3 focus-visible:ring-ring"
                     onChange={onToggleAll}
                     ref={selectAllRef}
                     type="checkbox"
                   />
-                  <span>{fixture.movementDialog.selectAllLabel}</span>
+                  <span>{data.movementDialog.selectAllLabel}</span>
                   <span className="ml-auto text-xs font-normal text-foreground-muted">
                     {selectedTutorIds.length} de {eligibleTutors.length}
                   </span>
                 </label>
                 <div aria-live="polite" className="sr-only">
-                  {fixture.movementDialog.selectAllLabel}: {selectedTutorIds.length} de {eligibleTutors.length} tutores seleccionados
+                  {data.movementDialog.selectAllLabel}: {selectedTutorIds.length} de {eligibleTutors.length} tutores seleccionados
                   {hasPartialSelection ? ", selección mixta" : ""}.
                 </div>
                 <div className="divide-y divide-border-subtle">
@@ -1031,7 +1031,7 @@ function MovementDialog({
               </p>
               <p className="mt-2 text-sm font-semibold leading-6 text-foreground">{summary}</p>
               <p className="mt-2 text-xs leading-5 text-foreground-secondary">
-                Revisá dirección, categoría, duración, fecha y tutores antes de continuar.
+                Revisar dirección, categoría, duración, fecha y tutores antes de continuar.
               </p>
             </section>
           </div>
@@ -1043,7 +1043,7 @@ function MovementDialog({
               </Button>
               <Button disabled={!canSubmit} type="submit">
                 <Check aria-hidden="true" />
-                {fixture.movementDialog.submitLabel}
+                {data.movementDialog.submitLabel}
               </Button>
             </div>
             <p className="mt-3 text-center text-xs leading-5 text-foreground-muted sm:text-right">
@@ -1056,18 +1056,18 @@ function MovementDialog({
   );
 }
 
-export function HoursScreen({ fixture, state = "default" }: HoursScreenProps) {
+export function HoursScreen({ data, state = "default" }: HoursScreenProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<BalanceFilter>("all");
   const [category, setCategory] = useState("");
   const [announcement, setAnnouncement] = useState<string | null>(null);
   const [movementDialogOpen, setMovementDialogOpen] = useState(false);
-  const [historyBalance, setHistoryBalance] = useState<BalanceGoldenFixture | null>(null);
+  const [historyBalance, setHistoryBalance] = useState<BalanceRow | null>(null);
   const [selectedTutorIds, setSelectedTutorIds] = useState<string[]>(() =>
-    fixture.movementDialog.eligibleTutors.map((tutor) => tutor.id),
+    data.movementDialog.eligibleTutors.map((tutor) => tutor.id),
   );
   const [direction, setDirection] = useState<MovementDirection>("credit");
-  const [movementCategory, setMovementCategory] = useState(fixture.categories[0] ?? "");
+  const [movementCategory, setMovementCategory] = useState(data.categories[0] ?? "");
   const [durationHours, setDurationHours] = useState("01");
   const [durationMinutes, setDurationMinutes] = useState("30");
   const [movementDate, setMovementDate] = useState("2026-09-16");
@@ -1078,38 +1078,38 @@ export function HoursScreen({ fixture, state = "default" }: HoursScreenProps) {
   const filteredBalances = useMemo(() => {
     const normalizedSearch = normalizeSearchValue(search.trim());
 
-    return fixture.balances.filter((balance) => {
+    return data.balances.filter((balance) => {
       const matchesSearch = !normalizedSearch || balanceSearchText(balance).includes(normalizedSearch);
       const matchesStatus = status === "all" || balance.state === status;
-      const tutor = fixture.movementDialog.eligibleTutors.find(
+      const tutor = data.movementDialog.eligibleTutors.find(
         (eligibleTutor) => eligibleTutor.name === balance.tutor,
       );
       const matchesCategory =
         !category ||
-        fixture.history.some(
+        data.history.some(
           (entry) => entry.tutorId === tutor?.id && entry.category === category,
         );
 
       return matchesSearch && matchesStatus && matchesCategory;
     });
-  }, [category, fixture, search, status]);
+  }, [category, data, search, status]);
 
   const hasActiveFilters = Boolean(search || category || status !== "all");
   const shouldShowSearchEmpty =
     state === "search-empty" ||
     (state === "default" && hasActiveFilters && filteredBalances.length === 0);
-  const stateFixture = findStateFixture(state);
+  const stateData = findStateData(state);
   const historyEntries = useMemo(
     () =>
       historyBalance
-        ? fixture.history.filter((entry) => {
-            const tutor = fixture.movementDialog.eligibleTutors.find(
+        ? data.history.filter((entry) => {
+            const tutor = data.movementDialog.eligibleTutors.find(
               (eligibleTutor) => eligibleTutor.name === historyBalance.tutor,
             );
             return entry.tutorId === tutor?.id;
           })
         : [],
-    [fixture, historyBalance],
+    [data, historyBalance],
   );
 
   const openMovementDialog = useCallback((trigger: HTMLElement) => {
@@ -1130,7 +1130,7 @@ export function HoursScreen({ fixture, state = "default" }: HoursScreenProps) {
   }, []);
 
   const openHistory = useCallback(
-    (balance: BalanceGoldenFixture, trigger: HTMLElement) => {
+    (balance: BalanceRow, trigger: HTMLElement) => {
       historyTriggerRef.current = trigger;
       setHistoryBalance(balance);
     },
@@ -1158,12 +1158,12 @@ export function HoursScreen({ fixture, state = "default" }: HoursScreenProps) {
 
   const handleToggleAll = useCallback(() => {
     setSelectedTutorIds((currentSelection) => {
-      const eligibleIds = fixture.movementDialog.eligibleTutors.map((tutor) => tutor.id);
+      const eligibleIds = data.movementDialog.eligibleTutors.map((tutor) => tutor.id);
       const allSelected = eligibleIds.length > 0 && currentSelection.length === eligibleIds.length;
 
       return allSelected ? [] : eligibleIds;
     });
-  }, [fixture.movementDialog.eligibleTutors]);
+  }, [data.movementDialog.eligibleTutors]);
 
   const handleToggleTutor = useCallback((tutorId: string) => {
     setSelectedTutorIds((currentSelection) =>
@@ -1186,7 +1186,7 @@ export function HoursScreen({ fixture, state = "default" }: HoursScreenProps) {
 
   const headerAction =
     state === "required-action" ? (
-      <PreviewActionLink href="/admin/configuracion" label="Configurar ciclo" />
+      <PreviewActionLink href="/admin/settings" label="Configurar ciclo" />
     ) : (
       <Button
         disabled={state === "loading"}
@@ -1207,7 +1207,7 @@ export function HoursScreen({ fixture, state = "default" }: HoursScreenProps) {
       >
         <PageHeader
           action={headerAction}
-          description={fixture.description}
+          description={data.description}
           title="Horas"
         />
 
@@ -1231,32 +1231,32 @@ export function HoursScreen({ fixture, state = "default" }: HoursScreenProps) {
           </div>
         )}
 
-        {state === "error" && stateFixture && (
+        {state === "error" && stateData && (
           <InlineStateNotice
             action={
               <PreviewActionLink
-                href="/admin/horas"
-                label={stateFixture.actionLabel ?? "Reintentar"}
+                href="/admin/hours"
+                label={stateData.actionLabel ?? "Reintentar"}
               />
             }
-            description={stateFixture.description}
+            description={stateData.description}
             icon={<CircleAlert aria-hidden="true" className="h-5 w-5" />}
-            title={stateFixture.title}
+            title={stateData.title}
             tone="danger"
           />
         )}
 
-        {state === "required-action" && stateFixture && (
+        {state === "required-action" && stateData && (
           <InlineStateNotice
             action={
               <PreviewActionLink
-                href="/admin/configuracion"
-                label={stateFixture.actionLabel ?? "Configurar ciclo"}
+                href="/admin/settings"
+                label={stateData.actionLabel ?? "Configurar ciclo"}
               />
             }
-            description={stateFixture.description}
+            description={stateData.description}
             icon={<Settings2 aria-hidden="true" className="h-5 w-5" />}
-            title={stateFixture.title}
+            title={stateData.title}
             tone="warning"
           />
         )}
@@ -1265,17 +1265,17 @@ export function HoursScreen({ fixture, state = "default" }: HoursScreenProps) {
           <>
             <FilterToolbar
               category={category}
-              categoryLabel={fixture.categoryFilterLabel}
-              categories={fixture.categories}
+              categoryLabel={data.categoryFilterLabel}
+              categories={data.categories}
               disabled={state === "loading" || state === "empty"}
               onCategoryChange={setCategory}
               onClear={clearFilters}
               onSearchChange={setSearch}
               onStatusChange={setStatus}
               search={search}
-              searchPlaceholder={fixture.searchPlaceholder}
+              searchPlaceholder={data.searchPlaceholder}
               status={status}
-              statusLabel={fixture.statusFilterLabel}
+              statusLabel={data.statusFilterLabel}
             />
 
             <p aria-live="polite" className="mt-4 text-sm text-foreground-secondary">
@@ -1299,11 +1299,11 @@ export function HoursScreen({ fixture, state = "default" }: HoursScreenProps) {
                       type="button"
                     >
                       <Plus aria-hidden="true" />
-                      {stateFixture?.actionLabel ?? "Registrar movimiento"}
+                      {stateData?.actionLabel ?? "Registrar movimiento"}
                     </Button>
                   }
-                  description={stateFixture?.description ?? "Registrá el primer movimiento para preparar el balance."}
-                  title={stateFixture?.title ?? "Todavía no hay saldos"}
+                  description={stateData?.description ?? "Registrar el primer movimiento para preparar el balance."}
+                  title={stateData?.title ?? "Todavía no hay saldos"}
                 />
               </div>
             )}
@@ -1316,8 +1316,8 @@ export function HoursScreen({ fixture, state = "default" }: HoursScreenProps) {
                       Limpiar filtros
                     </Button>
                   }
-                  description={stateFixture?.description ?? "Probá con otro nombre o limpiá los filtros."}
-                  title={stateFixture?.title ?? "No encontramos balances"}
+                  description={stateData?.description ?? "Probar con otro nombre o limpiar los filtros."}
+                  title={stateData?.title ?? "No encontramos balances"}
                 />
               </div>
             )}
@@ -1337,7 +1337,7 @@ export function HoursScreen({ fixture, state = "default" }: HoursScreenProps) {
         direction={direction}
         durationHours={durationHours}
         durationMinutes={durationMinutes}
-        fixture={fixture}
+        data={data}
         note={movementNote}
         onCategoryChange={setMovementCategory}
         onClose={closeMovementDialog}

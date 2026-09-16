@@ -38,21 +38,21 @@ interface NavItem {
 }
 
 const ADMIN_PRIMARY_NAV: NavItem[] = [
-  { label: "Tutores", href: "/admin/tutores", icon: Users },
-  { label: "Horarios", href: "/admin/horarios", icon: Calendar },
-  { label: "Horas", href: "/admin/horas", icon: Clock3 },
-  { label: "Consultas", href: "/admin/consultas", icon: MessageSquare },
-  { label: "Reportes", href: "/admin/reportes", icon: BarChart3 },
+  { label: "Tutores", href: "/admin/tutors", icon: Users },
+  { label: "Horarios", href: "/admin/schedules", icon: Calendar },
+  { label: "Horas", href: "/admin/hours", icon: Clock3 },
+  { label: "Consultas", href: "/admin/consultations", icon: MessageSquare },
+  { label: "Reportes", href: "/admin/reports", icon: BarChart3 },
 ];
 
 const ADMIN_SECONDARY_NAV: NavItem[] = [
-  { label: "Configuración", href: "/admin/configuracion", icon: Settings },
+  { label: "Configuración", href: "/admin/settings", icon: Settings },
 ];
 
 const TUTOR_NAV: NavItem[] = [
   { label: "Mi resumen", href: "/tutor", icon: LayoutDashboard },
-  { label: "Mi horario", href: "/tutor/horario", icon: Calendar },
-  { label: "Mis horas", href: "/tutor/horas", icon: Clock3 },
+  { label: "Mi horario", href: "/tutor/schedule", icon: Calendar },
+  { label: "Mis horas", href: "/tutor/hours", icon: Clock3 },
 ];
 
 function isAdminVariant(variant: AppSidebarVariant) {

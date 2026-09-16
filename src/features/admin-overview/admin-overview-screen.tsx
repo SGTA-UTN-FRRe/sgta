@@ -11,11 +11,12 @@ import type { ReactNode } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import {
-  goldenScreenStateFixtures,
-  type AdminOverviewGoldenFixture,
+  adminOverviewStateFixtures,
+  type AdminOverviewScreenData,
+  type AttentionItem,
   type AttentionTone,
-  type GoldenStateFixture,
-} from "@/features/golden-screens/fixtures";
+} from "@/mocks/admin-overview.mock";
+import type { ScreenStateFixture } from "@/mocks/screen-state";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import { StatusBadge, type StatusBadgeVariant } from "@/shared/components/status-badge";
@@ -30,7 +31,7 @@ export type AdminOverviewState =
   | "required-action";
 
 export interface AdminOverviewScreenProps {
-  fixture: AdminOverviewGoldenFixture;
+  data: AdminOverviewScreenData;
   state?: AdminOverviewState;
 }
 
@@ -71,13 +72,13 @@ const noticeStyles = {
 
 type NoticeTone = keyof typeof noticeStyles;
 
-function getStateFixture(state: AdminOverviewState): GoldenStateFixture | undefined {
+function getStateData(state: AdminOverviewState): ScreenStateFixture | undefined {
   if (state === "default") {
     return undefined;
   }
 
-  return goldenScreenStateFixtures["admin-overview"].find(
-    (stateFixture) => stateFixture.state === state,
+  return adminOverviewStateFixtures.find(
+    (stateData) => stateData.state === state,
   );
 }
 
@@ -91,11 +92,11 @@ function formatShortDate(date: string) {
 }
 
 function CycleContext({
-  fixture,
+  data,
   isRequired,
   isLoading,
 }: {
-  fixture: AdminOverviewGoldenFixture;
+  data: AdminOverviewScreenData;
   isRequired: boolean;
   isLoading: boolean;
 }) {
@@ -124,15 +125,15 @@ function CycleContext({
     );
   }
 
-  const currentDate = fixture.upcomingDuties[0]?.date ?? "2026-09-16";
+  const currentDate = data.upcomingDuties[0]?.date ?? "2026-09-16";
 
   return (
     <span className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-foreground-secondary">
-      <span className="font-semibold text-foreground">{fixture.cycle.name}</span>
+      <span className="font-semibold text-foreground">{data.cycle.name}</span>
       <span aria-hidden="true" className="text-foreground-muted">
         ·
       </span>
-      <span>{fixture.cycle.period}</span>
+      <span>{data.cycle.period}</span>
       <span aria-hidden="true" className="text-foreground-muted">
         ·
       </span>
@@ -141,8 +142,8 @@ function CycleContext({
         <time dateTime={currentDate}>{formatDateContext(currentDate)}</time>
       </span>
       <StatusBadge
-        label={fixture.cycle.statusLabel}
-        variant={fixture.cycle.status === "open" ? "success" : "neutral"}
+        label={data.cycle.statusLabel}
+        variant={data.cycle.status === "open" ? "success" : "neutral"}
       />
     </span>
   );
@@ -212,7 +213,7 @@ function AttentionCard({
   label,
   count,
   tone,
-}: AdminOverviewGoldenFixture["attention"][number]) {
+}: AttentionItem) {
   return (
     <Link
       className="group flex min-h-[12rem] flex-col justify-between rounded-md border border-border bg-surface p-5 shadow-xs transition-colors hover:border-primary/40 hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
@@ -268,13 +269,13 @@ function AttentionSkeletons() {
 }
 
 function AttentionSection({
-  fixture,
+  data,
   state,
 }: {
-  fixture: AdminOverviewGoldenFixture;
+  data: AdminOverviewScreenData;
   state: AdminOverviewState;
 }) {
-  const stateFixture = getStateFixture(state);
+  const stateData = getStateData(state);
 
   return (
     <section aria-labelledby="attention-heading">
@@ -295,35 +296,35 @@ function AttentionSection({
         <EmptyState
           className="min-h-[14rem]"
           description="La operación del ciclo está al día. Las nuevas tareas aparecerán aquí cuando requieran seguimiento."
-          title={fixture.emptyAttentionLabel}
+        title={data.emptyAttentionLabel}
         />
       )}
 
-      {state === "error" && stateFixture && (
+      {state === "error" && stateData && (
         <OverviewNotice
           actionHref="/admin"
-          actionLabel={stateFixture.actionLabel}
-          description={stateFixture.description}
+          actionLabel={stateData.actionLabel}
+          description={stateData.description}
           icon={<CircleAlert aria-hidden="true" className="h-5 w-5" />}
-          title={stateFixture.title}
+          title={stateData.title}
           tone="danger"
         />
       )}
 
-      {state === "required-action" && stateFixture && (
+      {state === "required-action" && stateData && (
         <OverviewNotice
-          actionHref="/admin/configuracion"
-          actionLabel={stateFixture.actionLabel}
-          description={stateFixture.description}
+          actionHref="/admin/settings"
+          actionLabel={stateData.actionLabel}
+          description={stateData.description}
           icon={<Settings2 aria-hidden="true" className="h-5 w-5" />}
-          title={stateFixture.title}
+          title={stateData.title}
           tone="warning"
         />
       )}
 
       {(state === "default" || state === "degraded") && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {fixture.attention
+          {data.attention
             .filter(
               (item) =>
                 state !== "degraded" || item.id !== "consultations-to-review",
@@ -332,13 +333,13 @@ function AttentionSection({
               <AttentionCard key={item.id} {...item} />
             ))}
 
-          {state === "degraded" && stateFixture && (
+          {state === "degraded" && stateData && (
             <OverviewNotice
-              actionHref="/admin/consultas"
-              actionLabel={stateFixture.actionLabel}
-              description={stateFixture.description}
+              actionHref="/admin/consultations"
+              actionLabel={stateData.actionLabel}
+              description={stateData.description}
               icon={<TriangleAlert aria-hidden="true" className="h-5 w-5" />}
-              title={stateFixture.title}
+              title={stateData.title}
               tone="warning"
             />
           )}
@@ -354,12 +355,12 @@ function DutyRow({
   location,
   time,
   tutor,
-}: AdminOverviewGoldenFixture["upcomingDuties"][number]) {
+}: AdminOverviewScreenData["upcomingDuties"][number]) {
   return (
     <li>
       <Link
         className="group grid grid-cols-[4.75rem_minmax(0,1fr)] gap-4 px-4 py-4 transition-colors hover:bg-surface-subtle focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:items-center sm:px-5"
-        href={`/admin/horarios?date=${date}`}
+        href={`/admin/schedules?date=${date}`}
       >
         <div>
           <p className="text-sm font-bold text-foreground">{dayLabel}</p>
@@ -420,10 +421,10 @@ function DutySkeletons() {
 }
 
 function UpcomingSection({
-  fixture,
+  data,
   isLoading,
 }: {
-  fixture: AdminOverviewGoldenFixture;
+  data: AdminOverviewScreenData;
   isLoading: boolean;
 }) {
   return (
@@ -439,7 +440,7 @@ function UpcomingSection({
         </div>
         <Link
           className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-primary underline-offset-4 hover:text-primary-hover hover:underline sm:self-auto"
-          href="/admin/horarios"
+          href="/admin/schedules"
         >
           Ver horarios
           <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
@@ -450,7 +451,7 @@ function UpcomingSection({
         <DutySkeletons />
       ) : (
         <ol className="overflow-hidden rounded-md border border-border bg-surface">
-          {fixture.upcomingDuties.map((duty) => (
+          {data.upcomingDuties.map((duty) => (
             <DutyRow key={duty.id} {...duty} />
           ))}
         </ol>
@@ -460,7 +461,7 @@ function UpcomingSection({
 }
 
 export function AdminOverviewScreen({
-  fixture,
+  data,
   state = "default",
 }: AdminOverviewScreenProps) {
   const isLoading = state === "loading";
@@ -471,7 +472,7 @@ export function AdminOverviewScreen({
       <PageHeader
         description={
           <CycleContext
-            fixture={fixture}
+            data={data}
             isLoading={isLoading}
             isRequired={isRequired}
           />
@@ -480,9 +481,9 @@ export function AdminOverviewScreen({
       />
 
       <div className="space-y-10 pt-8">
-        <AttentionSection fixture={fixture} state={state} />
+        <AttentionSection data={data} state={state} />
         {!isRequired && (
-          <UpcomingSection fixture={fixture} isLoading={isLoading} />
+          <UpcomingSection data={data} isLoading={isLoading} />
         )}
       </div>
     </div>

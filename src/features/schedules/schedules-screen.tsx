@@ -27,12 +27,12 @@ import {
 import { buttonVariants, Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  goldenScreenStateFixtures,
-  type GoldenStateFixture,
-  type ScheduleAssignmentGoldenFixture,
-  type SchedulePlanGoldenFixture,
-  type SchedulesGoldenFixture,
-} from "@/features/golden-screens/fixtures";
+  schedulesStateFixtures,
+  type ScheduleAssignmentView,
+  type SchedulePlanView,
+  type SchedulesScreenData,
+} from "@/mocks/schedules.mock";
+import type { ScreenStateFixture } from "@/mocks/screen-state";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import {
@@ -53,16 +53,16 @@ export type SchedulesScreenState =
   | "conflict";
 
 export interface SchedulesScreenProps {
-  fixture: SchedulesGoldenFixture;
+  data: SchedulesScreenData;
   state?: SchedulesScreenState;
 }
 
 type EditorState = {
-  assignment?: ScheduleAssignmentGoldenFixture;
+  assignment?: ScheduleAssignmentView;
   mode: "add" | "edit";
 } | null;
 
-type AssignmentDraft = Omit<ScheduleAssignmentGoldenFixture, "id">;
+type AssignmentDraft = Omit<ScheduleAssignmentView, "id">;
 
 const selectClassName =
   "h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
@@ -80,20 +80,20 @@ const GRID_START_MINUTES = 8 * 60;
 const GRID_END_MINUTES = 20 * 60;
 const GRID_HOUR_HEIGHT_REM = 4;
 
-function findStateFixture(state: SchedulesScreenState): GoldenStateFixture | undefined {
+function findStateData(state: SchedulesScreenState): ScreenStateFixture | undefined {
   if (state === "default" || state === "success") {
     return undefined;
   }
 
-  const fixtureState =
+  const stateKey =
     state === "empty-plan" || state === "empty"
       ? "empty"
       : state === "no-plan"
         ? "required-action"
         : state;
 
-  return goldenScreenStateFixtures.schedules.find(
-    (stateFixture) => stateFixture.state === fixtureState,
+  return schedulesStateFixtures.find(
+    (stateData) => stateData.state === stateKey,
   );
 }
 
@@ -117,11 +117,11 @@ function formatTutorCount(count: number) {
   return `${count} ${count === 1 ? "asignación" : "asignaciones"}`;
 }
 
-function formatAssignmentLabel(assignment: ScheduleAssignmentGoldenFixture) {
+function formatAssignmentLabel(assignment: ScheduleAssignmentView) {
   return `${assignment.tutor}, ${assignment.day}, ${assignment.start} a ${assignment.end}`;
 }
 
-function planStatusVariant(plan: SchedulePlanGoldenFixture): StatusBadgeVariant {
+function planStatusVariant(plan: SchedulePlanView): StatusBadgeVariant {
   return plan.isActive ? "success" : "neutral";
 }
 
@@ -180,16 +180,16 @@ function InlineStateNotice({
 }
 
 function PlanContext({
-  fixture,
+  data,
   onNewPlan,
   onSelectPlan,
   selectedPlan,
   selectedPlanId,
 }: {
-  fixture: SchedulesGoldenFixture;
+  data: SchedulesScreenData;
   onNewPlan: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelectPlan: (planId: string) => void;
-  selectedPlan?: SchedulePlanGoldenFixture;
+  selectedPlan?: SchedulePlanView;
   selectedPlanId: string;
 }) {
   if (!selectedPlan) {
@@ -233,7 +233,7 @@ function PlanContext({
 
         <Button onClick={onNewPlan} type="button" variant="outline">
           <Plus aria-hidden="true" />
-          {fixture.secondaryAction}
+          {data.secondaryAction}
         </Button>
       </div>
 
@@ -244,7 +244,7 @@ function PlanContext({
           className="mt-3 grid gap-2 md:grid-cols-2"
           role="tablist"
         >
-          {fixture.plans.map((plan) => {
+          {data.plans.map((plan) => {
             const isSelected = plan.id === selectedPlanId;
 
             return (
@@ -286,9 +286,9 @@ function ScheduleBlock({
   onEdit,
   selected,
 }: {
-  assignment: ScheduleAssignmentGoldenFixture;
+  assignment: ScheduleAssignmentView;
   conflict: boolean;
-  onEdit: (assignment: ScheduleAssignmentGoldenFixture, trigger: HTMLElement) => void;
+  onEdit: (assignment: ScheduleAssignmentView, trigger: HTMLElement) => void;
   selected: boolean;
 }) {
   const start = Math.max(GRID_START_MINUTES, toMinutes(assignment.start));
@@ -365,10 +365,10 @@ function ScheduleDayColumn({
   onEdit,
   selectedAssignmentId,
 }: {
-  assignments: ScheduleAssignmentGoldenFixture[];
+  assignments: ScheduleAssignmentView[];
   conflictIds: Set<string>;
   day: string;
-  onEdit: (assignment: ScheduleAssignmentGoldenFixture, trigger: HTMLElement) => void;
+  onEdit: (assignment: ScheduleAssignmentView, trigger: HTMLElement) => void;
   selectedAssignmentId: string | null;
 }) {
   const hours = Array.from(
@@ -408,10 +408,10 @@ function ScheduleGrid({
   selectedAssignmentId,
   title,
 }: {
-  assignments: ScheduleAssignmentGoldenFixture[];
+  assignments: ScheduleAssignmentView[];
   conflictIds: Set<string>;
   days: string[];
-  onEdit: (assignment: ScheduleAssignmentGoldenFixture, trigger: HTMLElement) => void;
+  onEdit: (assignment: ScheduleAssignmentView, trigger: HTMLElement) => void;
   selectedAssignmentId: string | null;
   title: string;
 }) {
@@ -423,7 +423,7 @@ function ScheduleGrid({
             {title}
           </h2>
           <p className="mt-1 text-xs text-foreground-muted">
-            Seleccioná un bloque para editarlo desde el formulario.
+            Seleccionar un bloque para editarlo desde el formulario.
           </p>
         </div>
         <span className="text-xs text-foreground-muted">{formatTutorCount(assignments.length)}</span>
@@ -476,11 +476,11 @@ function CompactSchedule({
   selectedAssignmentId,
   selectedDay,
 }: {
-  assignments: ScheduleAssignmentGoldenFixture[];
+  assignments: ScheduleAssignmentView[];
   conflictIds: Set<string>;
   days: string[];
   onAdd: (event: MouseEvent<HTMLButtonElement>) => void;
-  onEdit: (assignment: ScheduleAssignmentGoldenFixture, trigger: HTMLElement) => void;
+  onEdit: (assignment: ScheduleAssignmentView, trigger: HTMLElement) => void;
   onSelectDay: (day: string) => void;
   selectedAssignmentId: string | null;
   selectedDay: string;
@@ -495,7 +495,7 @@ function CompactSchedule({
             Editor por día
           </h2>
           <p className="mt-1 text-xs leading-5 text-foreground-muted">
-            Seleccioná un día para revisar y editar sus asignaciones.
+            Seleccionar un día para revisar y editar sus asignaciones.
           </p>
         </div>
         <Button onClick={onAdd} size="sm" type="button">
@@ -532,7 +532,7 @@ function CompactSchedule({
         <div className="mt-4 rounded-md border border-dashed border-border p-5 text-center">
           <p className="text-sm font-semibold text-foreground">No hay asignaciones para {selectedDay}</p>
           <p className="mt-1 text-sm leading-6 text-foreground-secondary">
-            Agregá una asignación para completar este día del plan.
+            Agregar una asignación para completar este día del plan.
           </p>
           <Button className="mt-4" onClick={onAdd} size="sm" type="button">
             <Plus aria-hidden="true" />
@@ -693,7 +693,7 @@ function useOverlayFocus({
 
 function AssignmentEditor({
   assignment,
-  fixture,
+  data,
   initialDay,
   mode,
   onClose,
@@ -702,14 +702,14 @@ function AssignmentEditor({
   plan,
   tutors,
 }: {
-  assignment?: ScheduleAssignmentGoldenFixture;
-  fixture: SchedulesGoldenFixture;
+  assignment?: ScheduleAssignmentView;
+  data: SchedulesScreenData;
   initialDay: string;
   mode: "add" | "edit";
   onClose: () => void;
   onSave: (draft: AssignmentDraft, originalId?: string) => void;
   open: boolean;
-  plan: SchedulePlanGoldenFixture;
+  plan: SchedulePlanView;
   tutors: string[];
 }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -737,7 +737,7 @@ function AssignmentEditor({
     event.preventDefault();
 
     if (!tutor || !day || !date || !start || !end || !modality.trim()) {
-      setError("Completá tutor, día, fecha, inicio, fin y modalidad para continuar.");
+      setError("Completar tutor, día, fecha, inicio, fin y modalidad para continuar.");
       return;
     }
 
@@ -792,7 +792,7 @@ function AssignmentEditor({
               {mode === "add" ? "Agregar asignación" : "Editar asignación"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-foreground-secondary" id="assignment-editor-description">
-              Revisá el formulario para actualizar la vista del plan seleccionado.
+              Revisar el formulario para actualizar la vista del plan seleccionado.
             </p>
           </div>
           <button
@@ -856,7 +856,7 @@ function AssignmentEditor({
                   required
                   value={day}
                 >
-                  {fixture.weekdays.map((weekday) => (
+                  {data.weekdays.map((weekday) => (
                     <option key={weekday} value={weekday}>
                       {weekday}
                     </option>
@@ -937,32 +937,32 @@ function AssignmentEditor({
   );
 }
 
-export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenProps) {
+export function SchedulesScreen({ data, state = "default" }: SchedulesScreenProps) {
   const [selectedPlanId, setSelectedPlanId] = useState(
-    () => fixture.plans.find((plan) => plan.isActive)?.id ?? fixture.plans[0]?.id ?? "",
+    () => data.plans.find((plan) => plan.isActive)?.id ?? data.plans[0]?.id ?? "",
   );
-  const [localAssignments, setLocalAssignments] = useState<ScheduleAssignmentGoldenFixture[]>(
-    () => fixture.assignments,
+  const [localAssignments, setLocalAssignments] = useState<ScheduleAssignmentView[]>(
+    () => data.assignments,
   );
-  const [selectedDay, setSelectedDay] = useState(fixture.weekdays[0] ?? "LUN");
+  const [selectedDay, setSelectedDay] = useState(data.weekdays[0] ?? "LUN");
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorState>(null);
   const [announcement, setAnnouncement] = useState<string | null>(null);
   const editorTriggerRef = useRef<HTMLElement | null>(null);
 
   const selectedPlan = useMemo(
-    () => fixture.plans.find((plan) => plan.id === selectedPlanId),
-    [fixture.plans, selectedPlanId],
+    () => data.plans.find((plan) => plan.id === selectedPlanId),
+    [data.plans, selectedPlanId],
   );
   const planAssignments = useMemo(
     () => localAssignments.filter((assignment) => assignment.planId === selectedPlanId),
     [localAssignments, selectedPlanId],
   );
   const tutors = useMemo(
-    () => Array.from(new Set(fixture.assignments.map((assignment) => assignment.tutor))),
-    [fixture.assignments],
+    () => Array.from(new Set(data.assignments.map((assignment) => assignment.tutor))),
+    [data.assignments],
   );
-  const stateFixture = findStateFixture(state);
+  const stateData = findStateData(state);
   const conflictIds = useMemo(
     () =>
       state === "conflict"
@@ -982,7 +982,7 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
   );
 
   const openEditEditor = useCallback(
-    (assignment: ScheduleAssignmentGoldenFixture, trigger: HTMLElement) => {
+    (assignment: ScheduleAssignmentView, trigger: HTMLElement) => {
       editorTriggerRef.current = trigger;
       setSelectedDay(assignment.day);
       setSelectedAssignmentId(assignment.id);
@@ -1005,8 +1005,8 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
 
   const handleSaveAssignment = useCallback(
     (draft: AssignmentDraft, originalId?: string) => {
-      const nextId = originalId ?? `assignment-preview-${localAssignments.length + 1}`;
-      const savedAssignment: ScheduleAssignmentGoldenFixture = {
+      const nextId = originalId ?? `assignment-local-${localAssignments.length + 1}`;
+      const savedAssignment: ScheduleAssignmentView = {
         ...draft,
         id: nextId,
       };
@@ -1042,7 +1042,7 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
         Crear plan
       </Button>
     ) : state === "required-action" ? (
-      <PreviewActionLink href="/admin/configuracion" label="Configurar ciclo" />
+      <PreviewActionLink href="/admin/settings" label="Configurar ciclo" />
     ) : (
       <Button
         disabled={state === "loading"}
@@ -1050,7 +1050,7 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
         type="button"
       >
         <Plus aria-hidden="true" />
-        {fixture.primaryAction}
+        {data.primaryAction}
       </Button>
     );
 
@@ -1063,7 +1063,7 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
       >
         <PageHeader
           action={headerAction}
-          description={fixture.description}
+          description={data.description}
           title="Horarios"
         />
 
@@ -1087,38 +1087,38 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
           </div>
         )}
 
-        {state === "error" && stateFixture && (
+        {state === "error" && stateData && (
           <InlineStateNotice
             action={
               <PreviewActionLink
-                href="/admin/horarios"
-                label={stateFixture.actionLabel ?? "Reintentar"}
+                href="/admin/schedules"
+                label={stateData.actionLabel ?? "Reintentar"}
               />
             }
-            description={stateFixture.description}
+            description={stateData.description}
             icon={<CircleAlert aria-hidden="true" className="h-5 w-5" />}
-            title={stateFixture.title}
+            title={stateData.title}
             tone="danger"
           />
         )}
 
-        {(state === "no-plan" || state === "required-action") && stateFixture && (
+        {(state === "no-plan" || state === "required-action") && stateData && (
           <InlineStateNotice
             action={
               state === "no-plan" ? (
                 <Button onClick={handlePreviewNewPlan} size="sm" type="button" variant="outline">
-                  {stateFixture.actionLabel ?? "Crear plan"}
+                  {stateData.actionLabel ?? "Crear plan"}
                 </Button>
               ) : (
                 <PreviewActionLink
-                  href="/admin/configuracion"
-                  label={stateFixture.actionLabel ?? "Configurar ciclo"}
+                  href="/admin/settings"
+                  label={stateData.actionLabel ?? "Configurar ciclo"}
                 />
               )
             }
-            description={stateFixture.description}
+            description={stateData.description}
             icon={<Settings2 aria-hidden="true" className="h-5 w-5" />}
-            title={stateFixture.title}
+            title={stateData.title}
             tone="warning"
           />
         )}
@@ -1126,7 +1126,7 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
         {state !== "loading" && state !== "error" && state !== "no-plan" && state !== "required-action" && selectedPlan && (
           <>
             <PlanContext
-              fixture={fixture}
+              data={data}
               onNewPlan={handlePreviewNewPlan}
               onSelectPlan={(planId) => {
                 setSelectedPlanId(planId);
@@ -1137,7 +1137,7 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
               selectedPlanId={selectedPlanId}
             />
 
-            {state === "conflict" && stateFixture && (
+            {state === "conflict" && stateData && (
               <InlineStateNotice
                 action={
                   <Button
@@ -1153,12 +1153,12 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
                     type="button"
                     variant="outline"
                   >
-                    {stateFixture.actionLabel ?? "Revisar conflicto"}
+                    {stateData.actionLabel ?? "Revisar conflicto"}
                   </Button>
                 }
-                description={stateFixture.description}
+                description={stateData.description}
                 icon={<CircleAlert aria-hidden="true" className="h-5 w-5" />}
-                title={stateFixture.title}
+                title={stateData.title}
                 tone="danger"
               />
             )}
@@ -1172,14 +1172,14 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
                       type="button"
                     >
                       <Plus aria-hidden="true" />
-                      {stateFixture?.actionLabel ?? fixture.primaryAction}
+                      {stateData?.actionLabel ?? data.primaryAction}
                     </Button>
                   }
                   description={
-                    stateFixture?.description ??
-                    "Agregá una asignación para comenzar a organizar las guardias."
+                    stateData?.description ??
+                    "Agregar una asignación para comenzar a organizar las guardias."
                   }
-                  title={stateFixture?.title ?? fixture.emptyPlanLabel}
+                  title={stateData?.title ?? data.emptyPlanLabel}
                 />
               </div>
             ) : (
@@ -1188,7 +1188,7 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
                   <ScheduleGrid
                     assignments={planAssignments}
                     conflictIds={conflictIds}
-                    days={fixture.weekdays}
+                    days={data.weekdays}
                     onEdit={openEditEditor}
                     selectedAssignmentId={selectedAssignmentId}
                     title="Grilla semanal"
@@ -1198,19 +1198,19 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
                   <ScheduleGrid
                     assignments={planAssignments}
                     conflictIds={conflictIds}
-                    days={fixture.weekdays.slice(0, 3)}
+                    days={data.weekdays.slice(0, 3)}
                     onEdit={openEditEditor}
                     selectedAssignmentId={selectedAssignmentId}
                     title="Grilla reducida"
                   />
                   <p className="mt-3 text-xs leading-5 text-foreground-muted">
-                    La vista Medium muestra tres días a la vez; usá Compact para recorrer cada día.
+                    La vista Medium muestra tres días a la vez; utilizar Compact para recorrer cada día.
                   </p>
                 </div>
                 <CompactSchedule
                   assignments={planAssignments}
                   conflictIds={conflictIds}
-                  days={fixture.weekdays}
+                  days={data.weekdays}
                   onAdd={(event) => openAddEditor(event.currentTarget)}
                   onEdit={openEditEditor}
                   onSelectDay={setSelectedDay}
@@ -1228,7 +1228,7 @@ export function SchedulesScreen({ fixture, state = "default" }: SchedulesScreenP
       {selectedPlan && editor && (
         <AssignmentEditor
           assignment={editor?.assignment}
-          fixture={fixture}
+          data={data}
           initialDay={selectedDay}
           mode={editor?.mode ?? "add"}
           onClose={closeEditor}

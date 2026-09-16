@@ -1,32 +1,32 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { goldenScreenFixtures } from "@/features/golden-screens/fixtures";
+import { loginScreenData } from "@/mocks/login.mock";
 
 import { LoginScreen } from "./login-screen";
 
-const fixture = goldenScreenFixtures.login;
+const data = loginScreenData;
 
 describe("LoginScreen", () => {
   it("renders the restricted access default with one clear heading", () => {
-    render(<LoginScreen fixture={fixture} />);
+    render(<LoginScreen data={data} />);
 
     expect(screen.getAllByRole("heading")).toHaveLength(2);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      fixture.title,
+      data.title,
     );
     expect(
-      screen.getByRole("button", { name: fixture.ctaLabel }),
+      screen.getByRole("button", { name: data.ctaLabel }),
     ).toBeEnabled();
     expect(screen.getByText(/no hay registro público/i)).toBeInTheDocument();
   });
 
   it("exposes loading as a disabled, presentational state", () => {
-    render(<LoginScreen fixture={fixture} state="loading" />);
+    render(<LoginScreen data={data} state="loading" />);
 
     expect(screen.getByRole("button")).toBeDisabled();
     expect(screen.getByRole("status")).toHaveTextContent(
-      fixture.states.loadingLabel,
+      data.states.loadingLabel,
     );
   });
 
@@ -34,30 +34,30 @@ describe("LoginScreen", () => {
     const onRetry = vi.fn();
 
     render(
-      <LoginScreen fixture={fixture} onRetry={onRetry} state="error" />,
+      <LoginScreen data={data} onRetry={onRetry} state="error" />,
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      fixture.states.errorTitle,
+      data.states.errorTitle,
     );
     expect(screen.getByRole("alert")).toHaveTextContent(
-      fixture.states.errorDescription,
+      data.states.errorDescription,
     );
     fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(
-      screen.queryByText(fixture.states.permissionDeniedTitle),
+      screen.queryByText(data.states.permissionDeniedTitle),
     ).not.toBeInTheDocument();
   });
 
   it("renders permission denial with distinct recovery guidance", () => {
-    render(<LoginScreen fixture={fixture} state="permission-denied" />);
+    render(<LoginScreen data={data} state="permission-denied" />);
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      fixture.states.permissionDeniedTitle,
+      data.states.permissionDeniedTitle,
     );
     expect(screen.getByRole("status")).toHaveTextContent(
-      fixture.states.permissionDeniedDescription,
+      data.states.permissionDeniedDescription,
     );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });

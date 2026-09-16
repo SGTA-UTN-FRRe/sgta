@@ -1,13 +1,16 @@
-import { render, screen } from "@testing-library/react";
+import { redirect } from "next/navigation";
+import { describe, expect, it, vi } from "vitest";
 
 import Home from "./page";
 
-describe("Home", () => {
-  it("shows the SGTA landing page", () => {
-    render(<Home />);
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn(),
+}));
 
-    expect(
-      screen.getByRole("heading", { name: "Sistema de Gestión de Tutorías" }),
-    ).toBeInTheDocument();
+describe("Home route", () => {
+  it("redirects the root route to login", () => {
+    Home();
+
+    expect(redirect).toHaveBeenCalledWith("/login");
   });
 });

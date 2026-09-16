@@ -7,8 +7,8 @@ export interface FaroIllustrationProps extends SVGProps<SVGSVGElement> {
 }
 
 /**
- * Ilustracion geometrica minimalista del Faro para estados vacios y superficies
- * de orientacion. Sus colores se consumen desde los tokens de SGTA.
+ * Minimal Faro geometry for empty states and orientation surfaces.
+ * Its colors come from the SGTA design tokens.
  */
 export function FaroIllustration({ className, ...props }: FaroIllustrationProps) {
   return (

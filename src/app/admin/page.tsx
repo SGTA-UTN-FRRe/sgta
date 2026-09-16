@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { AdminOverviewScreen } from "@/features/admin-overview/admin-overview-screen";
-import { goldenScreenFixtures } from "@/features/golden-screens/fixtures";
+import { adminOverviewScreenData } from "@/mocks/admin-overview.mock";
 
 export const metadata: Metadata = {
   title: "Inicio | SGTA",
@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminOverviewPage() {
-  return <AdminOverviewScreen fixture={goldenScreenFixtures.adminOverview} />;
+  return <AdminOverviewScreen data={adminOverviewScreenData} />;
 }
