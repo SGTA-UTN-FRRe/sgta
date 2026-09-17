@@ -4,7 +4,10 @@ import { adminOverviewScreenData, adminOverviewStateFixtures } from "./admin-ove
 import { hoursScreenData, hoursStateFixtures } from "./hours.mock";
 import { loginScreenData, loginStateFixtures } from "./login.mock";
 import { schedulesScreenData, schedulesStateFixtures } from "./schedules.mock";
-import { tutorsScreenData, tutorsStateFixtures } from "./tutors.mock";
+import {
+  tutorsScreenData,
+  tutorsStateFixtures,
+} from "@/features/tutors/tutors-screen.fixtures";
 
 const screenData = {
   login: loginScreenData,

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { getDatabase } from "@/db/client";
 import { TutorsScreen } from "@/features/tutors/tutors-screen";
+import type { TutorsScreenData } from "@/features/tutors/tutor-screen-types";
 import {
   getActiveCatalogOptions,
   listTutors,
@@ -19,26 +20,16 @@ export const dynamic = "force-dynamic";
 
 function toScreenData(
   tutors: Awaited<ReturnType<typeof listTutors>>,
-) {
+): TutorsScreenData {
   return {
     description,
     searchPlaceholder: "Buscar tutor",
     careerFilterLabel: "Carrera",
     statusFilterLabel: "Estado",
-    rows: tutors.map((tutor) => ({
-      id: tutor.id,
-      name: tutor.formalName,
-      career: tutor.primaryCareer.name,
-      scholarship: tutor.scholarshipReference?.type ?? "Sin referencia",
-      subjectCount: tutor.subjectCount,
-      status:
-        tutor.status === "ACTIVE" ? ("active" as const) : ("inactive" as const),
-      statusLabel: tutor.status === "ACTIVE" ? "Activo" : "Inactivo",
-      cycleLabel: tutor.currentCycleLabel ?? "Sin ciclo abierto",
-    })),
-    emptyTitle: "Todavía no hay tutores",
+    rows: tutors,
+    emptyTitle: "Todav\u00eda no hay tutores",
     emptyAction: "Agregar tutor",
-  } as const;
+  };
 }
 
 export default async function AdminTutorsPage() {
