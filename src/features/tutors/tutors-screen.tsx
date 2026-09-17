@@ -58,8 +58,39 @@ export type TutorsScreenState =
 
 export interface TutorsScreenProps {
   data: TutorsScreenData;
+  catalogOptions?: TutorsCatalogOptions;
+  requiredAction?: "catalog" | "cycle";
   state?: TutorsScreenState;
 }
+
+export type TutorsCatalogOptions = {
+  careers: Array<{
+    id: string;
+    name: string;
+    status: "ACTIVE" | "INACTIVE";
+  }>;
+  subjects: Array<{
+    id: string;
+    name: string;
+    careerId: string;
+    careerName: string;
+    status: "ACTIVE" | "INACTIVE";
+  }>;
+  scholarshipReferences: Array<{
+    id: string;
+    type: string;
+    knownRequiredHours: number | null;
+    notes: string | null;
+    status: "ACTIVE" | "INACTIVE";
+  }>;
+  currentCycle: {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    status: "OPEN" | "CLOSED";
+  } | null;
+};
 
 type FilterStatus = TutorStatus | "all";
 type SheetMode = "add" | "edit" | "view";
@@ -82,9 +113,22 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
-function findStateData(state: TutorsScreenState): ScreenStateFixture | undefined {
+function findStateData(
+  state: TutorsScreenState,
+  requiredAction: "catalog" | "cycle",
+): ScreenStateFixture | undefined {
   if (state === "default" || state === "success") {
     return undefined;
+  }
+
+  if (state === "required-action" && requiredAction === "catalog") {
+    return {
+      state,
+      title: "Completar el catálogo académico",
+      description:
+        "Es necesario contar con al menos una carrera activa para gestionar tutores.",
+      actionLabel: "Configurar catálogo",
+    };
   }
 
   return tutorsStateFixtures.find(
@@ -738,6 +782,8 @@ function InlineStateNotice({
 
 function TutorSheet({
   careers,
+  currentCycleLabel,
+  hasScholarshipReferences,
   mode,
   onClose,
   onPreviewSaved,
@@ -745,6 +791,8 @@ function TutorSheet({
   tutor,
 }: {
   careers: string[];
+  currentCycleLabel: string | null;
+  hasScholarshipReferences: boolean;
   mode: SheetMode | null;
   onClose: () => void;
   onPreviewSaved: () => void;
@@ -954,13 +1002,16 @@ function TutorSheet({
                 <div className="rounded-md border border-border-subtle p-4">
                   <dt className="text-xs font-medium text-foreground-muted">Ciclo</dt>
                   <dd className="mt-1 text-sm font-semibold text-foreground">
-                    {tutor?.cycleLabel ?? "2.º cuatrimestre 2026"}
+                    {tutor?.cycleLabel ?? currentCycleLabel ?? "Sin ciclo abierto"}
                   </dd>
                 </div>
                 <div className="rounded-md border border-border-subtle p-4">
                   <dt className="text-xs font-medium text-foreground-muted">Beca</dt>
                   <dd className="mt-1 text-sm font-semibold text-foreground">
-                    {tutor?.scholarship ?? "Pendiente de referencia"}
+                    {tutor?.scholarship ??
+                      (hasScholarshipReferences
+                        ? "Seleccionar referencia"
+                        : "Sin referencias activas")}
                   </dd>
                 </div>
               </dl>
@@ -1007,7 +1058,9 @@ function TutorSheet({
 }
 
 export function TutorsScreen({
+  catalogOptions,
   data,
+  requiredAction = "cycle",
   state = "default",
 }: TutorsScreenProps) {
   const [search, setSearch] = useState("");
@@ -1019,8 +1072,11 @@ export function TutorsScreen({
   const lastSheetTriggerRef = useRef<HTMLElement | null>(null);
 
   const careers = useMemo(
-    () => Array.from(new Set(data.rows.map((tutor) => tutor.career))),
-    [data.rows],
+    () =>
+      catalogOptions === undefined
+        ? Array.from(new Set(data.rows.map((tutor) => tutor.career)))
+        : catalogOptions.careers.map((career) => career.name),
+    [catalogOptions, data.rows],
   );
 
   const filteredRows = useMemo(() => {
@@ -1040,7 +1096,7 @@ export function TutorsScreen({
   const shouldShowSearchEmpty =
     state === "search-empty" ||
     (state === "default" && hasActiveFilters && filteredRows.length === 0);
-  const stateData = findStateData(state);
+  const stateData = findStateData(state, requiredAction);
 
   const openSheet = useCallback(
     (
@@ -1108,7 +1164,10 @@ export function TutorsScreen({
 
   const headerAction =
     state === "required-action" ? (
-      <PreviewActionLink href="/admin/settings" label="Configurar ciclo" />
+      <PreviewActionLink
+        href="/admin/settings"
+        label={stateData?.actionLabel ?? "Configurar ciclo"}
+      />
     ) : (
       <Button
         disabled={state === "loading"}
@@ -1271,6 +1330,10 @@ export function TutorsScreen({
 
       <TutorSheet
         careers={careers}
+        currentCycleLabel={catalogOptions?.currentCycle?.name ?? null}
+        hasScholarshipReferences={
+          (catalogOptions?.scholarshipReferences.length ?? 0) > 0
+        }
         mode={sheetMode}
         onClose={closeSheet}
         onPreviewSaved={handlePreviewSaved}

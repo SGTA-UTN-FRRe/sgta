@@ -18,6 +18,8 @@ vi.mock("@/auth/index", () => ({ getAuth: authMocks.getAuth }));
 vi.mock("@/db/client", () => ({ getDatabase: authMocks.getDatabase }));
 
 import { GET as getAdminCycles } from "@/app/api/admin/cycles/route";
+import { GET as getAdminTutorCollection } from "@/app/api/admin/tutors/route";
+import { POST as postAdminCareers } from "@/app/api/admin/settings/careers/route";
 import { requireApiRole, requireRole } from "@/auth/authorization";
 import { createAuthOptions } from "@/auth/options";
 import type { AuthEnvironment } from "@/auth/options";
@@ -1102,6 +1104,48 @@ describe("PostgreSQL foundation integration", () => {
     });
     const tutorCycleResponse = await getAdminCycles();
     expect(tutorCycleResponse.status).toBe(403);
+  });
+
+  it("enforces Admin authorization on tutor and catalog route handlers", async () => {
+    const { admin, tutor } = await seedIdentities();
+
+    authMocks.getSession.mockResolvedValue(null);
+    const unauthenticatedResponse = await getAdminTutorCollection(
+      new Request("http://localhost/api/admin/tutors"),
+    );
+    expect(unauthenticatedResponse.status).toBe(401);
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: tutor.id, role: "ADMIN" },
+    });
+    const tutorListResponse = await getAdminTutorCollection(
+      new Request("http://localhost/api/admin/tutors"),
+    );
+    const tutorReferenceMutationResponse = await postAdminCareers(
+      new Request("http://localhost/api/admin/settings/careers", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "Denied Career" }),
+      }),
+    );
+    expect(tutorListResponse.status).toBe(403);
+    expect(tutorReferenceMutationResponse.status).toBe(403);
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: admin.id, role: "TUTOR" },
+    });
+    const adminListResponse = await getAdminTutorCollection(
+      new Request("http://localhost/api/admin/tutors"),
+    );
+    const adminReferenceMutationResponse = await postAdminCareers(
+      new Request("http://localhost/api/admin/settings/careers", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "Integration Career" }),
+      }),
+    );
+    expect(adminListResponse.status).toBe(200);
+    expect(adminReferenceMutationResponse.status).toBe(201);
   });
 
   it("records the complete cycle lifecycle with actor attribution and history", async () => {
