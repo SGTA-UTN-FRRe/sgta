@@ -1,16 +1,22 @@
 import type { ReactNode } from "react";
 
+import { requireRole } from "@/auth/authorization";
 import { AppSidebar } from "@/shared/components/app-sidebar";
 import { PageContainer } from "@/shared/components/page-container";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const user = await requireRole("ADMIN");
+
   return (
     <div className="flex min-h-svh bg-canvas">
-      <AppSidebar variant="admin" />
+      <AppSidebar
+        variant="admin"
+        user={{ name: user.name, role: user.role }}
+      />
       <div className="min-w-0 flex-1">
         <a
           href="#admin-main-content"

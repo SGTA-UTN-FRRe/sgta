@@ -1,5 +1,13 @@
 import { redirect } from "next/navigation";
 
-export default function Home() {
+import { getAuthorizedUser } from "@/auth/authorization";
+
+export default async function Home() {
+  const user = await getAuthorizedUser({ allowUnconfigured: true });
+
+  if (user !== null) {
+    redirect(user.role === "ADMIN" ? "/admin" : "/tutor");
+  }
+
   redirect("/login");
 }

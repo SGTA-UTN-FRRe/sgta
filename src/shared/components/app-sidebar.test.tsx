@@ -30,6 +30,18 @@ describe("AppSidebar", () => {
     expect(screen.queryByText("Reportes")).not.toBeInTheDocument();
   });
 
+  it("renders only safe authenticated display fields", () => {
+    render(
+      <AppSidebar
+        variant="admin"
+        user={{ name: "Admin Example", role: "ADMIN" }}
+      />,
+    );
+
+    expect(screen.getByText("Admin Example")).toBeInTheDocument();
+    expect(screen.getByText("Administrador")).toBeInTheDocument();
+  });
+
   it("renders active Faro Marker on active link", () => {
     render(<AppSidebar variant="admin" />);
     const marker = screen.getByTestId("faro-marker");

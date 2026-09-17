@@ -1,10 +1,16 @@
-export default function AdminSettingsPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-foreground">Configuración</h1>
-      <p className="mt-1 text-sm text-foreground-secondary">
-        Ajustes de ciclos lectivos, categorías de horas y catálogos de referencia.
-      </p>
-    </div>
-  );
+import { getDatabase } from "@/db/client";
+import {
+  getCurrentAdministrativeCycle,
+  listAdministrativeCycles,
+} from "@/features/cycles/cycle-service";
+import { SettingsScreen } from "@/features/settings/settings-screen";
+
+export default async function AdminSettingsPage() {
+  const database = getDatabase();
+  const [currentCycle, cycles] = await Promise.all([
+    getCurrentAdministrativeCycle(database),
+    listAdministrativeCycles(database),
+  ]);
+
+  return <SettingsScreen currentCycle={currentCycle} cycles={cycles} />;
 }

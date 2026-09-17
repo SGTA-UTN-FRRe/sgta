@@ -12,9 +12,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Project
 
-SGTA is an executable Next.js scaffold for the Tutorias UTN FRRe interface. The current runtime includes the public login route with a root redirect, Admin and Tutor route/layout skeletons, responsive navigation, shared UI components, local UI primitives, Vitest/Testing Library coverage, and a Playwright UI smoke suite.
+SGTA is an executable Next.js application for the Tutorias UTN FRRe interface. The current runtime includes the public login route with role-aware root redirects, protected Admin and Tutor route/layout shells, responsive navigation, shared UI components, local UI primitives, a PostgreSQL/Drizzle persistence boundary, provisioned Google-only Better Auth configuration, server-side authorization, AdministrativeCycle lifecycle controls, auditable events, Vitest/Testing Library coverage, PostgreSQL integration coverage, and a Playwright UI smoke suite.
 
-The current runtime does not include PostgreSQL, Drizzle, Better Auth, Google OAuth, server-side role guards, SGTA domain persistence, Google Sheets access, or operational workflows. The reserved `src/auth/`, `src/db/`, and `src/features/` boundaries do not prove that those subsystems exist.
+The current runtime does not yet include Tutor CRUD, academic catalog persistence, hour accounting, scheduling, attendance, consultations, Google Sheets access, reporting, or production operational workflows. The `src/auth/` and `src/db/` boundaries contain active secure-foundation implementations, while `src/features/` contains the implemented cycle/settings slice and reserved locations for later verticals.
 
 ## Instruction hierarchy
 
@@ -82,12 +82,13 @@ Key boundaries:
 
 ```text
 src/app/              App Router routes, layouts, metadata, and global styles
-src/features/         feature-owned UI and future vertical slices
+src/features/         implemented cycle/settings UI and future vertical slices
 src/shared/           small cross-feature product components and utilities
 src/components/ui/    low-level reusable UI primitives
-src/auth/             reserved authentication and authorization boundary
-src/db/               reserved persistence, schema, and migration boundary
+src/auth/             active authentication, session, and authorization boundary
+src/db/               active PostgreSQL persistence, schema, audit, and migration boundary
 tests/e2e/            Playwright browser scenarios
+tests/integration/    isolated PostgreSQL/Testcontainers scenarios
 ```
 
 Keep route composition thin and place feature-specific behavior under a feature-owned directory within `src/features/`.
@@ -95,10 +96,15 @@ Keep route composition thin and place feature-specific behavior under a feature-
 ## Key paths
 
 - `src/app/` - routes, layouts, metadata, and global styles;
-- `src/features/` - future feature vertical slices;
+- `src/features/` - implemented cycle/settings slice and future feature vertical slices;
 - `src/shared/` - shared product components and utilities;
 - `src/components/ui/` - low-level UI primitives;
-- `tests/` - Playwright end-to-end scenarios;
+- `src/auth/` - Better Auth configuration, identity policy, provisioning, and server authorization;
+- `src/db/` - Drizzle schema, audit validation/recording, and PostgreSQL client boundary;
+- `drizzle/` - committed Drizzle migration artifacts;
+- `tests/` - unit/component, integration, and Playwright scenarios;
+- `vitest.integration.config.ts` - isolated Node/Testcontainers test configuration;
+- `scripts/bootstrap-admin.ts` - operator-only first Admin provisioning command;
 - `docs/` - shared decisions and current testing contract;
 - `.github/workflows/ci.yml` - CI topology and `CI Gate`;
 - `.github/PULL_REQUEST_TEMPLATE.md` - pull request structure.
@@ -109,9 +115,12 @@ Keep route composition thin and place feature-specific behavior under a feature-
 | --- | --- |
 | Install | `corepack pnpm install --frozen-lockfile` |
 | Dev | `corepack pnpm dev` |
+| Migration check | `corepack pnpm db:check` |
+| Apply migrations | `corepack pnpm db:migrate` |
 | Lint | `corepack pnpm lint` |
 | Type check | `corepack pnpm typecheck` |
 | Unit/component tests | `corepack pnpm test` |
+| PostgreSQL integration tests | `corepack pnpm test:integration` |
 | E2E | `corepack pnpm test:e2e` |
 | Production build | `corepack pnpm build` |
 

@@ -29,6 +29,10 @@ export type AppSidebarVariant =
 
 export interface AppSidebarProps {
   variant: AppSidebarVariant;
+  user?: {
+    name: string;
+    role: "ADMIN" | "TUTOR";
+  };
 }
 
 interface NavItem {
@@ -59,7 +63,7 @@ function isAdminVariant(variant: AppSidebarVariant) {
   return variant !== "tutor";
 }
 
-export function AppSidebar({ variant }: AppSidebarProps) {
+export function AppSidebar({ variant, user }: AppSidebarProps) {
   const pathname = usePathname() ?? "";
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileTriggerRef = useRef<HTMLButtonElement>(null);
@@ -71,7 +75,9 @@ export function AppSidebar({ variant }: AppSidebarProps) {
   const secondaryItems = isAdmin ? ADMIN_SECONDARY_NAV : [];
   const homeHref = isAdmin ? "/admin" : "/tutor";
   const productLabel = isAdmin ? "Navegación de administración" : "Navegación del tutor";
-  const roleLabel = isAdmin ? "Administrador" : "Tutor";
+  const roleLabel = (user?.role ?? (isAdmin ? "ADMIN" : "TUTOR")) === "ADMIN"
+    ? "Administrador"
+    : "Tutor";
 
   const isLinkActive = (href: string): boolean => {
     if (href === "/admin" || href === "/tutor") {
@@ -195,7 +201,16 @@ export function AppSidebar({ variant }: AppSidebarProps) {
       <div className="border-t border-border-subtle p-3">
         <div className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm text-nav-muted">
           <UserRound className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden="true" />
-          <span className="truncate md:hidden lg:inline">{roleLabel}</span>
+          {user === undefined ? (
+            <span className="truncate md:hidden lg:inline">{roleLabel}</span>
+          ) : (
+            <span className="flex min-w-0 flex-col md:hidden lg:flex">
+              <span className="truncate text-sm font-semibold text-nav-foreground">
+                {user.name}
+              </span>
+              <span className="truncate text-xs text-nav-muted">{roleLabel}</span>
+            </span>
+          )}
         </div>
       </div>
     </div>

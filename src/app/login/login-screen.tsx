@@ -1,5 +1,6 @@
 "use client";
 
+import { createAuthClient } from "better-auth/react";
 import {
   ArrowRight,
   CircleAlert,
@@ -7,24 +8,25 @@ import {
   LoaderCircle,
   ShieldCheck,
 } from "lucide-react";
+import { useState } from "react";
 
 import type { LoginScreenData } from "@/mocks/login.mock";
 import { Button } from "@/components/ui/button";
 import { FaroIcon } from "@/shared/components/faro-icon";
 
-export type LoginPreviewState =
-  | "default"
-  | "loading"
-  | "error"
-  | "permission-denied";
+import {
+  loginStateFromAuthError,
+  type LoginAuthState,
+} from "./login-auth";
+
+const authClient = createAuthClient();
+
+export type LoginPreviewState = LoginAuthState;
 
 export interface LoginScreenProps {
   data: LoginScreenData;
   state?: LoginPreviewState;
-  /**
-   * Presentational preview boundary: identity integration is intentionally
-   * injected by the caller and is not started or persisted here.
-   */
+  /** Optional callback override used by isolated component tests and previews. */
   onContinue?: () => void;
   onRetry?: () => void;
 }
@@ -143,17 +145,42 @@ export function LoginScreen({
   onContinue,
   onRetry,
 }: LoginScreenProps) {
-  const isLoading = state === "loading";
-  const isError = state === "error";
+  const [interactionState, setInteractionState] =
+    useState<LoginPreviewState>("default");
+  const currentState = state === "default" ? interactionState : state;
+
+  const isLoading = currentState === "loading";
+  const isError = currentState === "error";
   const buttonLabel = isError ? "Reintentar" : data.ctaLabel;
-  const handleContinue = isError ? onRetry : onContinue;
+
+  const startGoogleSignIn = () => {
+    setInteractionState("loading");
+
+    void authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/",
+      errorCallbackURL: "/login",
+    }).then((result) => {
+      const response = result as unknown as { error?: unknown };
+
+      if (response.error !== undefined) {
+        setInteractionState(loginStateFromAuthError(response.error));
+      }
+    }).catch((error: unknown) => {
+      setInteractionState(loginStateFromAuthError(error));
+    });
+  };
+
+  const handleContinue = isError
+    ? onRetry ?? startGoogleSignIn
+    : onContinue ?? startGoogleSignIn;
 
   return (
     <main
       aria-labelledby="login-title"
       className="min-h-svh overflow-x-hidden bg-canvas"
       data-slot="login-screen"
-      data-state={state}
+      data-state={currentState}
     >
       <div className="grid min-h-svh md:grid-cols-[minmax(18rem,0.82fr)_minmax(28rem,1.18fr)]">
         <section
