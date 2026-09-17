@@ -41,6 +41,21 @@ import {
   getCurrentAdministrativeCycle,
   listAdministrativeCycles,
 } from "@/features/cycles/cycle-service";
+import {
+  createCareer,
+  createScholarshipReference,
+  createSubject,
+  createTutor,
+  getActiveCatalogOptions,
+  listSubjectCoverage,
+  listTutors,
+  TUTOR_ERROR_CODES,
+  transitionCareerStatus,
+  transitionScholarshipReferenceStatus,
+  transitionTutorStatus,
+  updateScholarshipReference,
+  updateTutor,
+} from "@/features/tutors/tutor-service";
 import { provisionUser } from "@/auth/provisioning";
 
 import {
@@ -521,6 +536,342 @@ describe("PostgreSQL foundation integration", () => {
         .select({ tutorId: tutorCycleMembership.tutorId, cycleId: tutorCycleMembership.cycleId })
         .from(tutorCycleMembership),
     ).resolves.toEqual([{ tutorId: createdTutor!.id, cycleId: createdCycle!.id }]);
+  });
+
+  it("runs tutor mutations transactionally and derives current coverage from canonical rows", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const auditContext = { actorId: admin.id, requestId: "tutor-service-test" };
+
+    const createdCareer = await createCareer(
+      database,
+      { name: "Computer Science" },
+      auditContext,
+    );
+    const secondaryCareer = await createCareer(
+      database,
+      { name: "Business" },
+      auditContext,
+    );
+    const firstSubject = await createSubject(
+      database,
+      { name: "Algorithms", careerId: createdCareer.id },
+      auditContext,
+    );
+    const secondSubject = await createSubject(
+      database,
+      { name: "Data Structures", careerId: createdCareer.id },
+      auditContext,
+    );
+    const secondarySubject = await createSubject(
+      database,
+      { name: "Accounting", careerId: secondaryCareer.id },
+      auditContext,
+    );
+    const scholarship = await createScholarshipReference(
+      database,
+      {
+        type: "Institutional Scholarship",
+        knownRequiredHours: 120,
+        notes: "Reference only",
+      },
+      auditContext,
+    );
+    await expect(
+      updateScholarshipReference(
+        database,
+        scholarship.id,
+        { knownRequiredHours: 144, notes: "Updated reference" },
+        auditContext,
+      ),
+    ).resolves.toMatchObject({
+      id: scholarship.id,
+      knownRequiredHours: 144,
+      notes: "Updated reference",
+    });
+    const openCycle = await createAdministrativeCycle(
+      database,
+      {
+        name: "2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+      },
+      auditContext,
+    );
+    const [closedCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "2026",
+        startDate: "2026-01-01",
+        endDate: "2026-12-31",
+        status: "CLOSED",
+      })
+      .returning({ id: administrativeCycle.id });
+
+    const createdTutor = await createTutor(
+      database,
+      {
+        firstName: " Ada ",
+        lastName: " Lovelace ",
+        preferredDisplayName: "Ada",
+        institutionalIdentifier: "LEG-001",
+        primaryCareerId: createdCareer.id,
+        subjectIds: [firstSubject.id],
+        cycleId: openCycle.id,
+        scholarshipReferenceId: scholarship.id,
+      },
+      auditContext,
+    );
+
+    await database.insert(tutorCycleMembership).values({
+      tutorId: createdTutor.id,
+      cycleId: closedCycle!.id,
+    });
+
+    expect(createdTutor).toMatchObject({
+      formalName: "Lovelace, Ada",
+      currentCycle: { id: openCycle.id, name: "2027", status: "OPEN" },
+      currentCycleLabel: "2027",
+      scholarshipReference: { id: scholarship.id, type: "Institutional Scholarship" },
+      subjects: [{ id: firstSubject.id, careerId: createdCareer.id }],
+      memberships: [{ cycle: { id: openCycle.id } }],
+    });
+
+    const updatedTutor = await updateTutor(
+      database,
+      createdTutor.id,
+      {
+        subjectIds: [secondSubject.id],
+        cycleId: openCycle.id,
+        scholarshipReferenceId: null,
+      },
+      auditContext,
+    );
+
+    expect(updatedTutor).toMatchObject({
+      scholarshipReference: null,
+      subjects: [{ id: secondSubject.id }],
+    });
+    expect(updatedTutor.memberships.map((membership) => membership.cycle.id)).toEqual([
+      openCycle.id,
+      closedCycle!.id,
+    ]);
+    expect(
+      updatedTutor.memberships.find(
+        (membership) => membership.cycle.id === closedCycle!.id,
+      ),
+    ).toMatchObject({ cycle: { status: "CLOSED" }, scholarshipReference: null });
+
+    await expect(
+      createTutor(
+        database,
+        {
+          firstName: "Grace",
+          lastName: "Hopper",
+          primaryCareerId: createdCareer.id,
+          subjectIds: [secondarySubject.id],
+          cycleId: openCycle.id,
+        },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.careerSubjectMismatch });
+    await expect(
+      createTutor(
+        database,
+        {
+          firstName: "Katherine",
+          lastName: "Johnson",
+          primaryCareerId: createdCareer.id,
+          cycleId: closedCycle!.id,
+        },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.cycleNotOpen });
+
+    const tutorList = await listTutors(database, {
+      search: "ada",
+      status: "ACTIVE",
+      limit: 25,
+      offset: 0,
+    });
+    expect(tutorList).toHaveLength(1);
+    expect(tutorList[0]).toMatchObject({
+      id: createdTutor.id,
+      formalName: "Lovelace, Ada",
+      subjectCount: 1,
+      currentCycleLabel: "2027",
+    });
+
+    const catalogOptions = await getActiveCatalogOptions(database);
+    expect(catalogOptions).toMatchObject({
+      currentCycle: { id: openCycle.id },
+      careers: expect.arrayContaining([
+        expect.objectContaining({ id: createdCareer.id, status: "ACTIVE" }),
+      ]),
+      scholarshipReferences: expect.arrayContaining([
+        expect.objectContaining({ id: scholarship.id, status: "ACTIVE" }),
+      ]),
+    });
+
+    const activeCoverage = await listSubjectCoverage(database);
+    expect(activeCoverage).toMatchObject({
+      currentCycle: { id: openCycle.id },
+      subjects: [
+        {
+          subject: { id: secondSubject.id, name: "Data Structures" },
+          tutors: [{ id: createdTutor.id, formalName: "Lovelace, Ada" }],
+        },
+      ],
+    });
+
+    const inactiveTutor = await transitionTutorStatus(
+      database,
+      createdTutor.id,
+      { status: "INACTIVE" },
+      auditContext,
+    );
+    expect(inactiveTutor.status).toBe("INACTIVE");
+    await expect(
+      transitionTutorStatus(
+        database,
+        createdTutor.id,
+        { status: "INACTIVE" },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.statusAlreadySet });
+    await expect(listSubjectCoverage(database)).resolves.toMatchObject({
+      currentCycle: { id: openCycle.id },
+      subjects: [],
+    });
+
+    const reactivatedTutor = await transitionTutorStatus(
+      database,
+      createdTutor.id,
+      { status: "ACTIVE" },
+      auditContext,
+    );
+    expect(reactivatedTutor.status).toBe("ACTIVE");
+    const reactivatedCoverage = await listSubjectCoverage(database);
+    expect(reactivatedCoverage.subjects).toHaveLength(1);
+    expect(reactivatedCoverage.subjects[0]?.subject.id).toBe(secondSubject.id);
+    expect(reactivatedCoverage.subjects[0]?.tutors).toEqual([
+      expect.objectContaining({ id: createdTutor.id }),
+    ]);
+
+    await transitionCareerStatus(
+      database,
+      secondaryCareer.id,
+      { status: "INACTIVE" },
+      auditContext,
+    );
+    await expect(
+      createSubject(
+        database,
+        { name: "Inactive Career Subject", careerId: secondaryCareer.id },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.inactiveCareer });
+
+    await transitionScholarshipReferenceStatus(
+      database,
+      scholarship.id,
+      { status: "INACTIVE" },
+      auditContext,
+    );
+    await expect(
+      createTutor(
+        database,
+        {
+          firstName: "Katherine",
+          lastName: "Johnson",
+          primaryCareerId: createdCareer.id,
+          cycleId: openCycle.id,
+          scholarshipReferenceId: scholarship.id,
+        },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({
+      code: TUTOR_ERROR_CODES.inactiveScholarshipReference,
+    });
+
+    const tutorEvents = (await listAuditEvents(database, 100)).filter(
+      (event) => event.entityId === createdTutor.id,
+    );
+    expect(tutorEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          actorId: admin.id,
+          action: "tutor.created",
+          entityType: "tutor",
+          metadata: expect.objectContaining({
+            primaryCareerId: createdCareer.id,
+            cycleId: openCycle.id,
+            subjectIds: [firstSubject.id],
+          }),
+        }),
+        expect.objectContaining({
+          action: "tutor.updated",
+          metadata: expect.objectContaining({
+            addedSubjectIds: [secondSubject.id],
+            removedSubjectIds: [firstSubject.id],
+            cycleId: openCycle.id,
+            scholarshipReferenceId: null,
+          }),
+        }),
+        expect.objectContaining({
+          action: "tutor.status_changed",
+          metadata: { previousStatus: "ACTIVE", status: "INACTIVE" },
+        }),
+      ]),
+    );
+    expect(JSON.stringify(tutorEvents)).not.toContain("password");
+    expect(JSON.stringify(tutorEvents)).not.toContain("token");
+  });
+
+  it("rolls back a tutor write when its audit event cannot be recorded", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const careerRecord = await createCareer(
+      database,
+      { name: "Computer Science" },
+      { actorId: admin.id },
+    );
+    const cycle = await createAdministrativeCycle(
+      database,
+      {
+        name: "2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+      },
+      { actorId: admin.id },
+    );
+
+    await expect(
+      createTutor(
+        database,
+        {
+          firstName: "Grace",
+          lastName: "Hopper",
+          institutionalIdentifier: "LEG-ROLLBACK",
+          primaryCareerId: careerRecord.id,
+          cycleId: cycle.id,
+        },
+        { actorId: admin.id, requestId: "x".repeat(256) },
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.transactionFailed });
+
+    await expect(
+      database
+        .select({ id: tutor.id })
+        .from(tutor)
+        .where(eq(tutor.institutionalIdentifier, "LEG-ROLLBACK")),
+    ).resolves.toEqual([]);
+    await expect(
+      database
+        .select({ id: auditEvent.id })
+        .from(auditEvent)
+        .where(eq(auditEvent.entityType, "tutor")),
+    ).resolves.toEqual([]);
   });
 
   it("enforces date, open-cycle, foreign-key, cascade, and audit actor constraints", async () => {
