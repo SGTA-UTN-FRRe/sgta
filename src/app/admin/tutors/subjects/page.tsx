@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { getDatabase } from "@/db/client";
 import { SubjectCoverageScreen } from "@/features/tutors/subject-coverage-screen";
+import type { SafeSubjectCoverageResult } from "@/features/tutors/tutor-service";
 import { listSubjectCoverage } from "@/features/tutors/tutor-service";
 
 export const metadata: Metadata = {
@@ -12,8 +13,27 @@ export const metadata: Metadata = {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function AdminTutorSubjectsPage() {
-  const coverage = await listSubjectCoverage(getDatabase());
+const emptyCoverage: SafeSubjectCoverageResult = {
+  currentCycle: null,
+  subjects: [],
+};
 
-  return <SubjectCoverageScreen data={coverage} />;
+export default async function AdminTutorSubjectsPage() {
+  let coverage = emptyCoverage;
+  let loadError: string | undefined;
+
+  try {
+    coverage = await listSubjectCoverage(getDatabase());
+  } catch {
+    loadError =
+      "No se pudo cargar la cobertura. Reintentar para volver a consultar las materias.";
+  }
+
+  return (
+    <SubjectCoverageScreen
+      data={coverage}
+      errorMessage={loadError}
+      state={loadError === undefined ? undefined : "error"}
+    />
+  );
 }

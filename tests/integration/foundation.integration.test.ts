@@ -725,6 +725,8 @@ describe("PostgreSQL foundation integration", () => {
         },
       ],
     });
+    expect(activeCoverage).not.toHaveProperty("plannedHours");
+    expect(activeCoverage.subjects[0]?.tutors[0]).not.toHaveProperty("plannedHours");
 
     const inactiveTutor = await transitionTutorStatus(
       database,
@@ -828,6 +830,12 @@ describe("PostgreSQL foundation integration", () => {
     );
     expect(JSON.stringify(tutorEvents)).not.toContain("password");
     expect(JSON.stringify(tutorEvents)).not.toContain("token");
+
+    await closeAdministrativeCycle(database, openCycle.id, auditContext);
+    await expect(listSubjectCoverage(database)).resolves.toEqual({
+      currentCycle: null,
+      subjects: [],
+    });
   });
 
   it("rolls back a tutor write when its audit event cannot be recorded", async () => {
