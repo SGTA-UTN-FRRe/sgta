@@ -11,9 +11,9 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "corepack pnpm dev",
+    command: "corepack pnpm exec tsx tests/e2e/web-server.ts",
     url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
   },
   projects: [
     {

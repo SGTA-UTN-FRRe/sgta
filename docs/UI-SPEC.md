@@ -1546,6 +1546,31 @@ Contains:
 - scholarship reference types;
 - validated low-frequency catalogs.
 
+#### Reference data
+
+The low-frequency catalog area is secondary to the current-cycle controls and
+does not add a primary navigation destination. It contains separate sections
+for:
+
+- Careers, with normalized names, edit, and active/inactive state;
+- Subjects, with a required active Career selection, edit, and active/inactive
+  state;
+- scholarship reference types, with optional known required hours and notes.
+
+Each section supports an accessible add/edit form and a responsive list or
+table. Inactive values remain visible for historical context, but inactive
+Careers cannot be selected for new Subjects and inactive catalog values are not
+offered as new Tutor form options. No section offers a hard-delete action.
+
+Scholarship hours and notes are informational reference data only. The UI must
+not present a compliance result, certification, or automatic decision from
+those fields.
+
+Duplicate normalized names or types and invalid Career/Subject combinations
+are reported in the Settings feedback region while the form context remains
+preserved, so the Admin can correct the input without losing work. Server
+validation remains authoritative.
+
 #### Cycle close
 
 The close action shows:

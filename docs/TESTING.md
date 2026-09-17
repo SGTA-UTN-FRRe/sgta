@@ -27,7 +27,7 @@ The current repository uses these conceptual gates:
 | --- | --- | --- |
 | `Quality` | `corepack pnpm lint` and `corepack pnpm typecheck` | ESLint and strict TypeScript validation. |
 | `Tests` | `corepack pnpm test` | Co-located Vitest and Testing Library unit/component tests. |
-| `Integration` | `corepack pnpm test:integration` | PostgreSQL-backed foundation coverage against an isolated Testcontainers database. |
+| `Integration` | `corepack pnpm test:integration` | PostgreSQL-backed foundation and tutor/academic operations coverage against an isolated Testcontainers database. |
 | `E2E` | `corepack pnpm test:e2e` | Critical browser smoke coverage through the running Next.js application. |
 | `Production` | `corepack pnpm build` | Verification that the deployable Next.js build can be produced. |
 | `CI Gate` | aggregate workflow job | Stable final result for branch protection and pull-request merge readiness. |
@@ -55,19 +55,19 @@ The unit/component suite remains independent of PostgreSQL, Docker, and external
 
 ### Integration tests
 
-Integration scenarios live under `tests/integration/` and run through the separate `vitest.integration.config.ts` configuration in the Node.js environment. Each run starts a fresh PostgreSQL container with Testcontainers, applies the committed Drizzle migration twice to prove rerunnability, uses deterministic synthetic fixtures, and tears down the pool and container after the suite.
+Integration scenarios live under `tests/integration/` and run through the separate `vitest.integration.config.ts` configuration in the Node.js environment. Each run starts a fresh PostgreSQL container with Testcontainers, applies the committed Drizzle migration twice to prove rerunnability, uses deterministic synthetic fixtures, and tears down the pool and container after the suite. The feature coverage includes Career, Subject, Tutor, TutorSubject, TutorCycleMembership, scholarship-reference lifecycle, duplicate/conflict handling, open/closed cycle rules, derived Materias reconstruction, safe audit actor attribution, transaction rollback, sensitive-metadata rejection, and Admin-versus-Tutor API/page authorization.
 
 Docker is a local and CI prerequisite for this boundary. Testcontainers chooses an available host port; no fixed port, local database, production URL, Google credential, or personal data is used. There is no separate Docker check or public Docker gate.
 
 ### End-to-end tests
 
-Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The current suite contains the `ui-smoke.spec.ts` browser smoke suite for the login, Admin, and schedule scaffold journeys. As domain workflows become real, add one representative critical journey per meaningful boundary instead of duplicating unit coverage in the browser.
+Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus an authenticated Admin journey for live tutor creation and derived Materias coverage. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the normal Next.js server; it does not bypass server-side authorization or call Google.
 
-E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
+E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Docker is required locally because the authenticated web server owns an isolated PostgreSQL container. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
 
 ### Integration and contract checks
 
-There is currently no `Contract` gate. The `Integration` gate covers the real database-backed behavior and migrations introduced by the foundation. A separate `Contract` gate remains deferred until an independent contract boundary needs it.
+There is currently no `Contract` gate. The `Integration` gate covers the real database-backed behavior, migrations, and tutor/academic operations introduced by the current runtime. A separate `Contract` gate remains deferred until an independent contract boundary needs it.
 
 Docker is an execution prerequisite for `Integration`, not a separate public gate.
 
@@ -87,14 +87,14 @@ corepack pnpm lint
 corepack pnpm typecheck
 corepack pnpm test
 corepack pnpm test:integration
-corepack pnpm exec playwright install chromium
-corepack pnpm test:e2e
+corepack pnpm exec playwright install chromium  # First-time local browser setup
+corepack pnpm test:e2e                         # Requires Docker for the isolated E2E database
 corepack pnpm build
 ```
 
 The browser-install command is required only when the local Playwright Chromium binary is not already available. It is not a project test gate by itself.
 
-The Playwright web server is invoked through `corepack pnpm dev` so local runs honor the exact package-manager version declared by the project instead of resolving an unrelated global pnpm executable.
+The Playwright web server is invoked through `corepack pnpm exec tsx tests/e2e/web-server.ts`, which starts the isolated database fixture before launching the normal Next.js development server. The wrapper still uses the exact package-manager and runtime versions declared by the project instead of resolving an unrelated global pnpm executable.
 
 ## 4. CI topology
 
@@ -116,9 +116,9 @@ Each technical job has:
 - an explicit timeout;
 - no production credentials or services.
 
-The workflow also cancels obsolete runs for the same pull request or branch and uploads E2E diagnostics on failure.
+The workflow also cancels obsolete runs for the same pull request or branch and uploads E2E diagnostics on failure. The GitHub-hosted runner provides Docker for both isolated PostgreSQL boundaries; neither job receives production database or Google credentials.
 
-The repository Ruleset should require exactly `CI Gate`, not an implementation-specific upstream job. Upstream topology may evolve without changing that merge contract. The GitHub-hosted Docker daemon is used by `Integration`; it does not create a separate public Docker job.
+The repository Ruleset should require exactly `CI Gate`, not an implementation-specific upstream job. Upstream topology may evolve without changing that merge contract. The GitHub-hosted Docker daemon is used by `Integration` and the E2E server fixture; it does not create a separate public Docker job.
 
 ## 5. Naming rules
 
