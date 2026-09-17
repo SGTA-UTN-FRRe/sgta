@@ -54,6 +54,7 @@ import {
   TUTOR_ERROR_CODES,
   transitionCareerStatus,
   transitionScholarshipReferenceStatus,
+  transitionSubjectStatus,
   transitionTutorStatus,
   updateScholarshipReference,
   updateTutor,
@@ -761,6 +762,41 @@ describe("PostgreSQL foundation integration", () => {
     expect(reactivatedCoverage.subjects[0]?.tutors).toEqual([
       expect.objectContaining({ id: createdTutor.id }),
     ]);
+
+    const inactiveSubjectRecord = await transitionSubjectStatus(
+      database,
+      secondSubject.id,
+      { status: "INACTIVE" },
+      auditContext,
+    );
+    expect(inactiveSubjectRecord.status).toBe("INACTIVE");
+    await expect(
+      database
+        .select({ subjectId: tutorSubject.subjectId })
+        .from(tutorSubject)
+        .where(eq(tutorSubject.subjectId, secondSubject.id)),
+    ).resolves.toEqual([{ subjectId: secondSubject.id }]);
+    await expect(
+      createTutor(
+        database,
+        {
+          firstName: "Katherine",
+          lastName: "Johnson",
+          primaryCareerId: createdCareer.id,
+          subjectIds: [secondSubject.id],
+          cycleId: openCycle.id,
+        },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.inactiveSubject });
+    await expect(
+      transitionSubjectStatus(
+        database,
+        secondSubject.id,
+        { status: "ACTIVE" },
+        auditContext,
+      ),
+    ).resolves.toMatchObject({ id: secondSubject.id, status: "ACTIVE" });
 
     await transitionCareerStatus(
       database,

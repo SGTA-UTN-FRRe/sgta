@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  createSubject: vi.fn(),
   getDatabase: vi.fn(),
   listSubjects: vi.fn(),
   requireApiRole: vi.fn(),
@@ -16,10 +17,22 @@ vi.mock("@/features/tutors/tutor-service", async (importOriginal) => {
     typeof import("@/features/tutors/tutor-service")
   >();
 
-  return { ...actual, listSubjects: mocks.listSubjects };
+  return {
+    ...actual,
+    createSubject: mocks.createSubject,
+    listSubjects: mocks.listSubjects,
+  };
 });
 
-import { GET } from "./route";
+import { GET, POST } from "./route";
+
+function requestWithBody(body: unknown) {
+  return new Request("http://localhost/api/admin/settings/subjects", {
+    body: JSON.stringify(body),
+    headers: { "content-type": "application/json" },
+    method: "POST",
+  });
+}
 
 describe("Admin Subject reference list route", () => {
   beforeEach(() => {
@@ -43,5 +56,21 @@ describe("Admin Subject reference list route", () => {
 
     expect(response.status).toBe(400);
     expect(mocks.listSubjects).not.toHaveBeenCalled();
+  });
+
+  it("denies a Tutor before invoking subject mutations", async () => {
+    mocks.requireApiRole.mockResolvedValue(
+      Response.json({ error: "forbidden" }, { status: 403 }),
+    );
+
+    const response = await POST(
+      requestWithBody({
+        careerId: "11111111-1111-4111-8111-111111111111",
+        name: "Álgebra",
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(mocks.createSubject).not.toHaveBeenCalled();
   });
 });

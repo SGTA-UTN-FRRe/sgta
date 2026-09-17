@@ -2,15 +2,71 @@ import { getDatabase } from "@/db/client";
 import {
   getCurrentAdministrativeCycle,
   listAdministrativeCycles,
+  type SafeAdministrativeCycle,
 } from "@/features/cycles/cycle-service";
+import {
+  listCareers,
+  listScholarshipReferences,
+  listSubjects,
+  type SafeCareer,
+  type SafeScholarshipReference,
+  type SafeSubject,
+} from "@/features/tutors/tutor-service";
 import { SettingsScreen } from "@/features/settings/settings-screen";
 
-export default async function AdminSettingsPage() {
-  const database = getDatabase();
-  const [currentCycle, cycles] = await Promise.all([
-    getCurrentAdministrativeCycle(database),
-    listAdministrativeCycles(database),
-  ]);
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-  return <SettingsScreen currentCycle={currentCycle} cycles={cycles} />;
+const emptySettings: {
+  currentCycle: SafeAdministrativeCycle | null;
+  cycles: SafeAdministrativeCycle[];
+  careers: SafeCareer[];
+  subjects: SafeSubject[];
+  scholarshipReferences: SafeScholarshipReference[];
+} = {
+  currentCycle: null,
+  cycles: [],
+  careers: [],
+  subjects: [],
+  scholarshipReferences: [],
+};
+
+export default async function AdminSettingsPage() {
+  let settings = emptySettings;
+  let initialErrorMessage: string | undefined;
+
+  try {
+    const database = getDatabase();
+    const [currentCycle, cycles, careers, subjects, scholarshipReferences] =
+      await Promise.all([
+        getCurrentAdministrativeCycle(database),
+        listAdministrativeCycles(database),
+        listCareers(database, "ALL"),
+        listSubjects(database, "ALL"),
+        listScholarshipReferences(database, "ALL"),
+      ]);
+
+    settings = {
+      currentCycle,
+      cycles,
+      careers,
+      subjects,
+      scholarshipReferences,
+    };
+  } catch {
+    initialErrorMessage =
+      "No se pudo cargar la configuración. Reintentar para volver a consultar los datos.";
+  }
+
+  return (
+    <SettingsScreen
+      careers={settings.careers}
+      currentCycle={settings.currentCycle}
+      cycles={settings.cycles}
+      initialErrorMessage={initialErrorMessage}
+      initialState={initialErrorMessage === undefined ? undefined : "error"}
+      scholarshipReferences={settings.scholarshipReferences}
+      subjects={settings.subjects}
+    />
+  );
 }
