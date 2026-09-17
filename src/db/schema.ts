@@ -3,10 +3,12 @@ import {
   boolean,
   check,
   date,
+  integer,
   index,
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -20,6 +22,11 @@ export const administrativeCycleStatusEnum = pgEnum(
   "administrative_cycle_status",
   ["OPEN", "CLOSED"],
 );
+
+export const recordStatusEnum = pgEnum("record_status", [
+  "ACTIVE",
+  "INACTIVE",
+]);
 
 export const user = pgTable(
   "user",
@@ -153,6 +160,216 @@ export const administrativeCycle = pgTable(
   ],
 );
 
+export const career = pgTable(
+  "career",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    normalizedName: text("normalized_name").notNull(),
+    status: recordStatusEnum("status").notNull().default("ACTIVE"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("career_name_not_blank_check", sql`length(trim(${table.name})) > 0`),
+    check(
+      "career_normalized_name_not_blank_check",
+      sql`length(trim(${table.normalizedName})) > 0`,
+    ),
+    check(
+      "career_normalized_name_check",
+      sql`${table.normalizedName} = lower(trim(${table.name}))`,
+    ),
+    uniqueIndex("career_normalized_name_unique").on(table.normalizedName),
+    index("career_status_idx").on(table.status),
+  ],
+);
+
+export const subject = pgTable(
+  "subject",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    careerId: uuid("career_id")
+      .notNull()
+      .references(() => career.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    normalizedName: text("normalized_name").notNull(),
+    status: recordStatusEnum("status").notNull().default("ACTIVE"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("subject_name_not_blank_check", sql`length(trim(${table.name})) > 0`),
+    check(
+      "subject_normalized_name_not_blank_check",
+      sql`length(trim(${table.normalizedName})) > 0`,
+    ),
+    check(
+      "subject_normalized_name_check",
+      sql`${table.normalizedName} = lower(trim(${table.name}))`,
+    ),
+    uniqueIndex("subject_career_normalized_name_unique").on(
+      table.careerId,
+      table.normalizedName,
+    ),
+    index("subject_career_status_idx").on(table.careerId, table.status),
+  ],
+);
+
+export const scholarshipReference = pgTable(
+  "scholarship_reference",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    type: text("type").notNull(),
+    normalizedType: text("normalized_type").notNull(),
+    knownRequiredHours: integer("known_required_hours"),
+    notes: text("notes"),
+    status: recordStatusEnum("status").notNull().default("ACTIVE"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "scholarship_reference_type_not_blank_check",
+      sql`length(trim(${table.type})) > 0`,
+    ),
+    check(
+      "scholarship_reference_normalized_type_not_blank_check",
+      sql`length(trim(${table.normalizedType})) > 0`,
+    ),
+    check(
+      "scholarship_reference_normalized_type_check",
+      sql`${table.normalizedType} = lower(trim(${table.type}))`,
+    ),
+    check(
+      "scholarship_reference_hours_non_negative_check",
+      sql`${table.knownRequiredHours} IS NULL OR ${table.knownRequiredHours} >= 0`,
+    ),
+    uniqueIndex("scholarship_reference_normalized_type_unique").on(
+      table.normalizedType,
+    ),
+    index("scholarship_reference_status_idx").on(table.status),
+  ],
+);
+
+export const tutor = pgTable(
+  "tutor",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
+    preferredDisplayName: text("preferred_display_name"),
+    institutionalIdentifier: text("institutional_identifier"),
+    normalizedInstitutionalIdentifier: text("normalized_institutional_identifier"),
+    primaryCareerId: uuid("primary_career_id")
+      .notNull()
+      .references(() => career.id, { onDelete: "restrict" }),
+    status: recordStatusEnum("status").notNull().default("ACTIVE"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("tutor_first_name_not_blank_check", sql`length(trim(${table.firstName})) > 0`),
+    check("tutor_last_name_not_blank_check", sql`length(trim(${table.lastName})) > 0`),
+    check(
+      "tutor_preferred_display_name_check",
+      sql`${table.preferredDisplayName} IS NULL OR length(trim(${table.preferredDisplayName})) > 0`,
+    ),
+    check(
+      "tutor_institutional_identifier_check",
+      sql`${table.institutionalIdentifier} IS NULL OR length(trim(${table.institutionalIdentifier})) > 0`,
+    ),
+    check(
+      "tutor_institutional_identifier_normalized_check",
+      sql`(
+        (${table.institutionalIdentifier} IS NULL AND ${table.normalizedInstitutionalIdentifier} IS NULL)
+        OR
+        (
+          ${table.institutionalIdentifier} IS NOT NULL
+          AND ${table.normalizedInstitutionalIdentifier} IS NOT NULL
+          AND length(trim(${table.normalizedInstitutionalIdentifier})) > 0
+          AND ${table.normalizedInstitutionalIdentifier} = lower(trim(${table.institutionalIdentifier}))
+        )
+      )`,
+    ),
+    uniqueIndex("tutor_institutional_identifier_unique")
+      .on(table.normalizedInstitutionalIdentifier)
+      .where(sql`${table.normalizedInstitutionalIdentifier} IS NOT NULL`),
+    index("tutor_primary_career_idx").on(table.primaryCareerId),
+    index("tutor_status_idx").on(table.status),
+  ],
+);
+
+export const tutorSubject = pgTable(
+  "tutor_subject",
+  {
+    tutorId: uuid("tutor_id")
+      .notNull()
+      .references(() => tutor.id, { onDelete: "restrict" }),
+    subjectId: uuid("subject_id")
+      .notNull()
+      .references(() => subject.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.tutorId, table.subjectId],
+      name: "tutor_subject_pk",
+    }),
+    index("tutor_subject_subject_idx").on(table.subjectId),
+  ],
+);
+
+export const tutorCycleMembership = pgTable(
+  "tutor_cycle_membership",
+  {
+    tutorId: uuid("tutor_id")
+      .notNull()
+      .references(() => tutor.id, { onDelete: "restrict" }),
+    cycleId: uuid("cycle_id")
+      .notNull()
+      .references(() => administrativeCycle.id, { onDelete: "restrict" }),
+    scholarshipReferenceId: uuid("scholarship_reference_id").references(
+      () => scholarshipReference.id,
+      { onDelete: "restrict" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.tutorId, table.cycleId],
+      name: "tutor_cycle_membership_pk",
+    }),
+    index("tutor_cycle_membership_cycle_idx").on(table.cycleId),
+    index("tutor_cycle_membership_scholarship_reference_idx").on(
+      table.scholarshipReferenceId,
+    ),
+  ],
+);
+
 export const auditEvent = pgTable(
   "audit_event",
   {
@@ -187,12 +404,19 @@ export const databaseSchema = {
   account,
   verification,
   administrativeCycle,
+  career,
+  subject,
+  scholarshipReference,
+  tutor,
+  tutorSubject,
+  tutorCycleMembership,
   auditEvent,
 };
 
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 export type AdministrativeCycleStatus =
   (typeof administrativeCycleStatusEnum.enumValues)[number];
+export type RecordStatus = (typeof recordStatusEnum.enumValues)[number];
 
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
@@ -201,4 +425,16 @@ export type Account = typeof account.$inferSelect;
 export type Verification = typeof verification.$inferSelect;
 export type AdministrativeCycle = typeof administrativeCycle.$inferSelect;
 export type NewAdministrativeCycle = typeof administrativeCycle.$inferInsert;
+export type Career = typeof career.$inferSelect;
+export type NewCareer = typeof career.$inferInsert;
+export type Subject = typeof subject.$inferSelect;
+export type NewSubject = typeof subject.$inferInsert;
+export type ScholarshipReference = typeof scholarshipReference.$inferSelect;
+export type NewScholarshipReference = typeof scholarshipReference.$inferInsert;
+export type Tutor = typeof tutor.$inferSelect;
+export type NewTutor = typeof tutor.$inferInsert;
+export type TutorSubject = typeof tutorSubject.$inferSelect;
+export type NewTutorSubject = typeof tutorSubject.$inferInsert;
+export type TutorCycleMembership = typeof tutorCycleMembership.$inferSelect;
+export type NewTutorCycleMembership = typeof tutorCycleMembership.$inferInsert;
 export type AuditEvent = typeof auditEvent.$inferSelect;

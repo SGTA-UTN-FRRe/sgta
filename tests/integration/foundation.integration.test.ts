@@ -22,7 +22,19 @@ import { requireApiRole, requireRole } from "@/auth/authorization";
 import { createAuthOptions } from "@/auth/options";
 import type { AuthEnvironment } from "@/auth/options";
 import { recordAuditEvent, listAuditEvents } from "@/db/audit-core";
-import { account, administrativeCycle, auditEvent, session, user } from "@/db/schema";
+import {
+  account,
+  administrativeCycle,
+  auditEvent,
+  career,
+  scholarshipReference,
+  session,
+  subject,
+  tutor,
+  tutorCycleMembership,
+  tutorSubject,
+  user,
+} from "@/db/schema";
 import {
   closeAdministrativeCycle,
   createAdministrativeCycle,
@@ -50,7 +62,7 @@ const authEnvironment = {
 
 async function resetDatabase() {
   await getIntegrationDatabase().execute(
-    sql`TRUNCATE TABLE "audit_event", "session", "account", "verification", "administrative_cycle", "user" CASCADE`,
+    sql`TRUNCATE TABLE "tutor_cycle_membership", "tutor_subject", "tutor", "scholarship_reference", "subject", "career", "audit_event", "session", "account", "verification", "administrative_cycle", "user" CASCADE`,
   );
 }
 
@@ -118,7 +130,7 @@ describe("PostgreSQL foundation integration", () => {
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
-          AND table_name IN ('user', 'session', 'account', 'verification', 'administrative_cycle', 'audit_event')
+          AND table_name IN ('user', 'session', 'account', 'verification', 'administrative_cycle', 'audit_event', 'career', 'subject', 'scholarship_reference', 'tutor', 'tutor_subject', 'tutor_cycle_membership')
         ORDER BY table_name
       `),
     );
@@ -128,12 +140,80 @@ describe("PostgreSQL foundation integration", () => {
         FROM "drizzle"."__drizzle_migrations"
       `),
     );
+    const deferredTables = getRows<{ table_name: string }>(
+      await database.execute(sql`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_name IN ('hour_category', 'hour_movement', 'schedule', 'attendance', 'consultation')
+      `),
+    );
+    const indexes = getRows<{ indexname: string }>(
+      await database.execute(sql`
+        SELECT indexname
+        FROM pg_indexes
+        WHERE schemaname = 'public'
+          AND indexname IN (
+            'career_normalized_name_unique',
+            'subject_career_normalized_name_unique',
+            'tutor_institutional_identifier_unique',
+            'tutor_primary_career_idx',
+            'tutor_status_idx',
+            'tutor_cycle_membership_cycle_idx',
+            'tutor_cycle_membership_scholarship_reference_idx',
+            'tutor_subject_subject_idx'
+          )
+        ORDER BY indexname
+      `),
+    );
+    const foreignKeys = getRows<{ conname: string }>(
+      await database.execute(sql`
+        SELECT conname
+        FROM pg_constraint
+        WHERE contype = 'f'
+          AND conname IN (
+            'subject_career_id_career_id_fk',
+            'tutor_primary_career_id_career_id_fk',
+            'tutor_cycle_membership_tutor_id_tutor_id_fk',
+            'tutor_cycle_membership_cycle_id_administrative_cycle_id_fk',
+            'tutor_cycle_membership_scholarship_reference_id_scholarship_reference_id_fk',
+            'tutor_subject_tutor_id_tutor_id_fk',
+            'tutor_subject_subject_id_subject_id_fk'
+          )
+        ORDER BY conname
+      `),
+    );
+    const checks = getRows<{ conname: string }>(
+      await database.execute(sql`
+        SELECT conname
+        FROM pg_constraint
+        WHERE contype = 'c'
+          AND conname IN (
+            'career_name_not_blank_check',
+            'career_normalized_name_not_blank_check',
+            'career_normalized_name_check',
+            'subject_name_not_blank_check',
+            'subject_normalized_name_not_blank_check',
+            'subject_normalized_name_check',
+            'scholarship_reference_type_not_blank_check',
+            'scholarship_reference_normalized_type_not_blank_check',
+            'scholarship_reference_normalized_type_check',
+            'scholarship_reference_hours_non_negative_check',
+            'tutor_first_name_not_blank_check',
+            'tutor_last_name_not_blank_check',
+            'tutor_preferred_display_name_check',
+            'tutor_institutional_identifier_check',
+            'tutor_institutional_identifier_normalized_check'
+          )
+        ORDER BY conname
+      `),
+    );
     const enumValues = getRows<{ typname: string; enumlabel: string }>(
       await database.execute(sql`
         SELECT type.typname, enum.enumlabel
         FROM pg_type AS type
         JOIN pg_enum AS enum ON enum.enumtypid = type.oid
-        WHERE type.typname IN ('user_role', 'administrative_cycle_status')
+        WHERE type.typname IN ('user_role', 'administrative_cycle_status', 'record_status')
         ORDER BY type.typname, enum.enumsortorder
       `),
     );
@@ -143,20 +223,304 @@ describe("PostgreSQL foundation integration", () => {
       "account",
       "administrative_cycle",
       "audit_event",
+      "career",
+      "scholarship_reference",
       "session",
+      "subject",
+      "tutor",
+      "tutor_cycle_membership",
+      "tutor_subject",
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("1");
+    expect(migrations[0]?.migration_count).toBe("2");
     expect(enumValues).toEqual([
       { typname: "administrative_cycle_status", enumlabel: "OPEN" },
       { typname: "administrative_cycle_status", enumlabel: "CLOSED" },
+      { typname: "record_status", enumlabel: "ACTIVE" },
+      { typname: "record_status", enumlabel: "INACTIVE" },
       { typname: "user_role", enumlabel: "ADMIN" },
       { typname: "user_role", enumlabel: "TUTOR" },
+    ]);
+    expect(deferredTables).toEqual([]);
+    expect(indexes.map((row) => row.indexname)).toEqual([
+      "career_normalized_name_unique",
+      "subject_career_normalized_name_unique",
+      "tutor_cycle_membership_cycle_idx",
+      "tutor_cycle_membership_scholarship_reference_idx",
+      "tutor_institutional_identifier_unique",
+      "tutor_primary_career_idx",
+      "tutor_status_idx",
+      "tutor_subject_subject_idx",
+    ]);
+    expect(foreignKeys.map((row) => row.conname)).toEqual([
+      "subject_career_id_career_id_fk",
+      "tutor_cycle_membership_cycle_id_administrative_cycle_id_fk",
+      "tutor_cycle_membership_scholarship_reference_id_scholarship_ref",
+      "tutor_cycle_membership_tutor_id_tutor_id_fk",
+      "tutor_primary_career_id_career_id_fk",
+      "tutor_subject_subject_id_subject_id_fk",
+      "tutor_subject_tutor_id_tutor_id_fk",
+    ]);
+    expect(checks.map((row) => row.conname)).toEqual([
+      "career_name_not_blank_check",
+      "career_normalized_name_check",
+      "career_normalized_name_not_blank_check",
+      "scholarship_reference_hours_non_negative_check",
+      "scholarship_reference_normalized_type_check",
+      "scholarship_reference_normalized_type_not_blank_check",
+      "scholarship_reference_type_not_blank_check",
+      "subject_name_not_blank_check",
+      "subject_normalized_name_check",
+      "subject_normalized_name_not_blank_check",
+      "tutor_first_name_not_blank_check",
+      "tutor_institutional_identifier_check",
+      "tutor_institutional_identifier_normalized_check",
+      "tutor_last_name_not_blank_check",
+      "tutor_preferred_display_name_check",
     ]);
     expect(getIntegrationConnectionString()).toMatch(
       /^postgres(?:ql)?:\/\/[^/]+\/sgta_integration$/,
     );
+  });
+
+  it("persists canonical tutor data and enforces relationship and reference constraints", async () => {
+    const database = getIntegrationDatabase();
+    const [primaryCareer] = await database
+      .insert(career)
+      .values({ name: "Computer Science", normalizedName: "computer science" })
+      .returning({ id: career.id });
+    const [secondaryCareer] = await database
+      .insert(career)
+      .values({ name: "Business", normalizedName: "business" })
+      .returning({ id: career.id });
+    const [primarySubject] = await database
+      .insert(subject)
+      .values({
+        careerId: primaryCareer!.id,
+        name: "Algorithms",
+        normalizedName: "algorithms",
+      })
+      .returning({ id: subject.id });
+    const [sameNamedSubjectInAnotherCareer] = await database
+      .insert(subject)
+      .values({
+        careerId: secondaryCareer!.id,
+        name: "Algorithms",
+        normalizedName: "algorithms",
+      })
+      .returning({ id: subject.id });
+    const [scholarship] = await database
+      .insert(scholarshipReference)
+      .values({
+        type: "Institutional Scholarship",
+        normalizedType: "institutional scholarship",
+        knownRequiredHours: 120,
+        notes: "Reference only",
+      })
+      .returning({ id: scholarshipReference.id });
+    const [openCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+        status: "OPEN",
+      })
+      .returning({ id: administrativeCycle.id });
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        preferredDisplayName: "Ada",
+        institutionalIdentifier: "LEG-001",
+        normalizedInstitutionalIdentifier: "leg-001",
+        primaryCareerId: primaryCareer!.id,
+      })
+      .returning({ id: tutor.id });
+
+    expect(primaryCareer).toBeDefined();
+    expect(secondaryCareer).toBeDefined();
+    expect(primarySubject).toBeDefined();
+    expect(sameNamedSubjectInAnotherCareer).toBeDefined();
+    expect(scholarship).toBeDefined();
+    expect(openCycle).toBeDefined();
+    expect(createdTutor).toBeDefined();
+
+    await database.insert(tutorSubject).values({
+      tutorId: createdTutor!.id,
+      subjectId: primarySubject!.id,
+    });
+    await database.insert(tutorCycleMembership).values({
+      tutorId: createdTutor!.id,
+      cycleId: openCycle!.id,
+      scholarshipReferenceId: scholarship!.id,
+    });
+
+    await expect(
+      database
+        .insert(career)
+        .values({ name: " computer science ", normalizedName: "computer science" }),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
+    await expect(
+      database
+        .insert(subject)
+        .values({
+          careerId: primaryCareer!.id,
+          name: "Algorithms",
+          normalizedName: "algorithms",
+        }),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
+    await expect(
+      database.insert(scholarshipReference).values({
+        type: " institutional scholarship ",
+        normalizedType: "institutional scholarship",
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
+    await expect(
+      database
+        .insert(tutor)
+        .values({
+          firstName: "Grace",
+          lastName: "Hopper",
+          institutionalIdentifier: "LEG-001",
+          normalizedInstitutionalIdentifier: "leg-001",
+          primaryCareerId: primaryCareer!.id,
+        }),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
+    await expect(
+      database.insert(tutorSubject).values({
+        tutorId: createdTutor!.id,
+        subjectId: primarySubject!.id,
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
+    await expect(
+      database.insert(tutorCycleMembership).values({
+        tutorId: createdTutor!.id,
+        cycleId: openCycle!.id,
+        scholarshipReferenceId: scholarship!.id,
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
+    await expect(
+      database.insert(scholarshipReference).values({
+        type: "Invalid Scholarship",
+        normalizedType: "invalid scholarship",
+        knownRequiredHours: -1,
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
+    await expect(
+      database.insert(career).values({ name: "   ", normalizedName: "" }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
+    await expect(
+      database.insert(tutor).values({
+        firstName: "Alan",
+        lastName: "Turing",
+        institutionalIdentifier: "LEG-002",
+        primaryCareerId: primaryCareer!.id,
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
+
+    await database
+      .update(tutor)
+      .set({ status: "INACTIVE" })
+      .where(eq(tutor.id, createdTutor!.id));
+    await database
+      .update(career)
+      .set({ status: "INACTIVE" })
+      .where(eq(career.id, primaryCareer!.id));
+    await database
+      .update(subject)
+      .set({ status: "INACTIVE" })
+      .where(eq(subject.id, primarySubject!.id));
+    await database
+      .update(scholarshipReference)
+      .set({ status: "INACTIVE" })
+      .where(eq(scholarshipReference.id, scholarship!.id));
+
+    await expect(
+      database
+        .select({ id: tutorSubject.tutorId })
+        .from(tutorSubject)
+        .where(eq(tutorSubject.tutorId, createdTutor!.id)),
+    ).resolves.toEqual([{ id: createdTutor!.id }]);
+    await expect(
+      database
+        .select({ tutorId: tutorCycleMembership.tutorId })
+        .from(tutorCycleMembership)
+        .where(eq(tutorCycleMembership.tutorId, createdTutor!.id)),
+    ).resolves.toEqual([{ tutorId: createdTutor!.id }]);
+    await expect(
+      database
+        .select({ status: tutor.status })
+        .from(tutor)
+        .where(eq(tutor.id, createdTutor!.id)),
+    ).resolves.toEqual([{ status: "INACTIVE" }]);
+  });
+
+  it("prevents destructive deletion of referenced academic history", async () => {
+    const database = getIntegrationDatabase();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Computer Science", normalizedName: "computer science" })
+      .returning({ id: career.id });
+    const [createdSubject] = await database
+      .insert(subject)
+      .values({
+        careerId: createdCareer!.id,
+        name: "Algorithms",
+        normalizedName: "algorithms",
+      })
+      .returning({ id: subject.id });
+    const [createdCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+        status: "OPEN",
+      })
+      .returning({ id: administrativeCycle.id });
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id });
+
+    await database.insert(tutorSubject).values({
+      tutorId: createdTutor!.id,
+      subjectId: createdSubject!.id,
+    });
+    await database.insert(tutorCycleMembership).values({
+      tutorId: createdTutor!.id,
+      cycleId: createdCycle!.id,
+    });
+
+    await expect(
+      database.delete(tutor).where(eq(tutor.id, createdTutor!.id)),
+    ).rejects.toMatchObject({ cause: { code: "23503" } });
+    await expect(
+      database.delete(subject).where(eq(subject.id, createdSubject!.id)),
+    ).rejects.toMatchObject({ cause: { code: "23503" } });
+    await expect(
+      database.delete(career).where(eq(career.id, createdCareer!.id)),
+    ).rejects.toMatchObject({ cause: { code: "23503" } });
+
+    await expect(
+      database
+        .select({ tutorId: tutorSubject.tutorId, subjectId: tutorSubject.subjectId })
+        .from(tutorSubject),
+    ).resolves.toEqual([
+      { tutorId: createdTutor!.id, subjectId: createdSubject!.id },
+    ]);
+    await expect(
+      database
+        .select({ tutorId: tutorCycleMembership.tutorId, cycleId: tutorCycleMembership.cycleId })
+        .from(tutorCycleMembership),
+    ).resolves.toEqual([{ tutorId: createdTutor!.id, cycleId: createdCycle!.id }]);
   });
 
   it("enforces date, open-cycle, foreign-key, cascade, and audit actor constraints", async () => {
