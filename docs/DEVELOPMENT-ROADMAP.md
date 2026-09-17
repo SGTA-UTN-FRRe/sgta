@@ -92,7 +92,7 @@ Therefore the project continues from the scaffold rather than restarting from ze
 | 2 | Engineering quality and repository governance baseline | P0 | Next |
 | 3 | Golden Screens and visual-system recalibration | P0 | Planned |
 | 4 | Persistence, identity, authorization, cycle, and audit foundation | P0 | Complete |
-| 5 | Tutor and academic operations | P0 | Planned |
+| 5 | Tutor and academic operations | P0 | Complete |
 | 6 | Hour ledger, activities, and recovery | P0 | Planned |
 | 7 | Scheduling and attendance | P0 | Planned |
 | 8 | Tutor self-service | P0 | Planned |
@@ -305,7 +305,7 @@ Create the real secure platform foundation without degrading the visual contract
 ### Phase 5 - Tutor and academic operations
 
 - **Priority:** P0
-- **Status:** Planned
+- **Status:** Complete
 - **Depends on:** Phase 4
 
 #### Objective
@@ -336,12 +336,12 @@ Deliver the first complete production-quality operational vertical slice.
 
 #### Exit criteria
 
-- [ ] Admin manages tutors and academic relationships end to end.
-- [ ] Historical tutors are inactivated, not destructively deleted.
-- [ ] Materias is derived from canonical data.
-- [ ] Compact/Medium/Wide behavior matches UI-SPEC.
-- [ ] Golden Screen quality is preserved with live data.
-- [ ] Relevant tests and CI gates pass.
+- [x] Admin manages tutors and academic relationships end to end.
+- [x] Historical tutors are inactivated, not destructively deleted.
+- [x] Materias is derived from canonical data.
+- [x] Compact/Medium/Wide behavior matches UI-SPEC.
+- [x] Golden Screen quality is preserved with live data.
+- [x] Relevant tests and CI gates pass.
 
 ### Phase 6 - Hour ledger, activities, and recovery
 

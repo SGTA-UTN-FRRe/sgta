@@ -17,7 +17,14 @@ test.describe("UI smoke journeys", () => {
   });
 
   test("redirects unauthenticated admin routes to login", async ({ page }) => {
-    for (const route of ["/admin", "/admin/tutors", "/admin/hours", "/admin/schedules"]) {
+    for (const route of [
+      "/admin",
+      "/admin/tutors",
+      "/admin/tutors/subjects",
+      "/admin/settings",
+      "/admin/hours",
+      "/admin/schedules",
+    ]) {
       await page.goto(route);
 
       await expect(page).toHaveURL(/\/login$/);

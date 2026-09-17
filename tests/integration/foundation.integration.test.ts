@@ -18,8 +18,23 @@ vi.mock("@/auth/index", () => ({ getAuth: authMocks.getAuth }));
 vi.mock("@/db/client", () => ({ getDatabase: authMocks.getDatabase }));
 
 import { GET as getAdminCycles } from "@/app/api/admin/cycles/route";
-import { GET as getAdminTutorCollection } from "@/app/api/admin/tutors/route";
-import { POST as postAdminCareers } from "@/app/api/admin/settings/careers/route";
+import { GET as getAdminTutorDetail, PATCH as patchAdminTutorDetail } from "@/app/api/admin/tutors/[tutorId]/route";
+import { PATCH as patchAdminTutorStatus } from "@/app/api/admin/tutors/[tutorId]/status/route";
+import {
+  GET as getAdminTutorCollection,
+  POST as postAdminTutorCollection,
+} from "@/app/api/admin/tutors/route";
+import { GET as getAdminTutorSubjects } from "@/app/api/admin/tutors/subjects/route";
+import AdminLayout from "@/app/admin/layout";
+import { GET as getAdminCareerDetail, PATCH as patchAdminCareerDetail } from "@/app/api/admin/settings/careers/[careerId]/route";
+import { PATCH as patchAdminCareerStatus } from "@/app/api/admin/settings/careers/[careerId]/status/route";
+import { GET as getAdminCareers, POST as postAdminCareers } from "@/app/api/admin/settings/careers/route";
+import { GET as getAdminScholarshipDetail, PATCH as patchAdminScholarshipDetail } from "@/app/api/admin/settings/scholarship-references/[scholarshipReferenceId]/route";
+import { PATCH as patchAdminScholarshipStatus } from "@/app/api/admin/settings/scholarship-references/[scholarshipReferenceId]/status/route";
+import { GET as getAdminScholarships, POST as postAdminScholarships } from "@/app/api/admin/settings/scholarship-references/route";
+import { GET as getAdminSubjectDetail, PATCH as patchAdminSubjectDetail } from "@/app/api/admin/settings/subjects/[subjectId]/route";
+import { PATCH as patchAdminSubjectStatus } from "@/app/api/admin/settings/subjects/[subjectId]/status/route";
+import { GET as getAdminSubjects, POST as postAdminSubjects } from "@/app/api/admin/settings/subjects/route";
 import { requireApiRole, requireRole } from "@/auth/authorization";
 import { createAuthOptions } from "@/auth/options";
 import type { AuthEnvironment } from "@/auth/options";
@@ -122,6 +137,22 @@ async function seedIdentities() {
 
 function getRows<T>(result: { rows: unknown[] }) {
   return result.rows as T[];
+}
+
+function makeJsonRequest(
+  url: string,
+  method: "GET" | "PATCH" | "POST" = "GET",
+  body?: unknown,
+) {
+  return new Request(url, {
+    method,
+    ...(body === undefined
+      ? {}
+      : {
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        }),
+  });
 }
 
 beforeEach(async () => {
@@ -626,6 +657,22 @@ describe("PostgreSQL foundation integration", () => {
       auditContext,
     );
 
+    await expect(
+      createTutor(
+        database,
+        {
+          firstName: "Grace",
+          lastName: "Hopper",
+          institutionalIdentifier: " leg-001 ",
+          primaryCareerId: createdCareer.id,
+          cycleId: openCycle.id,
+        },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({
+      code: TUTOR_ERROR_CODES.duplicateInstitutionalIdentifier,
+    });
+
     await database.insert(tutorCycleMembership).values({
       tutorId: createdTutor.id,
       cycleId: closedCycle!.id,
@@ -811,6 +858,14 @@ describe("PostgreSQL foundation integration", () => {
         auditContext,
       ),
     ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.inactiveCareer });
+    await expect(
+      transitionCareerStatus(
+        database,
+        secondaryCareer.id,
+        { status: "ACTIVE" },
+        auditContext,
+      ),
+    ).resolves.toMatchObject({ id: secondaryCareer.id, status: "ACTIVE" });
 
     await transitionScholarshipReferenceStatus(
       database,
@@ -832,6 +887,17 @@ describe("PostgreSQL foundation integration", () => {
       ),
     ).rejects.toMatchObject({
       code: TUTOR_ERROR_CODES.inactiveScholarshipReference,
+    });
+    await expect(
+      transitionScholarshipReferenceStatus(
+        database,
+        scholarship.id,
+        { status: "ACTIVE" },
+        auditContext,
+      ),
+    ).resolves.toMatchObject({
+      id: scholarship.id,
+      status: "ACTIVE",
     });
 
     const tutorEvents = (await listAuditEvents(database, 100)).filter(
@@ -1190,6 +1256,217 @@ describe("PostgreSQL foundation integration", () => {
     );
     expect(adminListResponse.status).toBe(200);
     expect(adminReferenceMutationResponse.status).toBe(201);
+  });
+
+  it("protects every tutor and academic API boundary and the Admin page shell", async () => {
+    const { admin, tutor } = await seedIdentities();
+    const routeId = "77777777-7777-4777-8777-777777777777";
+    const routeContext = {
+      params: Promise.resolve({ tutorId: routeId }),
+    };
+    const careerContext = {
+      params: Promise.resolve({ careerId: routeId }),
+    };
+    const subjectContext = {
+      params: Promise.resolve({ subjectId: routeId }),
+    };
+    const scholarshipContext = {
+      params: Promise.resolve({ scholarshipReferenceId: routeId }),
+    };
+    const apiBoundaries = [
+      {
+        name: "tutor collection GET",
+        invoke: () =>
+          getAdminTutorCollection(
+            makeJsonRequest("http://localhost/api/admin/tutors"),
+          ),
+      },
+      {
+        name: "tutor collection POST",
+        invoke: () =>
+          postAdminTutorCollection(
+            makeJsonRequest("http://localhost/api/admin/tutors", "POST", {}),
+          ),
+      },
+      {
+        name: "tutor detail GET",
+        invoke: () =>
+          getAdminTutorDetail(
+            makeJsonRequest("http://localhost/api/admin/tutors/detail"),
+            routeContext,
+          ),
+      },
+      {
+        name: "tutor detail PATCH",
+        invoke: () =>
+          patchAdminTutorDetail(
+            makeJsonRequest("http://localhost/api/admin/tutors/detail", "PATCH", {}),
+            routeContext,
+          ),
+      },
+      {
+        name: "tutor status PATCH",
+        invoke: () =>
+          patchAdminTutorStatus(
+            makeJsonRequest("http://localhost/api/admin/tutors/status", "PATCH", {}),
+            routeContext,
+          ),
+      },
+      {
+        name: "subject coverage GET",
+        invoke: () => getAdminTutorSubjects(),
+      },
+      {
+        name: "career collection GET",
+        invoke: () =>
+          getAdminCareers(makeJsonRequest("http://localhost/api/admin/settings/careers")),
+      },
+      {
+        name: "career collection POST",
+        invoke: () =>
+          postAdminCareers(
+            makeJsonRequest("http://localhost/api/admin/settings/careers", "POST", {}),
+          ),
+      },
+      {
+        name: "career detail GET",
+        invoke: () =>
+          getAdminCareerDetail(
+            makeJsonRequest("http://localhost/api/admin/settings/careers/detail"),
+            careerContext,
+          ),
+      },
+      {
+        name: "career detail PATCH",
+        invoke: () =>
+          patchAdminCareerDetail(
+            makeJsonRequest("http://localhost/api/admin/settings/careers/detail", "PATCH", {}),
+            careerContext,
+          ),
+      },
+      {
+        name: "career status PATCH",
+        invoke: () =>
+          patchAdminCareerStatus(
+            makeJsonRequest("http://localhost/api/admin/settings/careers/status", "PATCH", {}),
+            careerContext,
+          ),
+      },
+      {
+        name: "subject collection GET",
+        invoke: () =>
+          getAdminSubjects(makeJsonRequest("http://localhost/api/admin/settings/subjects")),
+      },
+      {
+        name: "subject collection POST",
+        invoke: () =>
+          postAdminSubjects(
+            makeJsonRequest("http://localhost/api/admin/settings/subjects", "POST", {}),
+          ),
+      },
+      {
+        name: "subject detail GET",
+        invoke: () =>
+          getAdminSubjectDetail(
+            makeJsonRequest("http://localhost/api/admin/settings/subjects/detail"),
+            subjectContext,
+          ),
+      },
+      {
+        name: "subject detail PATCH",
+        invoke: () =>
+          patchAdminSubjectDetail(
+            makeJsonRequest("http://localhost/api/admin/settings/subjects/detail", "PATCH", {}),
+            subjectContext,
+          ),
+      },
+      {
+        name: "subject status PATCH",
+        invoke: () =>
+          patchAdminSubjectStatus(
+            makeJsonRequest("http://localhost/api/admin/settings/subjects/status", "PATCH", {}),
+            subjectContext,
+          ),
+      },
+      {
+        name: "scholarship collection GET",
+        invoke: () =>
+          getAdminScholarships(
+            makeJsonRequest("http://localhost/api/admin/settings/scholarship-references"),
+          ),
+      },
+      {
+        name: "scholarship collection POST",
+        invoke: () =>
+          postAdminScholarships(
+            makeJsonRequest(
+              "http://localhost/api/admin/settings/scholarship-references",
+              "POST",
+              {},
+            ),
+          ),
+      },
+      {
+        name: "scholarship detail GET",
+        invoke: () =>
+          getAdminScholarshipDetail(
+            makeJsonRequest(
+              "http://localhost/api/admin/settings/scholarship-references/detail",
+            ),
+            scholarshipContext,
+          ),
+      },
+      {
+        name: "scholarship detail PATCH",
+        invoke: () =>
+          patchAdminScholarshipDetail(
+            makeJsonRequest(
+              "http://localhost/api/admin/settings/scholarship-references/detail",
+              "PATCH",
+              {},
+            ),
+            scholarshipContext,
+          ),
+      },
+      {
+        name: "scholarship status PATCH",
+        invoke: () =>
+          patchAdminScholarshipStatus(
+            makeJsonRequest(
+              "http://localhost/api/admin/settings/scholarship-references/status",
+              "PATCH",
+              {},
+            ),
+            scholarshipContext,
+          ),
+      },
+    ];
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: tutor.id, role: "ADMIN" },
+    });
+
+    for (const boundary of apiBoundaries) {
+      await expect(boundary.invoke(), boundary.name).resolves.toMatchObject({
+        status: 403,
+      });
+    }
+
+    await expect(AdminLayout({ children: null })).rejects.toThrow(
+      "redirect:/forbidden",
+    );
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: admin.id, role: "TUTOR" },
+    });
+
+    for (const boundary of apiBoundaries) {
+      const response = await boundary.invoke();
+      expect(response.status, boundary.name).not.toBe(401);
+      expect(response.status, boundary.name).not.toBe(403);
+    }
+
+    await expect(AdminLayout({ children: null })).resolves.toBeDefined();
   });
 
   it("records the complete cycle lifecycle with actor attribution and history", async () => {

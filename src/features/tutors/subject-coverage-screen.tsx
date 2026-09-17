@@ -247,7 +247,7 @@ function CoverageCompactList({
   subjects: SafeSubjectCoverage[];
 }) {
   return (
-    <div className="mt-4 md:hidden">
+    <div className="mt-4 md:hidden" data-layout="compact">
       <ul aria-label="Cobertura de materias" className="space-y-3">
         {subjects.map((coverage) => (
           <li key={coverage.subject.id}>
@@ -290,7 +290,10 @@ function CoverageMediumTable({
   subjects: SafeSubjectCoverage[];
 }) {
   return (
-    <div className="mt-4 hidden overflow-x-auto rounded-md border border-border bg-surface md:block lg:hidden">
+    <div
+      className="mt-4 hidden overflow-x-auto rounded-md border border-border bg-surface md:block lg:hidden"
+      data-layout="medium"
+    >
       <Table className="min-w-[46rem]">
         <caption className="sr-only">Cobertura de materias</caption>
         <TableHeader>
@@ -326,7 +329,10 @@ function CoverageWideTable({
   subjects: SafeSubjectCoverage[];
 }) {
   return (
-    <div className="mt-4 hidden overflow-x-auto rounded-md border border-border bg-surface lg:block">
+    <div
+      className="mt-4 hidden overflow-x-auto rounded-md border border-border bg-surface lg:block"
+      data-layout="wide"
+    >
       <Table className="min-w-[64rem]">
         <caption className="sr-only">Comparación de cobertura de materias</caption>
         <TableHeader>

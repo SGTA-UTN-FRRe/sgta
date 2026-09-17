@@ -625,7 +625,10 @@ function TutorWideTable({
   rows: SafeTutorListItem[];
 }) {
   return (
-    <div className="hidden overflow-x-auto rounded-md border border-border bg-surface lg:block">
+    <div
+      className="hidden overflow-x-auto rounded-md border border-border bg-surface lg:block"
+      data-layout="wide"
+    >
       <Table className="min-w-[62rem]">
         <caption className="sr-only">Lista de tutores</caption>
         <TableHeader>
@@ -689,7 +692,10 @@ function TutorMediumTable({
   rows: SafeTutorListItem[];
 }) {
   return (
-    <div className="hidden overflow-x-auto rounded-md border border-border bg-surface md:block lg:hidden">
+    <div
+      className="hidden overflow-x-auto rounded-md border border-border bg-surface md:block lg:hidden"
+      data-layout="medium"
+    >
       <Table className="min-w-[40rem]">
         <caption className="sr-only">Lista de tutores</caption>
         <TableHeader>
@@ -751,7 +757,10 @@ function TutorCompactList({
   rows: SafeTutorListItem[];
 }) {
   return (
-    <ul className="divide-y divide-border-subtle overflow-hidden rounded-md border border-border bg-surface md:hidden">
+    <ul
+      className="divide-y divide-border-subtle overflow-hidden rounded-md border border-border bg-surface md:hidden"
+      data-layout="compact"
+    >
       {rows.map((tutor) => (
         <li className="p-4" key={tutor.id}>
           <div className="flex items-start justify-between gap-4">

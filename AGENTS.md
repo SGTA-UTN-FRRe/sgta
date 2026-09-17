@@ -12,9 +12,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Project
 
-SGTA is an executable Next.js application for the Tutorias UTN FRRe interface. The current runtime includes the public login route with role-aware root redirects, protected Admin and Tutor route/layout shells, responsive navigation, shared UI components, local UI primitives, a PostgreSQL/Drizzle persistence boundary, provisioned Google-only Better Auth configuration, server-side authorization, AdministrativeCycle lifecycle controls, auditable events, Vitest/Testing Library coverage, PostgreSQL integration coverage, and a Playwright UI smoke suite.
+SGTA is an executable Next.js application for the Tutorias UTN FRRe interface. The current runtime includes the public login route with role-aware root redirects, protected Admin and Tutor route/layout shells, responsive navigation, shared UI components, local UI primitives, a PostgreSQL/Drizzle persistence boundary, provisioned Google-only Better Auth configuration, server-side authorization, AdministrativeCycle lifecycle controls, live Tutor and academic catalog operations, derived Materias coverage, auditable events, Vitest/Testing Library coverage, PostgreSQL integration coverage, and authenticated/unauthenticated Playwright browser coverage.
 
-The current runtime does not yet include Tutor CRUD, academic catalog persistence, hour accounting, scheduling, attendance, consultations, Google Sheets access, reporting, or production operational workflows. The `src/auth/` and `src/db/` boundaries contain active secure-foundation implementations, while `src/features/` contains the implemented cycle/settings slice and reserved locations for later verticals.
+The current runtime does not yet include hour accounting, scheduling, attendance, consultations, Google Sheets access, reporting, formal scholarship certification, or production operational workflows. The `src/auth/` and `src/db/` boundaries contain active secure-foundation implementations, while `src/features/` contains the implemented cycle/settings and tutor/academic operations slices plus reserved locations for later verticals.
 
 ## Instruction hierarchy
 
@@ -82,7 +82,7 @@ Key boundaries:
 
 ```text
 src/app/              App Router routes, layouts, metadata, and global styles
-src/features/         implemented cycle/settings UI and future vertical slices
+src/features/         implemented cycle/settings and tutor/academic operations, plus future slices
 src/shared/           small cross-feature product components and utilities
 src/components/ui/    low-level reusable UI primitives
 src/auth/             active authentication, session, and authorization boundary
