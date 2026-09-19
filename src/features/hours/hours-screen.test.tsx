@@ -201,6 +201,39 @@ describe("HoursScreen", () => {
     });
   });
 
+  it("keeps mutation feedback and balances visible when refresh fails", async () => {
+    const user = userEvent.setup();
+    const recordedMovement = {
+      ...data.history[0],
+      id: "abababab-abab-4aba-8bab-abababababac",
+      tutor: data.eligibleTutors[0],
+      durationMinutes: 90,
+      signedDurationMinutes: 90,
+    };
+    fetchMock
+      .mockResolvedValueOnce(
+        Response.json(
+          {
+            cycle: data.currentCycle,
+            origin: recordedMovement.origin,
+            movements: [recordedMovement],
+          },
+          { status: 201 },
+        ),
+      )
+      .mockRejectedValueOnce(new Error("refresh unavailable"));
+
+    render(<HoursScreen data={data} />);
+    await user.click(screen.getByRole("button", { name: "Registrar movimiento" }));
+    await user.click(screen.getByRole("button", { name: "Registrar movimientos" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(/Origen: Reun/),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(/No se pudo actualizar/);
+    expect(screen.getAllByText("+04:00")).not.toHaveLength(0);
+  });
+
   it("keeps valid transaction input and states that nothing was recorded on failure", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValue(

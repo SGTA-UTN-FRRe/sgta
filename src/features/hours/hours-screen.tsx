@@ -255,6 +255,36 @@ function formatMovementOrigin(movement: SafeHourMovement) {
     : formatActivityKind(movement.origin.kind);
 }
 
+function applyMovementsToBalances(
+  balances: SafeHourBalance[],
+  movements: SafeHourMovement[],
+) {
+  const deltaByTutor = new Map<string, number>();
+
+  for (const movement of movements) {
+    deltaByTutor.set(
+      movement.tutor.id,
+      (deltaByTutor.get(movement.tutor.id) ?? 0) + movement.signedDurationMinutes,
+    );
+  }
+
+  return balances.map((balance) => {
+    const delta = deltaByTutor.get(balance.tutor.id) ?? 0;
+
+    if (delta === 0) {
+      return balance;
+    }
+
+    const signedBalanceMinutes = balance.signedBalanceMinutes + delta;
+
+    return {
+      ...balance,
+      signedBalanceMinutes,
+      state: signedBalanceMinutes >= 0 ? ("current" as const) : ("owes" as const),
+    };
+  });
+}
+
 function balanceStatusVariant(state: SafeHourBalance["state"]): StatusBadgeVariant {
   return state === "current" ? "success" : "danger";
 }
@@ -1627,6 +1657,10 @@ export function HoursScreen({
       }
 
       setHistoryCache((current) => mergeHistory(current, result.movements));
+      setWorkspace((current) => ({
+        ...current,
+        balances: applyMovementsToBalances(current.balances, result.movements),
+      }));
 
       let refreshWarning: string | null = null;
 
@@ -1646,11 +1680,12 @@ export function HoursScreen({
           ? formatActivityKind(selectedCategory.activityKind)
           : "Carga manual";
       const affectedCount = result.movements.length;
+      const mutationAnnouncement = `Se registraron movimientos para ${formatTutorCount(affectedCount)}. Origen: ${origin}.`;
 
       setAnnouncement(
         refreshWarning === null
-          ? `Se registraron movimientos para ${formatTutorCount(affectedCount)}. Origen: ${origin}.`
-          : `Se registraron movimientos para ${formatTutorCount(affectedCount)}. ${refreshWarning}`,
+          ? mutationAnnouncement
+          : `${mutationAnnouncement} ${refreshWarning}`,
       );
       setMutationSuccess(true);
       setOperation("MOVEMENT");
