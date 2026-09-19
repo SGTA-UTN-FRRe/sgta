@@ -44,6 +44,7 @@ import type {
 import type {
   HourMovementOperation,
   HoursScreenData,
+  HoursScreenState,
   HoursStateDetail,
 } from "@/features/hours/hours-screen-types";
 import { EmptyState } from "@/shared/components/empty-state";
@@ -53,15 +54,6 @@ import {
   type StatusBadgeVariant,
 } from "@/shared/components/status-badge";
 import { cn } from "@/shared/utils";
-
-export type HoursScreenState =
-  | "default"
-  | "loading"
-  | "empty"
-  | "search-empty"
-  | "error"
-  | "success"
-  | "required-action";
 
 export interface HoursScreenProps {
   data: HoursScreenData;
@@ -532,6 +524,15 @@ function BalanceIdentity({ balance }: { balance: SafeHourBalance }) {
   );
 }
 
+function movementHistoryHref(balance: SafeHourBalance) {
+  const params = new URLSearchParams({
+    cycleId: balance.cycle.id,
+    tutorId: balance.tutor.id,
+  });
+
+  return `/admin/hours/movements?${params.toString()}`;
+}
+
 function BalanceValue({ balance }: { balance: SafeHourBalance }) {
   return (
     <div>
@@ -576,7 +577,7 @@ function BalanceLists({
           </TableHeader>
           <TableBody>
             {balances.map((balance) => (
-              <TableRow key={balance.tutor.id}>
+              <TableRow id={`balance-${balance.tutor.id}`} key={balance.tutor.id}>
                 <TableCell>
                   <BalanceIdentity balance={balance} />
                 </TableCell>
@@ -605,7 +606,7 @@ function BalanceLists({
           </TableHeader>
           <TableBody>
             {balances.map((balance) => (
-              <TableRow key={balance.tutor.id}>
+              <TableRow id={`balance-${balance.tutor.id}`} key={balance.tutor.id}>
                 <TableCell>
                   <BalanceIdentity balance={balance} />
                 </TableCell>
@@ -624,7 +625,11 @@ function BalanceLists({
 
       <div className="divide-y divide-border-subtle md:hidden">
         {balances.map((balance) => (
-          <article className="space-y-4 p-4" key={balance.tutor.id}>
+          <article
+            className="scroll-mt-8 space-y-4 p-4"
+            id={`balance-${balance.tutor.id}`}
+            key={balance.tutor.id}
+          >
             <div className="flex items-start justify-between gap-4">
               <BalanceIdentity balance={balance} />
               <BalanceStatus balance={balance} />
@@ -950,6 +955,12 @@ function MovementHistorySheet({
           <p className="text-xs leading-5 text-foreground-muted">
             Este historial se consulta desde los movimientos persistidos y no modifica saldos directamente.
           </p>
+          <Link
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }), "mt-3")}
+            href={movementHistoryHref(balance)}
+          >
+            Ver historial completo
+          </Link>
         </div>
       </div>
     </div>
@@ -1681,14 +1692,17 @@ export function HoursScreen({
         label={headerStateDetail.actionLabel ?? "Configurar ciclo"}
       />
     ) : (
-      <Button
-        disabled={screenState === "loading" || workspace.categories.length === 0 || workspace.eligibleTutors.length === 0}
-        onClick={(event) => openMovementDialog(event.currentTarget)}
-        type="button"
-      >
-        <Plus aria-hidden="true" />
-        Registrar movimiento
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <ActionLink href="/admin/hours/movements" label="Ver movimientos" />
+        <Button
+          disabled={screenState === "loading" || workspace.categories.length === 0 || workspace.eligibleTutors.length === 0}
+          onClick={(event) => openMovementDialog(event.currentTarget)}
+          type="button"
+        >
+          <Plus aria-hidden="true" />
+          Registrar movimiento
+        </Button>
+      </div>
     );
 
   return (

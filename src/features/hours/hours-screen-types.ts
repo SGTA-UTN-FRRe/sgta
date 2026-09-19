@@ -8,6 +8,15 @@ import type {
 
 export type HourMovementOperation = "MOVEMENT" | "RECOVERY";
 
+export type HoursScreenState =
+  | "default"
+  | "loading"
+  | "empty"
+  | "search-empty"
+  | "error"
+  | "success"
+  | "required-action";
+
 export type HoursStateDetail = {
   title: string;
   description: string;

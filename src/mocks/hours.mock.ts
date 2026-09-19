@@ -98,6 +98,18 @@ const movementMarinaGuard = {
   origin: null,
   reversalState: "REVERSED" as const,
   reversalMovementId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  createdAt: "2026-09-10T12:00:00.000Z",
+};
+
+const movementMarinaGuardReversal = {
+  ...movementMarinaGuard,
+  id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  direction: "CREDIT" as const,
+  signedDurationMinutes: 45,
+  reversalOfMovementId: movementMarinaGuard.id,
+  reversalMovementId: null,
+  reversalState: "REVERSAL" as const,
+  createdAt: "2026-09-16T12:00:00.000Z",
 };
 
 const movementTomasGuard = {
@@ -110,6 +122,7 @@ const movementTomasGuard = {
   movementDate: "2026-09-12",
   note: "Cobertura de mesa de consultas.",
   origin: null,
+  createdAt: "2026-09-12T12:00:00.000Z",
 };
 
 const movementLuciaExtraordinary = {
@@ -126,6 +139,7 @@ const movementLuciaExtraordinary = {
     id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
     kind: "EXTRAORDINARY" as const,
   },
+  createdAt: "2026-09-11T12:00:00.000Z",
 };
 
 export const hoursScreenData = {
@@ -159,6 +173,7 @@ export const hoursScreenData = {
   history: [
     movementMarinaMeeting,
     movementMarinaGuard,
+    movementMarinaGuardReversal,
     movementTomasGuard,
     movementLuciaExtraordinary,
   ],

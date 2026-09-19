@@ -981,6 +981,45 @@ Confirmation explains:
 - [ ] Confirmed movements are corrected through traceable reversal, never value overwrite.
 - [ ] Compact and Wide flows are complete.
 
+### View: Movimientos
+
+#### Overview
+
+```text
+Route: /admin/hours/movements
+Access: Admin
+Priority: P0
+Primary user: Admin
+Related workflow: Hour movement history and correction
+```
+
+**Purpose:** Inspect persisted hour movements independently of the balance list
+and correct a confirmed movement without editing its original values.
+
+**Information:**
+
+- cycle, tutor, category, text search, direction, origin, and reversal-state filters;
+- date, tutor, category/source, direction, signed duration, note, Admin actor,
+  cycle, and activity/recovery origin;
+- newest movement first;
+- original and reversal rows remain visibly linked in every responsive layout.
+
+**Reversal behavior:**
+
+- `Revertir movimiento` is available only for a confirmed movement in an open cycle;
+- confirmation is a named modal explaining that the original remains visible and
+  the balance is recalculated from the new opposite movement;
+- already reversed rows and reversal rows expose their relationship but no second
+  reversal or edit/delete control;
+- reversal errors keep the selected movement and confirmation context available for retry.
+
+#### States and accessibility
+
+Default, Loading, Empty, Search empty, Error, Success, and Required action are
+explicit. The reversal modal supports visible dismissal, Escape, focus entry,
+focus containment, and focus return to the triggering action. Origin and
+reversal meaning is expressed with text and relationships, not color alone.
+
 ### View: Horarios
 
 #### Overview
