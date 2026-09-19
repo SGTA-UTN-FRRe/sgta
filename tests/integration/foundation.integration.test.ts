@@ -62,6 +62,17 @@ import {
   listAdministrativeCycles,
 } from "@/features/cycles/cycle-service";
 import {
+  createHourCategory,
+  getHourWorkspace,
+  HOUR_ERROR_CODES,
+  listHourBalances,
+  listHourMovements,
+  recognizeRecovery,
+  recordBulkHourMovement,
+  reverseHourMovement,
+  transitionHourCategoryStatus,
+} from "@/features/hours/hour-service";
+import {
   createCareer,
   createScholarshipReference,
   createSubject,
@@ -1701,6 +1712,229 @@ describe("PostgreSQL foundation integration", () => {
     }
 
     await expect(AdminLayout({ children: null })).resolves.toBeDefined();
+  });
+
+  it("reconstructs hour balances and preserves activity, recovery, and reversal history", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Systems Engineering", normalizedName: "systems engineering" })
+      .returning({ id: career.id });
+    const [createdCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "Hour Service Cycle 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+        status: "OPEN",
+      })
+      .returning({ id: administrativeCycle.id });
+    const domainTutors = await database
+      .insert(tutor)
+      .values([
+        {
+          firstName: "Ada",
+          lastName: "Lovelace",
+          primaryCareerId: createdCareer!.id,
+        },
+        {
+          firstName: "Grace",
+          lastName: "Hopper",
+          primaryCareerId: createdCareer!.id,
+        },
+      ])
+      .returning({ id: tutor.id });
+
+    await database.insert(tutorCycleMembership).values(
+      domainTutors.map((domainTutor) => ({
+        tutorId: domainTutor.id,
+        cycleId: createdCycle!.id,
+      })),
+    );
+
+    const meetingCategory = await createHourCategory(
+      database,
+      { name: "Team meeting", activityKind: "MEETING" },
+      { actorId: admin.id, requestId: "category-meeting" },
+    );
+    const recoveryCategory = await createHourCategory(
+      database,
+      { name: "Recovery", activityKind: "RECOVERY" },
+      { actorId: admin.id, requestId: "category-recovery" },
+    );
+    const manualCategory = await createHourCategory(
+      database,
+      { name: "Manual adjustment" },
+      { actorId: admin.id, requestId: "category-manual" },
+    );
+
+    const workspace = await getHourWorkspace(database);
+    expect(workspace).toMatchObject({
+      currentCycle: { id: createdCycle!.id, status: "OPEN" },
+      categories: expect.arrayContaining([
+        expect.objectContaining({ id: meetingCategory.id, activityKind: "MEETING" }),
+        expect.objectContaining({ id: recoveryCategory.id, activityKind: "RECOVERY" }),
+      ]),
+    });
+    expect(workspace.eligibleTutors).toHaveLength(2);
+
+    const bulk = await recordBulkHourMovement(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        tutorIds: domainTutors.map((domainTutor) => domainTutor.id),
+        categoryId: meetingCategory.id,
+        direction: "CREDIT",
+        duration: { hours: 1, minutes: 30 },
+        movementDate: "2027-02-15",
+        note: "Weekly coordination",
+      },
+      {
+        actorId: admin.id,
+        requestId: "bulk-meeting",
+        ipAddress: "203.0.113.40",
+      },
+    );
+
+    expect(bulk.movements).toHaveLength(2);
+    expect(bulk.origin).toMatchObject({
+      kind: "MEETING",
+      durationMinutes: 90,
+      actor: { id: admin.id, displayName: "Integration Admin" },
+    });
+
+    const recovery = await recognizeRecovery(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        tutorIds: [domainTutors[0]!.id],
+        categoryId: recoveryCategory.id,
+        direction: "CREDIT",
+        duration: { durationMinutes: 30 },
+        movementDate: "2027-02-16",
+        note: "Explicit recovery recognition",
+      },
+      { actorId: admin.id, requestId: "recovery" },
+    );
+
+    expect(recovery.origin).toMatchObject({ kind: "RECOVERY" });
+
+    await expect(
+      recordBulkHourMovement(
+        database,
+        {
+          cycleId: createdCycle!.id,
+          tutorIds: [domainTutors[0]!.id],
+          categoryId: meetingCategory.id,
+          direction: "CREDIT",
+          duration: { durationMinutes: 15 },
+          movementDate: "2027-02-16",
+        },
+        { actorId: admin.id, requestId: "x".repeat(256) },
+      ),
+    ).rejects.toMatchObject({ code: HOUR_ERROR_CODES.transactionFailed });
+
+    await expect(
+      database
+        .select({ id: hourMovement.id })
+        .from(hourMovement)
+        .where(
+          and(
+            eq(hourMovement.categoryId, manualCategory.id),
+            eq(hourMovement.cycleId, createdCycle!.id),
+          ),
+        ),
+    ).resolves.toEqual([]);
+
+    const firstMovement = bulk.movements.find(
+      (movement) => movement.tutor.id === domainTutors[0]!.id,
+    )!;
+    const reversal = await reverseHourMovement(database, firstMovement.id, {
+      actorId: admin.id,
+      requestId: "reversal",
+    });
+
+    expect(reversal.original).toMatchObject({
+      id: firstMovement.id,
+      direction: "CREDIT",
+      durationMinutes: 90,
+      reversalState: "REVERSED",
+      reversalMovementId: reversal.reversal.id,
+    });
+    expect(reversal.reversal).toMatchObject({
+      direction: "DEBIT",
+      durationMinutes: 90,
+      reversalOfMovementId: firstMovement.id,
+      reversalState: "REVERSAL",
+    });
+    await expect(
+      reverseHourMovement(database, firstMovement.id, { actorId: admin.id }),
+    ).rejects.toMatchObject({ code: HOUR_ERROR_CODES.movementAlreadyReversed });
+    await expect(
+      reverseHourMovement(database, reversal.reversal.id, { actorId: admin.id }),
+    ).rejects.toMatchObject({ code: HOUR_ERROR_CODES.reversalTargetInvalid });
+
+    const balances = await listHourBalances(database, createdCycle!.id);
+    expect(balances).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          tutor: expect.objectContaining({ id: domainTutors[0]!.id }),
+          signedBalanceMinutes: 30,
+          state: "current",
+        }),
+        expect.objectContaining({
+          tutor: expect.objectContaining({ id: domainTutors[1]!.id }),
+          signedBalanceMinutes: 90,
+          state: "current",
+        }),
+      ]),
+    );
+
+    await transitionHourCategoryStatus(
+      database,
+      meetingCategory.id,
+      { status: "INACTIVE" },
+      { actorId: admin.id, requestId: "category-inactive" },
+    );
+    const history = await listHourMovements(database, {
+      cycleId: createdCycle!.id,
+      limit: 20,
+    });
+    const meetingHistory = history.filter(
+      (movement) => movement.category.id === meetingCategory.id,
+    );
+    expect(meetingHistory).toHaveLength(3);
+    expect(meetingHistory.every((movement) => movement.category.status === "INACTIVE")).toBe(
+      true,
+    );
+
+    await closeAdministrativeCycle(database, createdCycle!.id, {
+      actorId: admin.id,
+      requestId: "close-hours-cycle",
+    });
+    await expect(listHourBalances(database, createdCycle!.id)).resolves.toHaveLength(2);
+    await expect(
+      recordBulkHourMovement(
+        database,
+        {
+          cycleId: createdCycle!.id,
+          tutorIds: [domainTutors[0]!.id],
+          categoryId: recoveryCategory.id,
+          direction: "CREDIT",
+          duration: { durationMinutes: 15 },
+          movementDate: "2027-02-17",
+        },
+        { actorId: admin.id },
+      ),
+    ).rejects.toMatchObject({ code: HOUR_ERROR_CODES.cycleNotOpen });
+
+    const hourEvents = await listAuditEvents(database, 100);
+    expect(
+      hourEvents
+        .filter((event) => event.entityType === "hour_movement")
+        .every((event) => event.actorId === admin.id),
+    ).toBe(true);
   });
 
   it("records the complete cycle lifecycle with actor attribution and history", async () => {
