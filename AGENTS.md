@@ -12,9 +12,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Project
 
-SGTA is an executable Next.js application for the Tutorias UTN FRRe interface. The current runtime includes the public login route with role-aware root redirects, protected Admin and Tutor route/layout shells, responsive navigation, shared UI components, local UI primitives, a PostgreSQL/Drizzle persistence boundary, provisioned Google-only Better Auth configuration, server-side authorization, AdministrativeCycle lifecycle controls, live Tutor and academic catalog operations, derived Materias coverage, auditable events, Vitest/Testing Library coverage, PostgreSQL integration coverage, and authenticated/unauthenticated Playwright browser coverage.
+SGTA is an executable Next.js application for the Tutorias UTN FRRe interface. The current runtime includes the public login route with role-aware root redirects, protected Admin and Tutor route/layout shells, responsive navigation, shared UI components, local UI primitives, a PostgreSQL/Drizzle persistence boundary, provisioned Google-only Better Auth configuration, server-side authorization, AdministrativeCycle lifecycle controls, live Tutor, academic catalog, and Admin hour-accounting operations, derived Materias coverage, auditable events, Vitest/Testing Library coverage, PostgreSQL integration coverage, and authenticated/unauthenticated Playwright browser coverage.
 
-The current runtime does not yet include hour accounting, scheduling, attendance, consultations, Google Sheets access, reporting, formal scholarship certification, or production operational workflows. The `src/auth/` and `src/db/` boundaries contain active secure-foundation implementations, while `src/features/` contains the implemented cycle/settings and tutor/academic operations slices plus reserved locations for later verticals.
+The current runtime does not yet include scheduling, attendance, Tutor self-service, consultations, Google Sheets access, reporting, formal scholarship certification, or production operational workflows. The `src/auth/` and `src/db/` boundaries contain active secure-foundation implementations, while `src/features/` contains the implemented cycle/settings, tutor/academic operations, and hour-accounting slices plus reserved locations for later verticals.
 
 ## Instruction hierarchy
 

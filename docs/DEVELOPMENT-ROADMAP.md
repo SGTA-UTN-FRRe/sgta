@@ -79,8 +79,10 @@ The repository already has a useful scaffold:
 
 The secure platform foundation is now implemented: PostgreSQL/Drizzle persistence,
 provisioned Google-only authentication, server-side role authorization,
-AdministrativeCycle lifecycle controls, safe audit events, and isolated
-integration coverage. The later operational workflows remain unimplemented.
+AdministrativeCycle lifecycle controls, safe audit events, isolated integration
+coverage, and the live Admin hour-accounting vertical. Scheduling, attendance,
+Tutor self-service, consultation, reporting, and production workflows remain
+unimplemented.
 
 Therefore the project continues from the scaffold rather than restarting from zero.
 
@@ -93,7 +95,7 @@ Therefore the project continues from the scaffold rather than restarting from ze
 | 3 | Golden Screens and visual-system recalibration | P0 | Planned |
 | 4 | Persistence, identity, authorization, cycle, and audit foundation | P0 | Complete |
 | 5 | Tutor and academic operations | P0 | Complete |
-| 6 | Hour ledger, activities, and recovery | P0 | Planned |
+| 6 | Hour ledger, activities, and recovery | P0 | Complete |
 | 7 | Scheduling and attendance | P0 | Planned |
 | 8 | Tutor self-service | P0 | Planned |
 | 9 | Consultation intake and data curation | P0 | Planned |
@@ -346,7 +348,7 @@ Deliver the first complete production-quality operational vertical slice.
 ### Phase 6 - Hour ledger, activities, and recovery
 
 - **Priority:** P0
-- **Status:** Planned
+- **Status:** Complete
 - **Depends on:** Phase 5
 
 #### Objective
@@ -383,13 +385,13 @@ No direct mutable balance exists.
 
 #### Exit criteria
 
-- [ ] Every balance is reconstructable from movements.
-- [ ] Confirmed movement values are not updated in place.
-- [ ] Reversal references the original and remains visible.
-- [ ] Admin can safely register a bulk meeting movement atomically.
-- [ ] A failed bulk movement commits zero selected tutor movements.
-- [ ] Direction, category, duration, date, and selected tutors are explicit before confirmation.
-- [ ] UI quality matches the Golden Screen contract.
+- [x] Every balance is reconstructable from movements.
+- [x] Confirmed movement values are not updated in place.
+- [x] Reversal references the original and remains visible.
+- [x] Admin can safely register a bulk meeting movement atomically.
+- [x] A failed bulk movement commits zero selected tutor movements.
+- [x] Direction, category, duration, date, and selected tutors are explicit before confirmation.
+- [x] UI quality matches the Golden Screen contract.
 
 ### Phase 7 - Scheduling and attendance
 
