@@ -41,9 +41,12 @@ import type { AuthEnvironment } from "@/auth/options";
 import { recordAuditEvent, listAuditEvents } from "@/db/audit-core";
 import {
   account,
+  activity,
   administrativeCycle,
   auditEvent,
   career,
+  hourCategory,
+  hourMovement,
   scholarshipReference,
   session,
   subject,
@@ -95,7 +98,7 @@ const authEnvironment = {
 
 async function resetDatabase() {
   await getIntegrationDatabase().execute(
-    sql`TRUNCATE TABLE "tutor_cycle_membership", "tutor_subject", "tutor", "scholarship_reference", "subject", "career", "audit_event", "session", "account", "verification", "administrative_cycle", "user" CASCADE`,
+    sql`TRUNCATE TABLE "hour_movement", "activity", "hour_category", "tutor_cycle_membership", "tutor_subject", "tutor", "scholarship_reference", "subject", "career", "audit_event", "session", "account", "verification", "administrative_cycle", "user" CASCADE`,
   );
 }
 
@@ -179,7 +182,7 @@ describe("PostgreSQL foundation integration", () => {
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
-          AND table_name IN ('user', 'session', 'account', 'verification', 'administrative_cycle', 'audit_event', 'career', 'subject', 'scholarship_reference', 'tutor', 'tutor_subject', 'tutor_cycle_membership')
+          AND table_name IN ('user', 'session', 'account', 'verification', 'administrative_cycle', 'audit_event', 'career', 'subject', 'scholarship_reference', 'tutor', 'tutor_subject', 'tutor_cycle_membership', 'hour_category', 'activity', 'hour_movement')
         ORDER BY table_name
       `),
     );
@@ -194,7 +197,7 @@ describe("PostgreSQL foundation integration", () => {
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
-          AND table_name IN ('hour_category', 'hour_movement', 'schedule', 'attendance', 'consultation')
+          AND table_name IN ('schedule', 'attendance', 'consultation')
       `),
     );
     const indexes = getRows<{ indexname: string }>(
@@ -203,7 +206,15 @@ describe("PostgreSQL foundation integration", () => {
         FROM pg_indexes
         WHERE schemaname = 'public'
           AND indexname IN (
+            'activity_cycle_date_idx',
+            'activity_kind_idx',
             'career_normalized_name_unique',
+            'hour_category_normalized_name_unique',
+            'hour_category_status_idx',
+            'hour_movement_activity_idx',
+            'hour_movement_category_idx',
+            'hour_movement_cycle_tutor_date_idx',
+            'hour_movement_reversal_unique',
             'subject_career_normalized_name_unique',
             'tutor_institutional_identifier_unique',
             'tutor_primary_career_idx',
@@ -219,8 +230,16 @@ describe("PostgreSQL foundation integration", () => {
       await database.execute(sql`
         SELECT conname
         FROM pg_constraint
-        WHERE contype = 'f'
+          WHERE contype = 'f'
           AND conname IN (
+            'activity_actor_id_user_id_fk',
+            'activity_cycle_id_administrative_cycle_id_fk',
+            'hour_movement_activity_id_activity_id_fk',
+            'hour_movement_actor_id_user_id_fk',
+            'hour_movement_category_id_hour_category_id_fk',
+            'hour_movement_cycle_id_administrative_cycle_id_fk',
+            'hour_movement_reversal_of_movement_id_hour_movement_id_fk',
+            'hour_movement_tutor_id_tutor_id_fk',
             'subject_career_id_career_id_fk',
             'tutor_primary_career_id_career_id_fk',
             'tutor_cycle_membership_tutor_id_tutor_id_fk',
@@ -236,11 +255,19 @@ describe("PostgreSQL foundation integration", () => {
       await database.execute(sql`
         SELECT conname
         FROM pg_constraint
-        WHERE contype = 'c'
+          WHERE contype = 'c'
           AND conname IN (
+            'activity_duration_minutes_positive_check',
+            'activity_note_not_blank_check',
             'career_name_not_blank_check',
             'career_normalized_name_not_blank_check',
             'career_normalized_name_check',
+            'hour_category_name_not_blank_check',
+            'hour_category_normalized_name_not_blank_check',
+            'hour_category_normalized_name_check',
+            'hour_movement_duration_minutes_positive_check',
+            'hour_movement_note_not_blank_check',
+            'hour_movement_not_self_reversal_check',
             'subject_name_not_blank_check',
             'subject_normalized_name_not_blank_check',
             'subject_normalized_name_check',
@@ -262,7 +289,7 @@ describe("PostgreSQL foundation integration", () => {
         SELECT type.typname, enum.enumlabel
         FROM pg_type AS type
         JOIN pg_enum AS enum ON enum.enumtypid = type.oid
-        WHERE type.typname IN ('user_role', 'administrative_cycle_status', 'record_status')
+        WHERE type.typname IN ('user_role', 'administrative_cycle_status', 'record_status', 'hour_movement_direction', 'activity_kind')
         ORDER BY type.typname, enum.enumsortorder
       `),
     );
@@ -270,9 +297,12 @@ describe("PostgreSQL foundation integration", () => {
     expect(POSTGRES_IMAGE).toBe("postgres:16.4-alpine");
     expect(tables.map((row) => row.table_name)).toEqual([
       "account",
+      "activity",
       "administrative_cycle",
       "audit_event",
       "career",
+      "hour_category",
+      "hour_movement",
       "scholarship_reference",
       "session",
       "subject",
@@ -282,10 +312,16 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("2");
+    expect(migrations[0]?.migration_count).toBe("3");
     expect(enumValues).toEqual([
+      { typname: "activity_kind", enumlabel: "MEETING" },
+      { typname: "activity_kind", enumlabel: "WORKSHOP" },
+      { typname: "activity_kind", enumlabel: "EXTRAORDINARY" },
+      { typname: "activity_kind", enumlabel: "RECOVERY" },
       { typname: "administrative_cycle_status", enumlabel: "OPEN" },
       { typname: "administrative_cycle_status", enumlabel: "CLOSED" },
+      { typname: "hour_movement_direction", enumlabel: "CREDIT" },
+      { typname: "hour_movement_direction", enumlabel: "DEBIT" },
       { typname: "record_status", enumlabel: "ACTIVE" },
       { typname: "record_status", enumlabel: "INACTIVE" },
       { typname: "user_role", enumlabel: "ADMIN" },
@@ -293,7 +329,15 @@ describe("PostgreSQL foundation integration", () => {
     ]);
     expect(deferredTables).toEqual([]);
     expect(indexes.map((row) => row.indexname)).toEqual([
+      "activity_cycle_date_idx",
+      "activity_kind_idx",
       "career_normalized_name_unique",
+      "hour_category_normalized_name_unique",
+      "hour_category_status_idx",
+      "hour_movement_activity_idx",
+      "hour_movement_category_idx",
+      "hour_movement_cycle_tutor_date_idx",
+      "hour_movement_reversal_unique",
       "subject_career_normalized_name_unique",
       "tutor_cycle_membership_cycle_idx",
       "tutor_cycle_membership_scholarship_reference_idx",
@@ -303,6 +347,14 @@ describe("PostgreSQL foundation integration", () => {
       "tutor_subject_subject_idx",
     ]);
     expect(foreignKeys.map((row) => row.conname)).toEqual([
+      "activity_actor_id_user_id_fk",
+      "activity_cycle_id_administrative_cycle_id_fk",
+      "hour_movement_activity_id_activity_id_fk",
+      "hour_movement_actor_id_user_id_fk",
+      "hour_movement_category_id_hour_category_id_fk",
+      "hour_movement_cycle_id_administrative_cycle_id_fk",
+      "hour_movement_reversal_of_movement_id_hour_movement_id_fk",
+      "hour_movement_tutor_id_tutor_id_fk",
       "subject_career_id_career_id_fk",
       "tutor_cycle_membership_cycle_id_administrative_cycle_id_fk",
       "tutor_cycle_membership_scholarship_reference_id_scholarship_ref",
@@ -312,9 +364,17 @@ describe("PostgreSQL foundation integration", () => {
       "tutor_subject_tutor_id_tutor_id_fk",
     ]);
     expect(checks.map((row) => row.conname)).toEqual([
+      "activity_duration_minutes_positive_check",
+      "activity_note_not_blank_check",
       "career_name_not_blank_check",
       "career_normalized_name_check",
       "career_normalized_name_not_blank_check",
+      "hour_category_name_not_blank_check",
+      "hour_category_normalized_name_check",
+      "hour_category_normalized_name_not_blank_check",
+      "hour_movement_duration_minutes_positive_check",
+      "hour_movement_not_self_reversal_check",
+      "hour_movement_note_not_blank_check",
       "scholarship_reference_hours_non_negative_check",
       "scholarship_reference_normalized_type_check",
       "scholarship_reference_normalized_type_not_blank_check",
@@ -331,6 +391,180 @@ describe("PostgreSQL foundation integration", () => {
     expect(getIntegrationConnectionString()).toMatch(
       /^postgres(?:ql)?:\/\/[^/]+\/sgta_integration$/,
     );
+  });
+
+  it("persists hour accounting facts and enforces non-destructive constraints", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Computer Science", normalizedName: "computer science" })
+      .returning({ id: career.id });
+    const [createdCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+        status: "OPEN",
+      })
+      .returning({ id: administrativeCycle.id });
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id });
+
+    await database.insert(tutorCycleMembership).values({
+      tutorId: createdTutor!.id,
+      cycleId: createdCycle!.id,
+    });
+
+    const [createdCategory] = await database
+      .insert(hourCategory)
+      .values({
+        name: "Meeting",
+        normalizedName: "meeting",
+        activityKind: "MEETING",
+      })
+      .returning({ id: hourCategory.id });
+    const [createdActivity] = await database
+      .insert(activity)
+      .values({
+        cycleId: createdCycle!.id,
+        kind: "MEETING",
+        activityDate: "2027-02-01",
+        durationMinutes: 90,
+        note: "Weekly coordination",
+        actorId: admin.id,
+      })
+      .returning({ id: activity.id });
+    const movementId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const [createdMovement] = await database
+      .insert(hourMovement)
+      .values({
+        id: movementId,
+        cycleId: createdCycle!.id,
+        tutorId: createdTutor!.id,
+        categoryId: createdCategory!.id,
+        direction: "CREDIT",
+        durationMinutes: 90,
+        movementDate: "2027-02-01",
+        activityId: createdActivity!.id,
+        actorId: admin.id,
+      })
+      .returning({
+        direction: hourMovement.direction,
+        durationMinutes: hourMovement.durationMinutes,
+        reversalOfMovementId: hourMovement.reversalOfMovementId,
+      });
+
+    expect(createdMovement).toEqual({
+      direction: "CREDIT",
+      durationMinutes: 90,
+      reversalOfMovementId: null,
+    });
+
+    await expect(
+      database.insert(hourCategory).values({
+        name: " meeting ",
+        normalizedName: "meeting",
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
+    await expect(
+      database.insert(hourCategory).values({ name: "   ", normalizedName: "" }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
+    await expect(
+      database.insert(activity).values({
+        cycleId: createdCycle!.id,
+        kind: "MEETING",
+        activityDate: "2027-02-02",
+        durationMinutes: 0,
+        actorId: admin.id,
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
+    await expect(
+      database.insert(hourMovement).values({
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        cycleId: createdCycle!.id,
+        tutorId: createdTutor!.id,
+        categoryId: createdCategory!.id,
+        direction: "CREDIT",
+        durationMinutes: 0,
+        movementDate: "2027-02-02",
+        actorId: admin.id,
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
+
+    const selfReversalId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    await expect(
+      database.insert(hourMovement).values({
+        id: selfReversalId,
+        cycleId: createdCycle!.id,
+        tutorId: createdTutor!.id,
+        categoryId: createdCategory!.id,
+        direction: "DEBIT",
+        durationMinutes: 90,
+        movementDate: "2027-02-02",
+        reversalOfMovementId: selfReversalId,
+        actorId: admin.id,
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
+
+    const [createdReversal] = await database
+      .insert(hourMovement)
+      .values({
+        id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        cycleId: createdCycle!.id,
+        tutorId: createdTutor!.id,
+        categoryId: createdCategory!.id,
+        direction: "DEBIT",
+        durationMinutes: 90,
+        movementDate: "2027-02-02",
+        reversalOfMovementId: movementId,
+        actorId: admin.id,
+      })
+      .returning({ reversalOfMovementId: hourMovement.reversalOfMovementId });
+
+    expect(createdReversal?.reversalOfMovementId).toBe(movementId);
+    await expect(
+      database.insert(hourMovement).values({
+        id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        cycleId: createdCycle!.id,
+        tutorId: createdTutor!.id,
+        categoryId: createdCategory!.id,
+        direction: "DEBIT",
+        durationMinutes: 90,
+        movementDate: "2027-02-03",
+        reversalOfMovementId: movementId,
+        actorId: admin.id,
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
+
+    await expect(
+      database.delete(hourCategory).where(eq(hourCategory.id, createdCategory!.id)),
+    ).rejects.toMatchObject({ cause: { code: "23503" } });
+    await expect(
+      database.delete(activity).where(eq(activity.id, createdActivity!.id)),
+    ).rejects.toMatchObject({ cause: { code: "23503" } });
+
+    const [storedMovement] = await database
+      .select({
+        direction: hourMovement.direction,
+        durationMinutes: hourMovement.durationMinutes,
+        reversalOfMovementId: hourMovement.reversalOfMovementId,
+      })
+      .from(hourMovement)
+      .where(eq(hourMovement.id, movementId));
+
+    expect(storedMovement).toEqual({
+      direction: "CREDIT",
+      durationMinutes: 90,
+      reversalOfMovementId: null,
+    });
   });
 
   it("persists canonical tutor data and enforces relationship and reference constraints", async () => {

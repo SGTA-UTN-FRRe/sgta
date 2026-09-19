@@ -14,6 +14,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { SafeAuditMetadata } from "./audit-validation";
 
 export const userRoleEnum = pgEnum("user_role", ["ADMIN", "TUTOR"]);
@@ -26,6 +27,18 @@ export const administrativeCycleStatusEnum = pgEnum(
 export const recordStatusEnum = pgEnum("record_status", [
   "ACTIVE",
   "INACTIVE",
+]);
+
+export const hourMovementDirectionEnum = pgEnum("hour_movement_direction", [
+  "CREDIT",
+  "DEBIT",
+]);
+
+export const activityKindEnum = pgEnum("activity_kind", [
+  "MEETING",
+  "WORKSHOP",
+  "EXTRAORDINARY",
+  "RECOVERY",
 ]);
 
 export const user = pgTable(
@@ -370,6 +383,130 @@ export const tutorCycleMembership = pgTable(
   ],
 );
 
+export const hourCategory = pgTable(
+  "hour_category",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    normalizedName: text("normalized_name").notNull(),
+    activityKind: activityKindEnum("activity_kind"),
+    status: recordStatusEnum("status").notNull().default("ACTIVE"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "hour_category_name_not_blank_check",
+      sql`length(trim(${table.name})) > 0`,
+    ),
+    check(
+      "hour_category_normalized_name_not_blank_check",
+      sql`length(trim(${table.normalizedName})) > 0`,
+    ),
+    check(
+      "hour_category_normalized_name_check",
+      sql`${table.normalizedName} = lower(trim(${table.name}))`,
+    ),
+    uniqueIndex("hour_category_normalized_name_unique").on(
+      table.normalizedName,
+    ),
+    index("hour_category_status_idx").on(table.status),
+  ],
+);
+
+export const activity = pgTable(
+  "activity",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    cycleId: uuid("cycle_id")
+      .notNull()
+      .references(() => administrativeCycle.id, { onDelete: "restrict" }),
+    kind: activityKindEnum("kind").notNull(),
+    activityDate: date("activity_date", { mode: "string" }).notNull(),
+    durationMinutes: integer("duration_minutes").notNull(),
+    note: text("note"),
+    actorId: text("actor_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "activity_duration_minutes_positive_check",
+      sql`${table.durationMinutes} > 0`,
+    ),
+    check(
+      "activity_note_not_blank_check",
+      sql`${table.note} IS NULL OR length(trim(${table.note})) > 0`,
+    ),
+    index("activity_cycle_date_idx").on(table.cycleId, table.activityDate),
+    index("activity_kind_idx").on(table.kind),
+  ],
+);
+
+export const hourMovement = pgTable(
+  "hour_movement",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    cycleId: uuid("cycle_id")
+      .notNull()
+      .references(() => administrativeCycle.id, { onDelete: "restrict" }),
+    tutorId: uuid("tutor_id")
+      .notNull()
+      .references(() => tutor.id, { onDelete: "restrict" }),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => hourCategory.id, { onDelete: "restrict" }),
+    direction: hourMovementDirectionEnum("direction").notNull(),
+    durationMinutes: integer("duration_minutes").notNull(),
+    movementDate: date("movement_date", { mode: "string" }).notNull(),
+    note: text("note"),
+    activityId: uuid("activity_id").references(() => activity.id, {
+      onDelete: "restrict",
+    }),
+    reversalOfMovementId: uuid("reversal_of_movement_id").references(
+      (): AnyPgColumn => hourMovement.id,
+      { onDelete: "restrict" },
+    ),
+    actorId: text("actor_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "hour_movement_duration_minutes_positive_check",
+      sql`${table.durationMinutes} > 0`,
+    ),
+    check(
+      "hour_movement_note_not_blank_check",
+      sql`${table.note} IS NULL OR length(trim(${table.note})) > 0`,
+    ),
+    check(
+      "hour_movement_not_self_reversal_check",
+      sql`${table.reversalOfMovementId} IS NULL OR ${table.reversalOfMovementId} <> ${table.id}`,
+    ),
+    index("hour_movement_cycle_tutor_date_idx").on(
+      table.cycleId,
+      table.tutorId,
+      table.movementDate,
+    ),
+    index("hour_movement_category_idx").on(table.categoryId),
+    index("hour_movement_activity_idx").on(table.activityId),
+    uniqueIndex("hour_movement_reversal_unique")
+      .on(table.reversalOfMovementId)
+      .where(sql`${table.reversalOfMovementId} IS NOT NULL`),
+  ],
+);
+
 export const auditEvent = pgTable(
   "audit_event",
   {
@@ -410,6 +547,9 @@ export const databaseSchema = {
   tutor,
   tutorSubject,
   tutorCycleMembership,
+  hourCategory,
+  activity,
+  hourMovement,
   auditEvent,
 };
 
@@ -437,4 +577,13 @@ export type TutorSubject = typeof tutorSubject.$inferSelect;
 export type NewTutorSubject = typeof tutorSubject.$inferInsert;
 export type TutorCycleMembership = typeof tutorCycleMembership.$inferSelect;
 export type NewTutorCycleMembership = typeof tutorCycleMembership.$inferInsert;
+export type HourMovementDirection =
+  (typeof hourMovementDirectionEnum.enumValues)[number];
+export type ActivityKind = (typeof activityKindEnum.enumValues)[number];
+export type HourCategory = typeof hourCategory.$inferSelect;
+export type NewHourCategory = typeof hourCategory.$inferInsert;
+export type Activity = typeof activity.$inferSelect;
+export type NewActivity = typeof activity.$inferInsert;
+export type HourMovement = typeof hourMovement.$inferSelect;
+export type NewHourMovement = typeof hourMovement.$inferInsert;
 export type AuditEvent = typeof auditEvent.$inferSelect;
