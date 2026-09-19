@@ -15,6 +15,13 @@
       "when": 1789618732117,
       "tag": "0001_wakeful_praxagora",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789781799544,
+      "tag": "0002_fearless_magma",
+      "breakpoints": true
     }
   ]
 }

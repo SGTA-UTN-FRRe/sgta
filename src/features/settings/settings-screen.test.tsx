@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SafeAdministrativeCycle } from "@/features/cycles/cycle-service";
+import type { SafeHourCategory } from "@/features/hours/hour-service";
 import type {
   SafeCareer,
   SafeScholarshipReference,
@@ -73,6 +74,23 @@ const inactiveScholarshipReference: SafeScholarshipReference = {
   type: "Beca histórica",
   knownRequiredHours: null,
   notes: null,
+  status: "INACTIVE",
+};
+
+const activeHourCategory: SafeHourCategory = {
+  id: "hour-category-1",
+  name: "Tutoría individual",
+  activityKind: "MEETING",
+  status: "ACTIVE",
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+};
+
+const inactiveHourCategory: SafeHourCategory = {
+  ...activeHourCategory,
+  id: "hour-category-2",
+  name: "Recuperación histórica",
+  activityKind: "RECOVERY",
   status: "INACTIVE",
 };
 
@@ -155,6 +173,187 @@ describe("SettingsScreen", () => {
       ),
     );
     expect(input).toHaveValue("Ingeniería en Sistemas");
+  });
+
+  it("renders hour categories responsively without a deletion path", () => {
+    render(
+      <SettingsScreen
+        currentCycle={null}
+        cycles={[]}
+        hourCategories={[activeHourCategory, inactiveHourCategory]}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Categorías de horas" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Categorías de horas registradas" })).toBeInTheDocument();
+    expect(screen.getAllByRole("table")).toHaveLength(1);
+    expect(screen.getAllByText("Inactiva")).not.toHaveLength(0);
+    expect(screen.getAllByText("Reunión")).not.toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /eliminar|borrar/i })).not.toBeInTheDocument();
+  });
+
+  it("creates and edits an hour category through the protected settings API", async () => {
+    const user = userEvent.setup();
+    const createdCategory: SafeHourCategory = {
+      ...activeHourCategory,
+      id: "hour-category-3",
+      name: "Taller de apoyo",
+      activityKind: "WORKSHOP",
+    };
+    const updatedCategory: SafeHourCategory = {
+      ...createdCategory,
+      name: "Taller de apoyo avanzado",
+      activityKind: "EXTRAORDINARY",
+    };
+    fetchMock
+      .mockResolvedValueOnce(Response.json({ category: createdCategory }, { status: 201 }))
+      .mockResolvedValueOnce(Response.json({ category: updatedCategory }, { status: 200 }));
+
+    render(<SettingsScreen currentCycle={null} cycles={[]} />);
+
+    await user.type(screen.getByLabelText("Nombre de categoría"), createdCategory.name);
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Origen de actividad (opcional)" }),
+      createdCategory.activityKind ?? "",
+    );
+    await user.click(screen.getByRole("button", { name: "Agregar categoría" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "La categoría de horas se creó correctamente.",
+      ),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "/api/admin/settings/hour-categories",
+      expect.objectContaining({
+        body: JSON.stringify({
+          activityKind: createdCategory.activityKind,
+          name: createdCategory.name,
+        }),
+        method: "POST",
+      }),
+    );
+
+    await user.click(
+      screen.getAllByRole("button", {
+        name: `Editar categoría ${createdCategory.name}`,
+      })[0],
+    );
+    const nameInput = screen.getByLabelText("Nombre de categoría");
+    await user.clear(nameInput);
+    await user.type(nameInput, updatedCategory.name);
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Origen de actividad (opcional)" }),
+      updatedCategory.activityKind ?? "",
+    );
+    await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "La categoría de horas se actualizó correctamente.",
+      ),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      `/api/admin/settings/hour-categories/${createdCategory.id}`,
+      expect.objectContaining({
+        body: JSON.stringify({
+          activityKind: updatedCategory.activityKind,
+          name: updatedCategory.name,
+        }),
+        method: "PATCH",
+      }),
+    );
+  });
+
+  it("shows the empty category state and preserves input focus on duplicate conflicts", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValue(
+      Response.json({ error: "duplicate_category_name" }, { status: 409 }),
+    );
+
+    render(<SettingsScreen currentCycle={null} cycles={[]} hourCategories={[]} />);
+
+    expect(screen.getByText("Todavía no hay categorías de horas registradas.")).toBeInTheDocument();
+    const input = screen.getByLabelText("Nombre de categoría");
+    await user.type(input, "Tutoría individual");
+    await user.click(screen.getByRole("button", { name: "Agregar categoría" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Ya existe una categoría de horas con ese nombre.",
+      ),
+    );
+    expect(input).toHaveValue("Tutoría individual");
+    await waitFor(() => expect(document.activeElement).toBe(input));
+  });
+
+  it("maps an unsupported activity kind to actionable validation feedback", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValue(
+      Response.json(
+        {
+          error: "invalid_request",
+          issues: [
+            {
+              code: "invalid_value",
+              message: "Invalid option",
+              path: ["activityKind"],
+            },
+          ],
+        },
+        { status: 400 },
+      ),
+    );
+
+    render(<SettingsScreen currentCycle={null} cycles={[]} />);
+
+    await user.type(screen.getByLabelText("Nombre de categoría"), "Categoría inválida");
+    await user.click(screen.getByRole("button", { name: "Agregar categoría" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Seleccionar un origen de actividad válido para la categoría.",
+      ),
+    );
+  });
+
+  it("changes category status while keeping the historical row visible", async () => {
+    const user = userEvent.setup();
+    const inactivatedCategory = { ...activeHourCategory, status: "INACTIVE" as const };
+    fetchMock.mockResolvedValue(
+      Response.json({ category: inactivatedCategory }, { status: 200 }),
+    );
+
+    render(
+      <SettingsScreen
+        currentCycle={null}
+        cycles={[]}
+        hourCategories={[activeHourCategory]}
+      />,
+    );
+
+    await user.click(
+      screen.getAllByRole("button", {
+        name: `Inactivar categoría ${activeHourCategory.name}`,
+      })[0],
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "La categoría de horas se inactivó y se conservaron sus movimientos.",
+      ),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/admin/settings/hour-categories/${activeHourCategory.id}/status`,
+      expect.objectContaining({
+        body: JSON.stringify({ status: "INACTIVE" }),
+        method: "PATCH",
+      }),
+    );
+    expect(screen.getAllByText(activeHourCategory.name)).not.toHaveLength(0);
+    expect(screen.getAllByText("Inactiva")).not.toHaveLength(0);
   });
 
   it("keeps inactive careers out of new subject selection and creates a subject in an active career", async () => {

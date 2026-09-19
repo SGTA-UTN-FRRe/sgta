@@ -41,11 +41,8 @@ describe("screen mock data", () => {
     expect(screenData.adminOverview.upcomingDuties).toHaveLength(3);
     expect(screenData.tutors.rows).toHaveLength(4);
     expect(screenData.hours.balances).toHaveLength(3);
-    expect(screenData.hours.movementDialog.eligibleTutors).toHaveLength(3);
-    expect(screenData.hours.movementDialog.directionOptions).toEqual([
-      { value: "credit", label: "Crédito" },
-      { value: "debit", label: "Débito" },
-    ]);
+    expect(screenData.hours.eligibleTutors).toHaveLength(3);
+    expect(screenData.hours.categories).toHaveLength(4);
     expect(screenData.schedules.plans).toHaveLength(2);
     expect(screenData.schedules.assignments).toHaveLength(4);
   });

@@ -883,6 +883,7 @@ Fields:
 
 | Field | Type | Required | Rule |
 |---|---|:---:|---|
+| Tipo de registro | Segmented choice | Yes | `Movimiento` or `Reconocer recuperación` |
 | Direccion | Segmented choice | Yes | `Crédito` or `Débito` |
 | Categoria | Select | Yes | Active category only |
 | Duracion | Hours + minutes | Yes | Total positive minutes |
@@ -896,11 +897,16 @@ Selection behavior:
 - individual exceptions can be deselected;
 - selected count remains visible;
 - no hidden selection survives an explicit search/filter reset without clear feedback.
+- `Reconocer recuperación` selects the active recovery category and records a
+  credit through the same atomic transaction; recovery and activity categories
+  cannot be submitted as debits.
+- Activity and recovery categories expose their source kind in the selection
+  summary and persisted movement history.
 
 Confirmation summary:
 
 ```text
-Crédito - Reunión - 01:30 - 12 tutores - 14/09/2026
+Registrar movimiento - Crédito - Reunión de equipo - Reunión - 01:30 - 12 tutores - 14/09/2026
 ```
 
 Submit label:
@@ -974,6 +980,45 @@ Confirmation explains:
 - [ ] Transaction summary is explicit before submit.
 - [ ] Confirmed movements are corrected through traceable reversal, never value overwrite.
 - [ ] Compact and Wide flows are complete.
+
+### View: Movimientos
+
+#### Overview
+
+```text
+Route: /admin/hours/movements
+Access: Admin
+Priority: P0
+Primary user: Admin
+Related workflow: Hour movement history and correction
+```
+
+**Purpose:** Inspect persisted hour movements independently of the balance list
+and correct a confirmed movement without editing its original values.
+
+**Information:**
+
+- cycle, tutor, category, text search, direction, origin, and reversal-state filters;
+- date, tutor, category/source, direction, signed duration, note, Admin actor,
+  cycle, and activity/recovery origin;
+- newest movement first;
+- original and reversal rows remain visibly linked in every responsive layout.
+
+**Reversal behavior:**
+
+- `Revertir movimiento` is available only for a confirmed movement in an open cycle;
+- confirmation is a named modal explaining that the original remains visible and
+  the balance is recalculated from the new opposite movement;
+- already reversed rows and reversal rows expose their relationship but no second
+  reversal or edit/delete control;
+- reversal errors keep the selected movement and confirmation context available for retry.
+
+#### States and accessibility
+
+Default, Loading, Empty, Search empty, Error, Success, and Required action are
+explicit. The reversal modal supports visible dismissal, Escape, focus entry,
+focus containment, and focus return to the triggering action. Origin and
+reversal meaning is expressed with text and relationships, not color alone.
 
 ### View: Horarios
 
@@ -1555,6 +1600,8 @@ for:
 - Careers, with normalized names, edit, and active/inactive state;
 - Subjects, with a required active Career selection, edit, and active/inactive
   state;
+- hour categories, with a normalized name, optional activity origin (`Meeting`,
+  `Workshop`, `Extraordinary`, or `Recovery`), edit, and active/inactive state;
 - scholarship reference types, with optional known required hours and notes.
 
 Each section supports an accessible add/edit form and a responsive list or

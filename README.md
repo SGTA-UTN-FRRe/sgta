@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml/badge.svg)](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml)
 
-> Current repository status: an executable Next.js application with live tutor and academic operations, the SGTA UI, and a secure platform foundation.
+> Current repository status: an executable Next.js application with live tutor, academic, and Admin hour-accounting operations, the SGTA UI, and a secure platform foundation.
 
-SGTA is the operational workspace for the Tutorias area at UTN FRRe. The repository currently contains the application shell, protected role-based navigation, PostgreSQL persistence, provisioned Google-only authentication, AdministrativeCycle lifecycle controls, live Admin tutor and academic catalog operations, safe audit events, and shared UI components. Later domain workflows remain deferred.
+SGTA is the operational workspace for the Tutorias area at UTN FRRe. The repository currently contains the application shell, protected role-based navigation, PostgreSQL persistence, provisioned Google-only authentication, AdministrativeCycle lifecycle controls, live Admin tutor, academic catalog, and hour-accounting operations, safe audit events, and shared UI components. Later domain workflows remain deferred.
 
 ## Current state
 
@@ -16,6 +16,8 @@ The current runtime provides:
 - live Admin tutor management at `/admin/tutors`, including search/filter, create/edit, academic relationships, current-cycle membership, and non-destructive inactivation/reactivation;
 - derived current-cycle Materias coverage at `/admin/tutors/subjects`, reconstructed from canonical Subject, TutorSubject, Tutor, and TutorCycleMembership rows;
 - low-frequency Career, Subject, and scholarship-reference maintenance from `/admin/settings`, with active/inactive lifecycle controls and no hard deletion;
+- live Admin hour accounting at `/admin/hours`, including derived balances, individual and atomic bulk movements, activity/recovery origins, and immutable reversal workflows;
+- Admin movement history at `/admin/hours/movements` plus hour-category maintenance under `/admin/settings`;
 - Tutor route skeletons for the overview, schedule, and hours;
 - responsive Admin and Tutor navigation shells;
 - a PostgreSQL/Drizzle schema and committed migration for Better Auth identities/sessions, application roles, AdministrativeCycle, and AuditEvent;
@@ -23,17 +25,16 @@ The current runtime provides:
 - cycle administration at `/admin/settings`, including current-cycle context, explicit close confirmation, preserved history, and recovery states;
 - append-only audit recording for provisioning, session creation, cycle creation, and cycle close with bounded metadata validation;
 - shared components for navigation, page headers, empty states, status badges, Faro branding, buttons, cards, inputs, and tables;
-- unit/component tests, isolated PostgreSQL/Testcontainers integration tests, and Playwright coverage for unauthenticated protection plus an authenticated Admin tutor/Materias journey across supported viewports.
+- unit/component tests, isolated PostgreSQL/Testcontainers integration tests, and Playwright coverage for unauthenticated protection plus authenticated Admin tutor/Materias and hour-accounting journeys across supported viewports.
 
-The route labels for schedules, hours, consultations, and reports still describe scaffold surfaces; those pages do not yet read or write their future domain data. Protected tutor, Materias, Settings, and API surfaces require the server-side identity and Admin role boundary when authentication is configured.
+The route labels for schedules, consultations, and reports still describe scaffold surfaces; those pages do not yet read or write their future domain data. The Tutor hours route remains a skeleton, while the Admin hour routes and category controls are live as described above. Protected tutor, Materias, Settings, and API surfaces require the server-side identity and Admin role boundary when authentication is configured.
 
 ## Not implemented in the current runtime
 
 The following remain future work described by the shared decision documents:
 
-- hour categories, hour movements, balances, activities, recoveries, and reversals;
-- schedule plans, assignments, attendance, and consultation workflows;
-- read-only Google Sheets ingestion and consultation curation;
+- schedule plans, assignments, attendance, and Tutor self-service;
+- consultation workflows, including read-only Google Sheets ingestion and consultation curation;
 - formal scholarship certification;
 - reporting, production deployment, backups, and operational data migration.
 
@@ -68,7 +69,7 @@ Server session and role boundary
    └──► Drizzle / PostgreSQL (src/db/)
 ```
 
-The `src/auth/` and `src/db/` directories are active server-only boundaries. `src/features/` contains the implemented cycle/settings and tutor/academic operations slices while later domain verticals remain unimplemented. Client components receive safe display data and do not own authentication or role decisions.
+The `src/auth/` and `src/db/` directories are active server-only boundaries. `src/features/` contains the implemented cycle/settings, tutor/academic operations, and hour-accounting slices while later domain verticals remain unimplemented. Client components receive safe display data and do not own authentication or role decisions.
 
 ## Current routes
 
@@ -80,10 +81,11 @@ The `src/auth/` and `src/db/` directories are active server-only boundaries. `sr
 | `/admin/tutors` | Admin-protected live tutor management and academic relationship workflow. |
 | `/admin/tutors/subjects` | Admin-protected derived Materias coverage for the open cycle. |
 | `/admin/schedules` | Schedule and attendance route skeleton. |
-| `/admin/hours` | Hour-ledger route skeleton. |
+| `/admin/hours` | Admin-protected live hour balances and movement registration. |
+| `/admin/hours/movements` | Admin-protected movement history and reversal workflow. |
 | `/admin/consultations` | Consultation route skeleton. |
 | `/admin/reports` | Reporting route skeleton. |
-| `/admin/settings` | Admin-protected AdministrativeCycle lifecycle and low-frequency reference-data controls. |
+| `/admin/settings` | Admin-protected AdministrativeCycle lifecycle, low-frequency reference-data, and hour-category controls. |
 | `/tutor` | Tutor-protected shell with overview skeleton. |
 | `/tutor/schedule` | Tutor schedule route skeleton. |
 | `/tutor/hours` | Tutor hours route skeleton. |
@@ -94,7 +96,8 @@ The `src/auth/` and `src/db/` directories are active server-only boundaries. `sr
 | `/api/admin/cycles/[cycleId]/close` | Admin-protected explicit cycle close handler. |
 | `/api/admin/tutors` and `/api/admin/tutors/...` | Admin-protected tutor CRUD, status, and current-cycle academic relationship handlers. |
 | `/api/admin/tutors/subjects` | Admin-protected derived Materias coverage handler. |
-| `/api/admin/settings/...` | Admin-protected Career, Subject, and scholarship-reference handlers. |
+| `/api/admin/hours` and `/api/admin/hours/...` | Admin-protected hour balances, movement registration, movement history, and reversal handlers. |
+| `/api/admin/settings/...` | Admin-protected Career, Subject, scholarship-reference, and hour-category handlers. |
 
 ## Repository structure
 
@@ -104,7 +107,7 @@ The `src/auth/` and `src/db/` directories are active server-only boundaries. `sr
 | `src/components/ui/` | Local low-level UI primitives used by the application. |
 | `src/mocks/` | Synthetic development data used by the current screen implementations. |
 | `src/shared/` | Shared navigation, branding, page, state, and utility components. |
-| `src/features/` | Cycle/settings and tutor/academic operations implementations, plus future vertical slices. |
+| `src/features/` | Cycle/settings, tutor/academic operations, and hour-accounting implementations, plus future vertical slices. |
 | `src/auth/` | Better Auth configuration, identity policy, provisioning, and server authorization. |
 | `src/db/` | Drizzle schema, audit validation/recording, PostgreSQL client, and migrations boundary. |
 | `drizzle/` | Committed Drizzle migration artifacts. |
