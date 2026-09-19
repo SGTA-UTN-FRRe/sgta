@@ -883,6 +883,7 @@ Fields:
 
 | Field | Type | Required | Rule |
 |---|---|:---:|---|
+| Tipo de registro | Segmented choice | Yes | `Movimiento` or `Reconocer recuperación` |
 | Direccion | Segmented choice | Yes | `Crédito` or `Débito` |
 | Categoria | Select | Yes | Active category only |
 | Duracion | Hours + minutes | Yes | Total positive minutes |
@@ -896,11 +897,16 @@ Selection behavior:
 - individual exceptions can be deselected;
 - selected count remains visible;
 - no hidden selection survives an explicit search/filter reset without clear feedback.
+- `Reconocer recuperación` selects the active recovery category and records a
+  credit through the same atomic transaction; recovery and activity categories
+  cannot be submitted as debits.
+- Activity and recovery categories expose their source kind in the selection
+  summary and persisted movement history.
 
 Confirmation summary:
 
 ```text
-Crédito - Reunión - 01:30 - 12 tutores - 14/09/2026
+Registrar movimiento - Crédito - Reunión de equipo - Reunión - 01:30 - 12 tutores - 14/09/2026
 ```
 
 Submit label:
