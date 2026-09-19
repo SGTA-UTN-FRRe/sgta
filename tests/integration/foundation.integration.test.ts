@@ -18,6 +18,12 @@ vi.mock("@/auth/index", () => ({ getAuth: authMocks.getAuth }));
 vi.mock("@/db/client", () => ({ getDatabase: authMocks.getDatabase }));
 
 import { GET as getAdminCycles } from "@/app/api/admin/cycles/route";
+import { GET as getAdminHours } from "@/app/api/admin/hours/route";
+import {
+  GET as getAdminHourMovements,
+  POST as postAdminHourMovement,
+} from "@/app/api/admin/hours/movements/route";
+import { POST as postAdminHourMovementReverse } from "@/app/api/admin/hours/movements/[movementId]/reverse/route";
 import { GET as getAdminTutorDetail, PATCH as patchAdminTutorDetail } from "@/app/api/admin/tutors/[tutorId]/route";
 import { PATCH as patchAdminTutorStatus } from "@/app/api/admin/tutors/[tutorId]/status/route";
 import {
@@ -35,6 +41,12 @@ import { GET as getAdminScholarships, POST as postAdminScholarships } from "@/ap
 import { GET as getAdminSubjectDetail, PATCH as patchAdminSubjectDetail } from "@/app/api/admin/settings/subjects/[subjectId]/route";
 import { PATCH as patchAdminSubjectStatus } from "@/app/api/admin/settings/subjects/[subjectId]/status/route";
 import { GET as getAdminSubjects, POST as postAdminSubjects } from "@/app/api/admin/settings/subjects/route";
+import {
+  GET as getAdminHourCategories,
+  POST as postAdminHourCategory,
+} from "@/app/api/admin/settings/hour-categories/route";
+import { PATCH as patchAdminHourCategory } from "@/app/api/admin/settings/hour-categories/[categoryId]/route";
+import { PATCH as patchAdminHourCategoryStatus } from "@/app/api/admin/settings/hour-categories/[categoryId]/status/route";
 import { requireApiRole, requireRole } from "@/auth/authorization";
 import { createAuthOptions } from "@/auth/options";
 import type { AuthEnvironment } from "@/auth/options";
@@ -1935,6 +1947,176 @@ describe("PostgreSQL foundation integration", () => {
         .filter((event) => event.entityType === "hour_movement")
         .every((event) => event.actorId === admin.id),
     ).toBe(true);
+  });
+
+  it("enforces Admin authorization across the live hour API boundaries", async () => {
+    const database = getIntegrationDatabase();
+    const { admin, tutor: tutorIdentity } = await seedIdentities();
+
+    const unauthenticatedResponse = await getAdminHours();
+    expect(unauthenticatedResponse.status).toBe(401);
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: admin.id, role: "ADMIN" },
+    });
+
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Route Systems", normalizedName: "route systems" })
+      .returning({ id: career.id });
+    const createdCycle = await createAdministrativeCycle(
+      database,
+      {
+        name: "Route Hour Cycle 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+      },
+      { actorId: admin.id },
+    );
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Katherine",
+        lastName: "Johnson",
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id });
+
+    await database.insert(tutorCycleMembership).values({
+      tutorId: createdTutor!.id,
+      cycleId: createdCycle.id,
+    });
+
+    const categoryResponse = await postAdminHourCategory(
+      makeJsonRequest(
+        "http://localhost/api/admin/settings/hour-categories",
+        "POST",
+        { name: "Route meeting", activityKind: "MEETING" },
+      ),
+    );
+    expect(categoryResponse.status).toBe(201);
+    const categoryBody = (await categoryResponse.json()) as {
+      category: { id: string };
+    };
+
+    const categoryListResponse = await getAdminHourCategories(
+      new Request(
+        "http://localhost/api/admin/settings/hour-categories?status=ACTIVE",
+      ),
+    );
+    expect(categoryListResponse.status).toBe(200);
+    await expect(categoryListResponse.json()).resolves.toMatchObject({
+      categories: [expect.objectContaining({ id: categoryBody.category.id })],
+    });
+
+    const workspaceResponse = await getAdminHours();
+    expect(workspaceResponse.status).toBe(200);
+    await expect(workspaceResponse.json()).resolves.toMatchObject({
+      currentCycle: { id: createdCycle.id },
+      eligibleTutors: [expect.objectContaining({ id: createdTutor!.id })],
+      categories: [expect.objectContaining({ id: categoryBody.category.id })],
+    });
+
+    const movementResponse = await postAdminHourMovement(
+      makeJsonRequest(
+        "http://localhost/api/admin/hours/movements",
+        "POST",
+        {
+          cycleId: createdCycle.id,
+          tutorIds: [createdTutor!.id],
+          categoryId: categoryBody.category.id,
+          direction: "CREDIT",
+          duration: { hours: 1, minutes: 0 },
+          movementDate: "2027-02-15",
+          note: "Route-created meeting",
+        },
+      ),
+    );
+    expect(movementResponse.status).toBe(201);
+    const movementBody = (await movementResponse.json()) as {
+      movements: Array<{ id: string }>;
+    };
+    const movementId = movementBody.movements[0]!.id;
+
+    const historyResponse = await getAdminHourMovements(
+      new Request(
+        `http://localhost/api/admin/hours/movements?cycleId=${createdCycle.id}`,
+      ),
+    );
+    expect(historyResponse.status).toBe(200);
+    await expect(historyResponse.json()).resolves.toMatchObject({
+      movements: [expect.objectContaining({ id: movementId })],
+    });
+
+    const reverseResponse = await postAdminHourMovementReverse(
+      new Request(
+        `http://localhost/api/admin/hours/movements/${movementId}/reverse`,
+        { method: "POST" },
+      ),
+      { params: Promise.resolve({ movementId }) },
+    );
+    expect(reverseResponse.status).toBe(201);
+    await expect(reverseResponse.json()).resolves.toMatchObject({
+      original: { id: movementId, reversalState: "REVERSED" },
+      reversal: { reversalOfMovementId: movementId },
+    });
+
+    const repeatedReverseResponse = await postAdminHourMovementReverse(
+      new Request(
+        `http://localhost/api/admin/hours/movements/${movementId}/reverse`,
+        { method: "POST" },
+      ),
+      { params: Promise.resolve({ movementId }) },
+    );
+    expect(repeatedReverseResponse.status).toBe(409);
+    await expect(repeatedReverseResponse.json()).resolves.toEqual({
+      error: HOUR_ERROR_CODES.movementAlreadyReversed,
+    });
+
+    const renameResponse = await patchAdminHourCategory(
+      makeJsonRequest(
+        `http://localhost/api/admin/settings/hour-categories/${categoryBody.category.id}`,
+        "PATCH",
+        { name: "Renamed route meeting" },
+      ),
+      { params: Promise.resolve({ categoryId: categoryBody.category.id }) },
+    );
+    expect(renameResponse.status).toBe(200);
+
+    const deactivateResponse = await patchAdminHourCategoryStatus(
+      makeJsonRequest(
+        `http://localhost/api/admin/settings/hour-categories/${categoryBody.category.id}/status`,
+        "PATCH",
+        { status: "INACTIVE" },
+      ),
+      { params: Promise.resolve({ categoryId: categoryBody.category.id }) },
+    );
+    expect(deactivateResponse.status).toBe(200);
+
+    const historicalCategoriesResponse = await getAdminHourCategories(
+      new Request("http://localhost/api/admin/settings/hour-categories"),
+    );
+    expect(historicalCategoriesResponse.status).toBe(200);
+    await expect(historicalCategoriesResponse.json()).resolves.toMatchObject({
+      categories: [
+        expect.objectContaining({
+          id: categoryBody.category.id,
+          status: "INACTIVE",
+        }),
+      ],
+    });
+
+    const noActiveCategoriesResponse = await getAdminHours();
+    expect(noActiveCategoriesResponse.status).toBe(409);
+    await expect(noActiveCategoriesResponse.json()).resolves.toEqual({
+      error: "no_active_categories",
+    });
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: tutorIdentity.id, role: "TUTOR" },
+    });
+    const tutorResponse = await getAdminHours();
+    expect(tutorResponse.status).toBe(403);
   });
 
   it("records the complete cycle lifecycle with actor attribution and history", async () => {

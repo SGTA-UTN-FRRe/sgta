@@ -42,6 +42,7 @@ export const hourActivityKindSchema = z.enum([
 ]);
 
 export const hourMovementDirectionSchema = z.enum(["CREDIT", "DEBIT"]);
+export const hourMovementOperationSchema = z.enum(["MOVEMENT", "RECOVERY"]);
 export const hourCategoryStatusSchema = z.enum(["ALL", "ACTIVE", "INACTIVE"]);
 export const hourRecordStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
 
@@ -133,6 +134,11 @@ const movementDurationByMinutesSchema = z
   })
   .strict();
 
+const parsedMovementDurationSchema = integerInput({
+  min: 1,
+  max: MAX_DURATION_MINUTES,
+});
+
 const movementDurationByPartsSchema = z
   .object({
     hours: integerInput({ min: 0, max: Math.floor(MAX_DURATION_MINUTES / 60) }),
@@ -152,9 +158,15 @@ const movementDurationByPartsSchema = z
   });
 
 export const hourMovementDurationSchema = z
-  .union([movementDurationByMinutesSchema, movementDurationByPartsSchema])
+  .union([
+    movementDurationByMinutesSchema,
+    movementDurationByPartsSchema,
+    parsedMovementDurationSchema,
+  ])
   .transform((value) =>
-    "durationMinutes" in value
+    typeof value === "number"
+      ? value
+      : "durationMinutes" in value
       ? value.durationMinutes
       : value.hours * 60 + value.minutes,
   );
@@ -178,6 +190,11 @@ export const recordBulkHourMovementInputSchema = z
     note: optionalNullableText(MAX_NOTE_LENGTH).default(null),
   })
   .strict();
+
+export const recordHourMovementRequestSchema =
+  recordBulkHourMovementInputSchema.extend({
+    operation: hourMovementOperationSchema.default("MOVEMENT"),
+  });
 
 export const hourMovementHistoryInputSchema = z
   .object({
@@ -213,6 +230,12 @@ export type RecordBulkHourMovementInput = z.input<
 export type ParsedRecordBulkHourMovementInput = z.output<
   typeof recordBulkHourMovementInputSchema
 >;
+export type RecordHourMovementRequestInput = z.input<
+  typeof recordHourMovementRequestSchema
+>;
+export type ParsedRecordHourMovementRequestInput = z.output<
+  typeof recordHourMovementRequestSchema
+>;
 export type HourMovementHistoryInput = z.input<
   typeof hourMovementHistoryInputSchema
 >;
@@ -242,6 +265,12 @@ export function parseRecordBulkHourMovementInput(
   input: unknown,
 ): ParsedRecordBulkHourMovementInput {
   return recordBulkHourMovementInputSchema.parse(input);
+}
+
+export function parseRecordHourMovementRequest(
+  input: unknown,
+): ParsedRecordHourMovementRequestInput {
+  return recordHourMovementRequestSchema.parse(input);
 }
 
 export function parseHourMovementHistoryInput(
