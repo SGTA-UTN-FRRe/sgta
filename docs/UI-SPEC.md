@@ -1555,6 +1555,8 @@ for:
 - Careers, with normalized names, edit, and active/inactive state;
 - Subjects, with a required active Career selection, edit, and active/inactive
   state;
+- hour categories, with a normalized name, optional activity origin (`Meeting`,
+  `Workshop`, `Extraordinary`, or `Recovery`), edit, and active/inactive state;
 - scholarship reference types, with optional known required hours and notes.
 
 Each section supports an accessible add/edit form and a responsive list or

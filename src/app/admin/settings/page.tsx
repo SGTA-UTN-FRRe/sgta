@@ -5,6 +5,10 @@ import {
   type SafeAdministrativeCycle,
 } from "@/features/cycles/cycle-service";
 import {
+  listHourCategories,
+  type SafeHourCategory,
+} from "@/features/hours/hour-service";
+import {
   listCareers,
   listScholarshipReferences,
   listSubjects,
@@ -23,12 +27,14 @@ const emptySettings: {
   careers: SafeCareer[];
   subjects: SafeSubject[];
   scholarshipReferences: SafeScholarshipReference[];
+  hourCategories: SafeHourCategory[];
 } = {
   currentCycle: null,
   cycles: [],
   careers: [],
   subjects: [],
   scholarshipReferences: [],
+  hourCategories: [],
 };
 
 export default async function AdminSettingsPage() {
@@ -37,14 +43,21 @@ export default async function AdminSettingsPage() {
 
   try {
     const database = getDatabase();
-    const [currentCycle, cycles, careers, subjects, scholarshipReferences] =
-      await Promise.all([
-        getCurrentAdministrativeCycle(database),
-        listAdministrativeCycles(database),
-        listCareers(database, "ALL"),
-        listSubjects(database, "ALL"),
-        listScholarshipReferences(database, "ALL"),
-      ]);
+    const [
+      currentCycle,
+      cycles,
+      careers,
+      subjects,
+      scholarshipReferences,
+      hourCategories,
+    ] = await Promise.all([
+      getCurrentAdministrativeCycle(database),
+      listAdministrativeCycles(database),
+      listCareers(database, "ALL"),
+      listSubjects(database, "ALL"),
+      listScholarshipReferences(database, "ALL"),
+      listHourCategories(database, "ALL"),
+    ]);
 
     settings = {
       currentCycle,
@@ -52,6 +65,7 @@ export default async function AdminSettingsPage() {
       careers,
       subjects,
       scholarshipReferences,
+      hourCategories,
     };
   } catch {
     initialErrorMessage =
@@ -65,6 +79,7 @@ export default async function AdminSettingsPage() {
       cycles={settings.cycles}
       initialErrorMessage={initialErrorMessage}
       initialState={initialErrorMessage === undefined ? undefined : "error"}
+      hourCategories={settings.hourCategories}
       scholarshipReferences={settings.scholarshipReferences}
       subjects={settings.subjects}
     />

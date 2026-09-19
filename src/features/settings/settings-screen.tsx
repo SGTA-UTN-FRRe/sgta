@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { SafeAdministrativeCycle } from "@/features/cycles/cycle-service";
+import type { SafeHourCategory } from "@/features/hours/hour-service";
 import type {
   SafeCareer,
   SafeScholarshipReference,
@@ -74,12 +75,21 @@ type ScholarshipForm = {
   notes: string;
 };
 
+type HourActivityKind = NonNullable<SafeHourCategory["activityKind"]>;
+
+type HourCategoryForm = {
+  id: string | null;
+  name: string;
+  activityKind: HourActivityKind | "";
+};
+
 type SettingsPayload = {
   currentCycle: SafeAdministrativeCycle | null;
   cycles: SafeAdministrativeCycle[];
   careers: SafeCareer[];
   subjects: SafeSubject[];
   scholarshipReferences: SafeScholarshipReference[];
+  hourCategories: SafeHourCategory[];
 };
 
 type SubmitHandler = (event: FormEvent<HTMLFormElement>) => void;
@@ -90,6 +100,7 @@ export interface SettingsScreenProps {
   careers?: SafeCareer[];
   subjects?: SafeSubject[];
   scholarshipReferences?: SafeScholarshipReference[];
+  hourCategories?: SafeHourCategory[];
   initialErrorMessage?: string;
   initialState?: SettingsState;
 }
@@ -117,6 +128,23 @@ const EMPTY_SCHOLARSHIP_FORM: ScholarshipForm = {
   knownRequiredHours: "",
   notes: "",
 };
+
+const EMPTY_HOUR_CATEGORY_FORM: HourCategoryForm = {
+  id: null,
+  name: "",
+  activityKind: "",
+};
+
+const hourActivityKindLabels: Record<HourActivityKind, string> = {
+  MEETING: "Reunión",
+  WORKSHOP: "Taller",
+  EXTRAORDINARY: "Extraordinaria",
+  RECOVERY: "Recuperación",
+};
+
+const hourActivityKinds = Object.keys(
+  hourActivityKindLabels,
+) as HourActivityKind[];
 
 const selectClassName =
   "h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
@@ -146,15 +174,19 @@ const settingsErrorMessages: Record<string, string> = {
     "Ya existe una materia con ese nombre dentro de la carrera seleccionada.",
   duplicate_scholarship_reference_type:
     "Ya existe una referencia de beca con ese tipo.",
+  duplicate_category_name: "Ya existe una categoría de horas con ese nombre.",
   inactive_career: "Seleccionar una carrera activa para continuar.",
   inactive_subject: "Seleccionar una materia activa para continuar.",
   inactive_scholarship_reference:
     "Seleccionar una referencia de beca activa para continuar.",
+  invalid_activity_kind:
+    "Seleccionar un origen de actividad válido para la categoría.",
   career_subject_mismatch:
     "La materia seleccionada debe pertenecer a la carrera indicada.",
   catalog_conflict:
     "No se puede cambiar la carrera porque la materia conserva asignaciones.",
   status_already_set: "El estado seleccionado ya está aplicado.",
+  category_not_found: "No se encontró la categoría solicitada.",
   internal_server_error:
     "No se pudo guardar la configuración. Intentar nuevamente.",
 };
@@ -179,7 +211,26 @@ function formatCyclePeriod(cycle: SafeAdministrativeCycle) {
 
 function getErrorCode(body: unknown) {
   if (typeof body === "object" && body !== null && "error" in body) {
-    const code = (body as { error?: unknown }).error;
+    const typedBody = body as {
+      error?: unknown;
+      issues?: unknown;
+    };
+    const code = typedBody.error;
+
+    if (
+      code === "invalid_request" &&
+      Array.isArray(typedBody.issues) &&
+      typedBody.issues.some(
+        (issue) =>
+          typeof issue === "object" &&
+          issue !== null &&
+          "path" in issue &&
+          Array.isArray((issue as { path?: unknown }).path) &&
+          (issue as { path: unknown[] }).path.includes("activityKind"),
+      )
+    ) {
+      return "invalid_activity_kind";
+    }
 
     if (typeof code === "string") {
       return code;
@@ -235,6 +286,7 @@ async function loadSettings(): Promise<SettingsPayload> {
     careersResponse,
     subjectsResponse,
     scholarshipResponse,
+    hourCategoriesResponse,
   ] = await Promise.all([
     requestJson<{ cycle: SafeAdministrativeCycle | null }>(
       "/api/admin/cycles/current",
@@ -251,6 +303,9 @@ async function loadSettings(): Promise<SettingsPayload> {
     requestJson<{ scholarshipReferences: SafeScholarshipReference[] }>(
       "/api/admin/settings/scholarship-references?status=ALL",
     ),
+    requestJson<{ categories: SafeHourCategory[] }>(
+      "/api/admin/settings/hour-categories?status=ALL",
+    ),
   ]);
 
   return {
@@ -259,6 +314,7 @@ async function loadSettings(): Promise<SettingsPayload> {
     careers: careersResponse.careers,
     subjects: subjectsResponse.subjects,
     scholarshipReferences: scholarshipResponse.scholarshipReferences,
+    hourCategories: hourCategoriesResponse.categories,
   };
 }
 
@@ -999,12 +1055,224 @@ function ScholarshipSection({
   );
 }
 
+function hourActivityKindLabel(activityKind: SafeHourCategory["activityKind"]) {
+  return activityKind === null
+    ? "Sin origen de actividad"
+    : hourActivityKindLabels[activityKind];
+}
+
+function HourCategorySection({
+  categories,
+  disabled,
+  form,
+  onActivityKindChange,
+  onCancel,
+  onEdit,
+  onNameChange,
+  onStatusChange,
+  onSubmit,
+}: {
+  categories: SafeHourCategory[];
+  disabled: boolean;
+  form: HourCategoryForm;
+  onActivityKindChange: (activityKind: string) => void;
+  onCancel: () => void;
+  onEdit: (category: SafeHourCategory) => void;
+  onNameChange: (name: string) => void;
+  onStatusChange: (category: SafeHourCategory) => void;
+  onSubmit: SubmitHandler;
+}) {
+  const editingCategory =
+    form.id === null
+      ? null
+      : categories.find((category) => category.id === form.id) ?? null;
+
+  return (
+    <section aria-labelledby="hour-category-settings-title">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle id="hour-category-settings-title">
+                Categorías de horas
+              </CardTitle>
+              <CardDescription className="mt-2">
+                Configurar las categorías disponibles para registrar movimientos de horas.
+                Las categorías inactivas se conservan para consultar el historial.
+              </CardDescription>
+            </div>
+            <StatusBadge
+              label={`${categories.filter((category) => category.status === "ACTIVE").length} activas`}
+              variant="info"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form
+            aria-label={
+              editingCategory === null
+                ? "Agregar categoría de horas"
+                : `Editar categoría ${editingCategory.name}`
+            }
+            className="rounded-md border border-border-subtle bg-surface-subtle/60 p-4"
+            onSubmit={onSubmit}
+          >
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+              <label className="space-y-1.5">
+                <span className="text-xs font-semibold text-foreground-secondary">
+                  Nombre de categoría
+                </span>
+                <Input
+                  disabled={disabled}
+                  id="hour-category-name"
+                  onChange={(event) => onNameChange(event.target.value)}
+                  placeholder="Tutoría individual"
+                  required
+                  value={form.name}
+                />
+              </label>
+              <label className="space-y-1.5">
+                <span className="text-xs font-semibold text-foreground-secondary">
+                  Origen de actividad (opcional)
+                </span>
+                <select
+                  className={selectClassName}
+                  disabled={disabled}
+                  onChange={(event) => onActivityKindChange(event.target.value)}
+                  value={form.activityKind}
+                >
+                  <option value="">Sin origen de actividad</option>
+                  {hourActivityKinds.map((activityKind) => (
+                    <option key={activityKind} value={activityKind}>
+                      {hourActivityKindLabels[activityKind]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <Button disabled={disabled} size="sm" type="submit">
+                  {editingCategory === null ? "Agregar categoría" : "Guardar cambios"}
+                </Button>
+                {editingCategory !== null && (
+                  <Button
+                    disabled={disabled}
+                    onClick={onCancel}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    Cancelar
+                  </Button>
+                )}
+              </div>
+            </div>
+          </form>
+
+          {categories.length === 0 ? (
+            <EmptyReferenceList>Todavía no hay categorías de horas registradas.</EmptyReferenceList>
+          ) : (
+            <>
+              <ul
+                aria-label="Categorías de horas registradas"
+                className="mt-6 space-y-3 md:hidden"
+              >
+                {categories.map((category) => (
+                  <li className="rounded-md border border-border-subtle p-4" key={category.id}>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground">{category.name}</p>
+                        <p className="mt-1 text-sm text-foreground-secondary">
+                          {hourActivityKindLabel(category.activityKind)}
+                        </p>
+                        <div className="mt-2">
+                          <ReferenceStatusBadge status={category.status} />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          aria-label={`Editar categoría ${category.name}`}
+                          disabled={disabled}
+                          onClick={() => onEdit(category)}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <Pencil aria-hidden="true" />
+                          Editar
+                        </Button>
+                        <ReferenceStatusAction
+                          disabled={disabled}
+                          entityLabel={`categoría ${category.name}`}
+                          onClick={() => onStatusChange(category)}
+                          status={category.status}
+                        />
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6 hidden overflow-x-auto rounded-md border border-border-subtle md:block">
+                <Table className="min-w-[54rem]">
+                  <caption className="sr-only">Categorías de horas registradas</caption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead scope="col">Categoría</TableHead>
+                      <TableHead scope="col">Origen de actividad</TableHead>
+                      <TableHead scope="col">Estado</TableHead>
+                      <TableHead scope="col">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {categories.map((category) => (
+                      <TableRow key={category.id}>
+                        <TableCell className="font-medium">{category.name}</TableCell>
+                        <TableCell className="text-foreground-secondary">
+                          {hourActivityKindLabel(category.activityKind)}
+                        </TableCell>
+                        <TableCell>
+                          <ReferenceStatusBadge status={category.status} />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              aria-label={`Editar categoría ${category.name}`}
+                              disabled={disabled}
+                              onClick={() => onEdit(category)}
+                              size="sm"
+                              type="button"
+                              variant="ghost"
+                            >
+                              <Pencil aria-hidden="true" />
+                              Editar
+                            </Button>
+                            <ReferenceStatusAction
+                              disabled={disabled}
+                              entityLabel={`categoría ${category.name}`}
+                              onClick={() => onStatusChange(category)}
+                              status={category.status}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
 export function SettingsScreen({
   careers: initialCareers = [],
   currentCycle: initialCurrentCycle,
   cycles: initialCycles,
   initialErrorMessage,
   initialState,
+  hourCategories: initialHourCategories = [],
   scholarshipReferences: initialScholarshipReferences = [],
   subjects: initialSubjects = [],
 }: SettingsScreenProps) {
@@ -1015,11 +1283,17 @@ export function SettingsScreen({
   const [scholarshipReferences, setScholarshipReferences] = useState(
     sortScholarshipReferences(initialScholarshipReferences),
   );
+  const [hourCategories, setHourCategories] = useState(
+    sortByName(initialHourCategories),
+  );
   const [cycleForm, setCycleForm] = useState<CycleForm>(EMPTY_CYCLE_FORM);
   const [careerForm, setCareerForm] = useState<CareerForm>(EMPTY_CAREER_FORM);
   const [subjectForm, setSubjectForm] = useState<SubjectForm>(EMPTY_SUBJECT_FORM);
   const [scholarshipForm, setScholarshipForm] = useState<ScholarshipForm>(
     EMPTY_SCHOLARSHIP_FORM,
+  );
+  const [hourCategoryForm, setHourCategoryForm] = useState<HourCategoryForm>(
+    EMPTY_HOUR_CATEGORY_FORM,
   );
   const [state, setState] = useState<SettingsState>(initialState ?? "default");
   const [feedback, setFeedback] = useState<Feedback | null>(
@@ -1042,7 +1316,7 @@ export function SettingsScreen({
     action: () => Promise<T>,
     successMessage: string,
     onSuccess: (value: T) => void,
-  ) => {
+  ): Promise<boolean> => {
     setState("loading");
     setFeedback(null);
 
@@ -1051,9 +1325,11 @@ export function SettingsScreen({
       onSuccess(value);
       setState("success");
       setFeedback({ kind: "success", message: successMessage });
+      return true;
     } catch (error) {
       setState("error");
       setFeedback({ kind: "error", message: getFeedbackMessage(error) });
+      return false;
     }
   };
 
@@ -1068,6 +1344,7 @@ export function SettingsScreen({
       setCareers(sortByName(next.careers));
       setSubjects(sortSubjects(next.subjects));
       setScholarshipReferences(sortScholarshipReferences(next.scholarshipReferences));
+      setHourCategories(sortByName(next.hourCategories));
       setState("default");
     } catch (error) {
       setState("error");
@@ -1350,6 +1627,83 @@ export function SettingsScreen({
     );
   };
 
+  const handleHourCategorySubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const categoryId = hourCategoryForm.id;
+    const endpoint =
+      categoryId === null
+        ? "/api/admin/settings/hour-categories"
+        : `/api/admin/settings/hour-categories/${encodeURIComponent(categoryId)}`;
+    const body = {
+      activityKind:
+        hourCategoryForm.activityKind === ""
+          ? null
+          : hourCategoryForm.activityKind,
+      name: hourCategoryForm.name,
+    };
+
+    const completed = await runSettingsAction(
+      async () => {
+        const response = await requestJson<{ category?: SafeHourCategory }>(
+          endpoint,
+          {
+            body: JSON.stringify(body),
+            method: categoryId === null ? "POST" : "PATCH",
+          },
+        );
+
+        if (response.category === undefined) {
+          throw new SettingsRequestError("internal_server_error");
+        }
+
+        return response.category;
+      },
+      categoryId === null
+        ? "La categoría de horas se creó correctamente."
+        : "La categoría de horas se actualizó correctamente.",
+      (category) => {
+        setHourCategories((previous) => sortByName(upsertById(previous, category)));
+        setHourCategoryForm(EMPTY_HOUR_CATEGORY_FORM);
+      },
+    );
+
+    if (!completed) {
+      window.setTimeout(() => {
+        document.getElementById("hour-category-name")?.focus();
+      }, 0);
+    }
+  };
+
+  const handleHourCategoryStatusChange = async (category: SafeHourCategory) => {
+    await runSettingsAction(
+      async () => {
+        const response = await requestJson<{ category?: SafeHourCategory }>(
+          `/api/admin/settings/hour-categories/${encodeURIComponent(category.id)}/status`,
+          {
+            body: JSON.stringify({
+              status: category.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+            }),
+            method: "PATCH",
+          },
+        );
+
+        if (response.category === undefined) {
+          throw new SettingsRequestError("internal_server_error");
+        }
+
+        return response.category;
+      },
+      category.status === "ACTIVE"
+        ? "La categoría de horas se inactivó y se conservaron sus movimientos."
+        : "La categoría de horas se activó correctamente.",
+      (nextCategory) => {
+        setHourCategories((previous) =>
+          sortByName(upsertById(previous, nextCategory)),
+        );
+      },
+    );
+  };
+
   return (
     <div data-slot="settings-screen" data-state={screenState}>
       <PageHeader
@@ -1599,6 +1953,35 @@ export function SettingsScreen({
             setScholarshipForm((previous) => ({ ...previous, type }))
           }
           references={scholarshipReferences}
+        />
+
+        <HourCategorySection
+          categories={hourCategories}
+          disabled={isLoading}
+          form={hourCategoryForm}
+          onActivityKindChange={(activityKind) =>
+            setHourCategoryForm((previous) => ({
+              ...previous,
+              activityKind: activityKind as HourActivityKind | "",
+            }))
+          }
+          onCancel={() => {
+            setHourCategoryForm(EMPTY_HOUR_CATEGORY_FORM);
+            updateStateForEditing();
+          }}
+          onEdit={(category) => {
+            setHourCategoryForm({
+              id: category.id,
+              name: category.name,
+              activityKind: category.activityKind ?? "",
+            });
+            updateStateForEditing();
+          }}
+          onNameChange={(name) =>
+            setHourCategoryForm((previous) => ({ ...previous, name }))
+          }
+          onStatusChange={(category) => void handleHourCategoryStatusChange(category)}
+          onSubmit={handleHourCategorySubmit}
         />
 
         <section aria-labelledby="cycle-history-title">
