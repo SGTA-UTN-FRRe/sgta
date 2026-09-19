@@ -1757,9 +1757,18 @@ describe("PostgreSQL foundation integration", () => {
         },
       ])
       .returning({ id: tutor.id });
+    const [inactiveTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Inactive",
+        lastName: "Tutor",
+        primaryCareerId: createdCareer!.id,
+        status: "INACTIVE",
+      })
+      .returning({ id: tutor.id });
 
     await database.insert(tutorCycleMembership).values(
-      domainTutors.map((domainTutor) => ({
+      [...domainTutors, inactiveTutor!].map((domainTutor) => ({
         tutorId: domainTutor.id,
         cycleId: createdCycle!.id,
       })),
@@ -1775,6 +1784,16 @@ describe("PostgreSQL foundation integration", () => {
       { name: "Recovery", activityKind: "RECOVERY" },
       { actorId: admin.id, requestId: "category-recovery" },
     );
+    const workshopCategory = await createHourCategory(
+      database,
+      { name: "Workshop", activityKind: "WORKSHOP" },
+      { actorId: admin.id, requestId: "category-workshop" },
+    );
+    const extraordinaryCategory = await createHourCategory(
+      database,
+      { name: "Extraordinary", activityKind: "EXTRAORDINARY" },
+      { actorId: admin.id, requestId: "category-extraordinary" },
+    );
     const manualCategory = await createHourCategory(
       database,
       { name: "Manual adjustment" },
@@ -1787,9 +1806,15 @@ describe("PostgreSQL foundation integration", () => {
       categories: expect.arrayContaining([
         expect.objectContaining({ id: meetingCategory.id, activityKind: "MEETING" }),
         expect.objectContaining({ id: recoveryCategory.id, activityKind: "RECOVERY" }),
+        expect.objectContaining({ id: workshopCategory.id, activityKind: "WORKSHOP" }),
+        expect.objectContaining({ id: extraordinaryCategory.id, activityKind: "EXTRAORDINARY" }),
+        expect.objectContaining({ id: manualCategory.id, activityKind: null }),
       ]),
     });
     expect(workspace.eligibleTutors).toHaveLength(2);
+    expect(workspace.eligibleTutors.map((eligibleTutor) => eligibleTutor.id)).not.toContain(
+      inactiveTutor!.id,
+    );
 
     const bulk = await recordBulkHourMovement(
       database,
@@ -1814,6 +1839,42 @@ describe("PostgreSQL foundation integration", () => {
       kind: "MEETING",
       durationMinutes: 90,
       actor: { id: admin.id, displayName: "Integration Admin" },
+    });
+
+    const workshop = await recordBulkHourMovement(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        tutorIds: [domainTutors[1]!.id],
+        categoryId: workshopCategory.id,
+        direction: "CREDIT",
+        duration: { durationMinutes: 45 },
+        movementDate: "2027-02-15",
+        note: "Workshop activity credit",
+      },
+      { actorId: admin.id, requestId: "bulk-workshop" },
+    );
+    expect(workshop.origin).toMatchObject({
+      kind: "WORKSHOP",
+      durationMinutes: 45,
+    });
+
+    const extraordinary = await recordBulkHourMovement(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        tutorIds: [domainTutors[0]!.id],
+        categoryId: extraordinaryCategory.id,
+        direction: "CREDIT",
+        duration: { durationMinutes: 20 },
+        movementDate: "2027-02-16",
+        note: "Extraordinary activity credit",
+      },
+      { actorId: admin.id, requestId: "bulk-extraordinary" },
+    );
+    expect(extraordinary.origin).toMatchObject({
+      kind: "EXTRAORDINARY",
+      durationMinutes: 20,
     });
 
     const recovery = await recognizeRecovery(
@@ -1842,6 +1903,7 @@ describe("PostgreSQL foundation integration", () => {
           direction: "CREDIT",
           duration: { durationMinutes: 15 },
           movementDate: "2027-02-16",
+          note: "Rollback should not persist",
         },
         { actorId: admin.id, requestId: "x".repeat(256) },
       ),
@@ -1853,10 +1915,17 @@ describe("PostgreSQL foundation integration", () => {
         .from(hourMovement)
         .where(
           and(
-            eq(hourMovement.categoryId, manualCategory.id),
+            eq(hourMovement.categoryId, meetingCategory.id),
             eq(hourMovement.cycleId, createdCycle!.id),
+            eq(hourMovement.note, "Rollback should not persist"),
           ),
         ),
+    ).resolves.toEqual([]);
+    await expect(
+      database
+        .select({ id: activity.id })
+        .from(activity)
+        .where(eq(activity.note, "Rollback should not persist")),
     ).resolves.toEqual([]);
 
     const firstMovement = bulk.movements.find(
@@ -1880,6 +1949,21 @@ describe("PostgreSQL foundation integration", () => {
       reversalOfMovementId: firstMovement.id,
       reversalState: "REVERSAL",
     });
+    const [storedOriginal] = await database
+      .select({
+        direction: hourMovement.direction,
+        durationMinutes: hourMovement.durationMinutes,
+        note: hourMovement.note,
+        reversalOfMovementId: hourMovement.reversalOfMovementId,
+      })
+      .from(hourMovement)
+      .where(eq(hourMovement.id, firstMovement.id));
+    expect(storedOriginal).toEqual({
+      direction: "CREDIT",
+      durationMinutes: 90,
+      note: "Weekly coordination",
+      reversalOfMovementId: null,
+    });
     await expect(
       reverseHourMovement(database, firstMovement.id, { actorId: admin.id }),
     ).rejects.toMatchObject({ code: HOUR_ERROR_CODES.movementAlreadyReversed });
@@ -1892,12 +1976,12 @@ describe("PostgreSQL foundation integration", () => {
       expect.arrayContaining([
         expect.objectContaining({
           tutor: expect.objectContaining({ id: domainTutors[0]!.id }),
-          signedBalanceMinutes: 30,
+          signedBalanceMinutes: 50,
           state: "current",
         }),
         expect.objectContaining({
           tutor: expect.objectContaining({ id: domainTutors[1]!.id }),
-          signedBalanceMinutes: 90,
+          signedBalanceMinutes: 135,
           state: "current",
         }),
       ]),
@@ -1925,7 +2009,15 @@ describe("PostgreSQL foundation integration", () => {
       actorId: admin.id,
       requestId: "close-hours-cycle",
     });
-    await expect(listHourBalances(database, createdCycle!.id)).resolves.toHaveLength(2);
+    await expect(
+      listHourBalances(database, createdCycle!.id, { activeOnly: true }),
+    ).resolves.toHaveLength(2);
+    await expect(
+      listHourMovements(database, {
+        cycleId: createdCycle!.id,
+        limit: 20,
+      }),
+    ).resolves.toHaveLength(6);
     await expect(
       recordBulkHourMovement(
         database,
@@ -1940,6 +2032,12 @@ describe("PostgreSQL foundation integration", () => {
         { actorId: admin.id },
       ),
     ).rejects.toMatchObject({ code: HOUR_ERROR_CODES.cycleNotOpen });
+    await expect(
+      reverseHourMovement(database, workshop.movements[0]!.id, {
+        actorId: admin.id,
+        requestId: "closed-cycle-reversal",
+      }),
+    ).rejects.toMatchObject({ code: HOUR_ERROR_CODES.cycleNotOpen });
 
     const hourEvents = await listAuditEvents(database, 100);
     expect(
@@ -1947,14 +2045,75 @@ describe("PostgreSQL foundation integration", () => {
         .filter((event) => event.entityType === "hour_movement")
         .every((event) => event.actorId === admin.id),
     ).toBe(true);
+    expect(
+      hourEvents
+        .filter((event) => event.entityType === "activity")
+        .every((event) => event.actorId === admin.id),
+    ).toBe(true);
+    expect(hourEvents.some((event) => event.requestId === "bulk-meeting")).toBe(true);
+    expect(JSON.stringify(hourEvents)).not.toContain("password");
+    expect(JSON.stringify(hourEvents)).not.toContain("token");
   });
 
   it("enforces Admin authorization across the live hour API boundaries", async () => {
     const database = getIntegrationDatabase();
     const { admin, tutor: tutorIdentity } = await seedIdentities();
+    const routeMovementId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const hourApiBoundaries = [
+      {
+        name: "hour workspace GET",
+        invoke: () => getAdminHours(),
+      },
+      {
+        name: "hour movement GET",
+        invoke: () =>
+          getAdminHourMovements(
+            new Request("http://localhost/api/admin/hours/movements"),
+          ),
+      },
+      {
+        name: "hour movement POST",
+        invoke: () =>
+          postAdminHourMovement(
+            makeJsonRequest("http://localhost/api/admin/hours/movements", "POST", {}),
+          ),
+      },
+      {
+        name: "hour movement reversal POST",
+        invoke: () =>
+          postAdminHourMovementReverse(
+            new Request(
+              `http://localhost/api/admin/hours/movements/${routeMovementId}/reverse`,
+              { method: "POST" },
+            ),
+            { params: Promise.resolve({ movementId: routeMovementId }) },
+          ),
+      },
+      {
+        name: "hour category GET",
+        invoke: () =>
+          getAdminHourCategories(
+            new Request("http://localhost/api/admin/settings/hour-categories"),
+          ),
+      },
+      {
+        name: "hour category POST",
+        invoke: () =>
+          postAdminHourCategory(
+            makeJsonRequest(
+              "http://localhost/api/admin/settings/hour-categories",
+              "POST",
+              {},
+            ),
+          ),
+      },
+    ];
 
-    const unauthenticatedResponse = await getAdminHours();
-    expect(unauthenticatedResponse.status).toBe(401);
+    for (const boundary of hourApiBoundaries) {
+      await expect(boundary.invoke(), boundary.name).resolves.toMatchObject({
+        status: 401,
+      });
+    }
 
     authMocks.getSession.mockResolvedValue({
       user: { id: admin.id, role: "ADMIN" },
@@ -2115,8 +2274,11 @@ describe("PostgreSQL foundation integration", () => {
     authMocks.getSession.mockResolvedValue({
       user: { id: tutorIdentity.id, role: "TUTOR" },
     });
-    const tutorResponse = await getAdminHours();
-    expect(tutorResponse.status).toBe(403);
+    for (const boundary of hourApiBoundaries) {
+      await expect(boundary.invoke(), boundary.name).resolves.toMatchObject({
+        status: 403,
+      });
+    }
   });
 
   it("records the complete cycle lifecycle with actor attribution and history", async () => {

@@ -12,8 +12,11 @@ import {
   type DatabaseHandle,
 } from "../../src/db/client-core";
 import {
+  activity,
   administrativeCycle,
   career,
+  hourCategory,
+  hourMovement,
   scholarshipReference,
   session,
   subject,
@@ -26,6 +29,16 @@ import {
   E2E_ADMIN_SESSION_TOKEN,
   E2E_ADMIN_USER_ID,
   E2E_AUTH_SECRET,
+  E2E_CAREER_ID,
+  E2E_CYCLE_ID,
+  E2E_INACTIVE_CATEGORY_ID,
+  E2E_INACTIVE_TUTOR_ID,
+  E2E_MANUAL_CATEGORY_ID,
+  E2E_MEETING_CATEGORY_ID,
+  E2E_PRIMARY_TUTOR_ID,
+  E2E_SECONDARY_TUTOR_ID,
+  E2E_SEEDED_ACTIVITY_ID,
+  E2E_SEEDED_MOVEMENT_ID,
 } from "./e2e-test-data";
 
 const POSTGRES_IMAGE = "postgres:16.4-alpine";
@@ -69,7 +82,7 @@ async function seedDatabase() {
   });
 
   await database.insert(administrativeCycle).values({
-    id: "11111111-1111-4111-8111-111111111111",
+    id: E2E_CYCLE_ID,
     name: "2027",
     startDate: "2027-01-01",
     endDate: "2027-12-31",
@@ -77,7 +90,7 @@ async function seedDatabase() {
   });
 
   await database.insert(career).values({
-    id: "22222222-2222-4222-8222-222222222222",
+    id: E2E_CAREER_ID,
     name: "Computer Science",
     normalizedName: "computer science",
     status: "ACTIVE",
@@ -86,14 +99,14 @@ async function seedDatabase() {
   await database.insert(subject).values([
     {
       id: "33333333-3333-4333-8333-333333333333",
-      careerId: "22222222-2222-4222-8222-222222222222",
+      careerId: E2E_CAREER_ID,
       name: "Algorithms",
       normalizedName: "algorithms",
       status: "ACTIVE",
     },
     {
       id: "44444444-4444-4444-8444-444444444444",
-      careerId: "22222222-2222-4222-8222-222222222222",
+      careerId: E2E_CAREER_ID,
       name: "Data Structures",
       normalizedName: "data structures",
       status: "ACTIVE",
@@ -109,26 +122,99 @@ async function seedDatabase() {
     status: "ACTIVE",
   });
 
-  await database.insert(tutor).values({
-    id: "66666666-6666-4666-8666-666666666666",
-    firstName: "Ada",
-    lastName: "Lovelace",
-    preferredDisplayName: "Ada",
-    institutionalIdentifier: "E2E-001",
-    normalizedInstitutionalIdentifier: "e2e-001",
-    primaryCareerId: "22222222-2222-4222-8222-222222222222",
-    status: "ACTIVE",
-  });
+  await database.insert(tutor).values([
+    {
+      id: E2E_PRIMARY_TUTOR_ID,
+      firstName: "Ada",
+      lastName: "Lovelace",
+      preferredDisplayName: "Ada",
+      institutionalIdentifier: "E2E-001",
+      normalizedInstitutionalIdentifier: "e2e-001",
+      primaryCareerId: E2E_CAREER_ID,
+      status: "ACTIVE",
+    },
+    {
+      id: E2E_SECONDARY_TUTOR_ID,
+      firstName: "Grace",
+      lastName: "Hopper",
+      preferredDisplayName: "Grace",
+      institutionalIdentifier: "E2E-002",
+      normalizedInstitutionalIdentifier: "e2e-002",
+      primaryCareerId: E2E_CAREER_ID,
+      status: "ACTIVE",
+    },
+    {
+      id: E2E_INACTIVE_TUTOR_ID,
+      firstName: "Inactive",
+      lastName: "Tutor",
+      preferredDisplayName: "Inactive",
+      institutionalIdentifier: "E2E-003",
+      normalizedInstitutionalIdentifier: "e2e-003",
+      primaryCareerId: E2E_CAREER_ID,
+      status: "INACTIVE",
+    },
+  ]);
 
   await database.insert(tutorSubject).values({
-    tutorId: "66666666-6666-4666-8666-666666666666",
+    tutorId: E2E_PRIMARY_TUTOR_ID,
     subjectId: "33333333-3333-4333-8333-333333333333",
   });
 
-  await database.insert(tutorCycleMembership).values({
-    tutorId: "66666666-6666-4666-8666-666666666666",
-    cycleId: "11111111-1111-4111-8111-111111111111",
-    scholarshipReferenceId: "55555555-5555-4555-8555-555555555555",
+  await database.insert(tutorCycleMembership).values([
+    {
+      tutorId: E2E_PRIMARY_TUTOR_ID,
+      cycleId: E2E_CYCLE_ID,
+      scholarshipReferenceId: "55555555-5555-4555-8555-555555555555",
+    },
+    { tutorId: E2E_SECONDARY_TUTOR_ID, cycleId: E2E_CYCLE_ID },
+    { tutorId: E2E_INACTIVE_TUTOR_ID, cycleId: E2E_CYCLE_ID },
+  ]);
+
+  await database.insert(hourCategory).values([
+    {
+      id: E2E_MEETING_CATEGORY_ID,
+      name: "Meeting credit",
+      normalizedName: "meeting credit",
+      activityKind: "MEETING",
+      status: "ACTIVE",
+    },
+    {
+      id: E2E_MANUAL_CATEGORY_ID,
+      name: "Manual credit",
+      normalizedName: "manual credit",
+      activityKind: null,
+      status: "ACTIVE",
+    },
+    {
+      id: E2E_INACTIVE_CATEGORY_ID,
+      name: "Archived activity",
+      normalizedName: "archived activity",
+      activityKind: "EXTRAORDINARY",
+      status: "INACTIVE",
+    },
+  ]);
+
+  await database.insert(activity).values({
+    id: E2E_SEEDED_ACTIVITY_ID,
+    cycleId: E2E_CYCLE_ID,
+    kind: "MEETING",
+    activityDate: "2027-01-15",
+    durationMinutes: 30,
+    note: "Seeded meeting origin.",
+    actorId: admin.id,
+  });
+
+  await database.insert(hourMovement).values({
+    id: E2E_SEEDED_MOVEMENT_ID,
+    cycleId: E2E_CYCLE_ID,
+    tutorId: E2E_PRIMARY_TUTOR_ID,
+    categoryId: E2E_MEETING_CATEGORY_ID,
+    direction: "CREDIT",
+    durationMinutes: 30,
+    movementDate: "2027-01-15",
+    note: "Seeded meeting movement.",
+    activityId: E2E_SEEDED_ACTIVITY_ID,
+    actorId: admin.id,
   });
 }
 

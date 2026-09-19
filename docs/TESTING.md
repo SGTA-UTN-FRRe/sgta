@@ -59,11 +59,22 @@ Integration scenarios live under `tests/integration/` and run through the separa
 
 Docker is a local and CI prerequisite for this boundary. Testcontainers chooses an available host port; no fixed port, local database, production URL, Google credential, or personal data is used. There is no separate Docker check or public Docker gate.
 
+Hour-accounting integration scenarios also prove activity origins for meeting,
+workshop, extraordinary, and recovery recognition; immutable reversals;
+inactive-category history; closed-cycle reads and rejected writes; atomic bulk
+rollback; and actor-attributed bounded audit metadata.
+
 ### End-to-end tests
 
 Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus an authenticated Admin journey for live tutor creation and derived Materias coverage. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the normal Next.js server; it does not bypass server-side authorization or call Google.
 
 E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Docker is required locally because the authenticated web server owns an isolated PostgreSQL container. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
+
+The authenticated server wrapper seeds deterministic hour-accounting rows,
+including active and inactive tutors and categories, an activity origin, and
+movement history. The authenticated Admin journey covers the Compact, Medium,
+and Wide hours workflow through bulk meeting credit, balance/history refresh,
+movement-history navigation, and non-destructive reversal.
 
 ### Integration and contract checks
 
