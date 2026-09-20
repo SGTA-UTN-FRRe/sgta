@@ -22,6 +22,13 @@
       "when": 1789781799544,
       "tag": "0002_fearless_magma",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789866192571,
+      "tag": "0003_good_iron_fist",
+      "breakpoints": true
     }
   ]
 }
