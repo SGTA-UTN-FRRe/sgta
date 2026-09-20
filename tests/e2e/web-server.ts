@@ -14,10 +14,14 @@ import {
 import {
   activity,
   administrativeCycle,
+  attendanceRecord,
   career,
+  dutyOccurrence,
   hourCategory,
   hourMovement,
   scholarshipReference,
+  scheduleAssignment,
+  schedulePlan,
   session,
   subject,
   tutor,
@@ -28,6 +32,10 @@ import {
 import {
   E2E_ADMIN_SESSION_TOKEN,
   E2E_ADMIN_USER_ID,
+  E2E_ABSENCE_ASSIGNMENT_ID,
+  E2E_ABSENCE_DEBIT_CATEGORY_ID,
+  E2E_ABSENCE_OCCURRENCE_ID,
+  E2E_ATTENDANCE_TUTOR_ID,
   E2E_AUTH_SECRET,
   E2E_CAREER_ID,
   E2E_CYCLE_ID,
@@ -35,10 +43,18 @@ import {
   E2E_INACTIVE_TUTOR_ID,
   E2E_MANUAL_CATEGORY_ID,
   E2E_MEETING_CATEGORY_ID,
+  E2E_PRESENT_ASSIGNMENT_ID,
+  E2E_PRESENT_OCCURRENCE_ID,
   E2E_PRIMARY_TUTOR_ID,
+  E2E_RECOVERY_ASSIGNMENT_ID,
+  E2E_RECOVERY_CATEGORY_ID,
+  E2E_RECOVERY_OCCURRENCE_ID,
+  E2E_REGULAR_ASSIGNMENT_ID,
+  E2E_REGULAR_PLAN_ID,
   E2E_SECONDARY_TUTOR_ID,
   E2E_SEEDED_ACTIVITY_ID,
   E2E_SEEDED_MOVEMENT_ID,
+  E2E_SPECIAL_PLAN_ID,
 } from "./e2e-test-data";
 
 const POSTGRES_IMAGE = "postgres:16.4-alpine";
@@ -153,6 +169,16 @@ async function seedDatabase() {
       primaryCareerId: E2E_CAREER_ID,
       status: "INACTIVE",
     },
+    {
+      id: E2E_ATTENDANCE_TUTOR_ID,
+      firstName: "Marie",
+      lastName: "Curie",
+      preferredDisplayName: "Marie",
+      institutionalIdentifier: "E2E-004",
+      normalizedInstitutionalIdentifier: "e2e-004",
+      primaryCareerId: E2E_CAREER_ID,
+      status: "ACTIVE",
+    },
   ]);
 
   await database.insert(tutorSubject).values({
@@ -168,6 +194,7 @@ async function seedDatabase() {
     },
     { tutorId: E2E_SECONDARY_TUTOR_ID, cycleId: E2E_CYCLE_ID },
     { tutorId: E2E_INACTIVE_TUTOR_ID, cycleId: E2E_CYCLE_ID },
+    { tutorId: E2E_ATTENDANCE_TUTOR_ID, cycleId: E2E_CYCLE_ID },
   ]);
 
   await database.insert(hourCategory).values([
@@ -191,6 +218,152 @@ async function seedDatabase() {
       normalizedName: "archived activity",
       activityKind: "EXTRAORDINARY",
       status: "INACTIVE",
+    },
+    {
+      id: E2E_ABSENCE_DEBIT_CATEGORY_ID,
+      name: "Absence debit",
+      normalizedName: "absence debit",
+      activityKind: null,
+      status: "ACTIVE",
+    },
+    {
+      id: E2E_RECOVERY_CATEGORY_ID,
+      name: "Scheduled recovery",
+      normalizedName: "scheduled recovery",
+      activityKind: "RECOVERY",
+      status: "ACTIVE",
+    },
+  ]);
+
+  await database.insert(schedulePlan).values([
+    {
+      id: E2E_REGULAR_PLAN_ID,
+      cycleId: E2E_CYCLE_ID,
+      name: "Regular 2027",
+      kind: "REGULAR",
+      validFrom: "2027-01-01",
+      validTo: "2027-12-31",
+      status: "ACTIVE",
+    },
+    {
+      id: E2E_SPECIAL_PLAN_ID,
+      cycleId: E2E_CYCLE_ID,
+      name: "Attendance special 2027",
+      kind: "SPECIAL",
+      validFrom: "2027-01-18",
+      validTo: "2027-01-18",
+      status: "ACTIVE",
+    },
+  ]);
+
+  await database.insert(scheduleAssignment).values([
+    {
+      id: E2E_REGULAR_ASSIGNMENT_ID,
+      planId: E2E_REGULAR_PLAN_ID,
+      tutorId: E2E_PRIMARY_TUTOR_ID,
+      pattern: "WEEKDAY",
+      weekday: 1,
+      startMinutes: 480,
+      endMinutes: 540,
+      kind: "DUTY",
+      modality: "Regular room",
+      status: "ACTIVE",
+    },
+    {
+      id: E2E_PRESENT_ASSIGNMENT_ID,
+      planId: E2E_SPECIAL_PLAN_ID,
+      tutorId: E2E_ATTENDANCE_TUTOR_ID,
+      pattern: "DATE",
+      assignmentDate: "2027-01-18",
+      startMinutes: 480,
+      endMinutes: 600,
+      kind: "DUTY",
+      modality: "Attendance room",
+      status: "ACTIVE",
+    },
+    {
+      id: E2E_ABSENCE_ASSIGNMENT_ID,
+      planId: E2E_SPECIAL_PLAN_ID,
+      tutorId: E2E_ATTENDANCE_TUTOR_ID,
+      pattern: "DATE",
+      assignmentDate: "2027-01-18",
+      startMinutes: 600,
+      endMinutes: 720,
+      kind: "DUTY",
+      modality: "Attendance room",
+      status: "ACTIVE",
+    },
+    {
+      id: E2E_RECOVERY_ASSIGNMENT_ID,
+      planId: E2E_SPECIAL_PLAN_ID,
+      tutorId: E2E_ATTENDANCE_TUTOR_ID,
+      pattern: "DATE",
+      assignmentDate: "2027-01-18",
+      startMinutes: 780,
+      endMinutes: 840,
+      kind: "RECOVERY",
+      modality: "Recovery room",
+      status: "ACTIVE",
+    },
+  ]);
+
+  await database.insert(dutyOccurrence).values([
+    {
+      id: E2E_PRESENT_OCCURRENCE_ID,
+      cycleId: E2E_CYCLE_ID,
+      planId: E2E_SPECIAL_PLAN_ID,
+      assignmentId: E2E_PRESENT_ASSIGNMENT_ID,
+      tutorId: E2E_ATTENDANCE_TUTOR_ID,
+      occurrenceDate: "2027-01-18",
+      startMinutes: 480,
+      endMinutes: 600,
+      kind: "DUTY",
+      modality: "Attendance room",
+    },
+    {
+      id: E2E_ABSENCE_OCCURRENCE_ID,
+      cycleId: E2E_CYCLE_ID,
+      planId: E2E_SPECIAL_PLAN_ID,
+      assignmentId: E2E_ABSENCE_ASSIGNMENT_ID,
+      tutorId: E2E_ATTENDANCE_TUTOR_ID,
+      occurrenceDate: "2027-01-18",
+      startMinutes: 600,
+      endMinutes: 720,
+      kind: "DUTY",
+      modality: "Attendance room",
+    },
+    {
+      id: E2E_RECOVERY_OCCURRENCE_ID,
+      cycleId: E2E_CYCLE_ID,
+      planId: E2E_SPECIAL_PLAN_ID,
+      assignmentId: E2E_RECOVERY_ASSIGNMENT_ID,
+      tutorId: E2E_ATTENDANCE_TUTOR_ID,
+      occurrenceDate: "2027-01-18",
+      startMinutes: 780,
+      endMinutes: 840,
+      kind: "RECOVERY",
+      modality: "Recovery room",
+    },
+  ]);
+
+  await database.insert(attendanceRecord).values([
+    {
+      occurrenceId: E2E_PRESENT_OCCURRENCE_ID,
+      status: "PENDING",
+      debitStatus: "NOT_PROPOSED",
+      actorId: admin.id,
+    },
+    {
+      occurrenceId: E2E_ABSENCE_OCCURRENCE_ID,
+      status: "PENDING",
+      debitStatus: "NOT_PROPOSED",
+      actorId: admin.id,
+    },
+    {
+      occurrenceId: E2E_RECOVERY_OCCURRENCE_ID,
+      status: "PENDING",
+      debitStatus: "NOT_PROPOSED",
+      actorId: admin.id,
     },
   ]);
 

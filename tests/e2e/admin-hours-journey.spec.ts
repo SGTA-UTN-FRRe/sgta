@@ -46,10 +46,15 @@ test.describe("authenticated Admin hour operations", () => {
     const exceptionTutor = movementDialog.getByRole("checkbox", {
       name: "Seleccionar a Hopper, Grace",
     });
+    const attendanceTutor = movementDialog.getByRole("checkbox", {
+      name: "Seleccionar a Curie, Marie",
+    });
 
     await exceptionTutor.uncheck();
+    await attendanceTutor.uncheck();
     await selectAll.check();
     await exceptionTutor.uncheck();
+    await attendanceTutor.uncheck();
     await expect(selectAll).not.toBeChecked();
     await expect(
       movementDialog.getByRole("checkbox", {
@@ -57,6 +62,7 @@ test.describe("authenticated Admin hour operations", () => {
       }),
     ).toBeChecked();
     await expect(exceptionTutor).not.toBeChecked();
+    await expect(attendanceTutor).not.toBeChecked();
 
     await movementDialog.getByLabel("Categoría").selectOption({
       value: E2E_MEETING_CATEGORY_ID,

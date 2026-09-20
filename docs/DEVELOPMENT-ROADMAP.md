@@ -396,7 +396,7 @@ No direct mutable balance exists.
 ### Phase 7 - Scheduling and attendance
 
 - **Priority:** P0
-- **Status:** Planned
+- **Status:** Complete
 - **Depends on:** Phase 5; hour integration depends on Phase 6
 
 #### Objective
@@ -436,14 +436,14 @@ Within that cycle:
 
 #### Exit criteria
 
-- [ ] Special plans never destroy the regular plan.
-- [ ] Ambiguous overlapping special plans are prevented.
-- [ ] Schedule is complete without drag-and-drop.
-- [ ] Present never changes hour balance.
-- [ ] Falta remains recorded even when the proposed debit is cancelled.
-- [ ] Falta never changes balance without Admin confirmation.
-- [ ] Compact day/list mode is usable.
-- [ ] Critical E2E passes.
+- [x] Special plans never destroy the regular plan.
+- [x] Ambiguous overlapping special plans are prevented.
+- [x] Schedule is complete without drag-and-drop.
+- [x] Present never changes hour balance.
+- [x] Falta remains recorded even when the proposed debit is cancelled.
+- [x] Falta never changes balance without Admin confirmation.
+- [x] Compact day/list mode is usable.
+- [x] Critical E2E passes.
 
 ### Phase 8 - Tutor self-service
 

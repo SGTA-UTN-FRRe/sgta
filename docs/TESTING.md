@@ -27,8 +27,8 @@ The current repository uses these conceptual gates:
 | --- | --- | --- |
 | `Quality` | `corepack pnpm lint` and `corepack pnpm typecheck` | ESLint and strict TypeScript validation. |
 | `Tests` | `corepack pnpm test` | Co-located Vitest and Testing Library unit/component tests. |
-| `Integration` | `corepack pnpm test:integration` | PostgreSQL-backed foundation, tutor/academic operations, and Admin hour-accounting coverage against an isolated Testcontainers database. |
-| `E2E` | `corepack pnpm test:e2e` | Critical browser smoke and authenticated Admin workflow coverage through the running Next.js application. |
+| `Integration` | `corepack pnpm test:integration` | PostgreSQL-backed foundation, tutor/academic, scheduling/attendance, and Admin hour-accounting coverage against an isolated Testcontainers database. |
+| `E2E` | `corepack pnpm test:e2e` | Critical browser smoke plus authenticated Admin tutor, scheduling/attendance, and hour-accounting workflow coverage through the running Next.js application. |
 | `Production` | `corepack pnpm build` | Verification that the deployable Next.js build can be produced. |
 | `CI Gate` | aggregate workflow job | Stable final result for branch protection and pull-request merge readiness. |
 
@@ -62,22 +62,35 @@ Docker is a local and CI prerequisite for this boundary. Testcontainers chooses 
 Hour-accounting integration scenarios also prove meeting, workshop, extraordinary,
 and recovery recognition; inactive-category history; closed-cycle reads and
 rejected writes; atomic bulk rollback; and actor-attributed bounded audit metadata.
+Scheduling integration scenarios prove regular and special plan precedence and
+fallback, stable occurrence materialization, assignment eligibility and overlap
+constraints, historical reads, cycle write gates, audit attribution, and the
+attendance path from Present/no movement through absence proposal, cancellation,
+adjusted debit confirmation, correction/reversal linkage, recovery recognition,
+rollback, and duplicate protection. Protected schedule and attendance route
+handlers are exercised against the real database with Admin-versus-unauthorized
+coverage and safe DTO assertions.
 
 ### End-to-end tests
 
-Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus authenticated Admin journeys for live tutor/Materias operations and hour accounting. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the normal Next.js server; it does not bypass server-side authorization or call Google.
+Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus authenticated Admin journeys for live tutor/Materias, scheduling/attendance, and hour-accounting operations. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the normal Next.js server; it does not bypass server-side authorization or call Google.
 
 E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Docker is required locally because the authenticated web server owns an isolated PostgreSQL container. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
 
-The authenticated server wrapper also seeds deterministic hour-accounting rows,
-including active and inactive tutors and categories, an activity origin, and
-movement history. The authenticated Admin hours journey covers the Compact,
-Medium, and Wide workflow through bulk meeting credit, balance/history refresh,
-movement-history navigation, and non-destructive reversal.
+The authenticated server wrapper also seeds deterministic hour-accounting and
+scheduling rows, including active and inactive tutors and categories, regular
+and special plans, persisted occurrences, pending attendance, an activity
+origin, and movement history. The authenticated Admin journey covers the live
+schedule plan switch and assignment edit, then the Compact attendance flow:
+Present without a balance change, Falta with cancellation and reload
+persistence, adjusted debit confirmation, linked movement history, and explicit
+recovery recognition. The existing Admin hours journey continues to cover the
+Compact, Medium, and Wide workflow through bulk meeting credit, balance/history
+refresh, movement-history navigation, and non-destructive reversal.
 
 ### Integration and contract checks
 
-There is currently no `Contract` gate. The `Integration` gate covers the real database-backed behavior, migrations, tutor/academic operations, and hour-accounting workflows introduced by the current runtime. A separate `Contract` gate remains deferred until an independent contract boundary needs it.
+There is currently no `Contract` gate. The `Integration` gate covers the real database-backed behavior, migrations, tutor/academic operations, scheduling/attendance workflows, and hour-accounting workflows introduced by the current runtime. A separate `Contract` gate remains deferred until an independent contract boundary needs it.
 
 Docker is an execution prerequisite for `Integration`, not a separate public gate.
 

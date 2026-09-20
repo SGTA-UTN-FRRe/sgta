@@ -201,7 +201,16 @@ export type SafeHourWorkspace = {
 };
 
 type SelectDatabase = Pick<Database, "select">;
-type MutationDatabase = Pick<Database, "select" | "insert" | "update">;
+export type HourMutationDatabase = Pick<
+  Database,
+  "select" | "insert" | "update"
+>;
+type MutationDatabase = HourMutationDatabase;
+
+export type HourMovementOriginContext = {
+  attendanceRecordId?: string | null;
+  dutyOccurrenceId?: string | null;
+};
 
 type HourCycleRow = {
   id: string;
@@ -1117,6 +1126,7 @@ async function recordMovementAudit(
     durationMinutes: number;
     movementDate: string;
     activityId: string | null;
+    attendanceRecordId: string | null;
     reversalOfMovementId: string | null;
   },
 ) {
@@ -1133,6 +1143,7 @@ async function recordMovementAudit(
       durationMinutes: input.durationMinutes,
       movementDate: input.movementDate,
       activityId: input.activityId,
+      attendanceRecordId: input.attendanceRecordId,
       reversalOfMovementId: input.reversalOfMovementId,
     },
     requestId: input.requestId ?? null,
@@ -1401,11 +1412,12 @@ export async function getHourWorkspace(
   });
 }
 
-async function recordBulkHourMovementInternal(
-  db: Database,
+export async function recordHourMovementInTransaction(
+  db: HourMutationDatabase,
   parsed: ParsedRecordBulkHourMovementInput,
   context: HourMutationContext,
   requiredActivityKind?: ActivityKind,
+  originContext: HourMovementOriginContext = {},
 ): Promise<SafeHourBulkMovementResult> {
   const actorId = context.actorId?.trim();
 
@@ -1416,145 +1428,171 @@ async function recordBulkHourMovementInternal(
     );
   }
 
-  return runMutation(db, async (transaction) => {
-    const [actor, cycle] = await Promise.all([
-      requireActor(transaction, actorId),
-      requireCycleForWrite(transaction, parsed.cycleId, { lock: true }),
-    ]);
-    assertMovementDateWithinCycle(parsed.movementDate, cycle);
+  const [actor, cycle] = await Promise.all([
+    requireActor(db, actorId),
+    requireCycleForWrite(db, parsed.cycleId, { lock: true }),
+  ]);
+  assertMovementDateWithinCycle(parsed.movementDate, cycle);
 
-    const category = await requireActiveCategory(transaction, parsed.categoryId);
+  const category = await requireActiveCategory(db, parsed.categoryId);
 
-    if (
-      requiredActivityKind !== undefined &&
-      category.activityKind !== requiredActivityKind
-    ) {
-      throw new HourServiceError(
-        HOUR_ERROR_CODES.recoveryCategoryRequired,
-        "The selected category is not configured for recovery recognition.",
-        {
-          details: {
-            categoryId: category.id,
-            requiredActivityKind,
-          },
-        },
-      );
-    }
-
-    if (
-      category.activityKind !== null &&
-      parsed.direction !== "CREDIT"
-    ) {
-      throw new HourServiceError(
-        HOUR_ERROR_CODES.activityCreditRequired,
-        "Activity and recovery origins require a credit movement.",
-        { details: { categoryId: category.id } },
-      );
-    }
-
-    await requireEligibleTutors(transaction, cycle.id, parsed.tutorIds);
-
-    let activityId: string | null = null;
-    if (category.activityKind !== null) {
-      const [createdActivity] = await transaction
-        .insert(activity)
-        .values({
-          cycleId: cycle.id,
-          kind: category.activityKind,
-          activityDate: parsed.movementDate,
-          durationMinutes: parsed.duration,
-          note: parsed.note,
-          actorId: actor.id,
-        })
-        .returning({ id: activity.id });
-
-      if (createdActivity === undefined) {
-        throw new HourServiceError(
-          HOUR_ERROR_CODES.transactionFailed,
-          "The activity origin could not be created.",
-        );
-      }
-
-      activityId = createdActivity.id;
-
-      await recordAuditEvent(transaction, {
-        actorId: actor.id,
-        action: "activity.created",
-        entityType: "activity",
-        entityId: activityId,
-        metadata: {
-          cycleId: cycle.id,
-          kind: category.activityKind,
-          activityDate: parsed.movementDate,
-          durationMinutes: parsed.duration,
-          movementCount: parsed.tutorIds.length,
-        },
-        requestId: context.requestId ?? null,
-        ipAddress: context.ipAddress ?? null,
-      });
-    }
-
-    const createdMovements = await transaction
-      .insert(hourMovement)
-      .values(
-        parsed.tutorIds.map((tutorId) => ({
-          cycleId: cycle.id,
-          tutorId,
+  if (
+    requiredActivityKind !== undefined &&
+    category.activityKind !== requiredActivityKind
+  ) {
+    throw new HourServiceError(
+      HOUR_ERROR_CODES.recoveryCategoryRequired,
+      "The selected category is not configured for recovery recognition.",
+      {
+        details: {
           categoryId: category.id,
-          direction: parsed.direction,
-          durationMinutes: parsed.duration,
-          movementDate: parsed.movementDate,
-          note: parsed.note,
-          activityId,
-          reversalOfMovementId: null,
-          actorId: actor.id,
-        })),
-      )
-      .returning({ id: hourMovement.id, tutorId: hourMovement.tutorId });
+          requiredActivityKind,
+        },
+      },
+    );
+  }
 
-    if (createdMovements.length !== parsed.tutorIds.length) {
+  if (category.activityKind !== null && parsed.direction !== "CREDIT") {
+    throw new HourServiceError(
+      HOUR_ERROR_CODES.activityCreditRequired,
+      "Activity and recovery origins require a credit movement.",
+      { details: { categoryId: category.id } },
+    );
+  }
+
+  await requireEligibleTutors(db, cycle.id, parsed.tutorIds);
+
+  let activityId: string | null = null;
+  if (category.activityKind !== null) {
+    const [createdActivity] = await db
+      .insert(activity)
+      .values({
+        cycleId: cycle.id,
+        kind: category.activityKind,
+        activityDate: parsed.movementDate,
+        durationMinutes: parsed.duration,
+        note: parsed.note,
+        dutyOccurrenceId: originContext.dutyOccurrenceId ?? null,
+        actorId: actor.id,
+      })
+      .returning({ id: activity.id });
+
+    if (createdActivity === undefined) {
       throw new HourServiceError(
         HOUR_ERROR_CODES.transactionFailed,
-        "The requested hour movements could not be created.",
+        "The activity origin could not be created.",
       );
     }
 
-    for (const movement of createdMovements) {
-      await recordMovementAudit(transaction, movement.id, {
-        actorId: actor.id,
-        requestId: context.requestId,
-        ipAddress: context.ipAddress,
+    activityId = createdActivity.id;
+
+    await recordAuditEvent(db, {
+      actorId: actor.id,
+      action: "activity.created",
+      entityType: "activity",
+      entityId: activityId,
+      metadata: {
         cycleId: cycle.id,
-        tutorId: movement.tutorId,
+        kind: category.activityKind,
+        activityDate: parsed.movementDate,
+        durationMinutes: parsed.duration,
+        movementCount: parsed.tutorIds.length,
+        dutyOccurrenceId: originContext.dutyOccurrenceId ?? null,
+      },
+      requestId: context.requestId ?? null,
+      ipAddress: context.ipAddress ?? null,
+    });
+  }
+
+  const createdMovements = await db
+    .insert(hourMovement)
+    .values(
+      parsed.tutorIds.map((tutorId) => ({
+        cycleId: cycle.id,
+        tutorId,
         categoryId: category.id,
         direction: parsed.direction,
         durationMinutes: parsed.duration,
         movementDate: parsed.movementDate,
+        note: parsed.note,
         activityId,
+        attendanceRecordId: originContext.attendanceRecordId ?? null,
         reversalOfMovementId: null,
-      });
-    }
+        actorId: actor.id,
+      })),
+    )
+    .returning({ id: hourMovement.id, tutorId: hourMovement.tutorId });
 
-    const movementRows = await getMovementRows(transaction, {
+  if (createdMovements.length !== parsed.tutorIds.length) {
+    throw new HourServiceError(
+      HOUR_ERROR_CODES.transactionFailed,
+      "The requested hour movements could not be created.",
+    );
+  }
+
+  for (const movement of createdMovements) {
+    await recordMovementAudit(db, movement.id, {
+      actorId: actor.id,
+      requestId: context.requestId,
+      ipAddress: context.ipAddress,
       cycleId: cycle.id,
-      movementIds: createdMovements.map((movement) => movement.id),
-      limit: createdMovements.length,
+      tutorId: movement.tutorId,
+      categoryId: category.id,
+      direction: parsed.direction,
+      durationMinutes: parsed.duration,
+      movementDate: parsed.movementDate,
+      activityId,
+      attendanceRecordId: originContext.attendanceRecordId ?? null,
+      reversalOfMovementId: null,
     });
-    const movements = await toSafeMovements(transaction, movementRows);
+  }
 
-    if (movements.length !== createdMovements.length) {
-      throw new HourServiceError(
-        HOUR_ERROR_CODES.transactionFailed,
-        "The created hour movements could not be reloaded.",
-      );
-    }
-
-    return {
-      cycle: toSafeCycle(cycle),
-      origin: movements[0]?.origin ?? null,
-      movements,
-    };
+  const movementRows = await getMovementRows(db, {
+    cycleId: cycle.id,
+    movementIds: createdMovements.map((movement) => movement.id),
+    limit: createdMovements.length,
   });
+  const movements = await toSafeMovements(db, movementRows);
+
+  if (movements.length !== createdMovements.length) {
+    throw new HourServiceError(
+      HOUR_ERROR_CODES.transactionFailed,
+      "The created hour movements could not be reloaded.",
+    );
+  }
+
+  return {
+    cycle: toSafeCycle(cycle),
+    origin: movements[0]?.origin ?? null,
+    movements,
+  };
+}
+
+async function recordBulkHourMovementInternal(
+  db: Database,
+  parsed: ParsedRecordBulkHourMovementInput,
+  context: HourMutationContext,
+  requiredActivityKind?: ActivityKind,
+  originContext: HourMovementOriginContext = {},
+): Promise<SafeHourBulkMovementResult> {
+  const actorId = context.actorId?.trim();
+
+  if (actorId === undefined || actorId.length === 0) {
+    throw new HourServiceError(
+      HOUR_ERROR_CODES.actorRequired,
+      "An authenticated actor is required for hour changes.",
+    );
+  }
+
+  return runMutation(db, (transaction) =>
+    recordHourMovementInTransaction(
+      transaction,
+      parsed,
+      context,
+      requiredActivityKind,
+      originContext,
+    ),
+  );
 }
 
 export async function recordBulkHourMovement(
@@ -1575,6 +1613,132 @@ export async function recognizeRecovery(
   return recordBulkHourMovementInternal(db, parsed, context, "RECOVERY");
 }
 
+export async function reverseHourMovementInTransaction(
+  db: HourMutationDatabase,
+  parsedMovementId: string,
+  context: HourMutationContext = {},
+): Promise<SafeHourReversalResult> {
+  const actorId = context.actorId?.trim();
+
+  if (actorId === undefined || actorId.length === 0) {
+    throw new HourServiceError(
+      HOUR_ERROR_CODES.actorRequired,
+      "An authenticated actor is required for hour changes.",
+    );
+  }
+
+  const actor = await requireActor(db, actorId);
+  const [original] = await db
+    .select({
+      id: hourMovement.id,
+      cycleId: hourMovement.cycleId,
+      tutorId: hourMovement.tutorId,
+      categoryId: hourMovement.categoryId,
+      direction: hourMovement.direction,
+      durationMinutes: hourMovement.durationMinutes,
+      movementDate: hourMovement.movementDate,
+      note: hourMovement.note,
+      activityId: hourMovement.activityId,
+      attendanceRecordId: hourMovement.attendanceRecordId,
+      reversalOfMovementId: hourMovement.reversalOfMovementId,
+    })
+    .from(hourMovement)
+    .where(eq(hourMovement.id, parsedMovementId))
+    .limit(1)
+    .for("update");
+
+  if (original === undefined) {
+    throw new HourServiceError(
+      HOUR_ERROR_CODES.movementNotFound,
+      "The hour movement was not found.",
+      { details: { movementId: parsedMovementId } },
+    );
+  }
+
+  if (original.reversalOfMovementId !== null) {
+    throw new HourServiceError(
+      HOUR_ERROR_CODES.reversalTargetInvalid,
+      "A reversal movement cannot be reversed again.",
+      { details: { movementId: parsedMovementId } },
+    );
+  }
+
+  await requireCycleForWrite(db, original.cycleId, { lock: true });
+
+  const [existingReversal] = await db
+    .select({ id: hourMovement.id })
+    .from(hourMovement)
+    .where(eq(hourMovement.reversalOfMovementId, original.id))
+    .limit(1);
+
+  if (existingReversal !== undefined) {
+    throw new HourServiceError(
+      HOUR_ERROR_CODES.movementAlreadyReversed,
+      "The movement has already been reversed.",
+      {
+        details: {
+          movementId: original.id,
+          reversalMovementId: existingReversal.id,
+        },
+      },
+    );
+  }
+
+  const oppositeDirection: HourMovementDirection =
+    original.direction === "CREDIT" ? "DEBIT" : "CREDIT";
+  const [createdReversal] = await db
+    .insert(hourMovement)
+    .values({
+      cycleId: original.cycleId,
+      tutorId: original.tutorId,
+      categoryId: original.categoryId,
+      direction: oppositeDirection,
+      durationMinutes: original.durationMinutes,
+      movementDate: original.movementDate,
+      note: original.note,
+      activityId: original.activityId,
+      attendanceRecordId: original.attendanceRecordId,
+      reversalOfMovementId: original.id,
+      actorId: actor.id,
+    })
+    .returning({ id: hourMovement.id });
+
+  if (createdReversal === undefined) {
+    throw new HourServiceError(
+      HOUR_ERROR_CODES.transactionFailed,
+      "The movement reversal could not be created.",
+    );
+  }
+
+  await recordAuditEvent(db, {
+    actorId: actor.id,
+    action: "hour_movement.reversed",
+    entityType: "hour_movement",
+    entityId: createdReversal.id,
+    metadata: {
+      reversalOfMovementId: original.id,
+      cycleId: original.cycleId,
+      tutorId: original.tutorId,
+      categoryId: original.categoryId,
+      direction: oppositeDirection,
+      durationMinutes: original.durationMinutes,
+      attendanceRecordId: original.attendanceRecordId,
+    },
+    requestId: context.requestId ?? null,
+    ipAddress: context.ipAddress ?? null,
+  });
+
+  const [safeOriginal, safeReversal] = await Promise.all([
+    getMovementById(db, original.cycleId, original.id),
+    getMovementById(db, original.cycleId, createdReversal.id),
+  ]);
+
+  return {
+    original: safeOriginal,
+    reversal: safeReversal,
+  };
+}
+
 export async function reverseHourMovement(
   db: Database,
   movementId: string,
@@ -1590,113 +1754,7 @@ export async function reverseHourMovement(
     );
   }
 
-  return runMutation(db, async (transaction) => {
-    const actor = await requireActor(transaction, actorId);
-    const [original] = await transaction
-      .select({
-        id: hourMovement.id,
-        cycleId: hourMovement.cycleId,
-        tutorId: hourMovement.tutorId,
-        categoryId: hourMovement.categoryId,
-        direction: hourMovement.direction,
-        durationMinutes: hourMovement.durationMinutes,
-        movementDate: hourMovement.movementDate,
-        note: hourMovement.note,
-        activityId: hourMovement.activityId,
-        reversalOfMovementId: hourMovement.reversalOfMovementId,
-      })
-      .from(hourMovement)
-      .where(eq(hourMovement.id, parsedMovementId))
-      .limit(1)
-      .for("update");
-
-    if (original === undefined) {
-      throw new HourServiceError(
-        HOUR_ERROR_CODES.movementNotFound,
-        "The hour movement was not found.",
-        { details: { movementId: parsedMovementId } },
-      );
-    }
-
-    if (original.reversalOfMovementId !== null) {
-      throw new HourServiceError(
-        HOUR_ERROR_CODES.reversalTargetInvalid,
-        "A reversal movement cannot be reversed again.",
-        { details: { movementId: parsedMovementId } },
-      );
-    }
-
-    await requireCycleForWrite(transaction, original.cycleId, { lock: true });
-
-    const [existingReversal] = await transaction
-      .select({ id: hourMovement.id })
-      .from(hourMovement)
-      .where(eq(hourMovement.reversalOfMovementId, original.id))
-      .limit(1);
-
-    if (existingReversal !== undefined) {
-      throw new HourServiceError(
-        HOUR_ERROR_CODES.movementAlreadyReversed,
-        "The movement has already been reversed.",
-        {
-          details: {
-            movementId: original.id,
-            reversalMovementId: existingReversal.id,
-          },
-        },
-      );
-    }
-
-    const oppositeDirection: HourMovementDirection =
-      original.direction === "CREDIT" ? "DEBIT" : "CREDIT";
-    const [createdReversal] = await transaction
-      .insert(hourMovement)
-      .values({
-        cycleId: original.cycleId,
-        tutorId: original.tutorId,
-        categoryId: original.categoryId,
-        direction: oppositeDirection,
-        durationMinutes: original.durationMinutes,
-        movementDate: original.movementDate,
-        note: original.note,
-        activityId: original.activityId,
-        reversalOfMovementId: original.id,
-        actorId: actor.id,
-      })
-      .returning({ id: hourMovement.id });
-
-    if (createdReversal === undefined) {
-      throw new HourServiceError(
-        HOUR_ERROR_CODES.transactionFailed,
-        "The movement reversal could not be created.",
-      );
-    }
-
-    await recordAuditEvent(transaction, {
-      actorId: actor.id,
-      action: "hour_movement.reversed",
-      entityType: "hour_movement",
-      entityId: createdReversal.id,
-      metadata: {
-        reversalOfMovementId: original.id,
-        cycleId: original.cycleId,
-        tutorId: original.tutorId,
-        categoryId: original.categoryId,
-        direction: oppositeDirection,
-        durationMinutes: original.durationMinutes,
-      },
-      requestId: context.requestId ?? null,
-      ipAddress: context.ipAddress ?? null,
-    });
-
-    const [safeOriginal, safeReversal] = await Promise.all([
-      getMovementById(transaction, original.cycleId, original.id),
-      getMovementById(transaction, original.cycleId, createdReversal.id),
-    ]);
-
-    return {
-      original: safeOriginal,
-      reversal: safeReversal,
-    };
-  });
+  return runMutation(db, (transaction) =>
+    reverseHourMovementInTransaction(transaction, parsedMovementId, context),
+  );
 }
