@@ -74,15 +74,14 @@ The repository already has a useful scaffold:
 - feature-first placeholder boundaries;
 - shared UI primitives;
 - design tokens;
-- Admin and Tutor route skeletons;
+- Admin route skeletons and Tutor self-service views;
 - responsive navigation.
 
 The secure platform foundation is now implemented: PostgreSQL/Drizzle persistence,
 provisioned Google-only authentication, server-side role authorization,
 AdministrativeCycle lifecycle controls, safe audit events, isolated integration
-coverage, and the live Admin hour-accounting vertical. Scheduling, attendance,
-Tutor self-service, consultation, reporting, and production workflows remain
-unimplemented.
+coverage, and the live Admin hour-accounting vertical. Consultation, reporting,
+and production workflows remain unimplemented.
 
 Therefore the project continues from the scaffold rather than restarting from zero.
 
@@ -97,7 +96,7 @@ Therefore the project continues from the scaffold rather than restarting from ze
 | 5 | Tutor and academic operations | P0 | Complete |
 | 6 | Hour ledger, activities, and recovery | P0 | Complete |
 | 7 | Scheduling and attendance | P0 | Planned |
-| 8 | Tutor self-service | P0 | Planned |
+| 8 | Tutor self-service | P0 | Complete |
 | 9 | Consultation intake and data curation | P0 | Planned |
 | 10 | Admin overview and reporting | P0 | Planned |
 | 11 | Cross-surface hardening and lifecycle completion | P0 | Planned |
@@ -448,7 +447,7 @@ Within that cycle:
 ### Phase 8 - Tutor self-service
 
 - **Priority:** P0
-- **Status:** Planned
+- **Status:** Complete
 - **Depends on:** Phases 5 to 7
 
 #### Objective
@@ -475,10 +474,10 @@ Give tutors a polished read-only product that answers routine questions without 
 
 #### Exit criteria
 
-- [ ] Tutor sees only own information.
-- [ ] Compact experience is production-ready.
-- [ ] No Admin mutation path is reachable or rendered.
-- [ ] Student identity/contact is not exposed.
+- [x] Tutor sees only own information.
+- [x] Compact experience is production-ready.
+- [x] No Admin mutation path is reachable or rendered.
+- [x] Student identity/contact is not exposed.
 
 ### Phase 9 - Consultation intake and data curation
 

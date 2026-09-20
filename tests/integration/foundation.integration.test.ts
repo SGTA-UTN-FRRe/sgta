@@ -31,6 +31,9 @@ import {
   POST as postAdminTutorCollection,
 } from "@/app/api/admin/tutors/route";
 import { GET as getAdminTutorSubjects } from "@/app/api/admin/tutors/subjects/route";
+import { GET as getTutorHours } from "@/app/api/tutor/hours/route";
+import { GET as getTutorSchedule } from "@/app/api/tutor/schedule/route";
+import { GET as getTutorSummary } from "@/app/api/tutor/summary/route";
 import { GET as getAdminScheduleWorkspace } from "@/app/api/admin/schedules/route";
 import { GET as getAdminAttendanceCollection } from "@/app/api/admin/schedules/attendance/route";
 import {
@@ -4225,6 +4228,65 @@ describe("PostgreSQL foundation integration", () => {
       state: "required-action",
       reason: "ACCOUNT_NOT_LINKED",
     });
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: firstIdentity.id, role: "TUTOR" },
+    });
+    const routeSummaryResponse = await getTutorSummary(
+      new Request("http://localhost/api/tutor/summary"),
+    );
+    expect(routeSummaryResponse.status).toBe(200);
+    expect(routeSummaryResponse.headers.get("Cache-Control")).toBe("no-store");
+    const routeSummaryBody = await routeSummaryResponse.json();
+    expect(routeSummaryBody).toMatchObject({
+      state: "ready",
+      tutor: { displayName: "Ada" },
+    });
+    expect(JSON.stringify(routeSummaryBody)).not.toContain("tutorId");
+    expect(JSON.stringify(routeSummaryBody)).not.toContain(secondIdentity.email);
+
+    const routeScheduleResponse = await getTutorSchedule(
+      new Request("http://localhost/api/tutor/schedule?date=2027-04-05"),
+    );
+    expect(routeScheduleResponse.status).toBe(200);
+    expect(routeScheduleResponse.headers.get("Cache-Control")).toBe("no-store");
+    await expect(routeScheduleResponse.json()).resolves.toMatchObject({
+      effectivePlan: { id: specialPlan.id, kind: "SPECIAL" },
+      state: "ready",
+    });
+
+    const routeHoursResponse = await getTutorHours(
+      new Request("http://localhost/api/tutor/hours"),
+    );
+    expect(routeHoursResponse.status).toBe(200);
+    expect(routeHoursResponse.headers.get("Cache-Control")).toBe("no-store");
+    await expect(routeHoursResponse.json()).resolves.toMatchObject({
+      balance: { signedBalanceMinutes: 90 },
+      state: "ready",
+    });
+
+    authMocks.getSession.mockResolvedValue(null);
+    expect(
+      (
+        await getTutorSummary(
+          new Request("http://localhost/api/tutor/summary"),
+        )
+      ).status,
+    ).toBe(401);
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: admin.id, role: "ADMIN" },
+    });
+    expect(
+      (
+        await getTutorSchedule(
+          new Request("http://localhost/api/tutor/schedule"),
+        )
+      ).status,
+    ).toBe(403);
+    await expect(
+      getTutorSummary(new Request("http://localhost/api/tutor/summary")),
+    ).resolves.toMatchObject({ status: 403 });
 
     const afterCounts = await Promise.all([
       database.select({ id: dutyOccurrence.id }).from(dutyOccurrence),

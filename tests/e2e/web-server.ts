@@ -51,10 +51,17 @@ import {
   E2E_RECOVERY_OCCURRENCE_ID,
   E2E_REGULAR_ASSIGNMENT_ID,
   E2E_REGULAR_PLAN_ID,
+  E2E_SECONDARY_ASSIGNMENT_ID,
+  E2E_SECONDARY_MOVEMENT_ID,
   E2E_SECONDARY_TUTOR_ID,
+  E2E_SECONDARY_TUTOR_USER_ID,
   E2E_SEEDED_ACTIVITY_ID,
   E2E_SEEDED_MOVEMENT_ID,
   E2E_SPECIAL_PLAN_ID,
+  E2E_TUTOR_SESSION_TOKEN,
+  E2E_TUTOR_SPECIAL_ASSIGNMENT_ID,
+  E2E_TUTOR_USER_ID,
+  E2E_UNLINKED_TUTOR_USER_ID,
 } from "./e2e-test-data";
 
 const POSTGRES_IMAGE = "postgres:16.4-alpine";
@@ -95,6 +102,42 @@ async function seedDatabase() {
     userId: admin.id,
     ipAddress: "127.0.0.1",
     userAgent: "Playwright E2E",
+  });
+
+  await database.insert(user).values([
+    {
+      id: E2E_TUTOR_USER_ID,
+      name: "Ada Tutor",
+      email: "ada.tutor.e2e@example.test",
+      emailVerified: true,
+      role: "TUTOR",
+      enabled: true,
+    },
+    {
+      id: E2E_SECONDARY_TUTOR_USER_ID,
+      name: "Grace Tutor",
+      email: "grace.tutor.e2e@example.test",
+      emailVerified: true,
+      role: "TUTOR",
+      enabled: true,
+    },
+    {
+      id: E2E_UNLINKED_TUTOR_USER_ID,
+      name: "Unlinked Tutor",
+      email: "unlinked.tutor.e2e@example.test",
+      emailVerified: true,
+      role: "TUTOR",
+      enabled: true,
+    },
+  ]);
+
+  await database.insert(session).values({
+    id: "e2e-tutor-session",
+    token: E2E_TUTOR_SESSION_TOKEN,
+    expiresAt: new Date(Date.now() + 60 * 60 * 1_000),
+    userId: E2E_TUTOR_USER_ID,
+    ipAddress: "127.0.0.1",
+    userAgent: "Playwright E2E Tutor",
   });
 
   await database.insert(administrativeCycle).values({
@@ -141,6 +184,7 @@ async function seedDatabase() {
   await database.insert(tutor).values([
     {
       id: E2E_PRIMARY_TUTOR_ID,
+      applicationUserId: E2E_TUTOR_USER_ID,
       firstName: "Ada",
       lastName: "Lovelace",
       preferredDisplayName: "Ada",
@@ -151,6 +195,7 @@ async function seedDatabase() {
     },
     {
       id: E2E_SECONDARY_TUTOR_ID,
+      applicationUserId: E2E_SECONDARY_TUTOR_USER_ID,
       firstName: "Grace",
       lastName: "Hopper",
       preferredDisplayName: "Grace",
@@ -181,10 +226,16 @@ async function seedDatabase() {
     },
   ]);
 
-  await database.insert(tutorSubject).values({
-    tutorId: E2E_PRIMARY_TUTOR_ID,
-    subjectId: "33333333-3333-4333-8333-333333333333",
-  });
+  await database.insert(tutorSubject).values([
+    {
+      tutorId: E2E_PRIMARY_TUTOR_ID,
+      subjectId: "33333333-3333-4333-8333-333333333333",
+    },
+    {
+      tutorId: E2E_SECONDARY_TUTOR_ID,
+      subjectId: "44444444-4444-4444-8444-444444444444",
+    },
+  ]);
 
   await database.insert(tutorCycleMembership).values([
     {
@@ -267,6 +318,30 @@ async function seedDatabase() {
       endMinutes: 540,
       kind: "DUTY",
       modality: "Regular room",
+      status: "ACTIVE",
+    },
+    {
+      id: E2E_SECONDARY_ASSIGNMENT_ID,
+      planId: E2E_REGULAR_PLAN_ID,
+      tutorId: E2E_SECONDARY_TUTOR_ID,
+      pattern: "WEEKDAY",
+      weekday: 2,
+      startMinutes: 600,
+      endMinutes: 660,
+      kind: "DUTY",
+      modality: "Secondary room",
+      status: "ACTIVE",
+    },
+    {
+      id: E2E_TUTOR_SPECIAL_ASSIGNMENT_ID,
+      planId: E2E_SPECIAL_PLAN_ID,
+      tutorId: E2E_PRIMARY_TUTOR_ID,
+      pattern: "DATE",
+      assignmentDate: "2027-01-18",
+      startMinutes: 600,
+      endMinutes: 720,
+      kind: "DUTY",
+      modality: "Tutor special room",
       status: "ACTIVE",
     },
     {
@@ -377,18 +452,31 @@ async function seedDatabase() {
     actorId: admin.id,
   });
 
-  await database.insert(hourMovement).values({
-    id: E2E_SEEDED_MOVEMENT_ID,
-    cycleId: E2E_CYCLE_ID,
-    tutorId: E2E_PRIMARY_TUTOR_ID,
-    categoryId: E2E_MEETING_CATEGORY_ID,
-    direction: "CREDIT",
-    durationMinutes: 30,
-    movementDate: "2027-01-15",
-    note: "Seeded meeting movement.",
-    activityId: E2E_SEEDED_ACTIVITY_ID,
-    actorId: admin.id,
-  });
+  await database.insert(hourMovement).values([
+    {
+      id: E2E_SEEDED_MOVEMENT_ID,
+      cycleId: E2E_CYCLE_ID,
+      tutorId: E2E_PRIMARY_TUTOR_ID,
+      categoryId: E2E_MEETING_CATEGORY_ID,
+      direction: "CREDIT",
+      durationMinutes: 30,
+      movementDate: "2027-01-15",
+      note: "Seeded meeting movement.",
+      activityId: E2E_SEEDED_ACTIVITY_ID,
+      actorId: admin.id,
+    },
+    {
+      id: E2E_SECONDARY_MOVEMENT_ID,
+      cycleId: E2E_CYCLE_ID,
+      tutorId: E2E_SECONDARY_TUTOR_ID,
+      categoryId: E2E_MEETING_CATEGORY_ID,
+      direction: "CREDIT",
+      durationMinutes: 60,
+      movementDate: "2027-01-16",
+      note: "Secondary tutor movement.",
+      actorId: admin.id,
+    },
+  ]);
 }
 
 async function closeDatabase() {
