@@ -2007,3 +2007,34 @@ export async function resolveEffectiveScheduleInTransaction(
 ): Promise<SafeEffectiveSchedule> {
   return materializeEffectiveSchedule(db, input, context);
 }
+
+export async function readHistoricalEffectiveScheduleInTransaction(
+  db: ScheduleMutationDatabase,
+  input: ParsedEffectiveScheduleInput,
+): Promise<SafeEffectiveSchedule> {
+  const cycle = await requireCycle(db, input.cycleId);
+  assertDateWithinCycle(input.date, cycle);
+
+  const occurrences = await db
+    .select(occurrenceSelection)
+    .from(dutyOccurrence)
+    .where(
+      and(
+        eq(dutyOccurrence.cycleId, input.cycleId),
+        eq(dutyOccurrence.occurrenceDate, input.date),
+      ),
+    )
+    .orderBy(asc(dutyOccurrence.startMinutes), asc(dutyOccurrence.id));
+
+  const planRow =
+    occurrences[0] === undefined
+      ? undefined
+      : await getPlan(db, occurrences[0].planId);
+  const plan = planRow === undefined ? null : toSafePlan(planRow);
+
+  return {
+    cycle: toSafeCycle(cycle),
+    plan,
+    occurrences: occurrences.map(toSafeOccurrence),
+  };
+}

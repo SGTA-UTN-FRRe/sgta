@@ -62,6 +62,14 @@ Docker is a local and CI prerequisite for this boundary. Testcontainers chooses 
 Hour-accounting integration scenarios also prove meeting, workshop, extraordinary,
 and recovery recognition; inactive-category history; closed-cycle reads and
 rejected writes; atomic bulk rollback; and actor-attributed bounded audit metadata.
+Scheduling integration scenarios prove regular and special plan precedence and
+fallback, stable occurrence materialization, assignment eligibility and overlap
+constraints, historical reads, cycle write gates, audit attribution, and the
+attendance path from Present/no movement through absence proposal, cancellation,
+adjusted debit confirmation, correction/reversal linkage, recovery recognition,
+rollback, and duplicate protection. Protected schedule and attendance route
+handlers are exercised against the real database with Admin-versus-unauthorized
+coverage and safe DTO assertions.
 
 ### End-to-end tests
 
@@ -69,11 +77,16 @@ Playwright scenarios live under `tests/e2e/` and exercise the application throug
 
 E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Docker is required locally because the authenticated web server owns an isolated PostgreSQL container. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
 
-The authenticated server wrapper also seeds deterministic hour-accounting rows,
-including active and inactive tutors and categories, an activity origin, and
-movement history. The authenticated Admin hours journey covers the Compact,
-Medium, and Wide workflow through bulk meeting credit, balance/history refresh,
-movement-history navigation, and non-destructive reversal.
+The authenticated server wrapper also seeds deterministic hour-accounting and
+scheduling rows, including active and inactive tutors and categories, regular
+and special plans, persisted occurrences, pending attendance, an activity
+origin, and movement history. The authenticated Admin journey covers the live
+schedule plan switch and assignment edit, then the Compact attendance flow:
+Present without a balance change, Falta with cancellation and reload
+persistence, adjusted debit confirmation, linked movement history, and explicit
+recovery recognition. The existing Admin hours journey continues to cover the
+Compact, Medium, and Wide workflow through bulk meeting credit, balance/history
+refresh, movement-history navigation, and non-destructive reversal.
 
 ### Integration and contract checks
 

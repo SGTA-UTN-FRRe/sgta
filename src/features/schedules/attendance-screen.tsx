@@ -542,6 +542,7 @@ function AttendanceDebitDialog({
     panelRef,
   });
 
+  /* eslint-disable react-hooks/set-state-in-effect -- reset the dialog form when the selected occurrence changes. */
   useEffect(() => {
     setDebitMinutes(
       String(entry.attendance.proposedDebitMinutes ?? occurrenceDuration(entry)),
@@ -549,12 +550,15 @@ function AttendanceDebitDialog({
     setNote("");
     setError(null);
   }, [entry]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
+  /* eslint-disable react-hooks/set-state-in-effect -- reconcile the selected category with async category data. */
   useEffect(() => {
     if (!debitCategories.some((category) => category.id === categoryId)) {
       setCategoryId(debitCategories[0]?.id ?? "");
     }
   }, [categoryId, debitCategories]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -847,11 +851,13 @@ function RecoveryDialog({
     panelRef,
   });
 
+  /* eslint-disable react-hooks/set-state-in-effect -- reconcile the selected category with async category data. */
   useEffect(() => {
     if (!recoveryCategories.some((category) => category.id === categoryId)) {
       setCategoryId(recoveryCategories[0]?.id ?? "");
     }
   }, [categoryId, recoveryCategories]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1173,6 +1179,7 @@ export function AttendanceScreen({
   const dialogTriggerRef = useRef<HTMLElement | null>(null);
   const dialogOccurrenceIdRef = useRef<string | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- rehydrate client state after server navigation changes the initial data. */
   useEffect(() => {
     setWorkspace(initialData);
     setViewState(state);
@@ -1182,6 +1189,7 @@ export function AttendanceScreen({
     setDialog(null);
     setRecoveryOrigins({});
   }, [initialData, initialErrorMessage, state]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const selectedDialogEntry = useMemo(() => {
     if (dialog === null) {

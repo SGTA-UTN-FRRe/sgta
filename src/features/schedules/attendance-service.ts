@@ -35,6 +35,7 @@ import {
 } from "@/features/hours/hour-service";
 
 import {
+  readHistoricalEffectiveScheduleInTransaction,
   resolveEffectiveScheduleInTransaction,
   ScheduleServiceError,
   type SafeDutyOccurrence,
@@ -1019,6 +1020,50 @@ export async function listAttendanceForDate(
 
   return runMutation(db, async (transaction) => {
     const actor = await requireUserActor(transaction, context.actorId);
+    const cycle = await getCycle(transaction, parsed.cycleId);
+
+    if (cycle.status === "CLOSED") {
+      const historical = await readHistoricalEffectiveScheduleInTransaction(
+        transaction,
+        parsed,
+      );
+      const historicalRows = await transaction
+        .select({ occurrence: occurrenceSelection, attendance: attendanceSelection })
+        .from(dutyOccurrence)
+        .innerJoin(tutor, eq(dutyOccurrence.tutorId, tutor.id))
+        .innerJoin(career, eq(tutor.primaryCareerId, career.id))
+        .innerJoin(
+          attendanceRecord,
+          eq(attendanceRecord.occurrenceId, dutyOccurrence.id),
+        )
+        .where(
+          and(
+            eq(dutyOccurrence.cycleId, parsed.cycleId),
+            eq(dutyOccurrence.occurrenceDate, parsed.date),
+          ),
+        )
+        .orderBy(asc(dutyOccurrence.startMinutes), asc(dutyOccurrence.id));
+      const historicalByOccurrenceId = new Map(
+        historicalRows.map((row) => [row.occurrence.id, row]),
+      );
+
+      return {
+        cycle: historical.cycle,
+        plan: historical.plan,
+        date: parsed.date,
+        occurrences: historical.occurrences
+          .map((occurrence) => historicalByOccurrenceId.get(occurrence.id))
+          .filter((row): row is (typeof historicalRows)[number] => row !== undefined)
+          .map((row) =>
+            toSafeAttendanceOccurrence(
+              toSafeDutyOccurrence(row.occurrence),
+              row.attendance,
+              toSafeAttendanceTutor(row.occurrence),
+            ),
+          ),
+      };
+    }
+
     const effective = await resolveEffectiveScheduleInTransaction(
       transaction as ScheduleMutationDatabase,
       parsed,
@@ -1050,6 +1095,31 @@ export async function getAttendanceOccurrence(
 
   return runMutation(db, async (transaction) => {
     const actor = await requireUserActor(transaction, context.actorId);
+    const initialOccurrence = await getOccurrence(transaction, parsedOccurrenceId);
+    const cycle = await getCycle(transaction, initialOccurrence.cycleId);
+
+    if (cycle.status === "CLOSED") {
+      assertDateWithinCycle(initialOccurrence.occurrenceDate, cycle);
+      const attendance = await getAttendanceRecord(
+        transaction,
+        initialOccurrence.id,
+      );
+
+      if (attendance === undefined) {
+        throw new AttendanceServiceError(
+          ATTENDANCE_ERROR_CODES.attendanceNotFound,
+          "The attendance record was not found.",
+          { details: { occurrenceId: initialOccurrence.id } },
+        );
+      }
+
+      return toSafeAttendanceOccurrence(
+        toSafeDutyOccurrence(initialOccurrence),
+        attendance,
+        toSafeAttendanceTutor(initialOccurrence),
+      );
+    }
+
     const { safeOccurrence, attendance, tutor } = await getMutationOccurrence(
       transaction,
       parsedOccurrenceId,

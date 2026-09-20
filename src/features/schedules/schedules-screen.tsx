@@ -973,6 +973,7 @@ function PlanEditor({
     panelRef,
   });
 
+  /* eslint-disable react-hooks/set-state-in-effect -- reset the modal draft whenever it opens for the current cycle. */
   useEffect(() => {
     if (!open) {
       return;
@@ -984,6 +985,7 @@ function PlanEditor({
     setValidTo(cycle.endDate);
     setError(null);
   }, [cycle.endDate, cycle.startDate, open]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!open) {
     return null;
@@ -1518,6 +1520,7 @@ export function SchedulesScreen({
   const editorTriggerAssignmentIdRef = useRef<string | null>(null);
   const planEditorTriggerRef = useRef<HTMLElement | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- rehydrate client state after server navigation changes the initial workspace. */
   useEffect(() => {
     setWorkspace(initialWorkspace);
     setViewState(state);
@@ -1530,6 +1533,7 @@ export function SchedulesScreen({
     setSelectedAssignmentId(null);
     setEditor(null);
   }, [initialErrorMessage, initialWorkspace, state]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const selectedPlan = useMemo(
     () => workspace?.plans.find((plan) => plan.id === selectedPlanId) ?? workspace?.selectedPlan ?? null,

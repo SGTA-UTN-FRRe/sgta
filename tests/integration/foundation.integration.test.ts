@@ -31,6 +31,12 @@ import {
   POST as postAdminTutorCollection,
 } from "@/app/api/admin/tutors/route";
 import { GET as getAdminTutorSubjects } from "@/app/api/admin/tutors/subjects/route";
+import { GET as getAdminScheduleWorkspace } from "@/app/api/admin/schedules/route";
+import { GET as getAdminAttendanceCollection } from "@/app/api/admin/schedules/attendance/route";
+import {
+  GET as getAdminAttendanceOccurrence,
+  POST as postAdminAttendance,
+} from "@/app/api/admin/schedules/attendance/[occurrenceId]/route";
 import AdminLayout from "@/app/admin/layout";
 import { GET as getAdminCareerDetail, PATCH as patchAdminCareerDetail } from "@/app/api/admin/settings/careers/[careerId]/route";
 import { PATCH as patchAdminCareerStatus } from "@/app/api/admin/settings/careers/[careerId]/status/route";
@@ -120,6 +126,7 @@ import {
   cancelAbsenceDebit,
   confirmAbsenceDebit,
   correctAttendance,
+  getAttendanceOccurrence,
   listAttendanceForDate,
   recognizeScheduledRecovery,
   reopenAbsenceDebit,
@@ -1531,6 +1538,27 @@ describe("PostgreSQL foundation integration", () => {
     ).resolves.toHaveLength(0);
 
     await closeAdministrativeCycle(database, createdCycle!.id, context);
+    const historicalDate = await listAttendanceForDate(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-04" },
+      context,
+    );
+    expect(historicalDate).toMatchObject({
+      cycle: { id: createdCycle!.id, status: "CLOSED" },
+      plan: { id: regularPlan.id },
+      occurrences: [
+        {
+          occurrence: { id: dutyOccurrence.id },
+          attendance: { status: "ABSENT", debitStatus: "PROPOSED" },
+        },
+      ],
+    });
+    await expect(
+      getAttendanceOccurrence(database, dutyOccurrence.id, context),
+    ).resolves.toMatchObject({
+      occurrence: { id: dutyOccurrence.id },
+      attendance: { status: "ABSENT", debitStatus: "PROPOSED" },
+    });
     await expect(
       setAttendanceStatus(
         database,
@@ -2599,6 +2627,154 @@ describe("PostgreSQL foundation integration", () => {
     });
     const tutorCycleResponse = await getAdminCycles();
     expect(tutorCycleResponse.status).toBe(403);
+  });
+
+  it("serves real schedule and attendance DTOs only through the Admin boundary", async () => {
+    const database = getIntegrationDatabase();
+    const { admin, tutor: tutorIdentity } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Route Engineering", normalizedName: "route engineering" })
+      .returning({ id: career.id });
+    const [createdCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "Route Schedule Cycle 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+        status: "OPEN",
+      })
+      .returning({ id: administrativeCycle.id });
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Route",
+        lastName: "Tutor",
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id });
+
+    await database.insert(tutorCycleMembership).values({
+      tutorId: createdTutor!.id,
+      cycleId: createdCycle!.id,
+    });
+
+    const context = { actorId: admin.id };
+    const plan = await createSchedulePlan(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        name: "Route Regular 2027",
+        kind: "REGULAR",
+        validFrom: "2027-01-01",
+        validTo: "2027-12-31",
+      },
+      context,
+    );
+    await createScheduleAssignment(
+      database,
+      {
+        planId: plan.id,
+        tutorId: createdTutor!.id,
+        pattern: "DATE",
+        assignmentDate: "2027-04-05",
+        startMinutes: 480,
+        endMinutes: 600,
+        kind: "DUTY",
+        modality: "Route room",
+      },
+      context,
+    );
+
+    authMocks.getSession.mockResolvedValue(null);
+    const unauthenticatedSchedule = await getAdminScheduleWorkspace(
+      new Request(
+        `http://localhost/api/admin/schedules?cycleId=${createdCycle!.id}&date=2027-04-05`,
+      ),
+    );
+    expect(unauthenticatedSchedule.status).toBe(401);
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: tutorIdentity.id, role: "ADMIN" },
+    });
+    const forbiddenAttendance = await getAdminAttendanceCollection(
+      new Request(
+        `http://localhost/api/admin/schedules/attendance?cycleId=${createdCycle!.id}&date=2027-04-05`,
+      ),
+    );
+    expect(forbiddenAttendance.status).toBe(403);
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: admin.id, role: "ADMIN" },
+    });
+    const scheduleResponse = await getAdminScheduleWorkspace(
+      new Request(
+        `http://localhost/api/admin/schedules?cycleId=${createdCycle!.id}&date=2027-04-05`,
+      ),
+    );
+    expect(scheduleResponse.status).toBe(200);
+    const scheduleBody = (await scheduleResponse.json()) as {
+      currentCycle: { id: string };
+      selectedPlan: { id: string };
+      assignments: Array<{ tutorName: string }>;
+      effective: { occurrences: Array<{ id: string }> };
+    };
+    expect(scheduleBody).toMatchObject({
+      currentCycle: { id: createdCycle!.id },
+      selectedPlan: { id: plan.id },
+      assignments: [expect.objectContaining({ tutorName: "Tutor, Route" })],
+    });
+    expect(scheduleBody.effective.occurrences).toHaveLength(1);
+    expect(JSON.stringify(scheduleBody)).not.toContain("admin.integration");
+
+    const attendanceResponse = await getAdminAttendanceCollection(
+      new Request(
+        `http://localhost/api/admin/schedules/attendance?cycleId=${createdCycle!.id}&date=2027-04-05`,
+      ),
+    );
+    expect(attendanceResponse.status).toBe(200);
+    const attendanceBody = (await attendanceResponse.json()) as {
+      occurrences: Array<{
+        occurrence: { id: string };
+        tutor: { formalName: string };
+        attendance: { status: string; debitStatus: string };
+      }>;
+    };
+    expect(attendanceBody).toMatchObject({
+      date: "2027-04-05",
+      occurrences: [
+        {
+          tutor: { formalName: "Tutor, Route" },
+          attendance: { status: "PENDING", debitStatus: "NOT_PROPOSED" },
+        },
+      ],
+    });
+    expect(JSON.stringify(attendanceBody)).not.toContain("admin.integration");
+
+    const occurrenceId = attendanceBody.occurrences[0]!.occurrence.id;
+    const occurrenceResponse = await getAdminAttendanceOccurrence(
+      new Request(
+        `http://localhost/api/admin/schedules/attendance/${occurrenceId}`,
+      ),
+      { params: Promise.resolve({ occurrenceId }) },
+    );
+    expect(occurrenceResponse.status).toBe(200);
+
+    const presentResponse = await postAdminAttendance(
+      makeJsonRequest(
+        `http://localhost/api/admin/schedules/attendance/${occurrenceId}`,
+        "POST",
+        { operation: "PRESENT" },
+      ),
+      { params: Promise.resolve({ occurrenceId }) },
+    );
+    expect(presentResponse.status).toBe(200);
+    await expect(presentResponse.json()).resolves.toMatchObject({
+      attendance: {
+        attendance: { status: "PRESENT", debitStatus: "NOT_PROPOSED" },
+      },
+      movement: null,
+    });
   });
 
   it("enforces Admin authorization on tutor and catalog route handlers", async () => {
