@@ -1243,6 +1243,8 @@ Compact:
 - scheduled interval;
 - current attendance state;
 - existing linked hour movement when applicable.
+- active hour categories eligible for an absence debit;
+- active recovery category and origin context for recovery-marked occurrences.
 
 #### Interaction: Present
 
@@ -1253,6 +1255,8 @@ Compact:
 
 - records/sets attendance intent;
 - calculates proposed minutes from the occurrence duration;
+- requires an explicitly selected active non-recovery hour category for a debit;
+- allows recognized debit minutes to be adjusted within the occurrence duration;
 - Admin confirms or adjusts recognized debit;
 - debit movement is created only after confirmation.
 
@@ -1263,6 +1267,10 @@ If the debit confirmation is cancelled:
 - the UI makes the absence-without-debit state explicit;
 - Admin may create the debit later from the same attendance context when the business decision is made.
 
+For a recovery-marked occurrence, attendance does not create credit implicitly.
+The row exposes an explicit `Reconocer recuperación` action, which requires an
+active recovery category and shows the linked origin after success.
+
 #### Correction
 
 Attendance correction is explicit and auditable.
@@ -1271,7 +1279,9 @@ If a linked hour movement already exists, the correction flow explains how the m
 
 #### States
 
-Default, Loading, Empty, Error, Success, Required action.
+Default, Loading, Empty, Error, Success, Required action, and the explicit
+absence-without-debit state are reachable. Recovery-marked occurrences expose
+an explicit recognition action until a recovery origin is linked.
 
 Required action examples:
 
@@ -1292,6 +1302,9 @@ Required action examples:
 | Present | Presente |
 | Absent | Falta |
 | Debit dialog title | Confirmar débito por inasistencia |
+| Absence without debit | Falta registrada sin débito |
+| Debit category label | Categoría de horas |
+| Recovery action | Reconocer recuperación |
 
 #### Acceptance criteria
 

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml/badge.svg)](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml)
 
-> Current repository status: an executable Next.js application with live tutor, academic, hour-accounting, scheduling, and attendance data boundaries, the SGTA UI, and a secure platform foundation.
+> Current repository status: an executable Next.js application with live tutor, academic, hour-accounting, scheduling, and attendance workflows, the SGTA UI, and a secure platform foundation.
 
 SGTA is the operational workspace for the Tutorias area at UTN FRRe. The repository currently contains the application shell, protected role-based navigation, PostgreSQL persistence, provisioned Google-only authentication, AdministrativeCycle lifecycle controls, live Admin tutor, academic catalog, hour-accounting, scheduling, and attendance operations, safe audit events, and shared UI components. Later domain workflows remain deferred.
 
@@ -18,7 +18,7 @@ The current runtime provides:
 - low-frequency Career, Subject, and scholarship-reference maintenance from `/admin/settings`, with active/inactive lifecycle controls and no hard deletion;
 - live Admin hour accounting at `/admin/hours`, including derived balances, individual and atomic bulk movements, activity/recovery origins, and immutable reversal workflows;
 - Admin movement history at `/admin/hours/movements` plus hour-category maintenance under `/admin/settings`;
-- live Admin schedule workspace and attendance occurrence data boundaries at `/admin/schedules` and `/admin/schedules/attendance`, with protected APIs for plan, assignment, attendance, debit, correction, and recovery operations;
+- live Admin schedule planning and attendance workflows at `/admin/schedules` and `/admin/schedules/attendance`, with regular/special plans, stable duty occurrences, cycle-aware history, and protected APIs for plan, assignment, attendance, debit, correction, and recovery operations;
 - Tutor route skeletons for the overview, schedule, and hours;
 - responsive Admin and Tutor navigation shells;
 - a PostgreSQL/Drizzle schema and committed migration for Better Auth identities/sessions, application roles, AdministrativeCycle, and AuditEvent;
@@ -26,9 +26,9 @@ The current runtime provides:
 - cycle administration at `/admin/settings`, including current-cycle context, explicit close confirmation, preserved history, and recovery states;
 - append-only audit recording for provisioning, session creation, cycle creation, and cycle close with bounded metadata validation;
 - shared components for navigation, page headers, empty states, status badges, Faro branding, buttons, cards, inputs, and tables;
-- unit/component tests, isolated PostgreSQL/Testcontainers integration tests, and Playwright coverage for unauthenticated protection plus authenticated Admin tutor/Materias and hour-accounting journeys across supported viewports.
+- unit/component tests, protected route coverage, isolated PostgreSQL/Testcontainers integration tests, and Playwright coverage for unauthenticated protection plus authenticated Admin tutor/Materias, scheduling/attendance, and hour-accounting journeys across supported viewports.
 
-The route labels for consultations and reports still describe scaffold surfaces; those pages do not yet read or write their future domain data. The Admin schedule page now supports protected plan and assignment creation, editing, lifecycle changes, conflict feedback, and responsive live refreshes. Attendance now supports date-scoped occurrence marking, explicit absence debit decisions, traceable correction, and recovery recognition. The Tutor hours route remains a skeleton, while the Admin hour routes and category controls are live as described above. Protected tutor, Materias, Settings, and API surfaces require the server-side identity and Admin role boundary when authentication is configured.
+The route labels for consultations and reports still describe scaffold surfaces; those pages do not yet read or write their future domain data. The Admin schedule page now supports protected regular/special plan creation, switching, assignment editing, lifecycle changes, conflict feedback, stable occurrence materialization, and responsive live refreshes. Attendance now supports date-scoped occurrence marking, explicit active-category absence debit decisions, persisted absence-without-debit state, traceable correction, recovery recognition, and historical reads after cycle close. The Tutor hours route remains a skeleton, while the Admin hour routes and category controls are live as described above. Protected tutor, Materias, Settings, and API surfaces require the server-side identity and Admin role boundary when authentication is configured.
 
 ## Not implemented in the current runtime
 
@@ -70,7 +70,7 @@ Server session and role boundary
    └──► Drizzle / PostgreSQL (src/db/)
 ```
 
-The `src/auth/` and `src/db/` directories are active server-only boundaries. `src/features/` contains the implemented cycle/settings, tutor/academic operations, and hour-accounting slices while later domain verticals remain unimplemented. Client components receive safe display data and do not own authentication or role decisions.
+The `src/auth/` and `src/db/` directories are active server-only boundaries. `src/features/` contains the implemented cycle/settings, tutor/academic, scheduling/attendance, and hour-accounting slices while later domain verticals remain unimplemented. Client components receive safe display data and do not own authentication or role decisions.
 
 ## Current routes
 
@@ -110,7 +110,7 @@ The `src/auth/` and `src/db/` directories are active server-only boundaries. `sr
 | `src/components/ui/` | Local low-level UI primitives used by the application. |
 | `src/mocks/` | Synthetic development data used by the current screen implementations. |
 | `src/shared/` | Shared navigation, branding, page, state, and utility components. |
-| `src/features/` | Cycle/settings, tutor/academic operations, and hour-accounting implementations, plus future vertical slices. |
+| `src/features/` | Cycle/settings, tutor/academic, scheduling/attendance, and hour-accounting implementations, plus future vertical slices. |
 | `src/auth/` | Better Auth configuration, identity policy, provisioning, and server authorization. |
 | `src/db/` | Drizzle schema, audit validation/recording, PostgreSQL client, and migrations boundary. |
 | `drizzle/` | Committed Drizzle migration artifacts. |
