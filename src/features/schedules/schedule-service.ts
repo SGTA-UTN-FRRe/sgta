@@ -182,10 +182,11 @@ export type SafeEffectiveSchedule = {
 };
 
 type SelectDatabase = Pick<Database, "select">;
-type MutationDatabase = Pick<
+export type ScheduleMutationDatabase = Pick<
   Database,
   "select" | "insert" | "update" | "execute"
 >;
+type MutationDatabase = ScheduleMutationDatabase;
 
 type CycleRow = {
   id: string;
@@ -1764,4 +1765,12 @@ export async function resolveEffectiveSchedule(
   return runMutation(db, (transaction) =>
     materializeEffectiveSchedule(transaction, parsed, context),
   );
+}
+
+export async function resolveEffectiveScheduleInTransaction(
+  db: ScheduleMutationDatabase,
+  input: ParsedEffectiveScheduleInput,
+  context: ScheduleMutationContext,
+): Promise<SafeEffectiveSchedule> {
+  return materializeEffectiveSchedule(db, input, context);
 }

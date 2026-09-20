@@ -115,6 +115,16 @@ import {
   transitionSchedulePlanStatus,
   updateScheduleAssignment,
 } from "@/features/schedules/schedule-service";
+import {
+  ATTENDANCE_ERROR_CODES,
+  cancelAbsenceDebit,
+  confirmAbsenceDebit,
+  correctAttendance,
+  listAttendanceForDate,
+  recognizeScheduledRecovery,
+  reopenAbsenceDebit,
+  setAttendanceStatus,
+} from "@/features/schedules/attendance-service";
 import { provisionUser } from "@/auth/provisioning";
 
 import {
@@ -1059,6 +1069,476 @@ describe("PostgreSQL foundation integration", () => {
     expect(auditRows.some((row) => row.action === "schedule_plan.created")).toBe(true);
     expect(auditRows.some((row) => row.action === "schedule_assignment.created")).toBe(true);
     expect(auditRows.some((row) => row.action === "schedule_occurrence.created")).toBe(true);
+  });
+
+  it("keeps attendance decisions explicit and links confirmed absence debits", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Attendance Engineering", normalizedName: "attendance engineering" })
+      .returning({ id: career.id });
+    const [createdCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "Attendance Cycle 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+        status: "OPEN",
+      })
+      .returning({ id: administrativeCycle.id });
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Attendance",
+        lastName: "Tutor",
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id });
+
+    await database.insert(tutorCycleMembership).values({
+      tutorId: createdTutor!.id,
+      cycleId: createdCycle!.id,
+    });
+
+    const context = { actorId: admin.id };
+    const plan = await createSchedulePlan(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        name: "Attendance 2027",
+        kind: "REGULAR",
+        validFrom: "2027-01-01",
+        validTo: "2027-12-31",
+      },
+      context,
+    );
+    await createScheduleAssignment(
+      database,
+      {
+        planId: plan.id,
+        tutorId: createdTutor!.id,
+        pattern: "DATE",
+        assignmentDate: "2027-03-01",
+        startMinutes: 480,
+        endMinutes: 600,
+        kind: "DUTY",
+      },
+      context,
+    );
+    await createScheduleAssignment(
+      database,
+      {
+        planId: plan.id,
+        tutorId: createdTutor!.id,
+        pattern: "DATE",
+        assignmentDate: "2027-03-02",
+        startMinutes: 600,
+        endMinutes: 720,
+        kind: "DUTY",
+      },
+      context,
+    );
+    const debitCategory = await createHourCategory(
+      database,
+      { name: "Attendance debit" },
+      context,
+    );
+
+    const firstDate = await listAttendanceForDate(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-01" },
+      context,
+    );
+    const firstOccurrence = firstDate.occurrences[0]!.occurrence;
+    expect(firstDate.occurrences[0]!.attendance).toMatchObject({
+      status: "PENDING",
+      debitStatus: "NOT_PROPOSED",
+      proposedDebitMinutes: null,
+    });
+
+    const movementCount = async () =>
+      database
+        .select({ id: hourMovement.id })
+        .from(hourMovement)
+        .where(eq(hourMovement.tutorId, createdTutor!.id));
+
+    await expect(movementCount()).resolves.toHaveLength(0);
+    const present = await setAttendanceStatus(
+      database,
+      firstOccurrence.id,
+      { status: "PRESENT" },
+      context,
+    );
+    expect(present).toMatchObject({
+      attendance: {
+        attendance: {
+          status: "PRESENT",
+          debitStatus: "NOT_PROPOSED",
+        },
+      },
+      movement: null,
+      reversal: null,
+    });
+    await expect(movementCount()).resolves.toHaveLength(0);
+
+    const absence = await correctAttendance(
+      database,
+      firstOccurrence.id,
+      { status: "ABSENT" },
+      context,
+    );
+    expect(absence.attendance.attendance).toMatchObject({
+      status: "ABSENT",
+      debitStatus: "PROPOSED",
+      proposedDebitMinutes: 120,
+      recognizedDebitMinutes: null,
+    });
+    await expect(movementCount()).resolves.toHaveLength(0);
+
+    const cancelled = await cancelAbsenceDebit(
+      database,
+      firstOccurrence.id,
+      {},
+      context,
+    );
+    expect(cancelled.attendance.attendance).toMatchObject({
+      status: "ABSENT",
+      debitStatus: "CANCELLED",
+      proposedDebitMinutes: 120,
+    });
+    await expect(movementCount()).resolves.toHaveLength(0);
+
+    const confirmed = await confirmAbsenceDebit(
+      database,
+      firstOccurrence.id,
+      { categoryId: debitCategory.id, note: "Confirmed after cancellation" },
+      context,
+    );
+    expect(confirmed).toMatchObject({
+      attendance: {
+        attendance: {
+          status: "ABSENT",
+          debitStatus: "CONFIRMED",
+          recognizedDebitMinutes: 120,
+        },
+      },
+      movement: {
+        direction: "DEBIT",
+        durationMinutes: 120,
+      },
+    });
+    await expect(movementCount()).resolves.toHaveLength(1);
+    await expect(
+      confirmAbsenceDebit(
+        database,
+        firstOccurrence.id,
+        { categoryId: debitCategory.id },
+        context,
+      ),
+    ).rejects.toMatchObject({ code: ATTENDANCE_ERROR_CODES.debitAlreadyConfirmed });
+
+    const correctedPresent = await correctAttendance(
+      database,
+      firstOccurrence.id,
+      { status: "PRESENT" },
+      context,
+    );
+    expect(correctedPresent.reversal).toMatchObject({
+      original: { direction: "DEBIT", durationMinutes: 120 },
+      reversal: { direction: "CREDIT", durationMinutes: 120 },
+    });
+    await expect(movementCount()).resolves.toHaveLength(2);
+
+    await correctAttendance(
+      database,
+      firstOccurrence.id,
+      { status: "ABSENT" },
+      context,
+    );
+    const adjusted = await confirmAbsenceDebit(
+      database,
+      firstOccurrence.id,
+      { categoryId: debitCategory.id, debitMinutes: 90 },
+      context,
+    );
+    expect(adjusted.movement).toMatchObject({
+      direction: "DEBIT",
+      durationMinutes: 90,
+    });
+    await expect(movementCount()).resolves.toHaveLength(3);
+
+    const linkedMovements = await database
+      .select({
+        id: hourMovement.id,
+        direction: hourMovement.direction,
+        durationMinutes: hourMovement.durationMinutes,
+        reversalOfMovementId: hourMovement.reversalOfMovementId,
+      })
+      .from(hourMovement)
+      .where(eq(hourMovement.attendanceRecordId, confirmed.attendance.attendance.id));
+    expect(linkedMovements).toHaveLength(3);
+    expect(linkedMovements).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ direction: "DEBIT", durationMinutes: 120 }),
+        expect.objectContaining({ direction: "CREDIT", durationMinutes: 120 }),
+        expect.objectContaining({ direction: "DEBIT", durationMinutes: 90 }),
+      ]),
+    );
+
+    const secondDate = await listAttendanceForDate(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-02" },
+      context,
+    );
+    const secondOccurrence = secondDate.occurrences[0]!.occurrence;
+    await setAttendanceStatus(
+      database,
+      secondOccurrence.id,
+      { status: "ABSENT" },
+      context,
+    );
+    await cancelAbsenceDebit(database, secondOccurrence.id, {}, context);
+    const reopened = await reopenAbsenceDebit(
+      database,
+      secondOccurrence.id,
+      {},
+      context,
+    );
+    expect(reopened.attendance.attendance).toMatchObject({
+      status: "ABSENT",
+      debitStatus: "PROPOSED",
+      proposedDebitMinutes: 120,
+    });
+
+    const attendanceEvents = getRows<{ action: string }>(
+      await database.execute(sql`
+        SELECT action
+        FROM "audit_event"
+        WHERE entity_type = 'attendance_record'
+      `),
+    );
+    expect(attendanceEvents.map((event) => event.action)).toEqual(
+      expect.arrayContaining([
+        "attendance_record.created",
+        "attendance_record.status_changed",
+        "attendance_record.debit_cancelled",
+        "attendance_record.debit_confirmed",
+        "attendance_record.debit_reopened",
+        "attendance_record.corrected",
+      ]),
+    );
+  });
+
+  it("recognizes scheduled recovery explicitly and rolls back failed attendance writes", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Recovery Engineering", normalizedName: "recovery engineering" })
+      .returning({ id: career.id });
+    const [createdCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "Recovery Cycle 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+        status: "OPEN",
+      })
+      .returning({ id: administrativeCycle.id });
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Recovery",
+        lastName: "Tutor",
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id });
+
+    await database.insert(tutorCycleMembership).values({
+      tutorId: createdTutor!.id,
+      cycleId: createdCycle!.id,
+    });
+
+    const context = { actorId: admin.id };
+    const regularPlan = await createSchedulePlan(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        name: "Recovery Duty 2027",
+        kind: "REGULAR",
+        validFrom: "2027-01-01",
+        validTo: "2027-12-31",
+      },
+      context,
+    );
+    await createScheduleAssignment(
+      database,
+      {
+        planId: regularPlan.id,
+        tutorId: createdTutor!.id,
+        pattern: "DATE",
+        assignmentDate: "2027-03-04",
+        startMinutes: 480,
+        endMinutes: 600,
+        kind: "DUTY",
+      },
+      context,
+    );
+    const recoveryPlan = await createSchedulePlan(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        name: "Recovery Duties",
+        kind: "SPECIAL",
+        validFrom: "2027-03-03",
+        validTo: "2027-03-03",
+      },
+      context,
+    );
+    await createScheduleAssignment(
+      database,
+      {
+        planId: recoveryPlan.id,
+        tutorId: createdTutor!.id,
+        pattern: "DATE",
+        assignmentDate: "2027-03-03",
+        startMinutes: 600,
+        endMinutes: 660,
+        kind: "RECOVERY",
+      },
+      context,
+    );
+    const recoveryCategory = await createHourCategory(
+      database,
+      { name: "Scheduled recovery", activityKind: "RECOVERY" },
+      context,
+    );
+    const debitCategory = await createHourCategory(
+      database,
+      { name: "Recovery rollback debit" },
+      context,
+    );
+
+    const recoveryDate = await listAttendanceForDate(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-03" },
+      context,
+    );
+    const recoveryOccurrence = recoveryDate.occurrences[0]!.occurrence;
+    const recognition = await recognizeScheduledRecovery(
+      database,
+      recoveryOccurrence.id,
+      { categoryId: recoveryCategory.id, note: "Scheduled recovery" },
+      context,
+    );
+    expect(recognition.movement).toMatchObject({
+      direction: "CREDIT",
+      durationMinutes: 60,
+      origin: { kind: "RECOVERY" },
+    });
+
+    const [recoveryActivity] = await database
+      .select({
+        id: activity.id,
+        kind: activity.kind,
+        dutyOccurrenceId: activity.dutyOccurrenceId,
+      })
+      .from(activity)
+      .where(eq(activity.dutyOccurrenceId, recoveryOccurrence.id));
+    expect(recoveryActivity).toEqual({
+      id: expect.any(String),
+      kind: "RECOVERY",
+      dutyOccurrenceId: recoveryOccurrence.id,
+    });
+    const recoveryMovements = await database
+      .select({
+        id: hourMovement.id,
+        activityId: hourMovement.activityId,
+        attendanceRecordId: hourMovement.attendanceRecordId,
+      })
+      .from(hourMovement)
+      .where(eq(hourMovement.activityId, recoveryActivity!.id));
+    expect(recoveryMovements).toEqual([
+      {
+        id: expect.any(String),
+        activityId: recoveryActivity!.id,
+        attendanceRecordId: null,
+      },
+    ]);
+
+    await setAttendanceStatus(
+      database,
+      recoveryOccurrence.id,
+      { status: "PRESENT" },
+      context,
+    );
+    await expect(
+      database
+        .select({ id: hourMovement.id })
+        .from(hourMovement)
+        .where(eq(hourMovement.activityId, recoveryActivity!.id)),
+    ).resolves.toHaveLength(1);
+    await expect(
+      recognizeScheduledRecovery(
+        database,
+        recoveryOccurrence.id,
+        { categoryId: recoveryCategory.id },
+        context,
+      ),
+    ).rejects.toMatchObject({
+      code: ATTENDANCE_ERROR_CODES.recoveryAlreadyRecognized,
+    });
+
+    const dutyDate = await listAttendanceForDate(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-04" },
+      context,
+    );
+    const dutyOccurrence = dutyDate.occurrences[0]!.occurrence;
+    await setAttendanceStatus(
+      database,
+      dutyOccurrence.id,
+      { status: "ABSENT" },
+      context,
+    );
+    await expect(
+      confirmAbsenceDebit(
+        database,
+        dutyOccurrence.id,
+        { categoryId: debitCategory.id },
+        { ...context, requestId: "x".repeat(256) },
+      ),
+    ).rejects.toMatchObject({ code: ATTENDANCE_ERROR_CODES.transactionFailed });
+    const [afterRollback] = await database
+      .select({
+        status: attendanceRecord.status,
+        debitStatus: attendanceRecord.debitStatus,
+        recognizedDebitMinutes: attendanceRecord.recognizedDebitMinutes,
+      })
+      .from(attendanceRecord)
+      .where(eq(attendanceRecord.occurrenceId, dutyOccurrence.id));
+    expect(afterRollback).toEqual({
+      status: "ABSENT",
+      debitStatus: "PROPOSED",
+      recognizedDebitMinutes: null,
+    });
+    await expect(
+      database
+        .select({ id: hourMovement.id })
+        .from(hourMovement)
+        .where(eq(hourMovement.attendanceRecordId, dutyDate.occurrences[0]!.attendance.id)),
+    ).resolves.toHaveLength(0);
+
+    await closeAdministrativeCycle(database, createdCycle!.id, context);
+    await expect(
+      setAttendanceStatus(
+        database,
+        dutyOccurrence.id,
+        { status: "PRESENT" },
+        context,
+      ),
+    ).rejects.toMatchObject({ code: ATTENDANCE_ERROR_CODES.cycleNotOpen });
   });
 
   it("serializes special-plan overlap and enforces assignment eligibility and conflicts", async () => {
