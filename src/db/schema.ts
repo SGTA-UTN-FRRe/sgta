@@ -309,6 +309,9 @@ export const tutor = pgTable(
   "tutor",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    applicationUserId: text("application_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
     firstName: text("first_name").notNull(),
     lastName: text("last_name").notNull(),
     preferredDisplayName: text("preferred_display_name"),
@@ -352,6 +355,9 @@ export const tutor = pgTable(
     uniqueIndex("tutor_institutional_identifier_unique")
       .on(table.normalizedInstitutionalIdentifier)
       .where(sql`${table.normalizedInstitutionalIdentifier} IS NOT NULL`),
+    uniqueIndex("tutor_application_user_unique")
+      .on(table.applicationUserId)
+      .where(sql`${table.applicationUserId} IS NOT NULL`),
     index("tutor_primary_career_idx").on(table.primaryCareerId),
     index("tutor_status_idx").on(table.status),
   ],

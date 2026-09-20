@@ -27,8 +27,8 @@ The current repository uses these conceptual gates:
 | --- | --- | --- |
 | `Quality` | `corepack pnpm lint` and `corepack pnpm typecheck` | ESLint and strict TypeScript validation. |
 | `Tests` | `corepack pnpm test` | Co-located Vitest and Testing Library unit/component tests. |
-| `Integration` | `corepack pnpm test:integration` | PostgreSQL-backed foundation, tutor/academic, scheduling/attendance, and Admin hour-accounting coverage against an isolated Testcontainers database. |
-| `E2E` | `corepack pnpm test:e2e` | Critical browser smoke plus authenticated Admin tutor, scheduling/attendance, and hour-accounting workflow coverage through the running Next.js application. |
+| `Integration` | `corepack pnpm test:integration` | PostgreSQL-backed foundation, Tutor self-service, tutor/academic, scheduling/attendance, and Admin hour-accounting coverage against an isolated Testcontainers database. |
+| `E2E` | `corepack pnpm test:e2e` | Critical browser smoke plus authenticated Tutor self-service and Admin tutor, scheduling/attendance, and hour-accounting workflow coverage through the running Next.js application. |
 | `Production` | `corepack pnpm build` | Verification that the deployable Next.js build can be produced. |
 | `CI Gate` | aggregate workflow job | Stable final result for branch protection and pull-request merge readiness. |
 
@@ -59,6 +59,10 @@ Integration scenarios live under `tests/integration/` and run through the separa
 
 Docker is a local and CI prerequisite for this boundary. Testcontainers chooses an available host port; no fixed port, local database, production URL, Google credential, or personal data is used. There is no separate Docker check or public Docker gate.
 
+Tutor self-service integration scenarios prove owner resolution for linked Tutor
+identities, the unlinked identity state, current-cycle and scholarship context,
+safe DTOs without identity or contact leakage, effective special-plan reads,
+balance and movement history, protected route authorization, and no mutation.
 Hour-accounting integration scenarios also prove meeting, workshop, extraordinary,
 and recovery recognition; inactive-category history; closed-cycle reads and
 rejected writes; atomic bulk rollback; and actor-attributed bounded audit metadata.
@@ -77,7 +81,9 @@ Playwright scenarios live under `tests/e2e/` and exercise the application throug
 
 E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Docker is required locally because the authenticated web server owns an isolated PostgreSQL container. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
 
-The authenticated server wrapper also seeds deterministic hour-accounting and
+The authenticated server wrapper also seeds linked and unlinked Tutor identities,
+deterministic Tutor subjects, regular and special schedules, and owner-specific
+movement history in addition to the deterministic hour-accounting and
 scheduling rows, including active and inactive tutors and categories, regular
 and special plans, persisted occurrences, pending attendance, an activity
 origin, and movement history. The authenticated Admin journey covers the live
@@ -87,6 +93,13 @@ persistence, adjusted debit confirmation, linked movement history, and explicit
 recovery recognition. The existing Admin hours journey continues to cover the
 Compact, Medium, and Wide workflow through bulk meeting credit, balance/history
 refresh, movement-history navigation, and non-destructive reversal.
+
+The authenticated Tutor journey signs a real Better Auth session cookie and
+covers owner-scoped summary, effective schedule, and hour-history reads through
+the running application. It asserts that a Tutor cannot reach Admin pages or
+mutation APIs, that only the linked Tutor's subjects, schedule, balance, and
+movements are rendered, that student/contact data is absent, and that the
+Compact, Medium, and Wide layouts remain usable.
 
 ### Integration and contract checks
 

@@ -21,6 +21,7 @@ const notFoundCodes: TutorServiceErrorCode[] = [
   TUTOR_ERROR_CODES.subjectNotFound,
   TUTOR_ERROR_CODES.scholarshipReferenceNotFound,
   TUTOR_ERROR_CODES.cycleNotFound,
+  TUTOR_ERROR_CODES.applicationAccountNotFound,
 ];
 
 const conflictCodes: TutorServiceErrorCode[] = [
@@ -32,6 +33,9 @@ const conflictCodes: TutorServiceErrorCode[] = [
   TUTOR_ERROR_CODES.duplicateScholarshipReferenceType,
   TUTOR_ERROR_CODES.duplicateSubjectAssignment,
   TUTOR_ERROR_CODES.duplicateCycleMembership,
+  TUTOR_ERROR_CODES.applicationAccountNotTutor,
+  TUTOR_ERROR_CODES.applicationAccountDisabled,
+  TUTOR_ERROR_CODES.applicationAccountAlreadyLinked,
   TUTOR_ERROR_CODES.careerSubjectMismatch,
   TUTOR_ERROR_CODES.catalogConflict,
   TUTOR_ERROR_CODES.inactiveCareer,

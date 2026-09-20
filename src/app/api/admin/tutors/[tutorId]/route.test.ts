@@ -51,6 +51,7 @@ const detail = {
   status: "ACTIVE" as const,
   createdAt: "2026-09-17T00:00:00.000Z",
   updatedAt: "2026-09-17T00:00:00.000Z",
+  applicationAccount: null,
   subjects: [],
   memberships: [],
 };
@@ -106,6 +107,42 @@ describe("Admin tutor detail routes", () => {
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
       error: TUTOR_ERROR_CODES.tutorNotFound,
+    });
+  });
+
+  it("maps account ownership errors without exposing service messages", async () => {
+    mocks.requireApiRole.mockResolvedValue(admin);
+    mocks.updateTutor.mockRejectedValue(
+      new TutorServiceError(
+        TUTOR_ERROR_CODES.applicationAccountAlreadyLinked,
+        "private account ownership message",
+      ),
+    );
+
+    const conflictResponse = await PATCH(
+      requestWithBody({ applicationEmail: "tutor@example.com" }),
+      context(),
+    );
+
+    expect(conflictResponse.status).toBe(409);
+    await expect(conflictResponse.json()).resolves.toEqual({
+      error: TUTOR_ERROR_CODES.applicationAccountAlreadyLinked,
+    });
+
+    mocks.updateTutor.mockRejectedValue(
+      new TutorServiceError(
+        TUTOR_ERROR_CODES.applicationAccountNotFound,
+        "private account lookup message",
+      ),
+    );
+    const notFoundResponse = await PATCH(
+      requestWithBody({ applicationEmail: "missing@example.com" }),
+      context(),
+    );
+
+    expect(notFoundResponse.status).toBe(404);
+    await expect(notFoundResponse.json()).resolves.toEqual({
+      error: TUTOR_ERROR_CODES.applicationAccountNotFound,
     });
   });
 

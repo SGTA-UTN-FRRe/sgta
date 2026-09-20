@@ -2,6 +2,12 @@ export const E2E_ADMIN_SESSION_TOKEN = "e2e-admin-session-token";
 
 export const E2E_ADMIN_USER_ID = "e2e-admin-user";
 
+export const E2E_TUTOR_SESSION_TOKEN = "e2e-tutor-session-token";
+
+export const E2E_TUTOR_USER_ID = "e2e-tutor-user";
+export const E2E_SECONDARY_TUTOR_USER_ID = "e2e-secondary-tutor-user";
+export const E2E_UNLINKED_TUTOR_USER_ID = "e2e-unlinked-tutor-user";
+
 export const E2E_AUTH_SECRET = "e2e-only-secret-12345678901234567890";
 
 export const E2E_CYCLE_ID = "11111111-1111-4111-8111-111111111111";
@@ -18,6 +24,8 @@ export const E2E_RECOVERY_CATEGORY_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccb";
 export const E2E_REGULAR_PLAN_ID = "dddddddd-dddd-4ddd-8ddd-ddddddddddda";
 export const E2E_SPECIAL_PLAN_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddb";
 export const E2E_REGULAR_ASSIGNMENT_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeea";
+export const E2E_SECONDARY_ASSIGNMENT_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeef";
+export const E2E_TUTOR_SPECIAL_ASSIGNMENT_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee10";
 export const E2E_PRESENT_ASSIGNMENT_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeeb";
 export const E2E_ABSENCE_ASSIGNMENT_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeec";
 export const E2E_RECOVERY_ASSIGNMENT_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeed";
@@ -26,3 +34,4 @@ export const E2E_ABSENCE_OCCURRENCE_ID = "ffffffff-ffff-4fff-8fff-fffffffffff2";
 export const E2E_RECOVERY_OCCURRENCE_ID = "ffffffff-ffff-4fff-8fff-fffffffffff3";
 export const E2E_SEEDED_ACTIVITY_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 export const E2E_SEEDED_MOVEMENT_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+export const E2E_SECONDARY_MOVEMENT_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbc";

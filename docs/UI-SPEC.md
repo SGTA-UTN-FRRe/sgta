@@ -690,6 +690,8 @@ Tutor:
 - subject assignments;
 - cycle membership;
 - scholarship reference when available.
+- optional provisioned Tutor account email for Admin-only account ownership management;
+- account identifiers and session/provider details are never shown in Tutor-facing views.
 
 Formatting:
 
@@ -707,7 +709,15 @@ Sections:
 2. Contexto academico
 3. Materias
 4. Ciclo y beca
-5. Estado
+5. Cuenta de acceso
+6. Estado
+
+Account linking:
+
+- Admin may enter the normalized email of an existing enabled provisioned Tutor account;
+- the empty value clears the current link while preserving the Tutor record and history;
+- the interface reports distinct safe errors for unknown, non-Tutor, disabled, or already-linked accounts;
+- the UI never accepts or displays an application user identifier, session identifier, or provider token.
 
 Compact:
 

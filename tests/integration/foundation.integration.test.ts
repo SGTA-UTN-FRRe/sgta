@@ -31,6 +31,9 @@ import {
   POST as postAdminTutorCollection,
 } from "@/app/api/admin/tutors/route";
 import { GET as getAdminTutorSubjects } from "@/app/api/admin/tutors/subjects/route";
+import { GET as getTutorHours } from "@/app/api/tutor/hours/route";
+import { GET as getTutorSchedule } from "@/app/api/tutor/schedule/route";
+import { GET as getTutorSummary } from "@/app/api/tutor/summary/route";
 import { GET as getAdminScheduleWorkspace } from "@/app/api/admin/schedules/route";
 import { GET as getAdminAttendanceCollection } from "@/app/api/admin/schedules/attendance/route";
 import {
@@ -100,6 +103,7 @@ import {
   createSubject,
   createTutor,
   getActiveCatalogOptions,
+  getTutorDetail,
   listSubjectCoverage,
   listTutors,
   TUTOR_ERROR_CODES,
@@ -132,6 +136,11 @@ import {
   reopenAbsenceDebit,
   setAttendanceStatus,
 } from "@/features/schedules/attendance-service";
+import {
+  getTutorSelfServiceHours,
+  getTutorSelfServiceSchedule,
+  getTutorSelfServiceSummary,
+} from "@/features/tutor-self-service/tutor-self-service-service";
 import { provisionUser } from "@/auth/provisioning";
 
 import {
@@ -284,6 +293,7 @@ describe("PostgreSQL foundation integration", () => {
             'schedule_plan_cycle_status_idx',
             'schedule_plan_cycle_validity_idx',
             'subject_career_normalized_name_unique',
+            'tutor_application_user_unique',
             'tutor_institutional_identifier_unique',
             'tutor_primary_career_idx',
             'tutor_status_idx',
@@ -320,6 +330,7 @@ describe("PostgreSQL foundation integration", () => {
             'schedule_assignment_tutor_id_tutor_id_fk',
             'schedule_plan_cycle_id_administrative_cycle_id_fk',
             'subject_career_id_career_id_fk',
+            'tutor_application_user_id_user_id_fk',
             'tutor_primary_career_id_career_id_fk',
             'tutor_cycle_membership_tutor_id_tutor_id_fk',
             'tutor_cycle_membership_cycle_id_administrative_cycle_id_fk',
@@ -405,7 +416,7 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("4");
+    expect(migrations[0]?.migration_count).toBe("5");
     expect(enumValues).toEqual([
       { typname: "activity_kind", enumlabel: "MEETING" },
       { typname: "activity_kind", enumlabel: "WORKSHOP" },
@@ -458,6 +469,7 @@ describe("PostgreSQL foundation integration", () => {
       "schedule_plan_cycle_status_idx",
       "schedule_plan_cycle_validity_idx",
       "subject_career_normalized_name_unique",
+      "tutor_application_user_unique",
       "tutor_cycle_membership_cycle_idx",
       "tutor_cycle_membership_scholarship_reference_idx",
       "tutor_institutional_identifier_unique",
@@ -486,6 +498,7 @@ describe("PostgreSQL foundation integration", () => {
       "schedule_assignment_tutor_id_tutor_id_fk",
       "schedule_plan_cycle_id_administrative_cycle_id_fk",
       "subject_career_id_career_id_fk",
+      "tutor_application_user_id_user_id_fk",
       "tutor_cycle_membership_cycle_id_administrative_cycle_id_fk",
       "tutor_cycle_membership_scholarship_reference_id_scholarship_ref",
       "tutor_cycle_membership_tutor_id_tutor_id_fk",
@@ -2353,6 +2366,217 @@ describe("PostgreSQL foundation integration", () => {
     });
   });
 
+  it("enforces one-to-one Tutor account ownership without deleting Tutor history", async () => {
+    const database = getIntegrationDatabase();
+    const { admin, tutor: tutorIdentity, disabled } = await seedIdentities();
+    const replacementIdentity = await provisionUser(
+      database,
+      {
+        email: "replacement.integration@example.test",
+        name: "Replacement Tutor",
+        role: "TUTOR",
+        enabled: true,
+      },
+      { actorId: admin.id, source: "admin" },
+    );
+    const careerRecord = await createCareer(
+      database,
+      { name: "Account Ownership Engineering" },
+      { actorId: admin.id },
+    );
+    const cycle = await createAdministrativeCycle(
+      database,
+      {
+        name: "Account Ownership Cycle 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+      },
+      { actorId: admin.id },
+    );
+    const auditContext = { actorId: admin.id, requestId: "account-ownership-test" };
+
+    const linkedTutor = await createTutor(
+      database,
+      {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        primaryCareerId: careerRecord.id,
+        cycleId: cycle.id,
+        applicationEmail: ` ${tutorIdentity.email.toUpperCase()} `,
+      },
+      auditContext,
+    );
+
+    expect(linkedTutor.applicationAccount).toEqual({
+      email: tutorIdentity.email,
+      enabled: true,
+    });
+    await expect(
+      database
+        .select({ applicationUserId: tutor.applicationUserId })
+        .from(tutor)
+        .where(eq(tutor.id, linkedTutor.id)),
+    ).resolves.toEqual([{ applicationUserId: tutorIdentity.id }]);
+
+    await expect(
+      createTutor(
+        database,
+        {
+          firstName: "Grace",
+          lastName: "Hopper",
+          primaryCareerId: careerRecord.id,
+          cycleId: cycle.id,
+          applicationEmail: tutorIdentity.email,
+        },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({
+      code: TUTOR_ERROR_CODES.applicationAccountAlreadyLinked,
+    });
+    await expect(
+      database.insert(tutor).values({
+        firstName: "Invalid",
+        lastName: "Foreign Key",
+        primaryCareerId: careerRecord.id,
+        applicationUserId: "missing-application-user",
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23503" } });
+    await expect(
+      database.insert(tutor).values({
+        firstName: "Duplicate",
+        lastName: "Application Account",
+        primaryCareerId: careerRecord.id,
+        applicationUserId: tutorIdentity.id,
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
+
+    await expect(
+      updateTutor(
+        database,
+        linkedTutor.id,
+        { applicationEmail: "unknown.integration@example.test" },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.applicationAccountNotFound });
+    await expect(
+      updateTutor(
+        database,
+        linkedTutor.id,
+        { applicationEmail: admin.email },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.applicationAccountNotTutor });
+    await expect(
+      updateTutor(
+        database,
+        linkedTutor.id,
+        { applicationEmail: disabled.email },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.applicationAccountDisabled });
+
+    await database.delete(user).where(eq(user.id, tutorIdentity.id));
+
+    await expect(getTutorDetail(database, linkedTutor.id)).resolves.toMatchObject({
+      id: linkedTutor.id,
+      applicationAccount: null,
+      memberships: [{ cycle: { id: cycle.id } }],
+    });
+
+    authMocks.getSession.mockResolvedValue(null);
+    const unauthorizedLink = await patchAdminTutorDetail(
+      makeJsonRequest(
+        `http://localhost/api/admin/tutors/${linkedTutor.id}`,
+        "PATCH",
+        { applicationEmail: replacementIdentity.email },
+      ),
+      { params: Promise.resolve({ tutorId: linkedTutor.id }) },
+    );
+    expect(unauthorizedLink.status).toBe(401);
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: replacementIdentity.id, role: "TUTOR" },
+    });
+    const forbiddenLink = await patchAdminTutorDetail(
+      makeJsonRequest(
+        `http://localhost/api/admin/tutors/${linkedTutor.id}`,
+        "PATCH",
+        { applicationEmail: replacementIdentity.email },
+      ),
+      { params: Promise.resolve({ tutorId: linkedTutor.id }) },
+    );
+    expect(forbiddenLink.status).toBe(403);
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: admin.id, role: "ADMIN" },
+    });
+    const authorizedLink = await patchAdminTutorDetail(
+      makeJsonRequest(
+        `http://localhost/api/admin/tutors/${linkedTutor.id}`,
+        "PATCH",
+        { applicationEmail: ` ${replacementIdentity.email.toUpperCase()} ` },
+      ),
+      { params: Promise.resolve({ tutorId: linkedTutor.id }) },
+    );
+    expect(authorizedLink.status).toBe(200);
+    await expect(authorizedLink.json()).resolves.toMatchObject({
+      tutor: {
+        id: linkedTutor.id,
+        applicationAccount: {
+          email: replacementIdentity.email,
+          enabled: true,
+        },
+      },
+    });
+
+    const clearedTutor = await updateTutor(
+      database,
+      linkedTutor.id,
+      { applicationEmail: null },
+      auditContext,
+    );
+    expect(clearedTutor.applicationAccount).toBeNull();
+    await expect(
+      database
+        .select({ applicationUserId: tutor.applicationUserId })
+        .from(tutor)
+        .where(eq(tutor.id, linkedTutor.id)),
+    ).resolves.toEqual([{ applicationUserId: null }]);
+    await expect(
+      database
+        .select({ tutorId: tutorCycleMembership.tutorId })
+        .from(tutorCycleMembership)
+        .where(eq(tutorCycleMembership.tutorId, linkedTutor.id)),
+    ).resolves.toEqual([{ tutorId: linkedTutor.id }]);
+
+    const accountEvents = (await listAuditEvents(database, 100)).filter(
+      (event) => event.entityId === linkedTutor.id,
+    );
+    expect(accountEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          actorId: admin.id,
+          action: "tutor.application_account_linked",
+          metadata: { applicationUserId: tutorIdentity.id },
+        }),
+        expect.objectContaining({
+          actorId: admin.id,
+          action: "tutor.application_account_linked",
+          metadata: { applicationUserId: replacementIdentity.id },
+        }),
+        expect.objectContaining({
+          actorId: admin.id,
+          action: "tutor.application_account_unlinked",
+          metadata: { applicationUserId: replacementIdentity.id },
+        }),
+      ]),
+    );
+    expect(JSON.stringify(accountEvents)).not.toContain(tutorIdentity.email);
+    expect(JSON.stringify(accountEvents)).not.toContain(replacementIdentity.email);
+    expect(JSON.stringify(accountEvents)).not.toContain("token");
+    expect(JSON.stringify(accountEvents)).not.toContain("password");
+  });
+
   it("rolls back a tutor write when its audit event cannot be recorded", async () => {
     const database = getIntegrationDatabase();
     const { admin } = await seedIdentities();
@@ -3672,5 +3896,470 @@ describe("PostgreSQL foundation integration", () => {
         .from(auditEvent)
         .where(eq(auditEvent.action, "sensitive.integration.test")),
     ).resolves.toEqual([]);
+  });
+
+  it("reads owner-scoped Tutor self-service models without mutation", async () => {
+    const database = getIntegrationDatabase();
+    const { admin, tutor: firstIdentity } = await seedIdentities();
+    const secondIdentity = await provisionUser(
+      database,
+      {
+        email: "second.tutor.integration@example.test",
+        name: "Second Integration Tutor",
+        role: "TUTOR",
+        enabled: true,
+      },
+      { actorId: admin.id, source: "admin" },
+    );
+    const unlinkedIdentity = await provisionUser(
+      database,
+      {
+        email: "unlinked.tutor.integration@example.test",
+        name: "Unlinked Integration Tutor",
+        role: "TUTOR",
+        enabled: true,
+      },
+      { actorId: admin.id, source: "admin" },
+    );
+    const auditContext = {
+      actorId: admin.id,
+      requestId: "tutor-self-service-read-test",
+    };
+    const careerRecord = await createCareer(
+      database,
+      { name: "Self-Service Engineering" },
+      auditContext,
+    );
+    const firstSubject = await createSubject(
+      database,
+      { name: "Owner-scoped Algorithms", careerId: careerRecord.id },
+      auditContext,
+    );
+    const secondSubject = await createSubject(
+      database,
+      { name: "Owner-scoped Physics", careerId: careerRecord.id },
+      auditContext,
+    );
+    const scholarship = await createScholarshipReference(
+      database,
+      {
+        type: "Self-Service Reference",
+        knownRequiredHours: 120,
+        notes: "Informational reference",
+      },
+      auditContext,
+    );
+    const openCycle = await createAdministrativeCycle(
+      database,
+      {
+        name: "Self-Service 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+      },
+      auditContext,
+    );
+    const [closedCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "Self-Service 2026",
+        startDate: "2026-01-01",
+        endDate: "2026-12-31",
+        status: "CLOSED",
+      })
+      .returning({ id: administrativeCycle.id });
+
+    const firstTutor = await createTutor(
+      database,
+      {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        preferredDisplayName: "Ada",
+        primaryCareerId: careerRecord.id,
+        subjectIds: [firstSubject.id],
+        cycleId: openCycle.id,
+        scholarshipReferenceId: scholarship.id,
+        applicationEmail: firstIdentity.email,
+      },
+      auditContext,
+    );
+    const secondTutor = await createTutor(
+      database,
+      {
+        firstName: "Grace",
+        lastName: "Hopper",
+        primaryCareerId: careerRecord.id,
+        subjectIds: [secondSubject.id],
+        cycleId: openCycle.id,
+        applicationEmail: secondIdentity.email,
+      },
+      auditContext,
+    );
+
+    const regularPlan = await createSchedulePlan(
+      database,
+      {
+        cycleId: openCycle.id,
+        name: "Self-Service Regular",
+        kind: "REGULAR",
+        validFrom: "2027-01-01",
+        validTo: "2027-12-31",
+      },
+      auditContext,
+    );
+    const specialPlan = await createSchedulePlan(
+      database,
+      {
+        cycleId: openCycle.id,
+        name: "Self-Service Special",
+        kind: "SPECIAL",
+        validFrom: "2027-04-05",
+        validTo: "2027-04-07",
+      },
+      auditContext,
+    );
+    const regularAssignment = await createScheduleAssignment(
+      database,
+      {
+        planId: regularPlan.id,
+        tutorId: firstTutor.id,
+        pattern: "WEEKDAY",
+        weekday: 1,
+        startMinutes: 480,
+        endMinutes: 600,
+        kind: "DUTY",
+        modality: "In-person",
+      },
+      auditContext,
+    );
+    await createScheduleAssignment(
+      database,
+      {
+        planId: regularPlan.id,
+        tutorId: secondTutor.id,
+        pattern: "WEEKDAY",
+        weekday: 1,
+        startMinutes: 840,
+        endMinutes: 960,
+        kind: "DUTY",
+        modality: "Online",
+      },
+      auditContext,
+    );
+    const specialAssignment = await createScheduleAssignment(
+      database,
+      {
+        planId: specialPlan.id,
+        tutorId: firstTutor.id,
+        pattern: "DATE",
+        assignmentDate: "2027-04-05",
+        startMinutes: 600,
+        endMinutes: 720,
+        kind: "DUTY",
+        modality: "Special room",
+      },
+      auditContext,
+    );
+
+    const category = await createHourCategory(
+      database,
+      { name: "Self-Service Duty Hours" },
+      auditContext,
+    );
+    await recordBulkHourMovement(
+      database,
+      {
+        cycleId: openCycle.id,
+        tutorIds: [firstTutor.id],
+        categoryId: category.id,
+        direction: "CREDIT",
+        duration: { hours: 2, minutes: 0 },
+        movementDate: "2027-04-05",
+        note: "First tutor credit",
+      },
+      auditContext,
+    );
+    await recordBulkHourMovement(
+      database,
+      {
+        cycleId: openCycle.id,
+        tutorIds: [firstTutor.id],
+        categoryId: category.id,
+        direction: "DEBIT",
+        duration: { hours: 0, minutes: 30 },
+        movementDate: "2027-04-06",
+        note: "First tutor debit",
+      },
+      auditContext,
+    );
+    await recordBulkHourMovement(
+      database,
+      {
+        cycleId: openCycle.id,
+        tutorIds: [secondTutor.id],
+        categoryId: category.id,
+        direction: "CREDIT",
+        duration: { hours: 1, minutes: 0 },
+        movementDate: "2027-04-05",
+        note: "Second tutor credit",
+      },
+      auditContext,
+    );
+    await database.insert(hourMovement).values({
+      cycleId: closedCycle!.id,
+      tutorId: firstTutor.id,
+      categoryId: category.id,
+      direction: "CREDIT",
+      durationMinutes: 999,
+      movementDate: "2026-06-01",
+      note: "Closed cycle history",
+      actorId: admin.id,
+    });
+
+    const beforeCounts = await Promise.all([
+      database.select({ id: dutyOccurrence.id }).from(dutyOccurrence),
+      database.select({ id: attendanceRecord.id }).from(attendanceRecord),
+      database.select({ id: hourMovement.id }).from(hourMovement),
+      database.select({ id: activity.id }).from(activity),
+      database.select({ id: auditEvent.id }).from(auditEvent),
+    ]);
+
+    const summary = await getTutorSelfServiceSummary(
+      database,
+      firstIdentity.id,
+      { today: "2027-04-05" },
+    );
+    const defaultSchedule = await getTutorSelfServiceSchedule(
+      database,
+      firstIdentity.id,
+      {},
+      { today: "2027-04-05" },
+    );
+    const specialSchedule = await getTutorSelfServiceSchedule(
+      database,
+      firstIdentity.id,
+      { date: "2027-04-05" },
+      { today: "2027-04-05" },
+    );
+    const regularSchedule = await getTutorSelfServiceSchedule(
+      database,
+      firstIdentity.id,
+      { date: "2027-04-12" },
+      { today: "2027-04-05" },
+    );
+    const firstHours = await getTutorSelfServiceHours(
+      database,
+      firstIdentity.id,
+    );
+    const secondHours = await getTutorSelfServiceHours(
+      database,
+      secondIdentity.id,
+    );
+    const unlinkedSummary = await getTutorSelfServiceSummary(
+      database,
+      unlinkedIdentity.id,
+      { today: "2027-04-05" },
+    );
+
+    expect(summary).toMatchObject({
+      state: "ready",
+      cycle: { id: openCycle.id },
+      tutor: {
+        displayName: "Ada",
+        subjects: [{ id: firstSubject.id, status: "ACTIVE" }],
+      },
+      membership: { cycleId: openCycle.id, scholarshipReference: { id: scholarship.id } },
+      balance: { signedBalanceMinutes: 90, state: "current" },
+    });
+    expect(defaultSchedule).toMatchObject({
+      state: "ready",
+      effectivePlan: { id: specialPlan.id, kind: "SPECIAL" },
+      nextDuty: { id: specialAssignment.id, date: "2027-04-05" },
+    });
+    if (summary.state !== "ready" || defaultSchedule.state !== "ready") {
+      throw new Error("Expected the linked Tutor read models to be ready.");
+    }
+    expect(summary.nextDuty).toEqual(defaultSchedule.nextDuty);
+
+    expect(specialSchedule).toMatchObject({
+      state: "ready",
+      effectivePlan: { id: specialPlan.id },
+      days: expect.arrayContaining([
+        expect.objectContaining({
+          date: "2027-04-05",
+          assignments: [expect.objectContaining({ id: specialAssignment.id })],
+        }),
+      ]),
+    });
+    expect(JSON.stringify(specialSchedule)).not.toContain(regularAssignment.id);
+    expect(JSON.stringify(specialSchedule)).not.toContain(secondTutor.id);
+    expect(regularSchedule).toMatchObject({
+      state: "ready",
+      effectivePlan: { id: regularPlan.id, kind: "REGULAR" },
+      days: expect.arrayContaining([
+        expect.objectContaining({
+          date: "2027-04-12",
+          assignments: [expect.objectContaining({ id: regularAssignment.id })],
+        }),
+      ]),
+    });
+
+    expect(firstHours).toMatchObject({
+      state: "ready",
+      cycle: { id: openCycle.id },
+      balance: { signedBalanceMinutes: 90, state: "current" },
+      historyComplete: true,
+    });
+    expect(secondHours).toMatchObject({
+      state: "ready",
+      balance: { signedBalanceMinutes: 60, state: "current" },
+    });
+    if (firstHours.state !== "ready" || secondHours.state !== "ready") {
+      throw new Error("Expected linked Tutor hour models to be ready.");
+    }
+    expect(firstHours.movements).toHaveLength(2);
+    expect(firstHours.movements.map((movement) => movement.note)).toEqual(
+      expect.arrayContaining(["First tutor credit", "First tutor debit"]),
+    );
+    expect(JSON.stringify(firstHours)).not.toContain("Closed cycle history");
+    expect(JSON.stringify(firstHours)).not.toContain("Second tutor credit");
+    expect(JSON.stringify(firstHours)).not.toContain("actorId");
+    expect(JSON.stringify(firstHours)).not.toContain("session");
+    expect(unlinkedSummary).toEqual({
+      state: "required-action",
+      reason: "ACCOUNT_NOT_LINKED",
+    });
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: firstIdentity.id, role: "TUTOR" },
+    });
+    const routeSummaryResponse = await getTutorSummary(
+      new Request("http://localhost/api/tutor/summary"),
+    );
+    expect(routeSummaryResponse.status).toBe(200);
+    expect(routeSummaryResponse.headers.get("Cache-Control")).toBe("no-store");
+    const routeSummaryBody = await routeSummaryResponse.json();
+    expect(routeSummaryBody).toMatchObject({
+      state: "ready",
+      tutor: { displayName: "Ada" },
+    });
+    expect(JSON.stringify(routeSummaryBody)).not.toContain("tutorId");
+    expect(JSON.stringify(routeSummaryBody)).not.toContain(secondIdentity.email);
+
+    const routeScheduleResponse = await getTutorSchedule(
+      new Request("http://localhost/api/tutor/schedule?date=2027-04-05"),
+    );
+    expect(routeScheduleResponse.status).toBe(200);
+    expect(routeScheduleResponse.headers.get("Cache-Control")).toBe("no-store");
+    await expect(routeScheduleResponse.json()).resolves.toMatchObject({
+      effectivePlan: { id: specialPlan.id, kind: "SPECIAL" },
+      state: "ready",
+    });
+
+    const routeHoursResponse = await getTutorHours(
+      new Request("http://localhost/api/tutor/hours"),
+    );
+    expect(routeHoursResponse.status).toBe(200);
+    expect(routeHoursResponse.headers.get("Cache-Control")).toBe("no-store");
+    await expect(routeHoursResponse.json()).resolves.toMatchObject({
+      balance: { signedBalanceMinutes: 90 },
+      state: "ready",
+    });
+
+    authMocks.getSession.mockResolvedValue(null);
+    expect(
+      (
+        await getTutorSummary(
+          new Request("http://localhost/api/tutor/summary"),
+        )
+      ).status,
+    ).toBe(401);
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: admin.id, role: "ADMIN" },
+    });
+    expect(
+      (
+        await getTutorSchedule(
+          new Request("http://localhost/api/tutor/schedule"),
+        )
+      ).status,
+    ).toBe(403);
+    await expect(
+      getTutorSummary(new Request("http://localhost/api/tutor/summary")),
+    ).resolves.toMatchObject({ status: 403 });
+
+    const afterCounts = await Promise.all([
+      database.select({ id: dutyOccurrence.id }).from(dutyOccurrence),
+      database.select({ id: attendanceRecord.id }).from(attendanceRecord),
+      database.select({ id: hourMovement.id }).from(hourMovement),
+      database.select({ id: activity.id }).from(activity),
+      database.select({ id: auditEvent.id }).from(auditEvent),
+    ]);
+    expect(afterCounts.map((rows) => rows.length)).toEqual(
+      beforeCounts.map((rows) => rows.length),
+    );
+  });
+
+  it("returns a required action when a linked Tutor has no open cycle", async () => {
+    const database = getIntegrationDatabase();
+    const { admin, tutor: tutorIdentity } = await seedIdentities();
+    const auditContext = {
+      actorId: admin.id,
+      requestId: "tutor-self-service-no-cycle-test",
+    };
+    const careerRecord = await createCareer(
+      database,
+      { name: "No Cycle Engineering" },
+      auditContext,
+    );
+    const cycle = await createAdministrativeCycle(
+      database,
+      {
+        name: "Closed Self-Service Cycle",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+      },
+      auditContext,
+    );
+    const linkedTutor = await createTutor(
+      database,
+      {
+        firstName: "Linked",
+        lastName: "WithoutCycle",
+        primaryCareerId: careerRecord.id,
+        cycleId: cycle.id,
+        applicationEmail: tutorIdentity.email,
+      },
+      auditContext,
+    );
+    await database
+      .delete(tutorCycleMembership)
+      .where(
+        and(
+          eq(tutorCycleMembership.tutorId, linkedTutor.id),
+          eq(tutorCycleMembership.cycleId, cycle.id),
+        ),
+      );
+
+    await expect(
+      getTutorSelfServiceSummary(database, tutorIdentity.id, {
+        today: "2027-04-05",
+      }),
+    ).resolves.toMatchObject({
+      state: "required-action",
+      reason: "CYCLE_MEMBERSHIP_REQUIRED",
+      cycle: { id: cycle.id },
+    });
+
+    await closeAdministrativeCycle(database, cycle.id, auditContext);
+
+    await expect(
+      getTutorSelfServiceSummary(database, tutorIdentity.id, {
+        today: "2027-04-05",
+      }),
+    ).resolves.toEqual({
+      state: "required-action",
+      reason: "OPEN_CYCLE_REQUIRED",
+    });
   });
 });
