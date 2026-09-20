@@ -104,6 +104,17 @@ import {
   updateScholarshipReference,
   updateTutor,
 } from "@/features/tutors/tutor-service";
+import {
+  createScheduleAssignment,
+  createSchedulePlan,
+  listScheduleAssignments,
+  listSchedulePlans,
+  resolveEffectivePlan,
+  resolveEffectiveSchedule,
+  SCHEDULE_ERROR_CODES,
+  transitionSchedulePlanStatus,
+  updateScheduleAssignment,
+} from "@/features/schedules/schedule-service";
 import { provisionUser } from "@/auth/provisioning";
 
 import {
@@ -846,6 +857,385 @@ describe("PostgreSQL foundation integration", () => {
     await expect(
       database.delete(schedulePlan).where(eq(schedulePlan.id, createdPlan!.id)),
     ).rejects.toMatchObject({ cause: { code: "23503" } });
+  });
+
+  it("resolves effective plans, preserves plan history, and materializes stable occurrences", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Computer Science", normalizedName: "computer science" })
+      .returning({ id: career.id });
+    const [createdCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "Schedule Services 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+        status: "OPEN",
+      })
+      .returning({ id: administrativeCycle.id });
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id });
+
+    await database.insert(tutorCycleMembership).values({
+      tutorId: createdTutor!.id,
+      cycleId: createdCycle!.id,
+    });
+
+    const context = { actorId: admin.id };
+    const regular = await createSchedulePlan(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        name: "Regular 2027",
+        kind: "REGULAR",
+        validFrom: "2027-01-01",
+        validTo: "2027-12-31",
+      },
+      context,
+    );
+    const regularAssignment = await createScheduleAssignment(
+      database,
+      {
+        planId: regular.id,
+        tutorId: createdTutor!.id,
+        pattern: "WEEKDAY",
+        weekday: 1,
+        startMinutes: 480,
+        endMinutes: 600,
+        kind: "DUTY",
+        modality: "Room 204",
+      },
+      context,
+    );
+    const special = await createSchedulePlan(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        name: "Exam Week",
+        kind: "SPECIAL",
+        validFrom: "2027-03-08",
+        validTo: "2027-03-12",
+      },
+      context,
+    );
+    const specialAssignment = await createScheduleAssignment(
+      database,
+      {
+        planId: special.id,
+        tutorId: createdTutor!.id,
+        pattern: "WEEKDAY",
+        weekday: 1,
+        startMinutes: 600,
+        endMinutes: 720,
+        kind: "RECOVERY",
+        modality: "Room 305",
+      },
+      context,
+    );
+
+    await expect(
+      resolveEffectivePlan(database, {
+        cycleId: createdCycle!.id,
+        date: "2027-03-01",
+      }),
+    ).resolves.toMatchObject({ id: regular.id, kind: "REGULAR" });
+    await expect(
+      resolveEffectivePlan(database, {
+        cycleId: createdCycle!.id,
+        date: "2027-03-08",
+      }),
+    ).resolves.toMatchObject({ id: special.id, kind: "SPECIAL" });
+
+    const regularSchedule = await resolveEffectiveSchedule(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-01" },
+      context,
+    );
+    const regularOccurrence = regularSchedule.occurrences[0];
+    expect(regularOccurrence).toMatchObject({
+      assignmentId: regularAssignment.id,
+      planId: regular.id,
+      startMinutes: 480,
+    });
+
+    const specialSchedule = await resolveEffectiveSchedule(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-08" },
+      context,
+    );
+    expect(specialSchedule).toMatchObject({
+      plan: { id: special.id, kind: "SPECIAL" },
+    });
+    expect(specialSchedule.occurrences[0]).toMatchObject({
+      assignmentId: specialAssignment.id,
+      kind: "RECOVERY",
+      recovery: {
+        markedForRecovery: true,
+        recognition: "EXPLICIT_ACTION_REQUIRED",
+      },
+    });
+
+    const repeatedSpecialSchedule = await resolveEffectiveSchedule(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-08" },
+      context,
+    );
+    expect(repeatedSpecialSchedule.occurrences[0]?.id).toBe(
+      specialSchedule.occurrences[0]?.id,
+    );
+
+    await transitionSchedulePlanStatus(
+      database,
+      special.id,
+      { status: "INACTIVE" },
+      context,
+    );
+    const fallbackSchedule = await resolveEffectiveSchedule(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-08" },
+      context,
+    );
+    expect(fallbackSchedule.plan).toMatchObject({
+      id: regular.id,
+      kind: "REGULAR",
+    });
+
+    await updateScheduleAssignment(
+      database,
+      regularAssignment.id,
+      {
+        pattern: "WEEKDAY",
+        weekday: 1,
+        startMinutes: 540,
+        endMinutes: 660,
+        kind: "DUTY",
+        modality: "Room 204 updated",
+      },
+      context,
+    );
+    const preservedHistory = await resolveEffectiveSchedule(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-01" },
+      context,
+    );
+    expect(preservedHistory.occurrences[0]).toMatchObject({
+      id: regularOccurrence?.id,
+      assignmentId: regularAssignment.id,
+      startMinutes: 480,
+      endMinutes: 600,
+    });
+
+    await expect(
+      listSchedulePlans(database, { cycleId: createdCycle!.id }),
+    ).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: regular.id, status: "ACTIVE" }),
+        expect.objectContaining({ id: special.id, status: "INACTIVE" }),
+      ]),
+    );
+    await expect(
+      listScheduleAssignments(database, { planId: regular.id }),
+    ).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: regularAssignment.id }),
+      ]),
+    );
+
+    const auditRows = getRows<{ action: string }>(
+      await database.execute(sql`
+        SELECT action
+        FROM "audit_event"
+        WHERE entity_type IN ('schedule_plan', 'schedule_assignment', 'duty_occurrence')
+      `),
+    );
+    expect(auditRows.some((row) => row.action === "schedule_plan.created")).toBe(true);
+    expect(auditRows.some((row) => row.action === "schedule_assignment.created")).toBe(true);
+    expect(auditRows.some((row) => row.action === "schedule_occurrence.created")).toBe(true);
+  });
+
+  it("serializes special-plan overlap and enforces assignment eligibility and conflicts", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Computer Science", normalizedName: "computer science" })
+      .returning({ id: career.id });
+    const [createdCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "Schedule Rules 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+        status: "OPEN",
+      })
+      .returning({ id: administrativeCycle.id });
+    const [activeTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Grace",
+        lastName: "Hopper",
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id });
+    const [inactiveTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Inactive",
+        lastName: "Tutor",
+        primaryCareerId: createdCareer!.id,
+        status: "INACTIVE",
+      })
+      .returning({ id: tutor.id });
+    const [nonMemberTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "No",
+        lastName: "Membership",
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id });
+
+    await database.insert(tutorCycleMembership).values([
+      { tutorId: activeTutor!.id, cycleId: createdCycle!.id },
+      { tutorId: inactiveTutor!.id, cycleId: createdCycle!.id },
+    ]);
+
+    const context = { actorId: admin.id };
+    const regular = await createSchedulePlan(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        name: "Regular 2027",
+        kind: "REGULAR",
+        validFrom: "2027-01-01",
+        validTo: "2027-12-31",
+      },
+      context,
+    );
+    const firstAssignment = await createScheduleAssignment(
+      database,
+      {
+        planId: regular.id,
+        tutorId: activeTutor!.id,
+        pattern: "WEEKDAY",
+        weekday: 1,
+        startMinutes: 480,
+        endMinutes: 600,
+        kind: "DUTY",
+      },
+      context,
+    );
+
+    await expect(
+      createScheduleAssignment(
+        database,
+        {
+          planId: regular.id,
+          tutorId: activeTutor!.id,
+          pattern: "WEEKDAY",
+          weekday: 1,
+          startMinutes: 540,
+          endMinutes: 660,
+          kind: "DUTY",
+        },
+        context,
+      ),
+    ).rejects.toMatchObject({
+      code: SCHEDULE_ERROR_CODES.assignmentConflict,
+      details: { conflictingAssignmentIds: [firstAssignment.id] },
+    });
+    await expect(
+      createScheduleAssignment(
+        database,
+        {
+          planId: regular.id,
+          tutorId: inactiveTutor!.id,
+          pattern: "DATE",
+          assignmentDate: "2027-03-02",
+          startMinutes: 480,
+          endMinutes: 600,
+          kind: "DUTY",
+        },
+        context,
+      ),
+    ).rejects.toMatchObject({ code: SCHEDULE_ERROR_CODES.inactiveTutor });
+    await expect(
+      createScheduleAssignment(
+        database,
+        {
+          planId: regular.id,
+          tutorId: nonMemberTutor!.id,
+          pattern: "DATE",
+          assignmentDate: "2027-03-02",
+          startMinutes: 480,
+          endMinutes: 600,
+          kind: "DUTY",
+        },
+        context,
+      ),
+    ).rejects.toMatchObject({ code: SCHEDULE_ERROR_CODES.tutorNotInCycle });
+    await expect(
+      createScheduleAssignment(
+        database,
+        {
+          planId: regular.id,
+          tutorId: activeTutor!.id,
+          pattern: "DATE",
+          assignmentDate: "2028-01-01",
+          startMinutes: 480,
+          endMinutes: 600,
+          kind: "DUTY",
+        },
+        context,
+      ),
+    ).rejects.toMatchObject({
+      code: SCHEDULE_ERROR_CODES.assignmentDateOutsidePlan,
+    });
+
+    const overlapInput = {
+      cycleId: createdCycle!.id,
+      name: "Special overlap",
+      kind: "SPECIAL" as const,
+      validFrom: "2027-04-05",
+      validTo: "2027-04-09",
+    };
+    const concurrent = await Promise.allSettled([
+      createSchedulePlan(database, overlapInput, context),
+      createSchedulePlan(
+        database,
+        { ...overlapInput, name: "Special overlap concurrent" },
+        context,
+      ),
+    ]);
+    expect(
+      concurrent.filter((result) => result.status === "fulfilled").length,
+    ).toBe(1);
+    const rejected = concurrent.find((result) => result.status === "rejected");
+    expect(rejected).toMatchObject({
+      status: "rejected",
+      reason: { code: SCHEDULE_ERROR_CODES.specialPlanOverlap },
+    });
+
+    await database
+      .update(administrativeCycle)
+      .set({ status: "CLOSED", updatedAt: new Date() })
+      .where(eq(administrativeCycle.id, createdCycle!.id));
+    await expect(
+      transitionSchedulePlanStatus(
+        database,
+        regular.id,
+        { status: "INACTIVE" },
+        context,
+      ),
+    ).rejects.toMatchObject({ code: SCHEDULE_ERROR_CODES.cycleNotOpen });
   });
 
   it("persists canonical tutor data and enforces relationship and reference constraints", async () => {
