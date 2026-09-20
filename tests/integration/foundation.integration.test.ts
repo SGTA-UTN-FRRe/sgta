@@ -133,6 +133,11 @@ import {
   reopenAbsenceDebit,
   setAttendanceStatus,
 } from "@/features/schedules/attendance-service";
+import {
+  getTutorSelfServiceHours,
+  getTutorSelfServiceSchedule,
+  getTutorSelfServiceSummary,
+} from "@/features/tutor-self-service/tutor-self-service-service";
 import { provisionUser } from "@/auth/provisioning";
 
 import {
@@ -3888,5 +3893,411 @@ describe("PostgreSQL foundation integration", () => {
         .from(auditEvent)
         .where(eq(auditEvent.action, "sensitive.integration.test")),
     ).resolves.toEqual([]);
+  });
+
+  it("reads owner-scoped Tutor self-service models without mutation", async () => {
+    const database = getIntegrationDatabase();
+    const { admin, tutor: firstIdentity } = await seedIdentities();
+    const secondIdentity = await provisionUser(
+      database,
+      {
+        email: "second.tutor.integration@example.test",
+        name: "Second Integration Tutor",
+        role: "TUTOR",
+        enabled: true,
+      },
+      { actorId: admin.id, source: "admin" },
+    );
+    const unlinkedIdentity = await provisionUser(
+      database,
+      {
+        email: "unlinked.tutor.integration@example.test",
+        name: "Unlinked Integration Tutor",
+        role: "TUTOR",
+        enabled: true,
+      },
+      { actorId: admin.id, source: "admin" },
+    );
+    const auditContext = {
+      actorId: admin.id,
+      requestId: "tutor-self-service-read-test",
+    };
+    const careerRecord = await createCareer(
+      database,
+      { name: "Self-Service Engineering" },
+      auditContext,
+    );
+    const firstSubject = await createSubject(
+      database,
+      { name: "Owner-scoped Algorithms", careerId: careerRecord.id },
+      auditContext,
+    );
+    const secondSubject = await createSubject(
+      database,
+      { name: "Owner-scoped Physics", careerId: careerRecord.id },
+      auditContext,
+    );
+    const scholarship = await createScholarshipReference(
+      database,
+      {
+        type: "Self-Service Reference",
+        knownRequiredHours: 120,
+        notes: "Informational reference",
+      },
+      auditContext,
+    );
+    const openCycle = await createAdministrativeCycle(
+      database,
+      {
+        name: "Self-Service 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+      },
+      auditContext,
+    );
+    const [closedCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "Self-Service 2026",
+        startDate: "2026-01-01",
+        endDate: "2026-12-31",
+        status: "CLOSED",
+      })
+      .returning({ id: administrativeCycle.id });
+
+    const firstTutor = await createTutor(
+      database,
+      {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        preferredDisplayName: "Ada",
+        primaryCareerId: careerRecord.id,
+        subjectIds: [firstSubject.id],
+        cycleId: openCycle.id,
+        scholarshipReferenceId: scholarship.id,
+        applicationEmail: firstIdentity.email,
+      },
+      auditContext,
+    );
+    const secondTutor = await createTutor(
+      database,
+      {
+        firstName: "Grace",
+        lastName: "Hopper",
+        primaryCareerId: careerRecord.id,
+        subjectIds: [secondSubject.id],
+        cycleId: openCycle.id,
+        applicationEmail: secondIdentity.email,
+      },
+      auditContext,
+    );
+
+    const regularPlan = await createSchedulePlan(
+      database,
+      {
+        cycleId: openCycle.id,
+        name: "Self-Service Regular",
+        kind: "REGULAR",
+        validFrom: "2027-01-01",
+        validTo: "2027-12-31",
+      },
+      auditContext,
+    );
+    const specialPlan = await createSchedulePlan(
+      database,
+      {
+        cycleId: openCycle.id,
+        name: "Self-Service Special",
+        kind: "SPECIAL",
+        validFrom: "2027-04-05",
+        validTo: "2027-04-07",
+      },
+      auditContext,
+    );
+    const regularAssignment = await createScheduleAssignment(
+      database,
+      {
+        planId: regularPlan.id,
+        tutorId: firstTutor.id,
+        pattern: "WEEKDAY",
+        weekday: 1,
+        startMinutes: 480,
+        endMinutes: 600,
+        kind: "DUTY",
+        modality: "In-person",
+      },
+      auditContext,
+    );
+    await createScheduleAssignment(
+      database,
+      {
+        planId: regularPlan.id,
+        tutorId: secondTutor.id,
+        pattern: "WEEKDAY",
+        weekday: 1,
+        startMinutes: 840,
+        endMinutes: 960,
+        kind: "DUTY",
+        modality: "Online",
+      },
+      auditContext,
+    );
+    const specialAssignment = await createScheduleAssignment(
+      database,
+      {
+        planId: specialPlan.id,
+        tutorId: firstTutor.id,
+        pattern: "DATE",
+        assignmentDate: "2027-04-05",
+        startMinutes: 600,
+        endMinutes: 720,
+        kind: "DUTY",
+        modality: "Special room",
+      },
+      auditContext,
+    );
+
+    const category = await createHourCategory(
+      database,
+      { name: "Self-Service Duty Hours" },
+      auditContext,
+    );
+    await recordBulkHourMovement(
+      database,
+      {
+        cycleId: openCycle.id,
+        tutorIds: [firstTutor.id],
+        categoryId: category.id,
+        direction: "CREDIT",
+        duration: { hours: 2, minutes: 0 },
+        movementDate: "2027-04-05",
+        note: "First tutor credit",
+      },
+      auditContext,
+    );
+    await recordBulkHourMovement(
+      database,
+      {
+        cycleId: openCycle.id,
+        tutorIds: [firstTutor.id],
+        categoryId: category.id,
+        direction: "DEBIT",
+        duration: { hours: 0, minutes: 30 },
+        movementDate: "2027-04-06",
+        note: "First tutor debit",
+      },
+      auditContext,
+    );
+    await recordBulkHourMovement(
+      database,
+      {
+        cycleId: openCycle.id,
+        tutorIds: [secondTutor.id],
+        categoryId: category.id,
+        direction: "CREDIT",
+        duration: { hours: 1, minutes: 0 },
+        movementDate: "2027-04-05",
+        note: "Second tutor credit",
+      },
+      auditContext,
+    );
+    await database.insert(hourMovement).values({
+      cycleId: closedCycle!.id,
+      tutorId: firstTutor.id,
+      categoryId: category.id,
+      direction: "CREDIT",
+      durationMinutes: 999,
+      movementDate: "2026-06-01",
+      note: "Closed cycle history",
+      actorId: admin.id,
+    });
+
+    const beforeCounts = await Promise.all([
+      database.select({ id: dutyOccurrence.id }).from(dutyOccurrence),
+      database.select({ id: attendanceRecord.id }).from(attendanceRecord),
+      database.select({ id: hourMovement.id }).from(hourMovement),
+      database.select({ id: activity.id }).from(activity),
+      database.select({ id: auditEvent.id }).from(auditEvent),
+    ]);
+
+    const summary = await getTutorSelfServiceSummary(
+      database,
+      firstIdentity.id,
+      { today: "2027-04-05" },
+    );
+    const defaultSchedule = await getTutorSelfServiceSchedule(
+      database,
+      firstIdentity.id,
+      {},
+      { today: "2027-04-05" },
+    );
+    const specialSchedule = await getTutorSelfServiceSchedule(
+      database,
+      firstIdentity.id,
+      { date: "2027-04-05" },
+      { today: "2027-04-05" },
+    );
+    const regularSchedule = await getTutorSelfServiceSchedule(
+      database,
+      firstIdentity.id,
+      { date: "2027-04-12" },
+      { today: "2027-04-05" },
+    );
+    const firstHours = await getTutorSelfServiceHours(
+      database,
+      firstIdentity.id,
+    );
+    const secondHours = await getTutorSelfServiceHours(
+      database,
+      secondIdentity.id,
+    );
+    const unlinkedSummary = await getTutorSelfServiceSummary(
+      database,
+      unlinkedIdentity.id,
+      { today: "2027-04-05" },
+    );
+
+    expect(summary).toMatchObject({
+      state: "ready",
+      cycle: { id: openCycle.id },
+      tutor: {
+        displayName: "Ada",
+        subjects: [{ id: firstSubject.id, status: "ACTIVE" }],
+      },
+      membership: { cycleId: openCycle.id, scholarshipReference: { id: scholarship.id } },
+      balance: { signedBalanceMinutes: 90, state: "current" },
+    });
+    expect(defaultSchedule).toMatchObject({
+      state: "ready",
+      effectivePlan: { id: specialPlan.id, kind: "SPECIAL" },
+      nextDuty: { id: specialAssignment.id, date: "2027-04-05" },
+    });
+    if (summary.state !== "ready" || defaultSchedule.state !== "ready") {
+      throw new Error("Expected the linked Tutor read models to be ready.");
+    }
+    expect(summary.nextDuty).toEqual(defaultSchedule.nextDuty);
+
+    expect(specialSchedule).toMatchObject({
+      state: "ready",
+      effectivePlan: { id: specialPlan.id },
+      days: expect.arrayContaining([
+        expect.objectContaining({
+          date: "2027-04-05",
+          assignments: [expect.objectContaining({ id: specialAssignment.id })],
+        }),
+      ]),
+    });
+    expect(JSON.stringify(specialSchedule)).not.toContain(regularAssignment.id);
+    expect(JSON.stringify(specialSchedule)).not.toContain(secondTutor.id);
+    expect(regularSchedule).toMatchObject({
+      state: "ready",
+      effectivePlan: { id: regularPlan.id, kind: "REGULAR" },
+      days: expect.arrayContaining([
+        expect.objectContaining({
+          date: "2027-04-12",
+          assignments: [expect.objectContaining({ id: regularAssignment.id })],
+        }),
+      ]),
+    });
+
+    expect(firstHours).toMatchObject({
+      state: "ready",
+      cycle: { id: openCycle.id },
+      balance: { signedBalanceMinutes: 90, state: "current" },
+      historyComplete: true,
+    });
+    expect(secondHours).toMatchObject({
+      state: "ready",
+      balance: { signedBalanceMinutes: 60, state: "current" },
+    });
+    if (firstHours.state !== "ready" || secondHours.state !== "ready") {
+      throw new Error("Expected linked Tutor hour models to be ready.");
+    }
+    expect(firstHours.movements).toHaveLength(2);
+    expect(firstHours.movements.map((movement) => movement.note)).toEqual(
+      expect.arrayContaining(["First tutor credit", "First tutor debit"]),
+    );
+    expect(JSON.stringify(firstHours)).not.toContain("Closed cycle history");
+    expect(JSON.stringify(firstHours)).not.toContain("Second tutor credit");
+    expect(JSON.stringify(firstHours)).not.toContain("actorId");
+    expect(JSON.stringify(firstHours)).not.toContain("session");
+    expect(unlinkedSummary).toEqual({
+      state: "required-action",
+      reason: "ACCOUNT_NOT_LINKED",
+    });
+
+    const afterCounts = await Promise.all([
+      database.select({ id: dutyOccurrence.id }).from(dutyOccurrence),
+      database.select({ id: attendanceRecord.id }).from(attendanceRecord),
+      database.select({ id: hourMovement.id }).from(hourMovement),
+      database.select({ id: activity.id }).from(activity),
+      database.select({ id: auditEvent.id }).from(auditEvent),
+    ]);
+    expect(afterCounts.map((rows) => rows.length)).toEqual(
+      beforeCounts.map((rows) => rows.length),
+    );
+  });
+
+  it("returns a required action when a linked Tutor has no open cycle", async () => {
+    const database = getIntegrationDatabase();
+    const { admin, tutor: tutorIdentity } = await seedIdentities();
+    const auditContext = {
+      actorId: admin.id,
+      requestId: "tutor-self-service-no-cycle-test",
+    };
+    const careerRecord = await createCareer(
+      database,
+      { name: "No Cycle Engineering" },
+      auditContext,
+    );
+    const cycle = await createAdministrativeCycle(
+      database,
+      {
+        name: "Closed Self-Service Cycle",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+      },
+      auditContext,
+    );
+    const linkedTutor = await createTutor(
+      database,
+      {
+        firstName: "Linked",
+        lastName: "WithoutCycle",
+        primaryCareerId: careerRecord.id,
+        cycleId: cycle.id,
+        applicationEmail: tutorIdentity.email,
+      },
+      auditContext,
+    );
+    await database
+      .delete(tutorCycleMembership)
+      .where(
+        and(
+          eq(tutorCycleMembership.tutorId, linkedTutor.id),
+          eq(tutorCycleMembership.cycleId, cycle.id),
+        ),
+      );
+
+    await expect(
+      getTutorSelfServiceSummary(database, tutorIdentity.id, {
+        today: "2027-04-05",
+      }),
+    ).resolves.toMatchObject({
+      state: "required-action",
+      reason: "CYCLE_MEMBERSHIP_REQUIRED",
+      cycle: { id: cycle.id },
+    });
+
+    await closeAdministrativeCycle(database, cycle.id, auditContext);
+
+    await expect(
+      getTutorSelfServiceSummary(database, tutorIdentity.id, {
+        today: "2027-04-05",
+      }),
+    ).resolves.toEqual({
+      state: "required-action",
+      reason: "OPEN_CYCLE_REQUIRED",
+    });
   });
 });
