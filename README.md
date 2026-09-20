@@ -28,13 +28,13 @@ The current runtime provides:
 - shared components for navigation, page headers, empty states, status badges, Faro branding, buttons, cards, inputs, and tables;
 - unit/component tests, isolated PostgreSQL/Testcontainers integration tests, and Playwright coverage for unauthenticated protection plus authenticated Admin tutor/Materias and hour-accounting journeys across supported viewports.
 
-The route labels for consultations and reports still describe scaffold surfaces; those pages do not yet read or write their future domain data. The schedule and attendance pages currently expose protected server-loaded data boundaries; their full interactive workflows remain future work. The Tutor hours route remains a skeleton, while the Admin hour routes and category controls are live as described above. Protected tutor, Materias, Settings, and API surfaces require the server-side identity and Admin role boundary when authentication is configured.
+The route labels for consultations and reports still describe scaffold surfaces; those pages do not yet read or write their future domain data. The Admin schedule page now supports protected plan and assignment creation, editing, lifecycle changes, conflict feedback, and responsive live refreshes. Attendance remains a protected read-only occurrence view pending its operational workflow. The Tutor hours route remains a skeleton, while the Admin hour routes and category controls are live as described above. Protected tutor, Materias, Settings, and API surfaces require the server-side identity and Admin role boundary when authentication is configured.
 
 ## Not implemented in the current runtime
 
 The following remain future work described by the shared decision documents:
 
-- the full interactive schedule editor, attendance workflow, and Tutor self-service;
+- the attendance workflow and Tutor self-service;
 - consultation workflows, including read-only Google Sheets ingestion and consultation curation;
 - formal scholarship certification;
 - reporting, production deployment, backups, and operational data migration.
@@ -81,7 +81,7 @@ The `src/auth/` and `src/db/` directories are active server-only boundaries. `sr
 | `/admin` | Admin-protected shell with overview skeleton. |
 | `/admin/tutors` | Admin-protected live tutor management and academic relationship workflow. |
 | `/admin/tutors/subjects` | Admin-protected derived Materias coverage for the open cycle. |
-| `/admin/schedules` | Admin-protected live schedule workspace data and effective-plan context. |
+| `/admin/schedules` | Admin-protected live schedule planning and editing for cycle plans and assignments. |
 | `/admin/schedules/attendance` | Admin-protected live attendance occurrence loading for a selected date. |
 | `/admin/hours` | Admin-protected live hour balances and movement registration. |
 | `/admin/hours/movements` | Admin-protected movement history and reversal workflow. |
