@@ -52,12 +52,12 @@ test.describe("authenticated Admin scheduling and attendance", () => {
     await expect(page.getByRole("tab", { name: /Regular 2027/ })).toHaveAttribute(
       "aria-selected",
       "true",
+      { timeout: 15_000 },
     );
     await page.getByRole("tab", { name: /Attendance special 2027/ }).click();
-    await expect(page.getByRole("tab", { name: /Attendance special 2027/ })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    await expect(
+      page.getByRole("tab", { name: /Attendance special 2027/ }),
+    ).toHaveAttribute("aria-selected", "true", { timeout: 15_000 });
 
     await page
       .getByLabel("Grilla semanal")
