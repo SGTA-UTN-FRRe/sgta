@@ -48,6 +48,7 @@ export const tutorSelfServiceScheduleQuerySchema = z
   });
 
 export const tutorSelfServiceHoursQuerySchema = z.object({}).strict();
+export const tutorSelfServiceSummaryQuerySchema = z.object({}).strict();
 
 export type TutorSelfServiceScheduleQuery = z.output<
   typeof tutorSelfServiceScheduleQuerySchema
