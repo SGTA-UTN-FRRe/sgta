@@ -35,6 +35,7 @@ export default async function AdminAttendancePage({
 
   let state: "default" | "empty" | "error" | "required-action" = "default";
   let data = null as Awaited<ReturnType<typeof listAttendanceForDate>> | null;
+  let initialErrorMessage: string | undefined;
 
   try {
     const cycles = await listAdministrativeCycles(database);
@@ -64,7 +65,17 @@ export default async function AdminAttendancePage({
         error.code === ATTENDANCE_ERROR_CODES.cycleNotOpen)
         ? "required-action"
         : "error";
+    if (state === "error") {
+      initialErrorMessage =
+        "No se pudo cargar la asistencia. Reintentar para volver a consultar la fecha seleccionada.";
+    }
   }
 
-  return <AttendanceScreen data={data} state={state} />;
+  return (
+    <AttendanceScreen
+      data={data}
+      initialErrorMessage={initialErrorMessage}
+      state={state}
+    />
+  );
 }
