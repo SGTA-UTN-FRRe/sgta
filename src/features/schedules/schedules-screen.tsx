@@ -26,12 +26,7 @@ import {
 
 import { buttonVariants, Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  schedulesStateFixtures,
-  type ScheduleAssignmentView,
-  type SchedulePlanView,
-  type SchedulesScreenData,
-} from "@/mocks/schedules.mock";
+import { schedulesStateFixtures } from "@/mocks/schedules.mock";
 import type { ScreenStateFixture } from "@/mocks/screen-state";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
@@ -40,6 +35,18 @@ import {
   type StatusBadgeVariant,
 } from "@/shared/components/status-badge";
 import { cn } from "@/shared/utils";
+
+import type {
+  ScheduleAssignmentView,
+  SchedulePlanView,
+  SchedulesScreenData,
+} from "./schedules-screen-types";
+
+export type {
+  ScheduleAssignmentView,
+  SchedulePlanView,
+  SchedulesScreenData,
+} from "./schedules-screen-types";
 
 export type SchedulesScreenState =
   | "default"

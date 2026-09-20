@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml/badge.svg)](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml)
 
-> Current repository status: an executable Next.js application with live tutor, academic, and Admin hour-accounting operations, the SGTA UI, and a secure platform foundation.
+> Current repository status: an executable Next.js application with live tutor, academic, hour-accounting, scheduling, and attendance data boundaries, the SGTA UI, and a secure platform foundation.
 
-SGTA is the operational workspace for the Tutorias area at UTN FRRe. The repository currently contains the application shell, protected role-based navigation, PostgreSQL persistence, provisioned Google-only authentication, AdministrativeCycle lifecycle controls, live Admin tutor, academic catalog, and hour-accounting operations, safe audit events, and shared UI components. Later domain workflows remain deferred.
+SGTA is the operational workspace for the Tutorias area at UTN FRRe. The repository currently contains the application shell, protected role-based navigation, PostgreSQL persistence, provisioned Google-only authentication, AdministrativeCycle lifecycle controls, live Admin tutor, academic catalog, hour-accounting, scheduling, and attendance operations, safe audit events, and shared UI components. Later domain workflows remain deferred.
 
 ## Current state
 
@@ -18,6 +18,7 @@ The current runtime provides:
 - low-frequency Career, Subject, and scholarship-reference maintenance from `/admin/settings`, with active/inactive lifecycle controls and no hard deletion;
 - live Admin hour accounting at `/admin/hours`, including derived balances, individual and atomic bulk movements, activity/recovery origins, and immutable reversal workflows;
 - Admin movement history at `/admin/hours/movements` plus hour-category maintenance under `/admin/settings`;
+- live Admin schedule workspace and attendance occurrence data boundaries at `/admin/schedules` and `/admin/schedules/attendance`, with protected APIs for plan, assignment, attendance, debit, correction, and recovery operations;
 - Tutor route skeletons for the overview, schedule, and hours;
 - responsive Admin and Tutor navigation shells;
 - a PostgreSQL/Drizzle schema and committed migration for Better Auth identities/sessions, application roles, AdministrativeCycle, and AuditEvent;
@@ -27,13 +28,13 @@ The current runtime provides:
 - shared components for navigation, page headers, empty states, status badges, Faro branding, buttons, cards, inputs, and tables;
 - unit/component tests, isolated PostgreSQL/Testcontainers integration tests, and Playwright coverage for unauthenticated protection plus authenticated Admin tutor/Materias and hour-accounting journeys across supported viewports.
 
-The route labels for schedules, consultations, and reports still describe scaffold surfaces; those pages do not yet read or write their future domain data. The Tutor hours route remains a skeleton, while the Admin hour routes and category controls are live as described above. Protected tutor, Materias, Settings, and API surfaces require the server-side identity and Admin role boundary when authentication is configured.
+The route labels for consultations and reports still describe scaffold surfaces; those pages do not yet read or write their future domain data. The schedule and attendance pages currently expose protected server-loaded data boundaries; their full interactive workflows remain future work. The Tutor hours route remains a skeleton, while the Admin hour routes and category controls are live as described above. Protected tutor, Materias, Settings, and API surfaces require the server-side identity and Admin role boundary when authentication is configured.
 
 ## Not implemented in the current runtime
 
 The following remain future work described by the shared decision documents:
 
-- schedule plans, assignments, attendance, and Tutor self-service;
+- the full interactive schedule editor, attendance workflow, and Tutor self-service;
 - consultation workflows, including read-only Google Sheets ingestion and consultation curation;
 - formal scholarship certification;
 - reporting, production deployment, backups, and operational data migration.
@@ -80,7 +81,8 @@ The `src/auth/` and `src/db/` directories are active server-only boundaries. `sr
 | `/admin` | Admin-protected shell with overview skeleton. |
 | `/admin/tutors` | Admin-protected live tutor management and academic relationship workflow. |
 | `/admin/tutors/subjects` | Admin-protected derived Materias coverage for the open cycle. |
-| `/admin/schedules` | Schedule and attendance route skeleton. |
+| `/admin/schedules` | Admin-protected live schedule workspace data and effective-plan context. |
+| `/admin/schedules/attendance` | Admin-protected live attendance occurrence loading for a selected date. |
 | `/admin/hours` | Admin-protected live hour balances and movement registration. |
 | `/admin/hours/movements` | Admin-protected movement history and reversal workflow. |
 | `/admin/consultations` | Consultation route skeleton. |
@@ -97,6 +99,7 @@ The `src/auth/` and `src/db/` directories are active server-only boundaries. `sr
 | `/api/admin/tutors` and `/api/admin/tutors/...` | Admin-protected tutor CRUD, status, and current-cycle academic relationship handlers. |
 | `/api/admin/tutors/subjects` | Admin-protected derived Materias coverage handler. |
 | `/api/admin/hours` and `/api/admin/hours/...` | Admin-protected hour balances, movement registration, movement history, and reversal handlers. |
+| `/api/admin/schedules` and `/api/admin/schedules/...` | Admin-protected schedule workspace, plan, assignment, attendance, debit, correction, and recovery handlers. |
 | `/api/admin/settings/...` | Admin-protected Career, Subject, scholarship-reference, and hour-category handlers. |
 
 ## Repository structure

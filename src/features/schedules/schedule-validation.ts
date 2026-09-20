@@ -181,6 +181,14 @@ export const scheduleAssignmentListInputSchema = z
   })
   .strict();
 
+export const scheduleWorkspaceInputSchema = z
+  .object({
+    cycleId: scheduleIdentifierSchema.optional(),
+    planId: scheduleIdentifierSchema.optional(),
+    date: dateOnlySchema.optional(),
+  })
+  .strict();
+
 export type CreateSchedulePlanInput = z.input<
   typeof createSchedulePlanInputSchema
 >;
@@ -220,6 +228,12 @@ export type ParsedScheduleAssignmentStatusInput = z.output<
 export type EffectiveScheduleInput = z.input<typeof effectiveScheduleInputSchema>;
 export type ParsedEffectiveScheduleInput = z.output<
   typeof effectiveScheduleInputSchema
+>;
+export type ScheduleWorkspaceInput = z.input<
+  typeof scheduleWorkspaceInputSchema
+>;
+export type ParsedScheduleWorkspaceInput = z.output<
+  typeof scheduleWorkspaceInputSchema
 >;
 
 export function getIsoWeekday(date: string) {

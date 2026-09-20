@@ -14,11 +14,14 @@ import {
   activity,
   administrativeCycle,
   attendanceRecord,
+  career,
   dutyOccurrence,
   hourMovement,
+  tutor,
   user,
   type AttendanceDebitStatus,
   type AttendanceStatus,
+  type RecordStatus,
 } from "@/db/schema";
 import {
   HOUR_ERROR_CODES,
@@ -129,8 +132,16 @@ export type SafeAttendanceRecord = {
   updatedAt: string;
 };
 
+export type SafeAttendanceTutor = {
+  id: string;
+  formalName: string;
+  careerName: string;
+  status: RecordStatus;
+};
+
 export type SafeAttendanceOccurrence = {
   occurrence: SafeDutyOccurrence;
+  tutor: SafeAttendanceTutor;
   attendance: SafeAttendanceRecord;
 };
 
@@ -180,6 +191,10 @@ type OccurrenceRow = {
   endMinutes: number;
   kind: "DUTY" | "RECOVERY";
   modality: string | null;
+  tutorFirstName: string;
+  tutorLastName: string;
+  tutorCareerName: string;
+  tutorStatus: RecordStatus;
   createdAt: Date;
 };
 
@@ -214,6 +229,10 @@ const occurrenceSelection = {
   endMinutes: dutyOccurrence.endMinutes,
   kind: dutyOccurrence.kind,
   modality: dutyOccurrence.modality,
+  tutorFirstName: tutor.firstName,
+  tutorLastName: tutor.lastName,
+  tutorCareerName: career.name,
+  tutorStatus: tutor.status,
   createdAt: dutyOccurrence.createdAt,
 };
 
@@ -242,10 +261,21 @@ function toSafeAttendanceRecord(
 function toSafeAttendanceOccurrence(
   occurrence: SafeDutyOccurrence,
   attendance: AttendanceRecordRow,
+  tutorRecord: SafeAttendanceTutor,
 ): SafeAttendanceOccurrence {
   return {
     occurrence,
+    tutor: tutorRecord,
     attendance: toSafeAttendanceRecord(attendance),
+  };
+}
+
+function toSafeAttendanceTutor(row: OccurrenceRow): SafeAttendanceTutor {
+  return {
+    id: row.tutorId,
+    formalName: `${row.tutorLastName}, ${row.tutorFirstName}`,
+    careerName: row.tutorCareerName,
+    status: row.tutorStatus,
   };
 }
 
@@ -429,6 +459,8 @@ async function getOccurrence(
   const query = db
     .select(occurrenceSelection)
     .from(dutyOccurrence)
+    .innerJoin(tutor, eq(dutyOccurrence.tutorId, tutor.id))
+    .innerJoin(career, eq(tutor.primaryCareerId, career.id))
     .where(eq(dutyOccurrence.id, occurrenceId))
     .limit(1);
   const [row] = lock ? await query.for("update") : await query;
@@ -880,7 +912,13 @@ async function ensureDateAttendanceRecords(
       actorId,
       context,
     );
-    result.push(toSafeAttendanceOccurrence(occurrence, attendance));
+    result.push(
+      toSafeAttendanceOccurrence(
+        occurrence,
+        attendance,
+        toSafeAttendanceTutor(occurrenceRow),
+      ),
+    );
   }
 
   return result;
@@ -901,7 +939,12 @@ async function getMutationOccurrence(
   );
   const safeOccurrence = toSafeDutyOccurrence(occurrence);
 
-  return { occurrence, safeOccurrence, attendance };
+  return {
+    occurrence,
+    safeOccurrence,
+    attendance,
+    tutor: toSafeAttendanceTutor(occurrence),
+  };
 }
 
 function toSafeDutyOccurrence(row: OccurrenceRow): SafeDutyOccurrence {
@@ -930,12 +973,17 @@ function toSafeDutyOccurrence(row: OccurrenceRow): SafeDutyOccurrence {
 
 function buildAttendanceMutationResult(
   safeOccurrence: SafeDutyOccurrence,
+  tutorRecord: SafeAttendanceTutor,
   attendance: AttendanceRecordRow,
   movement: SafeHourMovement | null = null,
   reversal: SafeHourReversalResult | null = null,
 ): SafeAttendanceMutationResult {
   return {
-    attendance: toSafeAttendanceOccurrence(safeOccurrence, attendance),
+    attendance: toSafeAttendanceOccurrence(
+      safeOccurrence,
+      attendance,
+      tutorRecord,
+    ),
     movement,
     reversal,
   };
@@ -1002,14 +1050,14 @@ export async function getAttendanceOccurrence(
 
   return runMutation(db, async (transaction) => {
     const actor = await requireUserActor(transaction, context.actorId);
-    const { safeOccurrence, attendance } = await getMutationOccurrence(
+    const { safeOccurrence, attendance, tutor } = await getMutationOccurrence(
       transaction,
       parsedOccurrenceId,
       actor.id,
       context,
     );
 
-    return toSafeAttendanceOccurrence(safeOccurrence, attendance);
+    return toSafeAttendanceOccurrence(safeOccurrence, attendance, tutor);
   });
 }
 
@@ -1026,7 +1074,7 @@ export async function setAttendanceStatus(
 
   return runMutation(db, async (transaction) => {
     const actor = await requireUserActor(transaction, context.actorId);
-    const { occurrence, safeOccurrence, attendance } = await getMutationOccurrence(
+    const { occurrence, safeOccurrence, attendance, tutor } = await getMutationOccurrence(
       transaction,
       parsedOccurrenceId,
       actor.id,
@@ -1083,6 +1131,7 @@ export async function setAttendanceStatus(
 
     return buildAttendanceMutationResult(
       safeOccurrence,
+      tutor,
       updated,
     );
   });
@@ -1102,7 +1151,7 @@ export async function cancelAbsenceDebit(
 
   return runMutation(db, async (transaction) => {
     const actor = await requireUserActor(transaction, context.actorId);
-    const { safeOccurrence, attendance } = await getMutationOccurrence(
+    const { safeOccurrence, attendance, tutor } = await getMutationOccurrence(
       transaction,
       parsedOccurrenceId,
       actor.id,
@@ -1144,7 +1193,7 @@ export async function cancelAbsenceDebit(
       context,
     );
 
-    return buildAttendanceMutationResult(safeOccurrence, updated);
+    return buildAttendanceMutationResult(safeOccurrence, tutor, updated);
   });
 }
 
@@ -1160,7 +1209,7 @@ export async function reopenAbsenceDebit(
 
   return runMutation(db, async (transaction) => {
     const actor = await requireUserActor(transaction, context.actorId);
-    const { safeOccurrence, attendance } = await getMutationOccurrence(
+    const { safeOccurrence, attendance, tutor } = await getMutationOccurrence(
       transaction,
       parsedOccurrenceId,
       actor.id,
@@ -1202,7 +1251,7 @@ export async function reopenAbsenceDebit(
       context,
     );
 
-    return buildAttendanceMutationResult(safeOccurrence, updated);
+    return buildAttendanceMutationResult(safeOccurrence, tutor, updated);
   });
 }
 
@@ -1218,7 +1267,7 @@ export async function confirmAbsenceDebit(
 
   return runMutation(db, async (transaction) => {
     const actor = await requireUserActor(transaction, context.actorId);
-    const { occurrence, safeOccurrence, attendance } = await getMutationOccurrence(
+    const { occurrence, safeOccurrence, attendance, tutor } = await getMutationOccurrence(
       transaction,
       parsedOccurrenceId,
       actor.id,
@@ -1287,7 +1336,7 @@ export async function confirmAbsenceDebit(
       context,
     );
 
-    return buildAttendanceMutationResult(safeOccurrence, updated, movement);
+    return buildAttendanceMutationResult(safeOccurrence, tutor, updated, movement);
   });
 }
 
@@ -1304,7 +1353,7 @@ export async function correctAttendance(
 
   return runMutation(db, async (transaction) => {
     const actor = await requireUserActor(transaction, context.actorId);
-    const { occurrence, safeOccurrence, attendance } = await getMutationOccurrence(
+    const { occurrence, safeOccurrence, attendance, tutor } = await getMutationOccurrence(
       transaction,
       parsedOccurrenceId,
       actor.id,
@@ -1355,6 +1404,7 @@ export async function correctAttendance(
 
       return buildAttendanceMutationResult(
         safeOccurrence,
+        tutor,
         updated,
         null,
         reversal,
@@ -1396,7 +1446,7 @@ export async function correctAttendance(
         context,
       );
 
-      return buildAttendanceMutationResult(safeOccurrence, updated);
+      return buildAttendanceMutationResult(safeOccurrence, tutor, updated);
     }
 
     if (!hasDebitFields) {
@@ -1472,6 +1522,7 @@ export async function correctAttendance(
 
     return buildAttendanceMutationResult(
       safeOccurrence,
+      tutor,
       updated,
       movement,
       reversal,
@@ -1492,7 +1543,7 @@ export async function recognizeScheduledRecovery(
 
   return runMutation(db, async (transaction) => {
     const actor = await requireUserActor(transaction, context.actorId);
-    const { occurrence, safeOccurrence, attendance } = await getMutationOccurrence(
+    const { occurrence, safeOccurrence, attendance, tutor } = await getMutationOccurrence(
       transaction,
       parsedOccurrenceId,
       actor.id,
@@ -1572,7 +1623,7 @@ export async function recognizeScheduledRecovery(
     });
 
     return {
-      attendance: toSafeAttendanceOccurrence(safeOccurrence, attendance),
+      attendance: toSafeAttendanceOccurrence(safeOccurrence, attendance, tutor),
       movement,
     };
   });

@@ -20,6 +20,7 @@ import { recordAuditEvent } from "@/db/audit-core";
 import type { Database } from "@/db/client-core";
 import {
   administrativeCycle,
+  career,
   dutyOccurrence,
   scheduleAssignment,
   schedulePlan,
@@ -44,6 +45,7 @@ import {
   scheduleIdentifierSchema,
   schedulePlanListInputSchema,
   schedulePlanStatusInputSchema,
+  scheduleWorkspaceInputSchema,
   updateScheduleAssignmentInputSchema,
   updateSchedulePlanInputSchema,
   type ParsedCreateScheduleAssignmentInput,
@@ -51,6 +53,7 @@ import {
   type ParsedScheduleAssignmentStatusInput,
   type ParsedSchedulePlanStatusInput,
   type ParsedUpdateScheduleAssignmentInput,
+  type ParsedScheduleWorkspaceInput,
 } from "./schedule-validation";
 
 export const SCHEDULE_ERROR_CODES = {
@@ -59,6 +62,7 @@ export const SCHEDULE_ERROR_CODES = {
   transactionFailed: "transaction_failed",
   actorRequired: "actor_required",
   actorNotFound: "actor_not_found",
+  openCycleRequired: "open_cycle_required",
   cycleNotFound: "cycle_not_found",
   cycleNotOpen: "cycle_not_open",
   dateOutsideCycle: "date_outside_cycle",
@@ -155,6 +159,18 @@ export type SafeScheduleAssignment = {
   updatedAt: string;
 };
 
+export type SafeScheduleTutor = {
+  id: string;
+  formalName: string;
+  careerName: string;
+  status: RecordStatus;
+};
+
+export type SafeScheduleConflict = {
+  assignmentId: string;
+  conflictingAssignmentIds: string[];
+};
+
 export type SafeRecoveryContext = {
   markedForRecovery: boolean;
   recognition: "EXPLICIT_ACTION_REQUIRED" | "NOT_APPLICABLE";
@@ -179,6 +195,21 @@ export type SafeEffectiveSchedule = {
   cycle: SafeScheduleCycle;
   plan: SafeSchedulePlan | null;
   occurrences: SafeDutyOccurrence[];
+};
+
+export type SafeScheduleWorkspace = {
+  currentCycle: SafeScheduleCycle;
+  plans: SafeSchedulePlan[];
+  selectedPlan: SafeSchedulePlan | null;
+  assignments: SafeScheduleAssignment[];
+  eligibleTutors: SafeScheduleTutor[];
+  conflicts: SafeScheduleConflict[];
+  requestedDate: string | null;
+  effective: {
+    date: string;
+    plan: SafeSchedulePlan | null;
+    occurrences: SafeDutyOccurrence[];
+  };
 };
 
 type SelectDatabase = Pick<Database, "select">;
@@ -1047,6 +1078,104 @@ async function findEffectivePlan(
   return regularPlan;
 }
 
+async function getOpenCycle(
+  db: SelectDatabase,
+): Promise<CycleRow | undefined> {
+  const [cycle] = await db
+    .select(cycleSelection)
+    .from(administrativeCycle)
+    .where(eq(administrativeCycle.status, "OPEN"))
+    .orderBy(desc(administrativeCycle.startDate), desc(administrativeCycle.id))
+    .limit(1);
+
+  return cycle;
+}
+
+function getSafeScheduleConflicts(
+  assignments: SafeScheduleAssignment[],
+  plan: Pick<PlanRow, "validFrom" | "validTo"> | null,
+): SafeScheduleConflict[] {
+  if (plan === null) {
+    return [];
+  }
+
+  const conflictIds = new Map<string, Set<string>>();
+  const activeAssignments = assignments.filter(
+    (assignment) => assignment.status === "ACTIVE",
+  );
+
+  for (let leftIndex = 0; leftIndex < activeAssignments.length; leftIndex += 1) {
+    const left = activeAssignments[leftIndex]!;
+
+    for (
+      let rightIndex = leftIndex + 1;
+      rightIndex < activeAssignments.length;
+      rightIndex += 1
+    ) {
+      const right = activeAssignments[rightIndex]!;
+
+      if (
+        left.tutorId !== right.tutorId ||
+        !assignmentWindowsOverlap(
+          toAssignmentWindow(left),
+          toAssignmentWindow(right),
+          plan.validFrom,
+          plan.validTo,
+        )
+      ) {
+        continue;
+      }
+
+      const leftConflicts = conflictIds.get(left.id) ?? new Set<string>();
+      leftConflicts.add(right.id);
+      conflictIds.set(left.id, leftConflicts);
+
+      const rightConflicts = conflictIds.get(right.id) ?? new Set<string>();
+      rightConflicts.add(left.id);
+      conflictIds.set(right.id, rightConflicts);
+    }
+  }
+
+  return [...conflictIds.entries()]
+    .sort(([leftId], [rightId]) => leftId.localeCompare(rightId))
+    .map(([assignmentId, conflictingAssignmentIds]) => ({
+      assignmentId,
+      conflictingAssignmentIds: [...conflictingAssignmentIds].sort(),
+    }));
+}
+
+async function listEligibleScheduleTutors(
+  db: SelectDatabase,
+  cycleId: string,
+): Promise<SafeScheduleTutor[]> {
+  const rows = await db
+    .select({
+      id: tutor.id,
+      firstName: tutor.firstName,
+      lastName: tutor.lastName,
+      careerName: career.name,
+      status: tutor.status,
+    })
+    .from(tutor)
+    .innerJoin(career, eq(tutor.primaryCareerId, career.id))
+    .innerJoin(
+      tutorCycleMembership,
+      and(
+        eq(tutorCycleMembership.tutorId, tutor.id),
+        eq(tutorCycleMembership.cycleId, cycleId),
+      ),
+    )
+    .where(eq(tutor.status, "ACTIVE"))
+    .orderBy(asc(tutor.lastName), asc(tutor.firstName), asc(tutor.id));
+
+  return rows.map((row) => ({
+    id: row.id,
+    formalName: `${row.lastName}, ${row.firstName}`,
+    careerName: row.careerName,
+    status: row.status,
+  }));
+}
+
 async function getOccurrenceRows(
   db: SelectDatabase,
   assignmentIds: string[],
@@ -1238,6 +1367,110 @@ export function parseScheduleAssignmentStatusInput(input: unknown) {
 
 export function parseEffectiveScheduleInput(input: unknown) {
   return parseServiceInput(effectiveScheduleInputSchema, input);
+}
+
+export function parseScheduleWorkspaceInput(input: unknown) {
+  return parseServiceInput(scheduleWorkspaceInputSchema, input);
+}
+
+export async function getScheduleWorkspace(
+  db: Database,
+  input: unknown = {},
+  context: ScheduleMutationContext = {},
+): Promise<SafeScheduleWorkspace> {
+  const parsed: ParsedScheduleWorkspaceInput = parseScheduleWorkspaceInput(input);
+  assertActorProvided(context.actorId);
+
+  return runMutation(db, async (transaction) => {
+    await requireActor(transaction, context.actorId);
+
+    const cycle =
+      parsed.cycleId === undefined
+        ? await getOpenCycle(transaction)
+        : await requireOpenCycle(transaction, parsed.cycleId);
+
+    if (cycle === undefined) {
+      throw new ScheduleServiceError(
+        SCHEDULE_ERROR_CODES.openCycleRequired,
+        "An open administrative cycle is required for the schedule workspace.",
+      );
+    }
+
+    const requestedDate = parsed.date ?? cycle.startDate;
+    assertDateWithinCycle(requestedDate, cycle);
+
+    const planRows = await transaction
+      .select(planSelection)
+      .from(schedulePlan)
+      .where(eq(schedulePlan.cycleId, cycle.id))
+      .orderBy(asc(schedulePlan.kind), asc(schedulePlan.validFrom), asc(schedulePlan.name));
+    const plans = planRows.map(toSafePlan);
+
+    const selectedPlanRow =
+      parsed.planId === undefined
+        ? undefined
+        : planRows.find((plan) => plan.id === parsed.planId);
+
+    if (parsed.planId !== undefined && selectedPlanRow === undefined) {
+      throw new ScheduleServiceError(
+        SCHEDULE_ERROR_CODES.planNotFound,
+        "The schedule plan was not found in the selected cycle.",
+        { details: { planId: parsed.planId, cycleId: cycle.id } },
+      );
+    }
+
+    const effective = await materializeEffectiveSchedule(
+      transaction,
+      { cycleId: cycle.id, date: requestedDate },
+      context,
+    );
+    const effectivePlanRow =
+      effective.plan === null
+        ? undefined
+        : planRows.find((plan) => plan.id === effective.plan?.id);
+    const fallbackPlanRow = planRows.find((plan) => plan.status === "ACTIVE") ?? planRows[0];
+    const selectedPlanRowForResponse =
+      selectedPlanRow ?? effectivePlanRow ?? fallbackPlanRow;
+    const selectedPlan =
+      selectedPlanRowForResponse === undefined
+        ? null
+        : toSafePlan(selectedPlanRowForResponse);
+
+    const assignments =
+      selectedPlan === null
+        ? []
+        : (
+            await transaction
+              .select(assignmentSelection)
+              .from(scheduleAssignment)
+              .innerJoin(tutor, eq(scheduleAssignment.tutorId, tutor.id))
+              .where(eq(scheduleAssignment.planId, selectedPlan.id))
+              .orderBy(
+                asc(scheduleAssignment.status),
+                asc(scheduleAssignment.assignmentDate),
+                asc(scheduleAssignment.weekday),
+                asc(scheduleAssignment.startMinutes),
+              )
+          ).map(toSafeAssignment);
+
+    return {
+      currentCycle: toSafeCycle(cycle),
+      plans,
+      selectedPlan,
+      assignments,
+      eligibleTutors: await listEligibleScheduleTutors(transaction, cycle.id),
+      conflicts: getSafeScheduleConflicts(
+        assignments,
+        selectedPlanRowForResponse ?? null,
+      ),
+      requestedDate: parsed.date ?? null,
+      effective: {
+        date: requestedDate,
+        plan: effective.plan,
+        occurrences: effective.occurrences,
+      },
+    };
+  });
 }
 
 export async function listSchedulePlans(
