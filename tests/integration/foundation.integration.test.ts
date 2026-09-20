@@ -100,6 +100,7 @@ import {
   createSubject,
   createTutor,
   getActiveCatalogOptions,
+  getTutorDetail,
   listSubjectCoverage,
   listTutors,
   TUTOR_ERROR_CODES,
@@ -284,6 +285,7 @@ describe("PostgreSQL foundation integration", () => {
             'schedule_plan_cycle_status_idx',
             'schedule_plan_cycle_validity_idx',
             'subject_career_normalized_name_unique',
+            'tutor_application_user_unique',
             'tutor_institutional_identifier_unique',
             'tutor_primary_career_idx',
             'tutor_status_idx',
@@ -320,6 +322,7 @@ describe("PostgreSQL foundation integration", () => {
             'schedule_assignment_tutor_id_tutor_id_fk',
             'schedule_plan_cycle_id_administrative_cycle_id_fk',
             'subject_career_id_career_id_fk',
+            'tutor_application_user_id_user_id_fk',
             'tutor_primary_career_id_career_id_fk',
             'tutor_cycle_membership_tutor_id_tutor_id_fk',
             'tutor_cycle_membership_cycle_id_administrative_cycle_id_fk',
@@ -405,7 +408,7 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("4");
+    expect(migrations[0]?.migration_count).toBe("5");
     expect(enumValues).toEqual([
       { typname: "activity_kind", enumlabel: "MEETING" },
       { typname: "activity_kind", enumlabel: "WORKSHOP" },
@@ -458,6 +461,7 @@ describe("PostgreSQL foundation integration", () => {
       "schedule_plan_cycle_status_idx",
       "schedule_plan_cycle_validity_idx",
       "subject_career_normalized_name_unique",
+      "tutor_application_user_unique",
       "tutor_cycle_membership_cycle_idx",
       "tutor_cycle_membership_scholarship_reference_idx",
       "tutor_institutional_identifier_unique",
@@ -486,6 +490,7 @@ describe("PostgreSQL foundation integration", () => {
       "schedule_assignment_tutor_id_tutor_id_fk",
       "schedule_plan_cycle_id_administrative_cycle_id_fk",
       "subject_career_id_career_id_fk",
+      "tutor_application_user_id_user_id_fk",
       "tutor_cycle_membership_cycle_id_administrative_cycle_id_fk",
       "tutor_cycle_membership_scholarship_reference_id_scholarship_ref",
       "tutor_cycle_membership_tutor_id_tutor_id_fk",
@@ -2351,6 +2356,217 @@ describe("PostgreSQL foundation integration", () => {
       currentCycle: null,
       subjects: [],
     });
+  });
+
+  it("enforces one-to-one Tutor account ownership without deleting Tutor history", async () => {
+    const database = getIntegrationDatabase();
+    const { admin, tutor: tutorIdentity, disabled } = await seedIdentities();
+    const replacementIdentity = await provisionUser(
+      database,
+      {
+        email: "replacement.integration@example.test",
+        name: "Replacement Tutor",
+        role: "TUTOR",
+        enabled: true,
+      },
+      { actorId: admin.id, source: "admin" },
+    );
+    const careerRecord = await createCareer(
+      database,
+      { name: "Account Ownership Engineering" },
+      { actorId: admin.id },
+    );
+    const cycle = await createAdministrativeCycle(
+      database,
+      {
+        name: "Account Ownership Cycle 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+      },
+      { actorId: admin.id },
+    );
+    const auditContext = { actorId: admin.id, requestId: "account-ownership-test" };
+
+    const linkedTutor = await createTutor(
+      database,
+      {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        primaryCareerId: careerRecord.id,
+        cycleId: cycle.id,
+        applicationEmail: ` ${tutorIdentity.email.toUpperCase()} `,
+      },
+      auditContext,
+    );
+
+    expect(linkedTutor.applicationAccount).toEqual({
+      email: tutorIdentity.email,
+      enabled: true,
+    });
+    await expect(
+      database
+        .select({ applicationUserId: tutor.applicationUserId })
+        .from(tutor)
+        .where(eq(tutor.id, linkedTutor.id)),
+    ).resolves.toEqual([{ applicationUserId: tutorIdentity.id }]);
+
+    await expect(
+      createTutor(
+        database,
+        {
+          firstName: "Grace",
+          lastName: "Hopper",
+          primaryCareerId: careerRecord.id,
+          cycleId: cycle.id,
+          applicationEmail: tutorIdentity.email,
+        },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({
+      code: TUTOR_ERROR_CODES.applicationAccountAlreadyLinked,
+    });
+    await expect(
+      database.insert(tutor).values({
+        firstName: "Invalid",
+        lastName: "Foreign Key",
+        primaryCareerId: careerRecord.id,
+        applicationUserId: "missing-application-user",
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23503" } });
+    await expect(
+      database.insert(tutor).values({
+        firstName: "Duplicate",
+        lastName: "Application Account",
+        primaryCareerId: careerRecord.id,
+        applicationUserId: tutorIdentity.id,
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
+
+    await expect(
+      updateTutor(
+        database,
+        linkedTutor.id,
+        { applicationEmail: "unknown.integration@example.test" },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.applicationAccountNotFound });
+    await expect(
+      updateTutor(
+        database,
+        linkedTutor.id,
+        { applicationEmail: admin.email },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.applicationAccountNotTutor });
+    await expect(
+      updateTutor(
+        database,
+        linkedTutor.id,
+        { applicationEmail: disabled.email },
+        auditContext,
+      ),
+    ).rejects.toMatchObject({ code: TUTOR_ERROR_CODES.applicationAccountDisabled });
+
+    await database.delete(user).where(eq(user.id, tutorIdentity.id));
+
+    await expect(getTutorDetail(database, linkedTutor.id)).resolves.toMatchObject({
+      id: linkedTutor.id,
+      applicationAccount: null,
+      memberships: [{ cycle: { id: cycle.id } }],
+    });
+
+    authMocks.getSession.mockResolvedValue(null);
+    const unauthorizedLink = await patchAdminTutorDetail(
+      makeJsonRequest(
+        `http://localhost/api/admin/tutors/${linkedTutor.id}`,
+        "PATCH",
+        { applicationEmail: replacementIdentity.email },
+      ),
+      { params: Promise.resolve({ tutorId: linkedTutor.id }) },
+    );
+    expect(unauthorizedLink.status).toBe(401);
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: replacementIdentity.id, role: "TUTOR" },
+    });
+    const forbiddenLink = await patchAdminTutorDetail(
+      makeJsonRequest(
+        `http://localhost/api/admin/tutors/${linkedTutor.id}`,
+        "PATCH",
+        { applicationEmail: replacementIdentity.email },
+      ),
+      { params: Promise.resolve({ tutorId: linkedTutor.id }) },
+    );
+    expect(forbiddenLink.status).toBe(403);
+
+    authMocks.getSession.mockResolvedValue({
+      user: { id: admin.id, role: "ADMIN" },
+    });
+    const authorizedLink = await patchAdminTutorDetail(
+      makeJsonRequest(
+        `http://localhost/api/admin/tutors/${linkedTutor.id}`,
+        "PATCH",
+        { applicationEmail: ` ${replacementIdentity.email.toUpperCase()} ` },
+      ),
+      { params: Promise.resolve({ tutorId: linkedTutor.id }) },
+    );
+    expect(authorizedLink.status).toBe(200);
+    await expect(authorizedLink.json()).resolves.toMatchObject({
+      tutor: {
+        id: linkedTutor.id,
+        applicationAccount: {
+          email: replacementIdentity.email,
+          enabled: true,
+        },
+      },
+    });
+
+    const clearedTutor = await updateTutor(
+      database,
+      linkedTutor.id,
+      { applicationEmail: null },
+      auditContext,
+    );
+    expect(clearedTutor.applicationAccount).toBeNull();
+    await expect(
+      database
+        .select({ applicationUserId: tutor.applicationUserId })
+        .from(tutor)
+        .where(eq(tutor.id, linkedTutor.id)),
+    ).resolves.toEqual([{ applicationUserId: null }]);
+    await expect(
+      database
+        .select({ tutorId: tutorCycleMembership.tutorId })
+        .from(tutorCycleMembership)
+        .where(eq(tutorCycleMembership.tutorId, linkedTutor.id)),
+    ).resolves.toEqual([{ tutorId: linkedTutor.id }]);
+
+    const accountEvents = (await listAuditEvents(database, 100)).filter(
+      (event) => event.entityId === linkedTutor.id,
+    );
+    expect(accountEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          actorId: admin.id,
+          action: "tutor.application_account_linked",
+          metadata: { applicationUserId: tutorIdentity.id },
+        }),
+        expect.objectContaining({
+          actorId: admin.id,
+          action: "tutor.application_account_linked",
+          metadata: { applicationUserId: replacementIdentity.id },
+        }),
+        expect.objectContaining({
+          actorId: admin.id,
+          action: "tutor.application_account_unlinked",
+          metadata: { applicationUserId: replacementIdentity.id },
+        }),
+      ]),
+    );
+    expect(JSON.stringify(accountEvents)).not.toContain(tutorIdentity.email);
+    expect(JSON.stringify(accountEvents)).not.toContain(replacementIdentity.email);
+    expect(JSON.stringify(accountEvents)).not.toContain("token");
+    expect(JSON.stringify(accountEvents)).not.toContain("password");
   });
 
   it("rolls back a tutor write when its audit event cannot be recorded", async () => {

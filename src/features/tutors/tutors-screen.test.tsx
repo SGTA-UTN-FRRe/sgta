@@ -20,6 +20,7 @@ vi.stubGlobal("fetch", fetchMock);
 function detailFor(tutor: SafeTutorListItem = data.rows[0]): SafeTutorDetail {
   return {
     ...tutor,
+    applicationAccount: null,
     subjects: tutor.id === data.rows[0].id ? catalogOptions.subjects : [],
     memberships:
       tutor.currentCycle === null
@@ -234,6 +235,7 @@ describe("TutorsScreen", () => {
           lastName: "Gómez",
           preferredDisplayName: null,
           institutionalIdentifier: null,
+          applicationEmail: null,
           primaryCareerId: catalogOptions.careers[0].id,
           subjectIds: [catalogOptions.subjects[0].id],
           cycleId: catalogOptions.currentCycle?.id,

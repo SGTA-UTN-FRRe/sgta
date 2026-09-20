@@ -7,6 +7,7 @@ import {
   eq,
   ilike,
   inArray,
+  ne,
   or,
   sql,
   type SQL,
@@ -23,6 +24,7 @@ import {
   tutor,
   tutorCycleMembership,
   tutorSubject,
+  user,
   type RecordStatus,
 } from "@/db/schema";
 
@@ -34,6 +36,7 @@ import {
   parseCreateSubjectInput,
   parseCreateTutorInput,
   parseStatusTransitionInput,
+  parseTutorApplicationAccountInput,
   parseTutorSearchFilters,
   parseUpdateCareerInput,
   parseUpdateScholarshipReferenceInput,
@@ -69,6 +72,10 @@ export const TUTOR_ERROR_CODES = {
   duplicateScholarshipReferenceType: "duplicate_scholarship_reference_type",
   duplicateSubjectAssignment: "duplicate_subject_assignment",
   duplicateCycleMembership: "duplicate_cycle_membership",
+  applicationAccountNotFound: "application_account_not_found",
+  applicationAccountNotTutor: "application_account_not_tutor",
+  applicationAccountDisabled: "application_account_disabled",
+  applicationAccountAlreadyLinked: "application_account_already_linked",
   careerSubjectMismatch: "career_subject_mismatch",
   catalogConflict: "catalog_conflict",
   inactiveCareer: "inactive_career",
@@ -175,6 +182,10 @@ export type SafeTutorCycleMembership = {
 };
 
 export type SafeTutorDetail = SafeTutorListItem & {
+  applicationAccount: {
+    email: string;
+    enabled: boolean;
+  } | null;
   subjects: SafeSubject[];
   memberships: SafeTutorCycleMembership[];
 };
@@ -587,6 +598,13 @@ function mapMutationError(error: unknown): TutorServiceError {
         "The Tutor is already a member of this cycle.",
       );
     }
+
+    if (constraintName.includes("tutor_application_user_unique")) {
+      return new TutorServiceError(
+        TUTOR_ERROR_CODES.applicationAccountAlreadyLinked,
+        "The application account is already linked to another Tutor.",
+      );
+    }
   }
 
   if (code === "23503") {
@@ -714,6 +732,9 @@ async function getTutorRecord(db: SelectDatabase, tutorId: string) {
   const [row] = await db
     .select({
       id: tutor.id,
+      applicationUserId: tutor.applicationUserId,
+      applicationUserEmail: user.email,
+      applicationUserEnabled: user.enabled,
       firstName: tutor.firstName,
       lastName: tutor.lastName,
       preferredDisplayName: tutor.preferredDisplayName,
@@ -728,6 +749,7 @@ async function getTutorRecord(db: SelectDatabase, tutorId: string) {
     })
     .from(tutor)
     .innerJoin(career, eq(tutor.primaryCareerId, career.id))
+    .leftJoin(user, eq(tutor.applicationUserId, user.id))
     .where(eq(tutor.id, tutorId))
     .limit(1);
 
@@ -896,6 +918,15 @@ export async function getTutorDetail(
 
     return {
       ...listItem,
+      applicationAccount:
+        row.applicationUserId === null ||
+        row.applicationUserEmail === null ||
+        row.applicationUserEnabled === null
+          ? null
+          : {
+              email: row.applicationUserEmail,
+              enabled: row.applicationUserEnabled,
+            },
       subjects: subjectRows.map(toSafeSubject),
       memberships: membershipRows.map(toSafeMembership),
     };
@@ -1318,6 +1349,158 @@ function normalizedNullableIdentifier(value: string | null | undefined) {
     : normalizeInstitutionalIdentifier(value);
 }
 
+async function resolveApplicationAccount(
+  db: MutationDatabase,
+  email: string,
+  currentTutorId?: string,
+) {
+  const [applicationAccount] = await db
+    .select({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      enabled: user.enabled,
+    })
+    .from(user)
+    .where(eq(user.email, email))
+    .limit(1);
+
+  if (applicationAccount === undefined) {
+    throw new TutorServiceError(
+      TUTOR_ERROR_CODES.applicationAccountNotFound,
+      "The provisioned application account was not found.",
+    );
+  }
+
+  if (applicationAccount.role !== "TUTOR") {
+    throw new TutorServiceError(
+      TUTOR_ERROR_CODES.applicationAccountNotTutor,
+      "The application account is not provisioned as a Tutor.",
+    );
+  }
+
+  if (!applicationAccount.enabled) {
+    throw new TutorServiceError(
+      TUTOR_ERROR_CODES.applicationAccountDisabled,
+      "The application account is disabled.",
+    );
+  }
+
+  const linkedTutorConditions: SQL[] = [
+    eq(tutor.applicationUserId, applicationAccount.id),
+  ];
+
+  if (currentTutorId !== undefined) {
+    linkedTutorConditions.push(ne(tutor.id, currentTutorId));
+  }
+
+  const [linkedTutor] = await db
+    .select({ id: tutor.id })
+    .from(tutor)
+    .where(and(...linkedTutorConditions))
+    .limit(1);
+
+  if (linkedTutor !== undefined) {
+    throw new TutorServiceError(
+      TUTOR_ERROR_CODES.applicationAccountAlreadyLinked,
+      "The application account is already linked to another Tutor.",
+    );
+  }
+
+  return applicationAccount;
+}
+
+type ApplicationAccountChange = {
+  previousUserId: string | null;
+  nextUserId: string | null;
+};
+
+async function recordApplicationAccountChange(
+  db: MutationDatabase,
+  tutorId: string,
+  change: ApplicationAccountChange,
+  context: TutorMutationContext,
+) {
+  if (change.previousUserId !== null) {
+    await recordAuditEvent(db, {
+      actorId: context.actorId ?? null,
+      action: "tutor.application_account_unlinked",
+      entityType: "tutor",
+      entityId: tutorId,
+      metadata: { applicationUserId: change.previousUserId },
+      requestId: context.requestId ?? null,
+      ipAddress: context.ipAddress ?? null,
+    });
+  }
+
+  if (change.nextUserId !== null) {
+    await recordAuditEvent(db, {
+      actorId: context.actorId ?? null,
+      action: "tutor.application_account_linked",
+      entityType: "tutor",
+      entityId: tutorId,
+      metadata: { applicationUserId: change.nextUserId },
+      requestId: context.requestId ?? null,
+      ipAddress: context.ipAddress ?? null,
+    });
+  }
+}
+
+export async function setTutorApplicationAccount(
+  db: Database,
+  tutorId: string,
+  input: unknown,
+  context: TutorMutationContext = {},
+): Promise<SafeTutorDetail> {
+  const parsedTutorId = parseTutorId(tutorId);
+  const parsed = parseServiceInput(parseTutorApplicationAccountInput, input);
+
+  return runMutation(db, async (transaction) => {
+    const [existing] = await transaction
+      .select({ id: tutor.id, applicationUserId: tutor.applicationUserId })
+      .from(tutor)
+      .where(eq(tutor.id, parsedTutorId))
+      .limit(1);
+
+    if (existing === undefined) {
+      throw new TutorServiceError(
+        TUTOR_ERROR_CODES.tutorNotFound,
+        "The Tutor was not found.",
+        { details: { tutorId: parsedTutorId } },
+      );
+    }
+
+    const nextApplicationAccount =
+      parsed.applicationEmail === null
+        ? null
+        : await resolveApplicationAccount(
+            transaction,
+            parsed.applicationEmail,
+            parsedTutorId,
+          );
+    const nextUserId = nextApplicationAccount?.id ?? null;
+
+    if (nextUserId !== existing.applicationUserId) {
+      await transaction
+        .update(tutor)
+        .set({ applicationUserId: nextUserId, updatedAt: new Date() })
+        .where(eq(tutor.id, parsedTutorId));
+
+      await recordApplicationAccountChange(
+        transaction,
+        parsedTutorId,
+        {
+          previousUserId: existing.applicationUserId,
+          nextUserId,
+        },
+        context,
+      );
+    }
+
+    return getTutorDetail(transaction, parsedTutorId);
+  });
+}
+
 export async function createTutor(
   db: Database,
   input: unknown,
@@ -1326,6 +1509,11 @@ export async function createTutor(
   const parsed = parseCreateTutorServiceInput(input);
 
   return runMutation(db, async (transaction) => {
+    const applicationAccount =
+      parsed.applicationEmail === undefined || parsed.applicationEmail === null
+        ? null
+        : await resolveApplicationAccount(transaction, parsed.applicationEmail);
+
     await requireActiveCareer(transaction, parsed.primaryCareerId);
     await requireActiveSubjects(
       transaction,
@@ -1341,6 +1529,7 @@ export async function createTutor(
     const [created] = await transaction
       .insert(tutor)
       .values({
+        applicationUserId: applicationAccount?.id ?? null,
         firstName: cleanDisplayText(parsed.firstName),
         lastName: cleanDisplayText(parsed.lastName),
         preferredDisplayName:
@@ -1395,6 +1584,15 @@ export async function createTutor(
       ipAddress: context.ipAddress ?? null,
     });
 
+    if (applicationAccount !== null) {
+      await recordApplicationAccountChange(
+        transaction,
+        created.id,
+        { previousUserId: null, nextUserId: applicationAccount.id },
+        context,
+      );
+    }
+
     return getTutorDetail(transaction, created.id);
   });
 }
@@ -1408,6 +1606,13 @@ export async function updateTutor(
   const parsedTutorId = parseTutorId(tutorId);
   const parsed = parseUpdateTutorServiceInput(input);
 
+  if (
+    Object.keys(parsed).length === 1 &&
+    parsed.applicationEmail !== undefined
+  ) {
+    return setTutorApplicationAccount(db, parsedTutorId, parsed, context);
+  }
+
   return runMutation(db, async (transaction) => {
     const [existing] = await transaction
       .select({
@@ -1416,6 +1621,7 @@ export async function updateTutor(
         lastName: tutor.lastName,
         preferredDisplayName: tutor.preferredDisplayName,
         institutionalIdentifier: tutor.institutionalIdentifier,
+        applicationUserId: tutor.applicationUserId,
         primaryCareerId: tutor.primaryCareerId,
         status: tutor.status,
       })
@@ -1456,6 +1662,31 @@ export async function updateTutor(
     const values: Partial<typeof tutor.$inferInsert> = {
       updatedAt: new Date(),
     };
+    let applicationAccountChange: {
+      previousUserId: string | null;
+      nextUserId: string | null;
+    } | null = null;
+
+    if (parsed.applicationEmail !== undefined) {
+      const nextApplicationAccount =
+        parsed.applicationEmail === null
+          ? null
+          : await resolveApplicationAccount(
+              transaction,
+              parsed.applicationEmail,
+              parsedTutorId,
+            );
+      const nextUserId = nextApplicationAccount?.id ?? null;
+
+      if (nextUserId !== existing.applicationUserId) {
+        values.applicationUserId = nextUserId;
+        applicationAccountChange = {
+          previousUserId: existing.applicationUserId,
+          nextUserId,
+        };
+        changedFields.push("applicationAccount");
+      }
+    }
 
     if (parsed.firstName !== undefined) {
       values.firstName = cleanDisplayText(parsed.firstName);
@@ -1576,6 +1807,15 @@ export async function updateTutor(
       requestId: context.requestId ?? null,
       ipAddress: context.ipAddress ?? null,
     });
+
+    if (applicationAccountChange !== null) {
+      await recordApplicationAccountChange(
+        transaction,
+        parsedTutorId,
+        applicationAccountChange,
+        context,
+      );
+    }
 
     return getTutorDetail(transaction, parsedTutorId);
   });

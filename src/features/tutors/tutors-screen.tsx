@@ -109,6 +109,7 @@ type TutorFormValues = {
   lastName: string;
   preferredDisplayName: string;
   institutionalIdentifier: string;
+  applicationEmail: string;
   primaryCareerId: string;
   subjectIds: string[];
   cycleId: string;
@@ -179,6 +180,13 @@ const tutorErrorMessages: Record<string, string> = {
     "La referencia de beca seleccionada ya no está disponible.",
   duplicate_institutional_identifier:
     "El identificador institucional ya está asociado a otro tutor.",
+  application_account_not_found:
+    "No se encontró una cuenta de Tutor provisionada con ese correo.",
+  application_account_not_tutor:
+    "La cuenta seleccionada no está provisionada como Tutor.",
+  application_account_disabled: "La cuenta de Tutor está deshabilitada.",
+  application_account_already_linked:
+    "La cuenta de Tutor ya está vinculada a otro tutor.",
   career_subject_mismatch: "Las materias deben pertenecer a la carrera seleccionada.",
   inactive_career: "La carrera seleccionada está inactiva.",
   inactive_subject: "Una de las materias seleccionadas está inactiva.",
@@ -953,6 +961,10 @@ function formValuesForTutor(
     lastName: tutor?.lastName ?? "",
     preferredDisplayName: tutor?.preferredDisplayName ?? "",
     institutionalIdentifier: tutor?.institutionalIdentifier ?? "",
+    applicationEmail:
+      tutor !== undefined && "applicationAccount" in tutor
+        ? tutor.applicationAccount?.email ?? ""
+        : "",
     primaryCareerId: tutor?.primaryCareer.id ?? "",
     subjectIds:
       "subjects" in (tutor ?? {})
@@ -1156,6 +1168,7 @@ function TutorSheet({
       ...(form.institutionalIdentifier !== baseline.institutionalIdentifier
         ? ["institutionalIdentifier"]
         : []),
+      ...(form.applicationEmail !== baseline.applicationEmail ? ["applicationEmail"] : []),
       ...(form.primaryCareerId !== baseline.primaryCareerId ? ["primaryCareerId"] : []),
     ];
 
@@ -1285,6 +1298,28 @@ function TutorSheet({
                   />
                   <FieldError id={fieldErrorId("institutional-identifier")} message={fieldErrors.institutionalIdentifier} />
                 </div>
+              </div>
+            </section>
+
+            <section aria-labelledby="tutor-account-heading">
+              <h3 className="text-sm font-bold text-foreground" id="tutor-account-heading">Cuenta de acceso</h3>
+              <p className="mt-2 text-sm leading-6 text-foreground-secondary">
+                Vincular una cuenta de Tutor provisionada. Dejar vacío para desvincular la cuenta actual.
+              </p>
+              <div className="mt-4 space-y-1.5">
+                <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-application-email">Correo de la cuenta provisionada (opcional)</label>
+                <Input
+                  aria-describedby={fieldErrors.applicationEmail === undefined ? undefined : fieldErrorId("application-email")}
+                  aria-invalid={fieldErrors.applicationEmail !== undefined}
+                  autoComplete="off"
+                  disabled={isView || detailLoading || detailUnavailable}
+                  id="tutor-application-email"
+                  onChange={(event) => updateForm("applicationEmail", event.target.value)}
+                  placeholder="tutor@utn.edu.ar"
+                  type="email"
+                  value={form.applicationEmail}
+                />
+                <FieldError id={fieldErrorId("application-email")} message={fieldErrors.applicationEmail} />
               </div>
             </section>
 
@@ -1695,6 +1730,7 @@ export function TutorsScreen({
         lastName: values.lastName,
         preferredDisplayName: cleanOptional(values.preferredDisplayName),
         institutionalIdentifier: cleanOptional(values.institutionalIdentifier),
+        applicationEmail: cleanOptional(values.applicationEmail),
       };
       const payload =
         sheet.mode === "add"

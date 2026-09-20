@@ -1,0 +1,3 @@
+ALTER TABLE "tutor" ADD COLUMN "application_user_id" text;--> statement-breakpoint
+ALTER TABLE "tutor" ADD CONSTRAINT "tutor_application_user_id_user_id_fk" FOREIGN KEY ("application_user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "tutor_application_user_unique" ON "tutor" USING btree ("application_user_id") WHERE "tutor"."application_user_id" IS NOT NULL;

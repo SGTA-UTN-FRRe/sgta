@@ -5,6 +5,7 @@ import {
   normalizeInstitutionalIdentifier,
   normalizeName,
   parseCreateTutorInput,
+  parseTutorApplicationAccountInput,
   parseTutorSearchFilters,
   parseUpdateTutorInput,
 } from "./tutor-validation";
@@ -62,6 +63,30 @@ describe("tutor validation boundary", () => {
         scholarshipReferenceId: null,
       }),
     ).toThrow();
+  });
+
+  it("normalizes optional application account emails and rejects malformed values", () => {
+    expect(
+      parseCreateTutorInput({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        primaryCareerId: "11111111-1111-4111-8111-111111111111",
+        cycleId: "22222222-2222-4222-8222-222222222222",
+        applicationEmail: "  Tutor.Account@Example.Test ",
+      }).applicationEmail,
+    ).toBe("tutor.account@example.test");
+
+    expect(
+      parseUpdateTutorInput({ applicationEmail: "" }),
+    ).toEqual({ applicationEmail: null });
+    expect(parseTutorApplicationAccountInput({ applicationEmail: "" })).toEqual({
+      applicationEmail: null,
+    });
+    expect(() =>
+      parseTutorApplicationAccountInput({ applicationEmail: null, unexpected: true }),
+    ).toThrow();
+
+    expect(() => parseUpdateTutorInput({ applicationEmail: "not-an-email" })).toThrow();
   });
 
   it("coerces bounded list filters and rejects invalid ranges", () => {

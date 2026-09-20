@@ -4,6 +4,7 @@ import type { RecordStatus } from "@/db/schema";
 
 const MAX_NAME_LENGTH = 200;
 const MAX_IDENTIFIER_LENGTH = 100;
+const MAX_EMAIL_LENGTH = 320;
 const MAX_NOTES_LENGTH = 2_000;
 
 export const tutorIdSchema = z.string().trim().uuid().transform((value) => value.toLowerCase());
@@ -25,6 +26,52 @@ const optionalNullableText = (max: number) =>
     },
     z.union([z.string().trim().min(1).max(max), z.null()]).optional(),
   );
+
+const optionalNullableEmail = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) {
+      return value;
+    }
+
+    if (typeof value === "string" && value.trim().length === 0) {
+      return null;
+    }
+
+    return value;
+  },
+  z.union([
+    z
+      .string()
+      .trim()
+      .max(MAX_EMAIL_LENGTH)
+      .email()
+      .transform((value) => value.toLowerCase()),
+    z.null(),
+  ]).optional(),
+);
+
+const nullableEmail = z.preprocess(
+  (value) => {
+    if (value === null) {
+      return null;
+    }
+
+    if (typeof value === "string" && value.trim().length === 0) {
+      return null;
+    }
+
+    return value;
+  },
+  z.union([
+    z
+      .string()
+      .trim()
+      .max(MAX_EMAIL_LENGTH)
+      .email()
+      .transform((value) => value.toLowerCase()),
+    z.null(),
+  ]),
+);
 
 const optionalNumber = (options: { min: number; max: number }) =>
   z.preprocess(
@@ -89,6 +136,7 @@ export const createTutorInputSchema = z
     lastName: requiredText(MAX_NAME_LENGTH),
     preferredDisplayName: optionalNullableText(MAX_NAME_LENGTH),
     institutionalIdentifier: optionalNullableText(MAX_IDENTIFIER_LENGTH),
+    applicationEmail: optionalNullableEmail,
     primaryCareerId: tutorIdSchema,
     subjectIds: subjectIdsSchema.default([]),
     cycleId: tutorIdSchema,
@@ -102,6 +150,7 @@ export const updateTutorInputSchema = z
     lastName: requiredText(MAX_NAME_LENGTH).optional(),
     preferredDisplayName: optionalNullableText(MAX_NAME_LENGTH),
     institutionalIdentifier: optionalNullableText(MAX_IDENTIFIER_LENGTH),
+    applicationEmail: optionalNullableEmail,
     primaryCareerId: tutorIdSchema.optional(),
     subjectIds: subjectIdsSchema.optional(),
     cycleId: tutorIdSchema.optional(),
@@ -128,6 +177,12 @@ export const updateTutorInputSchema = z
       });
     }
   });
+
+export const tutorApplicationAccountInputSchema = z
+  .object({
+    applicationEmail: nullableEmail,
+  })
+  .strict();
 
 export const statusTransitionInputSchema = z
   .object({
@@ -236,6 +291,12 @@ export type CreateTutorInput = z.input<typeof createTutorInputSchema>;
 export type ParsedCreateTutorInput = z.output<typeof createTutorInputSchema>;
 export type UpdateTutorInput = z.input<typeof updateTutorInputSchema>;
 export type ParsedUpdateTutorInput = z.output<typeof updateTutorInputSchema>;
+export type TutorApplicationAccountInput = z.input<
+  typeof tutorApplicationAccountInputSchema
+>;
+export type ParsedTutorApplicationAccountInput = z.output<
+  typeof tutorApplicationAccountInputSchema
+>;
 export type StatusTransitionInput = z.input<typeof statusTransitionInputSchema>;
 export type ParsedStatusTransitionInput = z.output<
   typeof statusTransitionInputSchema
@@ -283,6 +344,12 @@ export function parseCreateTutorInput(input: unknown): ParsedCreateTutorInput {
 
 export function parseUpdateTutorInput(input: unknown): ParsedUpdateTutorInput {
   return updateTutorInputSchema.parse(input);
+}
+
+export function parseTutorApplicationAccountInput(
+  input: unknown,
+): ParsedTutorApplicationAccountInput {
+  return tutorApplicationAccountInputSchema.parse(input);
 }
 
 export function parseStatusTransitionInput(
