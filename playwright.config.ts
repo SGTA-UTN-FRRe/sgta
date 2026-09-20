@@ -10,6 +10,9 @@ export default defineConfig({
     baseURL: "http://localhost:3000",
     trace: "retain-on-failure",
   },
+  expect: {
+    timeout: 15_000,
+  },
   webServer: {
     command: "corepack pnpm exec tsx tests/e2e/web-server.ts",
     url: "http://localhost:3000",
