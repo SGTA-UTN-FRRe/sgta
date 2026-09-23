@@ -43,19 +43,19 @@ describe("AdminOverviewScreen", () => {
     expect(screen.getByText(data.upcomingDuties[0].tutor)).toBeInTheDocument();
   });
 
-  it("degrades only the consultations item and preserves internal operations", () => {
+  it("preserves local consultation attention and internal operations when degraded", () => {
     const degraded = adminStates.find((item) => item.state === "degraded");
 
     render(<AdminOverviewScreen data={data} state="degraded" />);
 
     expect(degraded).toBeDefined();
     expect(screen.getByRole("status")).toHaveTextContent(degraded!.title);
-    expect(screen.getByRole("link", { name: /Reintentar consultas/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Revisar consultas/i })).toHaveAttribute(
       "href",
       "/admin/consultations",
     );
     expect(screen.getByText(data.attention[0].label)).toBeInTheDocument();
-    expect(screen.queryByText(data.attention[2].label)).not.toBeInTheDocument();
+    expect(screen.getByText(data.attention[2].label)).toBeInTheDocument();
     expect(screen.getByText(data.upcomingDuties[0].tutor)).toBeInTheDocument();
   });
 
