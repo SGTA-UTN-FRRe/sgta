@@ -83,6 +83,13 @@ export const REPORT_ERROR_CODES = {
   dateRangeUnavailable: "date_range_unavailable",
 } as const;
 
+export interface ReportFilterOptions {
+  careers: Array<{ id: string; label: string }>;
+  subjects: Array<{ id: string; label: string }>;
+  tutors: Array<{ id: string; label: string }>;
+  modalities: string[];
+}
+
 export class ReportServiceError extends Error {
   readonly code: (typeof REPORT_ERROR_CODES)[keyof typeof REPORT_ERROR_CODES];
 
@@ -971,5 +978,64 @@ export async function getOperationalReport(
     currentBalances,
     movements,
     activities,
+  };
+}
+
+export async function getReportFilterOptions(
+  db: Database,
+): Promise<ReportFilterOptions> {
+  const [careers, subjects, tutors, consultationModalities, scheduleModalities] =
+    await Promise.all([
+      db
+        .select({ id: career.id, label: career.name })
+        .from(career)
+        .orderBy(asc(career.normalizedName), asc(career.id)),
+      db
+        .select({
+          id: subject.id,
+          label: subject.name,
+          careerName: career.name,
+        })
+        .from(subject)
+        .innerJoin(career, eq(career.id, subject.careerId))
+        .orderBy(
+          asc(career.normalizedName),
+          asc(subject.normalizedName),
+          asc(subject.id),
+        ),
+      db
+        .select({
+          id: tutor.id,
+          label: sql<string>`concat(${tutor.lastName}, ', ', ${tutor.firstName})`,
+        })
+        .from(tutor)
+        .orderBy(asc(sql`lower(${tutor.lastName})`), asc(sql`lower(${tutor.firstName})`), asc(tutor.id)),
+      db
+        .selectDistinct({ modality: consultation.modality })
+        .from(consultation)
+        .where(sql`${consultation.modality} is not null`)
+        .orderBy(asc(consultation.modality)),
+      db
+        .selectDistinct({ modality: scheduleAssignment.modality })
+        .from(scheduleAssignment)
+        .where(sql`${scheduleAssignment.modality} is not null`)
+        .orderBy(asc(scheduleAssignment.modality)),
+    ]);
+
+  const modalities = new Set<string>();
+  for (const row of [...consultationModalities, ...scheduleModalities]) {
+    if (row.modality !== null) {
+      modalities.add(row.modality);
+    }
+  }
+
+  return {
+    careers: careers.map(({ id, label }) => ({ id, label })),
+    subjects: subjects.map(({ id, label, careerName }) => ({
+      id,
+      label: `${label} — ${careerName}`,
+    })),
+    tutors: tutors.map(({ id, label }) => ({ id, label })),
+    modalities: [...modalities].sort((left, right) => left.localeCompare(right, "es-AR")),
   };
 }
