@@ -5,6 +5,7 @@ import {
   consultationListItemSchema,
   consultationReviewDecisionSchema,
   consultationReviewDetailSchema,
+  consultationReviewDetailQuerySchema,
   consultationSourceConfigSchema,
   consultationSourceHeaderMapSchema,
   consultationSourceIdentitySchema,
@@ -217,6 +218,7 @@ describe("consultation input contracts", () => {
         expectedVersion,
         classification: "SUBJECT",
         subjectId: "11111111-1111-4111-8111-111111111111",
+        acknowledgedAnomalies: ["SOURCE_ROW_CHANGED"],
       }).success,
     ).toBe(true);
     expect(
@@ -228,6 +230,27 @@ describe("consultation input contracts", () => {
     ).toBe(false);
     expect(
       consultationReviewDecisionSchema.safeParse({ expectedVersion }).success,
+    ).toBe(false);
+  });
+
+  it("bounds duplicate-candidate pagination and rejects unknown detail filters", () => {
+    expect(consultationReviewDetailQuerySchema.parse({})).toEqual({
+      candidateLimit: 50,
+      candidateOffset: 0,
+    });
+    expect(
+      consultationReviewDetailQuerySchema.safeParse({
+        candidateLimit: 100,
+        candidateOffset: 100_000,
+      }).success,
+    ).toBe(true);
+    expect(
+      consultationReviewDetailQuerySchema.safeParse({ candidateOffset: 100_001 })
+        .success,
+    ).toBe(false);
+    expect(
+      consultationReviewDetailQuerySchema.safeParse({ includeSource: true })
+        .success,
     ).toBe(false);
   });
 });
@@ -254,6 +277,13 @@ describe("consultation response contracts", () => {
         contact: null,
       },
       anomalyFlags: ["MISSING_CAREER"],
+      acknowledgedAnomalies: [],
+      canonical: null,
+      duplicateCandidateCount: 0,
+      duplicateCandidatesOffset: 0,
+      duplicateCandidatesLimit: 50,
+      duplicateCandidates: [],
+      references: { careers: [], tutors: [], subjects: [] },
     };
 
     expect(consultationReviewDetailSchema.safeParse(detail).success).toBe(true);
@@ -294,6 +324,9 @@ describe("consultation response contracts", () => {
   it("permits only reportable classifications in canonical list DTOs", () => {
     const row = {
       id: "11111111-1111-4111-8111-111111111111",
+      stagingId: "22222222-2222-4222-8222-222222222222",
+      status: "CONSOLIDATED",
+      reviewVersion: 2,
       consultationDate: "2026-09-22",
       studentFirstName: "Ana",
       studentLastName: "Pérez",
@@ -320,6 +353,7 @@ describe("consultation response contracts", () => {
     expect(
       consultationWorkspaceSchema.safeParse({
         rows: [],
+        reviewQueue: [],
         pendingReviewCount: 0,
         totalRows: 0,
         import: {

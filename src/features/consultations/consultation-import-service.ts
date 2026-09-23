@@ -874,6 +874,7 @@ async function persistSourceBatch(
           subjectId: null,
           reviewedBy: null,
           reviewedAt: null,
+          acknowledgedAnomalies: [],
           reviewVersion: existing.reviewVersion + 1,
           sourceChangedAt: now,
           sourceChangeCount: existing.sourceChangeCount + 1,
@@ -943,6 +944,7 @@ async function persistSourceBatch(
           set: {
             matchKeyHash: sql`excluded.match_key_hash`,
             decision: "PENDING",
+            duplicateStagingId: null,
             decidedBy: null,
             decidedAt: null,
             updatedAt: now,
@@ -982,6 +984,7 @@ async function persistSourceBatch(
           subjectId: null,
           reviewedBy: null,
           reviewedAt: null,
+          acknowledgedAnomalies: [],
           reviewVersion: sql`${consultationStaging.reviewVersion} + 1`,
           updatedAt: now,
         })

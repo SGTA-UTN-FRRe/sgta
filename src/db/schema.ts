@@ -894,6 +894,10 @@ export const consultationStaging = pgTable(
       .array()
       .notNull()
       .default(sql`ARRAY[]::consultation_anomaly_code[]`),
+    acknowledgedAnomalies: consultationAnomalyCodeEnum("acknowledged_anomalies")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::consultation_anomaly_code[]`),
     status: consultationStagingStatusEnum("status")
       .notNull()
       .default("PENDING_REVIEW"),
@@ -935,6 +939,10 @@ export const consultationStaging = pgTable(
     check(
       "consultation_staging_anomaly_flags_bounds_check",
       sql`cardinality(${table.anomalyFlags}) <= 32`,
+    ),
+    check(
+      "consultation_staging_acknowledged_anomalies_bounds_check",
+      sql`cardinality(${table.acknowledgedAnomalies}) <= 32`,
     ),
     check(
       "consultation_staging_raw_field_bounds_check",
@@ -1073,6 +1081,10 @@ export const consultationDuplicateCandidate = pgTable(
     decision: consultationDuplicateDecisionEnum("decision")
       .notNull()
       .default("PENDING"),
+    duplicateStagingId: uuid("duplicate_staging_id").references(
+      () => consultationStaging.id,
+      { onDelete: "restrict" },
+    ),
     decidedBy: text("decided_by").references(() => user.id, {
       onDelete: "restrict",
     }),
@@ -1099,7 +1111,7 @@ export const consultationDuplicateCandidate = pgTable(
     ),
     check(
       "consultation_duplicate_candidate_decision_check",
-      sql`(${table.decision} = 'PENDING' AND ${table.decidedBy} IS NULL AND ${table.decidedAt} IS NULL) OR (${table.decision} IN ('DUPLICATE', 'NOT_DUPLICATE') AND ${table.decidedBy} IS NOT NULL AND ${table.decidedAt} IS NOT NULL)`,
+      sql`(${table.decision} = 'PENDING' AND ${table.decidedBy} IS NULL AND ${table.decidedAt} IS NULL AND ${table.duplicateStagingId} IS NULL) OR (${table.decision} = 'NOT_DUPLICATE' AND ${table.decidedBy} IS NOT NULL AND ${table.decidedAt} IS NOT NULL AND ${table.duplicateStagingId} IS NULL) OR (${table.decision} = 'DUPLICATE' AND ${table.decidedBy} IS NOT NULL AND ${table.decidedAt} IS NOT NULL AND (${table.duplicateStagingId} IS NULL OR ${table.duplicateStagingId} IN (${table.firstStagingId}, ${table.secondStagingId})))`,
     ),
     uniqueIndex("consultation_duplicate_candidate_pair_unique").on(
       table.firstStagingId,

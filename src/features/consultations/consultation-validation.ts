@@ -8,6 +8,7 @@ import {
   consultationImportRunStatusEnum,
   consultationSourceProviderEnum,
   consultationStagingStatusEnum,
+  recordStatusEnum,
 } from "@/db/schema";
 
 const sourceHeaderSchema = z.string().trim().min(1).max(128);
@@ -148,6 +149,7 @@ export function resolveConsultationSourceConfig(
 }
 
 const uuidSchema = z.string().trim().uuid().transform((value) => value.toLowerCase());
+export const consultationIdSchema = uuidSchema;
 
 function isValidDateOnly(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -241,6 +243,13 @@ export const consultationFiltersSchema = z
     }
   });
 
+export const consultationReviewDetailQuerySchema = z
+  .object({
+    candidateLimit: z.coerce.number().int().min(1).max(100).default(50),
+    candidateOffset: z.coerce.number().int().min(0).max(100_000).default(0),
+  })
+  .strict();
+
 const duplicateDecisionSchema = z
   .object({
     candidateId: uuidSchema,
@@ -260,6 +269,10 @@ export const consultationReviewDecisionSchema = z
     consultationDate: dateOnlySchema.optional(),
     classification: z.enum(consultationClassificationEnum.enumValues).optional(),
     subjectId: uuidSchema.nullable().optional(),
+    acknowledgedAnomalies: z
+      .array(z.enum(consultationAnomalyCodeEnum.enumValues))
+      .max(32)
+      .optional(),
     duplicateDecisions: z.array(duplicateDecisionSchema).max(100).optional(),
   })
   .strict()
@@ -274,6 +287,26 @@ export const consultationReviewDecisionSchema = z
         path: ["expectedVersion"],
         message: "at least one review decision is required",
       });
+    }
+
+    if (decision.duplicateDecisions?.length === 0) {
+      context.addIssue({
+        code: "custom",
+        path: ["duplicateDecisions"],
+        message: "at least one duplicate decision is required",
+      });
+    }
+    if (decision.duplicateDecisions !== undefined) {
+      const candidateIds = decision.duplicateDecisions.map(
+        (duplicateDecision) => duplicateDecision.candidateId,
+      );
+      if (new Set(candidateIds).size !== candidateIds.length) {
+        context.addIssue({
+          code: "custom",
+          path: ["duplicateDecisions"],
+          message: "each candidate may be decided only once",
+        });
+      }
     }
 
     if (
@@ -328,6 +361,9 @@ export const consultationImportSummarySchema = z
 export const consultationListItemSchema = z
   .object({
     id: uuidSchema,
+    stagingId: uuidSchema,
+    status: z.enum(consultationStagingStatusEnum.enumValues),
+    reviewVersion: z.number().int().min(1),
     consultationDate: dateOnlySchema,
     studentFirstName: z.string().trim().min(1).max(200),
     studentLastName: z.string().trim().min(1).max(200),
@@ -365,12 +401,101 @@ export const consultationReviewDetailSchema = z
       })
       .strict(),
     anomalyFlags: z.array(consultationAnomalyCodeSchema).max(32),
+    acknowledgedAnomalies: z.array(consultationAnomalyCodeSchema).max(32),
+    canonical: consultationListItemSchema.nullable(),
+    duplicateCandidateCount: nonNegativeIntegerSchema,
+    duplicateCandidatesOffset: nonNegativeIntegerSchema,
+    duplicateCandidatesLimit: z.number().int().min(1).max(100),
+    duplicateCandidates: z
+      .array(
+        z
+          .object({
+            candidateId: uuidSchema,
+            peerStagingId: uuidSchema,
+            decision: z.enum(consultationDuplicateDecisionEnum.enumValues),
+            duplicateStagingId: uuidSchema.nullable(),
+            isCurrentDuplicate: z.boolean(),
+            peer: z
+              .object({
+                consultationDate: dateOnlySchema.nullable(),
+                studentFirstName: z.string().max(200).nullable(),
+                studentLastName: z.string().max(200).nullable(),
+                career: z.string().max(300).nullable(),
+                tutor: z.string().max(300).nullable(),
+                status: z.enum(consultationStagingStatusEnum.enumValues),
+                hasCanonical: z.boolean(),
+              })
+              .strict(),
+          })
+          .strict(),
+      )
+      .max(100),
+    references: z
+      .object({
+        careers: z
+          .array(
+            z
+              .object({
+                id: uuidSchema,
+                name: z.string().trim().min(1).max(300),
+                status: z.enum(recordStatusEnum.enumValues),
+              })
+              .strict(),
+          )
+          .max(5000),
+        tutors: z
+          .array(
+            z
+              .object({
+                id: uuidSchema,
+                name: z.string().trim().min(1).max(300),
+                status: z.enum(recordStatusEnum.enumValues),
+              })
+              .strict(),
+          )
+          .max(5000),
+        subjects: z
+          .array(
+            z
+              .object({
+                id: uuidSchema,
+                careerId: uuidSchema,
+                name: z.string().trim().min(1).max(300),
+                status: z.enum(recordStatusEnum.enumValues),
+              })
+              .strict(),
+          )
+          .max(5000),
+      })
+      .strict(),
   })
   .strict();
 
 export const consultationWorkspaceSchema = z
   .object({
     rows: z.array(consultationListItemSchema).max(100),
+    reviewQueue: z
+      .array(
+        z
+          .object({
+            stagingId: uuidSchema,
+            consultationDate: dateOnlySchema.nullable(),
+            studentFirstName: z.string().max(200).nullable(),
+            studentLastName: z.string().max(200).nullable(),
+            career: z.string().max(300).nullable(),
+            tutor: z.string().max(300).nullable(),
+            status: z.enum(consultationStagingStatusEnum.enumValues),
+            classification: z.enum(consultationClassificationEnum.enumValues),
+            reviewVersion: z.number().int().min(1),
+            anomalyFlags: z.array(consultationAnomalyCodeSchema).max(32),
+            acknowledgedAnomalies: z
+              .array(consultationAnomalyCodeSchema)
+              .max(32),
+            hasCanonical: z.boolean(),
+          })
+          .strict(),
+      )
+      .max(100),
     pendingReviewCount: nonNegativeIntegerSchema,
     totalRows: nonNegativeIntegerSchema,
     import: consultationImportSummarySchema,
@@ -389,6 +514,9 @@ export type ConsultationImportOptions = z.output<
   typeof consultationImportOptionsSchema
 >;
 export type ConsultationFilters = z.output<typeof consultationFiltersSchema>;
+export type ConsultationReviewDetailQuery = z.output<
+  typeof consultationReviewDetailQuerySchema
+>;
 export type ConsultationReviewDecision = z.output<
   typeof consultationReviewDecisionSchema
 >;
