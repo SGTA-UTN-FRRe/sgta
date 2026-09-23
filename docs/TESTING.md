@@ -66,6 +66,8 @@ Integration scenarios live under `tests/integration/` and run through the separa
 
 Docker is a local and CI prerequisite for this boundary. Testcontainers chooses an available host port; no fixed port, local database, production URL, Google credential, or personal data is used. There is no separate Docker check or public Docker gate.
 
+The on-demand PostgreSQL query-plan review runs with `corepack pnpm db:query-audit`. It starts a disposable PostgreSQL 16 container, reapplies the committed migrations, seeds deterministic synthetic rows, and prints `EXPLAIN (ANALYZE, BUFFERS)` output for current high-use query shapes. It is a review tool, not a CI gate or a numeric performance budget.
+
 Tutor self-service integration scenarios prove owner resolution for linked Tutor
 identities, the unlinked identity state, current-cycle and scholarship context,
 safe DTOs without identity or contact leakage, effective special-plan reads,

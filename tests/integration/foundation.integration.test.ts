@@ -419,7 +419,7 @@ describe("PostgreSQL foundation integration", () => {
             'consultation_import_run_status_started_idx',
             'consultation_import_run_actor_started_idx',
             'consultation_staging_source_identity_unique',
-            'consultation_staging_review_updated_idx',
+            'consultation_staging_pending_queue_idx',
             'consultation_staging_source_run_idx',
             'consultation_staging_career_idx',
             'consultation_staging_tutor_idx',
@@ -434,6 +434,7 @@ describe("PostgreSQL foundation integration", () => {
             'hour_movement_attendance_idx',
             'hour_movement_category_idx',
             'hour_movement_cycle_tutor_date_idx',
+            'hour_movement_movement_date_idx',
             'hour_movement_reversal_unique',
             'schedule_assignment_date_idx',
             'schedule_assignment_plan_status_idx',
@@ -597,7 +598,7 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("8");
+    expect(migrations[0]?.migration_count).toBe("9");
     expect(enumValues).toEqual([
       { typname: "activity_kind", enumlabel: "MEETING" },
       { typname: "activity_kind", enumlabel: "WORKSHOP" },
@@ -675,7 +676,7 @@ describe("PostgreSQL foundation integration", () => {
       "consultation_import_run_status_started_idx",
       "consultation_staging_career_idx",
       "consultation_staging_duplicate_resolution_idx",
-      "consultation_staging_review_updated_idx",
+      "consultation_staging_pending_queue_idx",
       "consultation_staging_source_identity_unique",
       "consultation_staging_source_run_idx",
       "consultation_staging_subject_idx",
@@ -692,6 +693,7 @@ describe("PostgreSQL foundation integration", () => {
       "hour_movement_attendance_idx",
       "hour_movement_category_idx",
       "hour_movement_cycle_tutor_date_idx",
+      "hour_movement_movement_date_idx",
       "hour_movement_reversal_unique",
       "schedule_assignment_date_idx",
       "schedule_assignment_plan_status_idx",

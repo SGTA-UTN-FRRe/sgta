@@ -57,6 +57,13 @@
       "when": 1790132330766,
       "tag": "0007_mean_karen_page",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790158591685,
+      "tag": "0008_narrow_thunderbolts",
+      "breakpoints": true
     }
   ]
 }

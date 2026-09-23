@@ -774,6 +774,7 @@ export const hourMovement = pgTable(
       table.tutorId,
       table.movementDate,
     ),
+    index("hour_movement_movement_date_idx").on(table.movementDate),
     index("hour_movement_category_idx").on(table.categoryId),
     index("hour_movement_activity_idx").on(table.activityId),
     index("hour_movement_attendance_idx").on(table.attendanceRecordId),
@@ -970,10 +971,9 @@ export const consultationStaging = pgTable(
       table.sourceTab,
       table.sourceRowKey,
     ),
-    index("consultation_staging_review_updated_idx").on(
-      table.status,
-      table.updatedAt,
-    ),
+    index("consultation_staging_pending_queue_idx")
+      .on(table.normalizedConsultationDate, table.id)
+      .where(sql`${table.status} = 'PENDING_REVIEW'`),
     index("consultation_staging_source_run_idx").on(
       table.lastSeenRunId,
     ),
