@@ -69,6 +69,52 @@ export const attendanceDebitStatusEnum = pgEnum("attendance_debit_status", [
   "CONFIRMED",
 ]);
 
+export const consultationSourceProviderEnum = pgEnum(
+  "consultation_source_provider",
+  ["GOOGLE_SHEETS"],
+);
+
+export const consultationClassificationEnum = pgEnum(
+  "consultation_classification",
+  ["SUBJECT", "GENERAL", "PENDING_CLASSIFICATION"],
+);
+
+export const consultationStagingStatusEnum = pgEnum(
+  "consultation_staging_status",
+  ["PENDING_REVIEW", "READY", "CONSOLIDATED", "DUPLICATE"],
+);
+
+export const consultationImportRunStatusEnum = pgEnum(
+  "consultation_import_run_status",
+  ["RUNNING", "SUCCEEDED", "PARTIAL", "FAILED"],
+);
+
+export const consultationDuplicateDecisionEnum = pgEnum(
+  "consultation_duplicate_decision",
+  ["PENDING", "DUPLICATE", "NOT_DUPLICATE"],
+);
+
+export const consultationAnomalyCodeEnum = pgEnum(
+  "consultation_anomaly_code",
+  [
+    "MISSING_SOURCE_ROW_KEY",
+    "MISSING_CAREER",
+    "UNRESOLVED_CAREER",
+    "AMBIGUOUS_CAREER",
+    "MISSING_STUDENT_FIRST_NAME",
+    "MISSING_STUDENT_LAST_NAME",
+    "INVALID_CONSULTATION_DATE",
+    "MISSING_TUTOR",
+    "UNRESOLVED_TUTOR",
+    "AMBIGUOUS_TUTOR",
+    "MISSING_ACADEMIC_STAGE",
+    "MISSING_MODALITY",
+    "MISSING_TOPIC",
+    "POSSIBLE_DUPLICATE",
+    "SOURCE_ROW_CHANGED",
+  ],
+);
+
 export const user = pgTable(
   "user",
   {
@@ -737,6 +783,330 @@ export const hourMovement = pgTable(
   ],
 );
 
+export const consultationImportRun = pgTable(
+  "consultation_import_run",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    actorId: text("actor_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    status: consultationImportRunStatusEnum("status")
+      .notNull()
+      .default("RUNNING"),
+    sourceSpreadsheetId: text("source_spreadsheet_id"),
+    sourceRange: text("source_range"),
+    newRows: integer("new_rows").notNull().default(0),
+    alreadyProcessedRows: integer("already_processed_rows")
+      .notNull()
+      .default(0),
+    reviewRows: integer("review_rows").notNull().default(0),
+    duplicateCandidates: integer("duplicate_candidates").notNull().default(0),
+    errorRows: integer("error_rows").notNull().default(0),
+    errorCode: text("error_code"),
+    requestId: text("request_id"),
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => [
+    check(
+      "consultation_import_run_counts_non_negative_check",
+      sql`${table.newRows} >= 0 AND ${table.alreadyProcessedRows} >= 0 AND ${table.reviewRows} >= 0 AND ${table.duplicateCandidates} >= 0 AND ${table.errorRows} >= 0`,
+    ),
+    check(
+      "consultation_import_run_completion_check",
+      sql`(${table.status} = 'RUNNING' AND ${table.completedAt} IS NULL) OR (${table.status} <> 'RUNNING' AND ${table.completedAt} IS NOT NULL)`,
+    ),
+    check(
+      "consultation_import_run_source_bounds_check",
+      sql`(${table.sourceSpreadsheetId} IS NULL OR length(trim(${table.sourceSpreadsheetId})) BETWEEN 1 AND 256) AND (${table.sourceRange} IS NULL OR length(trim(${table.sourceRange})) BETWEEN 1 AND 256)`,
+    ),
+    check(
+      "consultation_import_run_error_code_check",
+      sql`${table.errorCode} IS NULL OR ${table.errorCode} ~ '^[a-z0-9_]{1,80}$'`,
+    ),
+    check(
+      "consultation_import_run_request_id_check",
+      sql`${table.requestId} IS NULL OR length(trim(${table.requestId})) BETWEEN 1 AND 255`,
+    ),
+    uniqueIndex("consultation_import_run_active_source_unique")
+      .on(table.sourceSpreadsheetId, table.sourceRange)
+      .where(
+        sql`${table.status} = 'RUNNING' AND ${table.sourceSpreadsheetId} IS NOT NULL`,
+      ),
+    index("consultation_import_run_status_started_idx").on(
+      table.status,
+      table.startedAt,
+    ),
+    index("consultation_import_run_actor_started_idx").on(
+      table.actorId,
+      table.startedAt,
+    ),
+  ],
+);
+
+export const consultationStaging = pgTable(
+  "consultation_staging",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sourceProvider: consultationSourceProviderEnum("source_provider")
+      .notNull()
+      .default("GOOGLE_SHEETS"),
+    sourceSpreadsheetId: text("source_spreadsheet_id").notNull(),
+    sourceTab: text("source_tab").notNull(),
+    sourceRowKey: text("source_row_key").notNull(),
+    sourceFingerprint: text("source_fingerprint").notNull(),
+    previousSourceFingerprint: text("previous_source_fingerprint"),
+    firstSeenRunId: uuid("first_seen_run_id")
+      .notNull()
+      .references(() => consultationImportRun.id, { onDelete: "restrict" }),
+    lastSeenRunId: uuid("last_seen_run_id")
+      .notNull()
+      .references(() => consultationImportRun.id, { onDelete: "restrict" }),
+    rawCareer: text("raw_career"),
+    rawStudentFirstName: text("raw_student_first_name"),
+    rawStudentLastName: text("raw_student_last_name"),
+    rawConsultationDate: text("raw_consultation_date"),
+    rawTutor: text("raw_tutor"),
+    rawAcademicStage: text("raw_academic_stage"),
+    rawModality: text("raw_modality"),
+    rawTopic: text("raw_topic"),
+    rawContact: text("raw_contact"),
+    normalizedCareer: text("normalized_career"),
+    careerId: uuid("career_id").references(() => career.id, {
+      onDelete: "restrict",
+    }),
+    normalizedStudentFirstName: text("normalized_student_first_name"),
+    normalizedStudentLastName: text("normalized_student_last_name"),
+    normalizedConsultationDate: date("normalized_consultation_date", {
+      mode: "string",
+    }),
+    normalizedTutor: text("normalized_tutor"),
+    tutorId: uuid("tutor_id").references(() => tutor.id, {
+      onDelete: "restrict",
+    }),
+    normalizedAcademicStage: text("normalized_academic_stage"),
+    normalizedModality: text("normalized_modality"),
+    normalizedTopic: text("normalized_topic"),
+    normalizedContact: text("normalized_contact"),
+    anomalyFlags: consultationAnomalyCodeEnum("anomaly_flags")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::consultation_anomaly_code[]`),
+    status: consultationStagingStatusEnum("status")
+      .notNull()
+      .default("PENDING_REVIEW"),
+    classification: consultationClassificationEnum("classification")
+      .notNull()
+      .default("PENDING_CLASSIFICATION"),
+    subjectId: uuid("subject_id").references(() => subject.id, {
+      onDelete: "restrict",
+    }),
+    reviewedBy: text("reviewed_by").references(() => user.id, {
+      onDelete: "restrict",
+    }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewVersion: integer("review_version").notNull().default(1),
+    sourceChangedAt: timestamp("source_changed_at", { withTimezone: true }),
+    sourceChangeCount: integer("source_change_count").notNull().default(0),
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "consultation_staging_source_identity_bounds_check",
+      sql`length(trim(${table.sourceSpreadsheetId})) BETWEEN 1 AND 256 AND length(trim(${table.sourceTab})) BETWEEN 1 AND 200 AND length(trim(${table.sourceRowKey})) BETWEEN 1 AND 255`,
+    ),
+    check(
+      "consultation_staging_source_fingerprint_check",
+      sql`${table.sourceFingerprint} ~ '^[0-9a-f]{64}$' AND (${table.previousSourceFingerprint} IS NULL OR ${table.previousSourceFingerprint} ~ '^[0-9a-f]{64}$')`,
+    ),
+    check(
+      "consultation_staging_anomaly_flags_bounds_check",
+      sql`cardinality(${table.anomalyFlags}) <= 32`,
+    ),
+    check(
+      "consultation_staging_raw_field_bounds_check",
+      sql`(${table.rawCareer} IS NULL OR length(${table.rawCareer}) <= 300) AND (${table.rawStudentFirstName} IS NULL OR length(${table.rawStudentFirstName}) <= 200) AND (${table.rawStudentLastName} IS NULL OR length(${table.rawStudentLastName}) <= 200) AND (${table.rawConsultationDate} IS NULL OR length(${table.rawConsultationDate}) <= 100) AND (${table.rawTutor} IS NULL OR length(${table.rawTutor}) <= 300) AND (${table.rawAcademicStage} IS NULL OR length(${table.rawAcademicStage}) <= 200) AND (${table.rawModality} IS NULL OR length(${table.rawModality}) <= 100) AND (${table.rawTopic} IS NULL OR length(${table.rawTopic}) <= 4000) AND (${table.rawContact} IS NULL OR length(${table.rawContact}) <= 320)`,
+    ),
+    check(
+      "consultation_staging_normalized_field_bounds_check",
+      sql`(${table.normalizedCareer} IS NULL OR length(${table.normalizedCareer}) <= 300) AND (${table.normalizedStudentFirstName} IS NULL OR length(${table.normalizedStudentFirstName}) <= 200) AND (${table.normalizedStudentLastName} IS NULL OR length(${table.normalizedStudentLastName}) <= 200) AND (${table.normalizedTutor} IS NULL OR length(${table.normalizedTutor}) <= 300) AND (${table.normalizedAcademicStage} IS NULL OR length(${table.normalizedAcademicStage}) <= 200) AND (${table.normalizedModality} IS NULL OR length(${table.normalizedModality}) <= 100) AND (${table.normalizedTopic} IS NULL OR length(${table.normalizedTopic}) <= 4000) AND (${table.normalizedContact} IS NULL OR length(${table.normalizedContact}) <= 320)`,
+    ),
+    check(
+      "consultation_staging_classification_subject_check",
+      sql`(${table.classification} = 'SUBJECT' AND ${table.subjectId} IS NOT NULL) OR (${table.classification} <> 'SUBJECT' AND ${table.subjectId} IS NULL)`,
+    ),
+    check(
+      "consultation_staging_review_state_check",
+      sql`(${table.status} NOT IN ('READY', 'CONSOLIDATED', 'DUPLICATE') OR (${table.reviewedBy} IS NOT NULL AND ${table.reviewedAt} IS NOT NULL)) AND (${table.status} <> 'READY' OR (cardinality(${table.anomalyFlags}) = 0 AND ${table.classification} IN ('SUBJECT', 'GENERAL'))) AND (${table.status} <> 'CONSOLIDATED' OR ${table.classification} IN ('SUBJECT', 'GENERAL'))`,
+    ),
+    check(
+      "consultation_staging_review_version_check",
+      sql`${table.reviewVersion} > 0 AND ${table.sourceChangeCount} >= 0`,
+    ),
+    uniqueIndex("consultation_staging_source_identity_unique").on(
+      table.sourceProvider,
+      table.sourceSpreadsheetId,
+      table.sourceTab,
+      table.sourceRowKey,
+    ),
+    index("consultation_staging_review_updated_idx").on(
+      table.status,
+      table.updatedAt,
+    ),
+    index("consultation_staging_source_run_idx").on(
+      table.lastSeenRunId,
+    ),
+    index("consultation_staging_career_idx")
+      .on(table.careerId)
+      .where(sql`${table.careerId} IS NOT NULL`),
+    index("consultation_staging_tutor_idx")
+      .on(table.tutorId)
+      .where(sql`${table.tutorId} IS NOT NULL`),
+    index("consultation_staging_subject_idx")
+      .on(table.subjectId)
+      .where(sql`${table.subjectId} IS NOT NULL`),
+  ],
+);
+
+export const consultation = pgTable(
+  "consultation",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    stagingId: uuid("staging_id")
+      .notNull()
+      .references(() => consultationStaging.id, { onDelete: "restrict" }),
+    cycleId: uuid("cycle_id").references(() => administrativeCycle.id, {
+      onDelete: "restrict",
+    }),
+    consultationDate: date("consultation_date", { mode: "string" }).notNull(),
+    studentFirstName: text("student_first_name").notNull(),
+    studentLastName: text("student_last_name").notNull(),
+    studentContact: text("student_contact"),
+    careerId: uuid("career_id")
+      .notNull()
+      .references(() => career.id, { onDelete: "restrict" }),
+    tutorId: uuid("tutor_id")
+      .notNull()
+      .references(() => tutor.id, { onDelete: "restrict" }),
+    academicStage: text("academic_stage"),
+    modality: text("modality"),
+    rawTopic: text("raw_topic"),
+    classification: consultationClassificationEnum("classification").notNull(),
+    subjectId: uuid("subject_id").references(() => subject.id, {
+      onDelete: "restrict",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "consultation_classification_subject_check",
+      sql`(${table.classification} = 'SUBJECT' AND ${table.subjectId} IS NOT NULL) OR (${table.classification} = 'GENERAL' AND ${table.subjectId} IS NULL)`,
+    ),
+    check(
+      "consultation_student_name_bounds_check",
+      sql`length(trim(${table.studentFirstName})) BETWEEN 1 AND 200 AND length(trim(${table.studentLastName})) BETWEEN 1 AND 200 AND (${table.studentContact} IS NULL OR length(${table.studentContact}) <= 320) AND (${table.academicStage} IS NULL OR length(${table.academicStage}) <= 200) AND (${table.modality} IS NULL OR length(${table.modality}) <= 100) AND (${table.rawTopic} IS NULL OR length(${table.rawTopic}) <= 4000)`,
+    ),
+    uniqueIndex("consultation_staging_unique").on(table.stagingId),
+    index("consultation_date_idx").on(table.consultationDate, table.id),
+    index("consultation_classification_date_idx").on(
+      table.classification,
+      table.consultationDate,
+    ),
+    index("consultation_career_date_idx").on(
+      table.careerId,
+      table.consultationDate,
+    ),
+    index("consultation_tutor_date_idx").on(
+      table.tutorId,
+      table.consultationDate,
+    ),
+    index("consultation_subject_date_idx")
+      .on(table.subjectId, table.consultationDate)
+      .where(sql`${table.subjectId} IS NOT NULL`),
+    index("consultation_cycle_date_idx")
+      .on(table.cycleId, table.consultationDate)
+      .where(sql`${table.cycleId} IS NOT NULL`),
+  ],
+);
+
+export const consultationDuplicateCandidate = pgTable(
+  "consultation_duplicate_candidate",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    firstStagingId: uuid("first_staging_id")
+      .notNull()
+      .references(() => consultationStaging.id, { onDelete: "restrict" }),
+    secondStagingId: uuid("second_staging_id")
+      .notNull()
+      .references(() => consultationStaging.id, { onDelete: "restrict" }),
+    ruleCode: text("rule_code").notNull(),
+    matchKeyHash: text("match_key_hash").notNull(),
+    decision: consultationDuplicateDecisionEnum("decision")
+      .notNull()
+      .default("PENDING"),
+    decidedBy: text("decided_by").references(() => user.id, {
+      onDelete: "restrict",
+    }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "consultation_duplicate_candidate_order_check",
+      sql`${table.firstStagingId} < ${table.secondStagingId}`,
+    ),
+    check(
+      "consultation_duplicate_candidate_rule_code_check",
+      sql`${table.ruleCode} ~ '^[a-z0-9_]{1,80}$'`,
+    ),
+    check(
+      "consultation_duplicate_candidate_match_hash_check",
+      sql`${table.matchKeyHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "consultation_duplicate_candidate_decision_check",
+      sql`(${table.decision} = 'PENDING' AND ${table.decidedBy} IS NULL AND ${table.decidedAt} IS NULL) OR (${table.decision} IN ('DUPLICATE', 'NOT_DUPLICATE') AND ${table.decidedBy} IS NOT NULL AND ${table.decidedAt} IS NOT NULL)`,
+    ),
+    uniqueIndex("consultation_duplicate_candidate_pair_unique").on(
+      table.firstStagingId,
+      table.secondStagingId,
+    ),
+    index("consultation_duplicate_candidate_decision_created_idx").on(
+      table.decision,
+      table.createdAt,
+    ),
+    index("consultation_duplicate_candidate_first_staging_idx").on(
+      table.firstStagingId,
+    ),
+    index("consultation_duplicate_candidate_second_staging_idx").on(
+      table.secondStagingId,
+    ),
+  ],
+);
+
 export const auditEvent = pgTable(
   "audit_event",
   {
@@ -784,6 +1154,10 @@ export const databaseSchema = {
   hourCategory,
   activity,
   hourMovement,
+  consultationImportRun,
+  consultationStaging,
+  consultation,
+  consultationDuplicateCandidate,
   auditEvent,
 };
 
@@ -819,6 +1193,18 @@ export type ScheduleAssignmentKind =
 export type AttendanceStatus = (typeof attendanceStatusEnum.enumValues)[number];
 export type AttendanceDebitStatus =
   (typeof attendanceDebitStatusEnum.enumValues)[number];
+export type ConsultationSourceProvider =
+  (typeof consultationSourceProviderEnum.enumValues)[number];
+export type ConsultationClassification =
+  (typeof consultationClassificationEnum.enumValues)[number];
+export type ConsultationStagingStatus =
+  (typeof consultationStagingStatusEnum.enumValues)[number];
+export type ConsultationImportRunStatus =
+  (typeof consultationImportRunStatusEnum.enumValues)[number];
+export type ConsultationDuplicateDecision =
+  (typeof consultationDuplicateDecisionEnum.enumValues)[number];
+export type ConsultationAnomalyCode =
+  (typeof consultationAnomalyCodeEnum.enumValues)[number];
 export type SchedulePlan = typeof schedulePlan.$inferSelect;
 export type NewSchedulePlan = typeof schedulePlan.$inferInsert;
 export type ScheduleAssignment = typeof scheduleAssignment.$inferSelect;
@@ -836,4 +1222,14 @@ export type Activity = typeof activity.$inferSelect;
 export type NewActivity = typeof activity.$inferInsert;
 export type HourMovement = typeof hourMovement.$inferSelect;
 export type NewHourMovement = typeof hourMovement.$inferInsert;
+export type ConsultationImportRun = typeof consultationImportRun.$inferSelect;
+export type NewConsultationImportRun = typeof consultationImportRun.$inferInsert;
+export type ConsultationStaging = typeof consultationStaging.$inferSelect;
+export type NewConsultationStaging = typeof consultationStaging.$inferInsert;
+export type Consultation = typeof consultation.$inferSelect;
+export type NewConsultation = typeof consultation.$inferInsert;
+export type ConsultationDuplicateCandidate =
+  typeof consultationDuplicateCandidate.$inferSelect;
+export type NewConsultationDuplicateCandidate =
+  typeof consultationDuplicateCandidate.$inferInsert;
 export type AuditEvent = typeof auditEvent.$inferSelect;

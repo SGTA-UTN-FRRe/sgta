@@ -67,6 +67,9 @@ import {
   attendanceRecord,
   auditEvent,
   career,
+  consultation,
+  consultationImportRun,
+  consultationStaging,
   dutyOccurrence,
   hourCategory,
   hourMovement,
@@ -162,7 +165,7 @@ const authEnvironment = {
 
 async function resetDatabase() {
   await getIntegrationDatabase().execute(
-    sql`TRUNCATE TABLE "hour_movement", "activity", "attendance_record", "duty_occurrence", "schedule_assignment", "schedule_plan", "hour_category", "tutor_cycle_membership", "tutor_subject", "tutor", "scholarship_reference", "subject", "career", "audit_event", "session", "account", "verification", "administrative_cycle", "user" CASCADE`,
+    sql`TRUNCATE TABLE "consultation_duplicate_candidate", "consultation", "consultation_staging", "consultation_import_run", "hour_movement", "activity", "attendance_record", "duty_occurrence", "schedule_assignment", "schedule_plan", "hour_category", "tutor_cycle_membership", "tutor_subject", "tutor", "scholarship_reference", "subject", "career", "audit_event", "session", "account", "verification", "administrative_cycle", "user" CASCADE`,
   );
 }
 
@@ -206,6 +209,17 @@ function getRows<T>(result: { rows: unknown[] }) {
   return result.rows as T[];
 }
 
+function postgresIdentifier(identifier: string) {
+  return identifier.slice(0, 63);
+}
+
+async function expectPostgresErrorCode(
+  operation: Promise<unknown>,
+  code: string,
+) {
+  await expect(operation).rejects.toMatchObject({ code });
+}
+
 function makeJsonRequest(
   url: string,
   method: "GET" | "PATCH" | "POST" = "GET",
@@ -246,7 +260,7 @@ describe("PostgreSQL foundation integration", () => {
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
-          AND table_name IN ('user', 'session', 'account', 'verification', 'administrative_cycle', 'audit_event', 'career', 'subject', 'scholarship_reference', 'tutor', 'tutor_subject', 'tutor_cycle_membership', 'schedule_plan', 'schedule_assignment', 'duty_occurrence', 'attendance_record', 'hour_category', 'activity', 'hour_movement')
+          AND table_name IN ('user', 'session', 'account', 'verification', 'administrative_cycle', 'audit_event', 'career', 'subject', 'scholarship_reference', 'tutor', 'tutor_subject', 'tutor_cycle_membership', 'schedule_plan', 'schedule_assignment', 'duty_occurrence', 'attendance_record', 'hour_category', 'activity', 'hour_movement', 'consultation_import_run', 'consultation_staging', 'consultation', 'consultation_duplicate_candidate')
         ORDER BY table_name
       `),
     );
@@ -254,14 +268,6 @@ describe("PostgreSQL foundation integration", () => {
       await database.execute(sql`
         SELECT count(*)::text AS migration_count
         FROM "drizzle"."__drizzle_migrations"
-      `),
-    );
-    const deferredTables = getRows<{ table_name: string }>(
-      await database.execute(sql`
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = 'public'
-          AND table_name IN ('consultation')
       `),
     );
     const indexes = getRows<{ indexname: string }>(
@@ -276,6 +282,26 @@ describe("PostgreSQL foundation integration", () => {
             'attendance_record_occurrence_unique',
             'attendance_record_status_idx',
             'career_normalized_name_unique',
+            'consultation_date_idx',
+            'consultation_classification_date_idx',
+            'consultation_career_date_idx',
+            'consultation_tutor_date_idx',
+            'consultation_subject_date_idx',
+            'consultation_cycle_date_idx',
+            'consultation_staging_unique',
+            'consultation_duplicate_candidate_pair_unique',
+            'consultation_duplicate_candidate_decision_created_idx',
+            'consultation_duplicate_candidate_first_staging_idx',
+            'consultation_duplicate_candidate_second_staging_idx',
+            'consultation_import_run_active_source_unique',
+            'consultation_import_run_status_started_idx',
+            'consultation_import_run_actor_started_idx',
+            'consultation_staging_source_identity_unique',
+            'consultation_staging_review_updated_idx',
+            'consultation_staging_source_run_idx',
+            'consultation_staging_career_idx',
+            'consultation_staging_tutor_idx',
+            'consultation_staging_subject_idx',
             'duty_occurrence_assignment_date_unique',
             'duty_occurrence_cycle_date_idx',
             'duty_occurrence_tutor_date_idx',
@@ -309,7 +335,8 @@ describe("PostgreSQL foundation integration", () => {
         SELECT conname
         FROM pg_constraint
           WHERE contype = 'f'
-          AND conname IN (
+        AND (
+          conname IN (
             'activity_actor_id_user_id_fk',
             'activity_cycle_id_administrative_cycle_id_fk',
             'activity_duty_occurrence_id_duty_occurrence_id_fk',
@@ -338,6 +365,13 @@ describe("PostgreSQL foundation integration", () => {
             'tutor_subject_tutor_id_tutor_id_fk',
             'tutor_subject_subject_id_subject_id_fk'
           )
+          OR conrelid::regclass::text IN (
+            'consultation',
+            'consultation_duplicate_candidate',
+            'consultation_import_run',
+            'consultation_staging'
+          )
+        )
         ORDER BY conname
       `),
     );
@@ -354,6 +388,25 @@ describe("PostgreSQL foundation integration", () => {
             'career_name_not_blank_check',
             'career_normalized_name_not_blank_check',
             'career_normalized_name_check',
+            'consultation_import_run_counts_non_negative_check',
+            'consultation_import_run_completion_check',
+            'consultation_import_run_source_bounds_check',
+            'consultation_import_run_error_code_check',
+            'consultation_import_run_request_id_check',
+            'consultation_staging_source_identity_bounds_check',
+            'consultation_staging_source_fingerprint_check',
+            'consultation_staging_anomaly_flags_bounds_check',
+            'consultation_staging_raw_field_bounds_check',
+            'consultation_staging_normalized_field_bounds_check',
+            'consultation_staging_classification_subject_check',
+            'consultation_staging_review_state_check',
+            'consultation_staging_review_version_check',
+            'consultation_classification_subject_check',
+            'consultation_student_name_bounds_check',
+            'consultation_duplicate_candidate_order_check',
+            'consultation_duplicate_candidate_rule_code_check',
+            'consultation_duplicate_candidate_match_hash_check',
+            'consultation_duplicate_candidate_decision_check',
             'hour_category_name_not_blank_check',
             'hour_category_normalized_name_not_blank_check',
             'hour_category_normalized_name_check',
@@ -389,7 +442,7 @@ describe("PostgreSQL foundation integration", () => {
         SELECT type.typname, enum.enumlabel
         FROM pg_type AS type
         JOIN pg_enum AS enum ON enum.enumtypid = type.oid
-        WHERE type.typname IN ('user_role', 'administrative_cycle_status', 'record_status', 'hour_movement_direction', 'activity_kind', 'schedule_plan_kind', 'schedule_assignment_pattern', 'schedule_assignment_kind', 'attendance_status', 'attendance_debit_status')
+        WHERE type.typname IN ('user_role', 'administrative_cycle_status', 'record_status', 'hour_movement_direction', 'activity_kind', 'schedule_plan_kind', 'schedule_assignment_pattern', 'schedule_assignment_kind', 'attendance_status', 'attendance_debit_status', 'consultation_source_provider', 'consultation_classification', 'consultation_staging_status', 'consultation_import_run_status', 'consultation_duplicate_decision', 'consultation_anomaly_code')
         ORDER BY type.typname, enum.enumsortorder
       `),
     );
@@ -402,6 +455,10 @@ describe("PostgreSQL foundation integration", () => {
       "attendance_record",
       "audit_event",
       "career",
+      "consultation",
+      "consultation_duplicate_candidate",
+      "consultation_import_run",
+      "consultation_staging",
       "duty_occurrence",
       "hour_category",
       "hour_movement",
@@ -416,7 +473,7 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("5");
+    expect(migrations[0]?.migration_count).toBe("6");
     expect(enumValues).toEqual([
       { typname: "activity_kind", enumlabel: "MEETING" },
       { typname: "activity_kind", enumlabel: "WORKSHOP" },
@@ -431,6 +488,36 @@ describe("PostgreSQL foundation integration", () => {
       { typname: "attendance_status", enumlabel: "PENDING" },
       { typname: "attendance_status", enumlabel: "PRESENT" },
       { typname: "attendance_status", enumlabel: "ABSENT" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_SOURCE_ROW_KEY" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_CAREER" },
+      { typname: "consultation_anomaly_code", enumlabel: "UNRESOLVED_CAREER" },
+      { typname: "consultation_anomaly_code", enumlabel: "AMBIGUOUS_CAREER" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_STUDENT_FIRST_NAME" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_STUDENT_LAST_NAME" },
+      { typname: "consultation_anomaly_code", enumlabel: "INVALID_CONSULTATION_DATE" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_TUTOR" },
+      { typname: "consultation_anomaly_code", enumlabel: "UNRESOLVED_TUTOR" },
+      { typname: "consultation_anomaly_code", enumlabel: "AMBIGUOUS_TUTOR" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_ACADEMIC_STAGE" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_MODALITY" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_TOPIC" },
+      { typname: "consultation_anomaly_code", enumlabel: "POSSIBLE_DUPLICATE" },
+      { typname: "consultation_anomaly_code", enumlabel: "SOURCE_ROW_CHANGED" },
+      { typname: "consultation_classification", enumlabel: "SUBJECT" },
+      { typname: "consultation_classification", enumlabel: "GENERAL" },
+      { typname: "consultation_classification", enumlabel: "PENDING_CLASSIFICATION" },
+      { typname: "consultation_duplicate_decision", enumlabel: "PENDING" },
+      { typname: "consultation_duplicate_decision", enumlabel: "DUPLICATE" },
+      { typname: "consultation_duplicate_decision", enumlabel: "NOT_DUPLICATE" },
+      { typname: "consultation_import_run_status", enumlabel: "RUNNING" },
+      { typname: "consultation_import_run_status", enumlabel: "SUCCEEDED" },
+      { typname: "consultation_import_run_status", enumlabel: "PARTIAL" },
+      { typname: "consultation_import_run_status", enumlabel: "FAILED" },
+      { typname: "consultation_source_provider", enumlabel: "GOOGLE_SHEETS" },
+      { typname: "consultation_staging_status", enumlabel: "PENDING_REVIEW" },
+      { typname: "consultation_staging_status", enumlabel: "READY" },
+      { typname: "consultation_staging_status", enumlabel: "CONSOLIDATED" },
+      { typname: "consultation_staging_status", enumlabel: "DUPLICATE" },
       { typname: "hour_movement_direction", enumlabel: "CREDIT" },
       { typname: "hour_movement_direction", enumlabel: "DEBIT" },
       { typname: "record_status", enumlabel: "ACTIVE" },
@@ -444,7 +531,6 @@ describe("PostgreSQL foundation integration", () => {
       { typname: "user_role", enumlabel: "ADMIN" },
       { typname: "user_role", enumlabel: "TUTOR" },
     ]);
-    expect(deferredTables).toEqual([]);
     expect(indexes.map((row) => row.indexname)).toEqual([
       "activity_cycle_date_idx",
       "activity_duty_occurrence_idx",
@@ -452,6 +538,26 @@ describe("PostgreSQL foundation integration", () => {
       "attendance_record_occurrence_unique",
       "attendance_record_status_idx",
       "career_normalized_name_unique",
+      "consultation_career_date_idx",
+      "consultation_classification_date_idx",
+      "consultation_cycle_date_idx",
+      "consultation_date_idx",
+      "consultation_duplicate_candidate_decision_created_idx",
+      "consultation_duplicate_candidate_first_staging_idx",
+      "consultation_duplicate_candidate_pair_unique",
+      "consultation_duplicate_candidate_second_staging_idx",
+      "consultation_import_run_active_source_unique",
+      "consultation_import_run_actor_started_idx",
+      "consultation_import_run_status_started_idx",
+      "consultation_staging_career_idx",
+      "consultation_staging_review_updated_idx",
+      "consultation_staging_source_identity_unique",
+      "consultation_staging_source_run_idx",
+      "consultation_staging_subject_idx",
+      "consultation_staging_tutor_idx",
+      "consultation_staging_unique",
+      "consultation_subject_date_idx",
+      "consultation_tutor_date_idx",
       "duty_occurrence_assignment_date_unique",
       "duty_occurrence_cycle_date_idx",
       "duty_occurrence_tutor_date_idx",
@@ -505,7 +611,30 @@ describe("PostgreSQL foundation integration", () => {
       "tutor_primary_career_id_career_id_fk",
       "tutor_subject_subject_id_subject_id_fk",
       "tutor_subject_tutor_id_tutor_id_fk",
-    ]);
+      "consultation_staging_id_consultation_staging_id_fk",
+      "consultation_cycle_id_administrative_cycle_id_fk",
+      "consultation_career_id_career_id_fk",
+      "consultation_tutor_id_tutor_id_fk",
+      "consultation_subject_id_subject_id_fk",
+      postgresIdentifier(
+        "consultation_duplicate_candidate_first_staging_id_consultation_staging_id_fk",
+      ),
+      postgresIdentifier(
+        "consultation_duplicate_candidate_second_staging_id_consultation_staging_id_fk",
+      ),
+      postgresIdentifier("consultation_duplicate_candidate_decided_by_user_id_fk"),
+      "consultation_import_run_actor_id_user_id_fk",
+      postgresIdentifier(
+        "consultation_staging_first_seen_run_id_consultation_import_run_id_fk",
+      ),
+      postgresIdentifier(
+        "consultation_staging_last_seen_run_id_consultation_import_run_id_fk",
+      ),
+      "consultation_staging_career_id_career_id_fk",
+      "consultation_staging_tutor_id_tutor_id_fk",
+      "consultation_staging_subject_id_subject_id_fk",
+      postgresIdentifier("consultation_staging_reviewed_by_user_id_fk"),
+    ].sort());
     expect(checks.map((row) => row.conname)).toEqual([
       "activity_duration_minutes_positive_check",
       "activity_note_not_blank_check",
@@ -514,6 +643,25 @@ describe("PostgreSQL foundation integration", () => {
       "career_name_not_blank_check",
       "career_normalized_name_check",
       "career_normalized_name_not_blank_check",
+      "consultation_classification_subject_check",
+      "consultation_student_name_bounds_check",
+      "consultation_duplicate_candidate_order_check",
+      "consultation_duplicate_candidate_rule_code_check",
+      "consultation_duplicate_candidate_match_hash_check",
+      "consultation_duplicate_candidate_decision_check",
+      "consultation_import_run_counts_non_negative_check",
+      "consultation_import_run_completion_check",
+      "consultation_import_run_source_bounds_check",
+      "consultation_import_run_error_code_check",
+      "consultation_import_run_request_id_check",
+      "consultation_staging_source_identity_bounds_check",
+      "consultation_staging_source_fingerprint_check",
+      "consultation_staging_anomaly_flags_bounds_check",
+      "consultation_staging_raw_field_bounds_check",
+      "consultation_staging_normalized_field_bounds_check",
+      "consultation_staging_classification_subject_check",
+      "consultation_staging_review_state_check",
+      "consultation_staging_review_version_check",
       "duty_occurrence_modality_not_blank_check",
       "duty_occurrence_time_range_check",
       "hour_category_name_not_blank_check",
@@ -540,9 +688,209 @@ describe("PostgreSQL foundation integration", () => {
       "tutor_institutional_identifier_normalized_check",
       "tutor_last_name_not_blank_check",
       "tutor_preferred_display_name_check",
-    ]);
+    ].sort());
     expect(getIntegrationConnectionString()).toMatch(
       /^postgres(?:ql)?:\/\/[^/]+\/sgta_integration$/,
+    );
+  });
+
+  it("enforces consultation source identity and canonical classification constraints", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Computer Science", normalizedName: "computer science" })
+      .returning({ id: career.id });
+
+    if (createdCareer === undefined) {
+      throw new Error("The consultation fixture Career was not created.");
+    }
+
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Casey",
+        lastName: "Tutor",
+        primaryCareerId: createdCareer.id,
+      })
+      .returning({ id: tutor.id });
+
+    if (createdTutor === undefined) {
+      throw new Error("The consultation fixture Tutor was not created.");
+    }
+
+    const [createdSubject] = await database
+      .insert(subject)
+      .values({
+        careerId: createdCareer.id,
+        name: "Discrete Mathematics",
+        normalizedName: "discrete mathematics",
+      })
+      .returning({ id: subject.id });
+
+    if (createdSubject === undefined) {
+      throw new Error("The consultation fixture Subject was not created.");
+    }
+
+    const [run] = await database
+      .insert(consultationImportRun)
+      .values({
+        actorId: admin.id,
+        status: "SUCCEEDED",
+        sourceSpreadsheetId: "synthetic-sheet-id",
+        sourceRange: "Responses 1!A:I",
+        completedAt: new Date(),
+      })
+      .returning({ id: consultationImportRun.id });
+
+    if (run === undefined) {
+      throw new Error("The consultation fixture import run was not created.");
+    }
+
+    const insertStaging = (
+      sourceRowKey: string,
+      overrides: Partial<typeof consultationStaging.$inferInsert> = {},
+    ) =>
+      database
+        .insert(consultationStaging)
+        .values({
+          sourceProvider: "GOOGLE_SHEETS",
+          sourceSpreadsheetId: "synthetic-sheet-id",
+          sourceTab: "Responses 1",
+          sourceRowKey,
+          sourceFingerprint: "a".repeat(64),
+          firstSeenRunId: run.id,
+          lastSeenRunId: run.id,
+          ...overrides,
+        })
+        .returning({ id: consultationStaging.id });
+
+    const [generalStaging] = await insertStaging("row-general");
+    const [subjectStaging] = await insertStaging("row-subject");
+    const [subjectWithoutSubjectStaging] = await insertStaging(
+      "row-subject-without-subject",
+    );
+    const [generalWithSubjectStaging] = await insertStaging(
+      "row-general-with-subject",
+    );
+    const [pendingClassificationStaging] = await insertStaging(
+      "row-pending-classification",
+    );
+
+    if (
+      generalStaging === undefined ||
+      subjectStaging === undefined ||
+      subjectWithoutSubjectStaging === undefined ||
+      generalWithSubjectStaging === undefined ||
+      pendingClassificationStaging === undefined
+    ) {
+      throw new Error("The consultation staging fixtures were not created.");
+    }
+
+    const canonicalFields = {
+      consultationDate: "2026-09-22",
+      studentFirstName: "Ana",
+      studentLastName: "Pérez",
+      careerId: createdCareer.id,
+      tutorId: createdTutor.id,
+      academicStage: "Second year",
+      modality: "Virtual",
+      rawTopic: "Synthetic topic",
+    };
+
+    await database.insert(consultation).values({
+      ...canonicalFields,
+      stagingId: generalStaging.id,
+      classification: "GENERAL",
+      subjectId: null,
+    });
+    await database.insert(consultation).values({
+      ...canonicalFields,
+      stagingId: subjectStaging.id,
+      classification: "SUBJECT",
+      subjectId: createdSubject.id,
+    });
+
+    await expectPostgresErrorCode(
+      insertStaging("row-general"),
+      "23505",
+    );
+    await expectPostgresErrorCode(
+      database.insert(consultation).values({
+        ...canonicalFields,
+        stagingId: generalStaging.id,
+        classification: "GENERAL",
+        subjectId: null,
+      }),
+      "23505",
+    );
+    await expectPostgresErrorCode(
+      database.insert(consultation).values({
+        ...canonicalFields,
+        stagingId: subjectWithoutSubjectStaging.id,
+        classification: "SUBJECT",
+        subjectId: null,
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      database.insert(consultation).values({
+        ...canonicalFields,
+        stagingId: generalWithSubjectStaging.id,
+        classification: "GENERAL",
+        subjectId: createdSubject.id,
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      database.insert(consultation).values({
+        ...canonicalFields,
+        stagingId: pendingClassificationStaging.id,
+        classification: "PENDING_CLASSIFICATION",
+        subjectId: null,
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      insertStaging("row-invalid-fingerprint", {
+        sourceFingerprint: "not-a-fingerprint",
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      insertStaging("row-oversized-name", {
+        rawStudentFirstName: "A".repeat(201),
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      insertStaging("row-many-anomalies", {
+        anomalyFlags: Array.from(
+          { length: 33 },
+          () => "MISSING_CAREER" as const,
+        ),
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      insertStaging("row-ready-pending-classification", {
+        status: "READY",
+        reviewedBy: admin.id,
+        reviewedAt: new Date(),
+      }),
+      "23514",
+    );
+
+    const canonicalRows = await database
+      .select({ classification: consultation.classification })
+      .from(consultation);
+    expect(canonicalRows.map((row) => row.classification)).toEqual([
+      "GENERAL",
+      "SUBJECT",
+    ]);
+    await expectPostgresErrorCode(
+      database.delete(career).where(eq(career.id, createdCareer.id)),
+      "23503",
     );
   });
 

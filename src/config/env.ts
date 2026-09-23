@@ -83,6 +83,11 @@ const serverEnvSchema = z
     GOOGLE_CLIENT_ID: optionalNonEmptyString,
     GOOGLE_CLIENT_SECRET: optionalNonEmptyString,
     GOOGLE_HOSTED_DOMAIN: optionalHostedDomain,
+    GOOGLE_SHEETS_SPREADSHEET_ID: optionalNonEmptyString,
+    GOOGLE_SHEETS_RANGE: optionalNonEmptyString,
+    GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: optionalNonEmptyString,
+    GOOGLE_SHEETS_PRIVATE_KEY: optionalNonEmptyString,
+    GOOGLE_SHEETS_HEADER_MAP: optionalNonEmptyString,
     TEST_DATABASE_URL: optionalPostgresUrl,
   })
   .superRefine((value, context) => {

@@ -53,6 +53,33 @@ describe("server environment configuration", () => {
     ).toThrow("must be provided together");
   });
 
+  it("keeps consultation source settings optional for canonical reads", () => {
+    const absentSource = parseServerEnv({ NODE_ENV: "development" });
+
+    expect(absentSource.NODE_ENV).toBe("development");
+    expect(absentSource.GOOGLE_SHEETS_SPREADSHEET_ID).toBeUndefined();
+    expect(absentSource.GOOGLE_SHEETS_RANGE).toBeUndefined();
+    expect(absentSource.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL).toBeUndefined();
+    expect(absentSource.GOOGLE_SHEETS_PRIVATE_KEY).toBeUndefined();
+    expect(absentSource.GOOGLE_SHEETS_HEADER_MAP).toBeUndefined();
+
+    expect(
+      parseServerEnv({
+        NODE_ENV: "development",
+        GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: "partial@example.test",
+      }).GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL,
+    ).toBe("partial@example.test");
+  });
+
+  it("defers invalid optional consultation settings to the source boundary", () => {
+    expect(
+      parseServerEnv({
+        NODE_ENV: "development",
+        GOOGLE_SHEETS_HEADER_MAP: "x".repeat(4097),
+      }).GOOGLE_SHEETS_HEADER_MAP,
+    ).toHaveLength(4097);
+  });
+
   it("reports malformed URLs through the environment error", () => {
     expect(() =>
       parseServerEnv({
