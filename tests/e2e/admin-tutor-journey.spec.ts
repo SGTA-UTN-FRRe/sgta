@@ -5,6 +5,12 @@ import {
   E2E_ADMIN_SESSION_TOKEN,
   E2E_AUTH_SECRET,
 } from "./e2e-test-data";
+import {
+  activateWithKeyboard,
+  expectReducedMotion,
+  selectWithKeyboard,
+  setCheckboxWithKeyboard,
+} from "./keyboard-helpers";
 
 test.describe("authenticated Admin tutor operations", () => {
   test("creates a tutor and reads derived Materias coverage", async ({
@@ -24,6 +30,7 @@ test.describe("authenticated Admin tutor operations", () => {
       },
     ]);
 
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/admin/tutors");
     await expect(
       page.getByRole("heading", { level: 1, name: "Tutores" }),
@@ -32,16 +39,47 @@ test.describe("authenticated Admin tutor operations", () => {
       page.locator('[data-layout="wide"]').getByText("Lovelace, Ada"),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Agregar tutor" }).click();
+    const rowAction = page.getByRole("button", { name: "Acciones para Lovelace, Ada" });
+    await activateWithKeyboard(page, rowAction);
+    const rowMenu = page.getByRole("menu", { name: "Acciones para Lovelace, Ada" });
+    await expectReducedMotion(rowMenu);
+    await expect(rowMenu.getByRole("menuitem", { name: "Ver detalle" })).toBeFocused();
+    await page.keyboard.press("End");
+    await expect(rowMenu.getByRole("menuitem", { name: "Desactivar tutor" })).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(rowMenu.getByRole("menuitem", { name: "Ver detalle" })).toBeFocused();
+    await page.keyboard.press("ArrowUp");
+    await expect(rowMenu.getByRole("menuitem", { name: "Desactivar tutor" })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(rowAction).toBeFocused();
+
+    await activateWithKeyboard(page, rowAction);
+    await page.keyboard.press("End");
+    await page.keyboard.press("Enter");
+    const statusConfirmation = page.getByRole("alertdialog", { name: "Desactivar tutor" });
+    await expect(statusConfirmation.getByRole("button", { name: "Cancelar" })).toBeFocused();
+    await expectReducedMotion(statusConfirmation);
+    await page.keyboard.press("Tab");
+    await expect(
+      statusConfirmation.getByRole("button", { name: "Desactivar tutor" }),
+    ).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(statusConfirmation.getByRole("button", { name: "Cancelar" })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(rowAction).toBeFocused();
+
+    await activateWithKeyboard(page, page.getByRole("button", { name: "Agregar tutor" }));
     const dialog = page.getByRole("dialog", { name: "Agregar tutor" });
+    await expectReducedMotion(dialog);
     await dialog.getByRole("textbox", { name: "Nombre", exact: true }).fill("Katherine");
     await dialog.getByRole("textbox", { name: "Apellido", exact: true }).fill("Johnson");
-    await dialog.getByLabel("Carrera").selectOption({ label: "Computer Science" });
-    await dialog.getByRole("checkbox", { name: "Algorithms" }).check();
-    await dialog.getByLabel("Ciclo abierto").selectOption({ label: "2027" });
-    await dialog.getByRole("button", { name: "Agregar tutor" }).click();
+    await selectWithKeyboard(page, dialog.getByLabel("Carrera"), { label: "Computer Science" });
+    await setCheckboxWithKeyboard(page, dialog.getByRole("checkbox", { name: "Algorithms" }), true);
+    await selectWithKeyboard(page, dialog.getByLabel("Ciclo abierto"), { label: "2027" });
+    await activateWithKeyboard(page, dialog.getByRole("button", { name: "Agregar tutor" }));
 
     await expect(page.getByRole("status")).toContainText("Cambios guardados");
+    await expectReducedMotion(page.getByRole("status"));
     await expect(
       page.locator('[data-layout="wide"]').getByText("Johnson, Katherine"),
     ).toBeVisible();

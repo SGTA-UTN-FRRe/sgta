@@ -13,7 +13,7 @@ export interface BreadcrumbItem {
 export interface PageHeaderProps {
   /** Primary contextual page title. */
   title: ReactNode;
-  /** Optional id for a title that receives programmatic focus after an update. */
+  /** Optional id when another element references the page title. */
   titleId?: string;
   /** Optional supporting description or operational context. */
   description?: ReactNode;
@@ -82,7 +82,7 @@ export function PageHeader({
           <h1
             className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
             id={titleId}
-            tabIndex={titleId === undefined ? undefined : -1}
+            tabIndex={-1}
           >
             {title}
           </h1>

@@ -139,7 +139,11 @@ describe("SchedulesScreen", () => {
     expect(screen.getByText(cycle.name)).toBeInTheDocument();
     expect(screen.getAllByText(regularPlan.name)).not.toHaveLength(0);
     expect(screen.getByRole("button", { name: "Nuevo plan" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Regular/ })).toHaveAttribute("aria-selected", "true");
+    expect(
+      within(screen.getByRole("group", { name: "Planes de horario" })).getByRole("button", {
+        name: /Regular/,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
     expect(screen.getAllByRole("grid")).toHaveLength(2);
     expect(
       screen.getAllByRole("button", { name: /Benítez, Marina, LUN, 08:00 a 10:00/ }),
@@ -162,13 +166,17 @@ describe("SchedulesScreen", () => {
     });
 
     render(<SchedulesScreen state="default" workspace={workspace} />);
-    await user.click(screen.getByRole("tab", { name: /Especial/ }));
+    const planSelector = screen.getByRole("group", { name: "Planes de horario" });
+    const specialPlanButton = within(planSelector).getAllByRole("button")[1];
+    if (specialPlanButton === undefined) {
+      throw new Error("The workspace should render the special plan button.");
+    }
+    await user.click(specialPlanButton);
 
     await waitFor(() => {
-      expect(screen.getByRole("tab", { name: /Especial/ })).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
+      const activePlanSelector = screen.getByRole("group", { name: "Planes de horario" });
+      const activeSpecialPlanButton = within(activePlanSelector).getAllByRole("button")[1];
+      expect(activeSpecialPlanButton).toHaveAttribute("aria-pressed", "true");
     });
     expect(screen.getByRole("status")).toHaveTextContent(
       "Este horario todavía no tiene asignaciones.",

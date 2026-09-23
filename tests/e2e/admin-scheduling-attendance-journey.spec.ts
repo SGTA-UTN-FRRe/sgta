@@ -12,6 +12,10 @@ import {
   E2E_RECOVERY_CATEGORY_ID,
   E2E_RECOVERY_OCCURRENCE_ID,
 } from "./e2e-test-data";
+import {
+  activateWithKeyboard,
+  selectWithKeyboard,
+} from "./keyboard-helpers";
 
 const attendanceDate = "2027-01-18";
 const attendanceUrl = `/admin/schedules/attendance?cycleId=${E2E_CYCLE_ID}&date=${attendanceDate}`;
@@ -43,29 +47,38 @@ test.describe("authenticated Admin scheduling and attendance", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Horarios" }),
     ).toBeVisible();
-    await expect(page.getByRole("tab", { name: /Attendance special 2027/ })).toHaveAttribute(
-      "aria-selected",
+    const planSelector = page.getByRole("group", { name: "Planes de horario" });
+    await expect(planSelector.getByRole("button", { name: /Attendance special 2027/ })).toHaveAttribute(
+      "aria-pressed",
       "true",
     );
 
-    await page.getByRole("tab", { name: /Regular 2027/ }).click();
-    await expect(page.getByRole("tab", { name: /Regular 2027/ })).toHaveAttribute(
-      "aria-selected",
+    await activateWithKeyboard(page, planSelector.getByRole("button", { name: /Regular 2027/ }));
+    await expect(planSelector.getByRole("button", { name: /Regular 2027/ })).toHaveAttribute(
+      "aria-pressed",
       "true",
       { timeout: 15_000 },
     );
-    await page.getByRole("tab", { name: /Attendance special 2027/ }).click();
+    await activateWithKeyboard(
+      page,
+      planSelector.getByRole("button", { name: /Attendance special 2027/ }),
+    );
     await expect(
-      page.getByRole("tab", { name: /Attendance special 2027/ }),
-    ).toHaveAttribute("aria-selected", "true", { timeout: 15_000 });
+      planSelector.getByRole("button", { name: /Attendance special 2027/ }),
+    ).toHaveAttribute("aria-pressed", "true", { timeout: 15_000 });
 
-    await page
-      .getByLabel("Grilla semanal")
-      .getByRole("button", { name: "Curie, Marie, LUN, 10:00 a 12:00" })
-      .click();
+    await activateWithKeyboard(
+      page,
+      page.getByLabel("Grilla semanal").getByRole("button", {
+        name: "Curie, Marie, LUN, 10:00 a 12:00",
+      }),
+    );
     const assignmentDialog = page.getByRole("dialog", { name: "Editar asignación" });
     await assignmentDialog.getByLabel("Modalidad").fill("Attendance room updated");
-    await assignmentDialog.getByRole("button", { name: "Guardar asignación" }).click();
+    await activateWithKeyboard(
+      page,
+      assignmentDialog.getByRole("button", { name: "Guardar asignación" }),
+    );
     await expect(
       page.getByRole("status").filter({ hasText: "Cambios guardados" }),
     ).toBeVisible();
@@ -86,7 +99,10 @@ test.describe("authenticated Admin scheduling and attendance", () => {
     const presentRow = page.locator(
       `[data-attendance-occurrence-id="${E2E_PRESENT_OCCURRENCE_ID}"]`,
     );
-    await presentRow.getByRole("button", { name: /Presente para Curie, Marie/ }).click();
+    await activateWithKeyboard(
+      page,
+      presentRow.getByRole("button", { name: /Presente para Curie, Marie/ }),
+    );
     await expect(
       page.getByRole("status").filter({ hasText: "Cambios guardados" }),
     ).toContainText("Presente");
@@ -101,15 +117,21 @@ test.describe("authenticated Admin scheduling and attendance", () => {
     const absenceRow = page.locator(
       `[data-attendance-occurrence-id="${E2E_ABSENCE_OCCURRENCE_ID}"]`,
     );
-    await absenceRow.getByRole("button", { name: /Falta para Curie, Marie/ }).click();
+    await activateWithKeyboard(
+      page,
+      absenceRow.getByRole("button", { name: /Falta para Curie, Marie/ }),
+    );
     const debitDialog = page.getByRole("dialog", {
       name: "Confirmar débito por inasistencia",
     });
     await expect(debitDialog).toContainText("Duración propuesta: 2 h 00 min");
-    await debitDialog.getByRole("button", { name: "Cancelar" }).click();
-    await absenceRow
-      .getByRole("button", { name: /Cancelar débito por inasistencia para Curie, Marie/ })
-      .click();
+    await activateWithKeyboard(page, debitDialog.getByRole("button", { name: "Cancelar" }));
+    await activateWithKeyboard(
+      page,
+      absenceRow.getByRole("button", {
+        name: /Cancelar débito por inasistencia para Curie, Marie/,
+      }),
+    );
     await expect(absenceRow).toContainText("Falta registrada sin débito");
     await expect(absenceRow).toContainText("Sin débito");
 
@@ -120,19 +142,25 @@ test.describe("authenticated Admin scheduling and attendance", () => {
     await expect(reloadedAbsenceRow).toContainText("Falta");
     await expect(reloadedAbsenceRow).toContainText("Sin débito");
 
-    await reloadedAbsenceRow
-      .getByRole("button", { name: /Confirmar débito por inasistencia para Curie, Marie/ })
-      .click();
+    await activateWithKeyboard(
+      page,
+      reloadedAbsenceRow.getByRole("button", {
+        name: /Confirmar débito por inasistencia para Curie, Marie/,
+      }),
+    );
     const confirmationDialog = page.getByRole("dialog", {
       name: "Confirmar débito por inasistencia",
     });
-    await confirmationDialog
-      .getByLabel("Categoría de horas")
-      .selectOption(E2E_ABSENCE_DEBIT_CATEGORY_ID);
+    await selectWithKeyboard(
+      page,
+      confirmationDialog.getByLabel("Categoría de horas"),
+      E2E_ABSENCE_DEBIT_CATEGORY_ID,
+    );
     await confirmationDialog.getByLabel("Minutos a debitar").fill("90");
-    await confirmationDialog
-      .getByRole("button", { name: "Confirmar débito", exact: true })
-      .click();
+    await activateWithKeyboard(
+      page,
+      confirmationDialog.getByRole("button", { name: "Confirmar débito", exact: true }),
+    );
     await expect(reloadedAbsenceRow).toContainText("Débito confirmado");
     await expect(reloadedAbsenceRow).toContainText(
       "Movimiento de débito vinculado por 1 h 30 min",
@@ -151,16 +179,20 @@ test.describe("authenticated Admin scheduling and attendance", () => {
     const recoveryRow = page.locator(
       `[data-attendance-occurrence-id="${E2E_RECOVERY_OCCURRENCE_ID}"]`,
     );
-    await recoveryRow
-      .getByRole("button", { name: /Reconocer recuperación de Curie, Marie/ })
-      .click();
+    await activateWithKeyboard(
+      page,
+      recoveryRow.getByRole("button", { name: /Reconocer recuperación de Curie, Marie/ }),
+    );
     const recoveryDialog = page.getByRole("dialog", { name: "Reconocer recuperación" });
-    await recoveryDialog
-      .getByLabel("Categoría de recuperación")
-      .selectOption(E2E_RECOVERY_CATEGORY_ID);
-    await recoveryDialog
-      .getByRole("button", { name: "Reconocer recuperación", exact: true })
-      .click();
+    await selectWithKeyboard(
+      page,
+      recoveryDialog.getByLabel("Categoría de recuperación"),
+      E2E_RECOVERY_CATEGORY_ID,
+    );
+    await activateWithKeyboard(
+      page,
+      recoveryDialog.getByRole("button", { name: "Reconocer recuperación", exact: true }),
+    );
     await expect(recoveryRow).toContainText(/Recuperación reconocida/);
 
     await page.goto(

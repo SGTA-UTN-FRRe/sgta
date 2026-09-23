@@ -88,9 +88,11 @@ upcoming duties, negative balances, review count, and degraded-source state.
 
 Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus authenticated Admin journeys for live tutor/Materias, scheduling/attendance, hour-accounting, consultation operations, and cycle lifecycle. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the normal Next.js server; the consultation journey uses a local HTTP fixture for the Sheets values-read contract, not Google or an external endpoint. The suite uses one worker because its authenticated journeys share a database and some workflows write to it.
 
+The Admin accessibility journey visits `/admin`, `/admin/tutors`, `/admin/tutors/subjects`, `/admin/schedules`, `/admin/schedules/attendance`, `/admin/hours`, `/admin/hours/movements`, `/admin/consultations`, `/admin/reports`, and `/admin/settings` at 390px, 900px, and 1440px. It checks page-level horizontal overflow, primary-action visibility, and header-action bounds. Its keyboard navigation scenario opens the mobile Admin drawer, follows a route link, and verifies focus moves to the new page heading.
+
 E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Docker is required locally because the authenticated web server owns an isolated PostgreSQL container. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
 
-The consultation Admin journey covers source import summary and idempotent refresh, filter/search behavior, duplicate and anomaly decisions, SUBJECT and GENERAL consolidation, pending classification exclusion, source degradation and unavailability, canonical-data preservation, and Compact/Medium/Wide layouts. It also asserts unauthenticated and Tutor API/page denial and the absence of student contact from Tutor and public routes. Its source fixture is bound to loopback and accepts only the synthetic test token.
+The consultation Admin journey covers source import summary and idempotent refresh, filter/search behavior, duplicate and anomaly decisions, SUBJECT and GENERAL consolidation, pending classification exclusion, source degradation and unavailability, canonical-data preservation, and Compact/Medium/Wide layouts. Import, review, and report-filter controls are operated with the keyboard, including native select and checkbox keys; reduced-motion behavior is checked for review and feedback states. It also asserts unauthenticated and Tutor API/page denial and the absence of student contact from Tutor and public routes. Its source fixture is bound to loopback and accepts only the synthetic test token.
 
 The same authenticated Admin journey exercises live `/admin` overview links
 and source degradation, plus `/admin/reports` period and dimension filters,
@@ -107,9 +109,14 @@ origin, and movement history. The authenticated Admin journey covers the live
 schedule plan switch and assignment edit, then the Compact attendance flow:
 Present without a balance change, Falta with cancellation and reload
 persistence, adjusted debit confirmation, linked movement history, and explicit
-recovery recognition. The existing Admin hours journey continues to cover the
-Compact, Medium, and Wide workflow through bulk meeting credit, balance/history
-refresh, movement-history navigation, and non-destructive reversal.
+recovery recognition. These actions are activated with keyboard input, and the
+schedule plan controls expose selected state through button semantics. The
+existing Admin hours journey continues to cover the Compact, Medium, and Wide
+workflow through keyboard-operated bulk meeting credit, balance/history refresh,
+movement-history navigation, and non-destructive reversal. The tutor journey
+also checks keyboard navigation through row actions and the status confirmation
+dialog, while the cycle lifecycle journey closes the cycle and creates its
+successor with keyboard activation.
 
 The authenticated Tutor journey signs a real Better Auth session cookie and
 covers owner-scoped summary, effective schedule, and hour-history reads through

@@ -9,6 +9,12 @@ import {
   E2E_PRIMARY_TUTOR_ID,
   E2E_TUTOR_SESSION_TOKEN,
 } from "./e2e-test-data";
+import {
+  activateWithKeyboard,
+  expectReducedMotion,
+  selectWithKeyboard,
+  setCheckboxWithKeyboard,
+} from "./keyboard-helpers";
 
 test.describe("authenticated Admin consultation workflow", () => {
   test("imports, reviews, filters, preserves canonical data, and protects student contact", async ({
@@ -41,12 +47,13 @@ test.describe("authenticated Admin consultation workflow", () => {
     ]);
 
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/admin/consultations");
     await expect(
       page.getByRole("heading", { level: 1, name: "Consultas" }),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Actualizar consultas" }).click();
+    await activateWithKeyboard(page, page.getByRole("button", { name: "Actualizar consultas" }));
     await expect(page.getByRole("status").filter({ hasText: "3 nuevas" })).toContainText(
       "3 nuevas",
     );
@@ -65,8 +72,8 @@ test.describe("authenticated Admin consultation workflow", () => {
     expect(pendingStagingId).toEqual(expect.any(String));
     expect(JSON.stringify(initialWorkspace)).not.toContain(E2E_CONSULTATION_CONTACT);
 
-    await page.getByRole("combobox", { name: "Estado" }).selectOption("PENDING_REVIEW");
-    await page.getByRole("combobox", { name: "Carrera" }).selectOption(E2E_CAREER_ID);
+    await selectWithKeyboard(page, page.getByRole("combobox", { name: "Estado" }), "PENDING_REVIEW");
+    await selectWithKeyboard(page, page.getByRole("combobox", { name: "Carrera" }), E2E_CAREER_ID);
     await page.getByRole("searchbox", { name: "Buscar consultas" }).fill("Casey");
     await expect(page).toHaveURL(/status=PENDING_REVIEW/);
     await expect(page).toHaveURL(/careerId=/);
@@ -78,30 +85,47 @@ test.describe("authenticated Admin consultation workflow", () => {
     const firstReviewButton = page
       .getByRole("button", { name: "Revisar a Casey Duplicate" })
       .first();
-    await firstReviewButton.click();
+    await activateWithKeyboard(page, firstReviewButton);
     const firstReview = page.getByRole("dialog", {
       name: "Detalle de Casey Duplicate",
     });
     await expect(firstReview).toBeVisible();
+    await expectReducedMotion(firstReview);
     await expect(firstReview.getByText("Valores originales y normalizados")).toBeVisible();
     await expect(firstReview.getByText("La consulta podría estar repetida.")).toBeVisible();
-    await firstReview
-      .getByRole("checkbox", { name: "Confirmo que revisé esta observación" })
-      .check();
-    await firstReview
-      .getByLabel("Decisión para el posible duplicado de Casey Duplicate")
-      .selectOption("NOT_DUPLICATE");
-    await firstReview.getByRole("combobox", { name: "Clasificación" }).selectOption("SUBJECT");
-    await firstReview.getByRole("combobox", { name: "Materia" }).selectOption({ label: "Algorithms" });
-    await firstReview.getByRole("button", { name: "Guardar revisión" }).click();
+    await setCheckboxWithKeyboard(
+      page,
+      firstReview.getByRole("checkbox", { name: "Confirmo que revisé esta observación" }),
+      true,
+    );
+    await selectWithKeyboard(
+      page,
+      firstReview.getByLabel("Decisión para el posible duplicado de Casey Duplicate"),
+      "NOT_DUPLICATE",
+    );
+    await selectWithKeyboard(
+      page,
+      firstReview.getByRole("combobox", { name: "Clasificación" }),
+      "SUBJECT",
+    );
+    await selectWithKeyboard(
+      page,
+      firstReview.getByRole("combobox", { name: "Materia" }),
+      { label: "Algorithms" },
+    );
+    await activateWithKeyboard(page, firstReview.getByRole("button", { name: "Guardar revisión" }));
     await expect(firstReview.getByText("La consulta quedó consolidada.")).toBeVisible();
-    await firstReview.getByRole("button", { name: "Cerrar", exact: true }).click();
+    await expectReducedMotion(firstReview);
+    await activateWithKeyboard(
+      page,
+      firstReview.getByRole("button", { name: "Cerrar", exact: true }),
+    );
 
     const secondReviewButton = page.getByRole("button", {
       name: "Revisar a Casey Duplicate",
     });
     await expect(secondReviewButton).toBeVisible();
-    await secondReviewButton.click();
+    await activateWithKeyboard(page, secondReviewButton);
     const secondReview = page.getByRole("dialog", {
       name: "Detalle de Casey Duplicate",
     });
@@ -113,17 +137,26 @@ test.describe("authenticated Admin consultation workflow", () => {
     const secondAcknowledgement = secondReview.getByRole("checkbox", {
       name: "Confirmo que revisé esta observación",
     });
-    if (await secondAcknowledgement.count()) await secondAcknowledgement.check();
-    await secondReview.getByRole("combobox", { name: "Clasificación" }).selectOption("GENERAL");
-    await secondReview.getByRole("button", { name: "Guardar revisión" }).click();
+    if (await secondAcknowledgement.count()) {
+      await setCheckboxWithKeyboard(page, secondAcknowledgement, true);
+    }
+    await selectWithKeyboard(
+      page,
+      secondReview.getByRole("combobox", { name: "Clasificación" }),
+      "GENERAL",
+    );
+    await activateWithKeyboard(page, secondReview.getByRole("button", { name: "Guardar revisión" }));
     await expect(secondReview.getByText("La consulta quedó consolidada.")).toBeVisible();
-    await secondReview.getByRole("button", { name: "Cerrar", exact: true }).click();
+    await activateWithKeyboard(
+      page,
+      secondReview.getByRole("button", { name: "Cerrar", exact: true }),
+    );
 
     await expect(page.locator('[data-slot="consultations-screen"]')).toHaveAttribute(
       "data-state",
       "search-empty",
     );
-    await page.getByRole("combobox", { name: "Estado" }).selectOption("ALL");
+    await selectWithKeyboard(page, page.getByRole("combobox", { name: "Estado" }), "ALL");
     await expect(page).toHaveURL(/careerId=/);
     await expect(page).toHaveURL(/search=Casey/);
 
@@ -181,7 +214,7 @@ test.describe("authenticated Admin consultation workflow", () => {
     await expect(page).toHaveURL(/careerId=/);
     await expect(page).not.toHaveURL(/search=/);
     await expect(page.getByRole("button", { name: "Revisar a Riley Pending" })).toBeVisible();
-    await page.getByRole("button", { name: "Revisar a Riley Pending" }).click();
+    await activateWithKeyboard(page, page.getByRole("button", { name: "Revisar a Riley Pending" }));
     const pendingReview = page.getByRole("dialog", {
       name: "Detalle de Riley Pending",
     });
@@ -189,9 +222,12 @@ test.describe("authenticated Admin consultation workflow", () => {
     await expect(pendingReview.getByRole("combobox", { name: "Clasificación" })).toHaveValue(
       "PENDING_CLASSIFICATION",
     );
-    await pendingReview.getByRole("button", { name: "Cerrar", exact: true }).click();
+    await activateWithKeyboard(
+      page,
+      pendingReview.getByRole("button", { name: "Cerrar", exact: true }),
+    );
 
-    await page.getByRole("button", { name: "Actualizar consultas" }).click();
+    await activateWithKeyboard(page, page.getByRole("button", { name: "Actualizar consultas" }));
     await expect(page.getByRole("status").filter({ hasText: "3 ya procesadas" })).toContainText(
       "0 nuevas",
     );
@@ -199,12 +235,12 @@ test.describe("authenticated Admin consultation workflow", () => {
     await expect(page).not.toHaveURL(/search=/);
 
     const partialStatus = page.locator('[aria-label="Estado de la fuente de consultas"]');
-    await page.getByRole("button", { name: "Actualizar consultas" }).click();
+    await activateWithKeyboard(page, page.getByRole("button", { name: "Actualizar consultas" }));
     await expect(partialStatus).toHaveAttribute("data-state", "degraded");
     await expect(page.getByRole("status").filter({ hasText: "1 con errores" })).toBeVisible();
     await expect(page.getByText("Casey Duplicate").first()).toBeVisible();
 
-    await page.getByRole("button", { name: "Actualizar consultas" }).click();
+    await activateWithKeyboard(page, page.getByRole("button", { name: "Actualizar consultas" }));
     await expect(
       page.getByRole("alert").filter({ hasText: "No se pudo acceder a la fuente de consultas." }),
     ).toBeVisible();
@@ -226,13 +262,15 @@ test.describe("authenticated Admin consultation workflow", () => {
     await expect(page.getByText("Consultas consolidadas en el período")).toBeVisible();
     await expect(page.getByText("2", { exact: true }).first()).toBeVisible();
 
-    await page.getByRole("combobox", { name: "Carrera" }).selectOption(E2E_CAREER_ID);
-    await page.getByRole("combobox", { name: "Materia" }).selectOption(
+    await selectWithKeyboard(page, page.getByRole("combobox", { name: "Carrera" }), E2E_CAREER_ID);
+    await selectWithKeyboard(
+      page,
+      page.getByRole("combobox", { name: "Materia" }),
       "33333333-3333-4333-8333-333333333333",
     );
-    await page.getByRole("combobox", { name: "Tutor" }).selectOption(E2E_PRIMARY_TUTOR_ID);
-    await page.getByRole("combobox", { name: "Modalidad" }).selectOption("Remote");
-    await page.getByRole("button", { name: "Aplicar filtros" }).click();
+    await selectWithKeyboard(page, page.getByRole("combobox", { name: "Tutor" }), E2E_PRIMARY_TUTOR_ID);
+    await selectWithKeyboard(page, page.getByRole("combobox", { name: "Modalidad" }), "Remote");
+    await activateWithKeyboard(page, page.getByRole("button", { name: "Aplicar filtros" }));
     await expect(page).toHaveURL(/careerId=/);
     await expect(page).toHaveURL(/subjectId=/);
     await expect(page).toHaveURL(/tutorId=/);
@@ -273,7 +311,7 @@ test.describe("authenticated Admin consultation workflow", () => {
         name: "No hay datos para los filtros seleccionados.",
       }),
     ).toBeVisible();
-    await page.getByRole("link", { name: "Restablecer filtros" }).click();
+    await activateWithKeyboard(page, page.getByRole("link", { name: "Restablecer filtros" }));
     await expect(page).toHaveURL("http://localhost:3000/admin/reports");
 
     await page.goto(

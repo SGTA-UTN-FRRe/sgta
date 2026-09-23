@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -582,7 +582,8 @@ describe("SettingsScreen", () => {
 
     render(<SettingsScreen currentCycle={currentCycle} cycles={[currentCycle]} />);
 
-    await user.click(screen.getByRole("button", { name: "Cerrar ciclo" }));
+    const closeCycleTrigger = screen.getByRole("button", { name: "Cerrar ciclo" });
+    await user.click(closeCycleTrigger);
 
     const confirmation = screen.getByRole("alertdialog", {
       name: "Confirmar cierre del ciclo",
@@ -591,8 +592,26 @@ describe("SettingsScreen", () => {
     expect(confirmation).toHaveTextContent("saldo de horas cero");
     expect(fetchMock).not.toHaveBeenCalled();
 
+    const cancelButton = within(confirmation).getByRole("button", { name: "Cancelar" });
+    const confirmButton = within(confirmation).getByRole("button", {
+      name: "Confirmar cierre",
+    });
+    expect(cancelButton).toHaveFocus();
+    await user.tab();
+    expect(confirmButton).toHaveFocus();
+    await user.tab();
+    expect(cancelButton).toHaveFocus();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(closeCycleTrigger).toHaveFocus();
+
+    await user.click(closeCycleTrigger);
+    const reopenedConfirmation = screen.getByRole("alertdialog", {
+      name: "Confirmar cierre del ciclo",
+    });
+
     await user.click(
-      screen.getByRole("button", { name: "Confirmar cierre" }),
+      within(reopenedConfirmation).getByRole("button", { name: "Confirmar cierre" }),
     );
 
     await waitFor(() =>

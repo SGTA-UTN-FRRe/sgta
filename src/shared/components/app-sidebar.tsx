@@ -113,9 +113,7 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
     }
 
     mobileNavigationPending.current = false;
-    document
-      .querySelector<HTMLElement>('main [data-slot="page-header"] h1[tabindex="-1"]')
-      ?.focus();
+    document.querySelector<HTMLElement>('main [data-slot="page-header"] h1')?.focus();
   }, [pathname]);
 
   useEffect(() => {
@@ -179,7 +177,7 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
         key={item.href}
         href={item.href}
         onClick={() => {
-          if (mobileOpen && variant === "tutor" && pathname !== item.href) {
+          if (mobileOpen && pathname !== item.href) {
             mobileNavigationPending.current = true;
           }
           closeMobileNav();

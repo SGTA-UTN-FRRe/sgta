@@ -7,6 +7,7 @@ import {
   E2E_CYCLE_ID,
   E2E_PRIMARY_TUTOR_ID,
 } from "./e2e-test-data";
+import { activateWithKeyboard, expectReducedMotion } from "./keyboard-helpers";
 
 test("closes a cycle and opens a successor without transferring balance", async ({
   context,
@@ -39,22 +40,31 @@ test("closes a cycle and opens a successor without transferring balance", async 
   )?.signedBalanceMinutes;
   expect(historicalBalance).toBeGreaterThan(0);
 
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/admin/settings");
   await expect(page.getByRole("heading", { name: "Ciclo actual" })).toBeVisible();
-  await page.getByRole("button", { name: "Cerrar ciclo", exact: true }).click();
+  await activateWithKeyboard(
+    page,
+    page.getByRole("button", { name: "Cerrar ciclo", exact: true }),
+  );
 
   const closeConfirmation = page.getByRole("alertdialog", {
     name: "Confirmar cierre del ciclo",
   });
+  await expectReducedMotion(closeConfirmation);
+  await expect(closeConfirmation.getByRole("button", { name: "Cancelar" })).toBeFocused();
   await expect(closeConfirmation).toContainText(initialWorkspace.currentCycle.name);
   await expect(closeConfirmation).toContainText("El historial permanecerá disponible");
   await expect(closeConfirmation).toContainText("saldo de horas cero");
-  await closeConfirmation
-    .getByRole("button", { name: "Confirmar cierre", exact: true })
-    .click();
+  await activateWithKeyboard(
+    page,
+    closeConfirmation.getByRole("button", { name: "Confirmar cierre", exact: true }),
+  );
+  await expect(page.locator('section[aria-labelledby="cycle-history-title"]')).toBeFocused();
   await expect(
     page.getByRole("status").filter({ hasText: "El ciclo se cerró correctamente" }),
   ).toBeVisible();
+  await expectReducedMotion(page.getByRole("status"));
 
   await page.reload();
   const cycleHistory = page.getByRole("list", { name: "Ciclos registrados" });
@@ -95,7 +105,7 @@ test("closes a cycle and opens a successor without transferring balance", async 
   await cycleForm
     .getByLabel("Fecha de finalización", { exact: true })
     .fill("2028-12-31");
-  await cycleForm.getByRole("button", { name: "Crear ciclo" }).click();
+  await activateWithKeyboard(page, cycleForm.getByRole("button", { name: "Crear ciclo" }));
   await expect(
     page.getByRole("status").filter({ hasText: "El ciclo se creó correctamente" }),
   ).toBeVisible();

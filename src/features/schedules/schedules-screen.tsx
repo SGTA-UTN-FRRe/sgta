@@ -592,15 +592,14 @@ function PlanContext({
         <div
           aria-label="Planes de horario"
           className="mt-3 grid gap-2 md:grid-cols-2"
-          role="tablist"
+          role="group"
         >
           {plans.map((plan) => {
             const isSelected = plan.id === selectedPlanId;
 
             return (
               <button
-                aria-controls="schedule-workspace"
-                aria-selected={isSelected}
+                aria-pressed={isSelected}
                 className={cn(
                   "flex min-h-12 items-center justify-between gap-3 rounded-sm border px-4 py-3 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
                   isSelected
@@ -610,7 +609,6 @@ function PlanContext({
                 disabled={isMutating}
                 key={plan.id}
                 onClick={() => onSelectPlan(plan.id)}
-                role="tab"
                 type="button"
               >
                 <span className="min-w-0">
@@ -860,11 +858,11 @@ function CompactSchedule({
       <div
         aria-label="Días del plan"
         className="mt-4 grid grid-cols-5 gap-1 rounded-md border border-border bg-surface p-1"
-        role="tablist"
+        role="group"
       >
         {days.map((day) => (
           <button
-            aria-selected={day === selectedDay}
+            aria-pressed={day === selectedDay}
             className={cn(
               "min-h-10 rounded-sm px-1 text-xs font-bold tracking-[0.08em] transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
               day === selectedDay
@@ -873,7 +871,6 @@ function CompactSchedule({
             )}
             key={day}
             onClick={() => onSelectDay(day)}
-            role="tab"
             type="button"
           >
             {day}

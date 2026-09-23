@@ -603,10 +603,10 @@ This is not a visual rescue phase.
 #### Exit criteria
 
 - [x] Cycle closure preserves history, rejects closed-cycle writes, and starts a successor cycle with no inherited hour balance.
-- [ ] No P0 accessibility blocker remains.
-- [ ] Critical workflows work by keyboard.
+- [x] No P0 accessibility blocker remains.
+- [x] Critical workflows work by keyboard.
 - [x] Tutor Compact experience is production-ready.
-- [ ] Admin core remains usable at supported widths.
+- [x] Admin core remains usable at supported widths.
 - [ ] No sensitive data leaks through logs/errors/routes.
 - [ ] Authorization regression passes.
 - [ ] CI remains stable and reproducible.
