@@ -1,9 +1,18 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
 
 import { loginScreenData } from "@/mocks/login.mock";
 
 import { LoginScreen } from "./login-screen";
+
+const authMocks = vi.hoisted(() => ({
+  signInSocial: vi.fn(),
+}));
+
+vi.mock("better-auth/react", () => ({
+  createAuthClient: () => ({ signIn: { social: authMocks.signInSocial } }),
+}));
 
 const data = loginScreenData;
 
@@ -21,10 +30,10 @@ describe("LoginScreen", () => {
     expect(screen.getByText(/no hay registro público/i)).toBeInTheDocument();
   });
 
-  it("exposes loading as a disabled, presentational state", () => {
+  it("announces loading and prevents repeated activation", () => {
     render(<LoginScreen data={data} state="loading" />);
 
-    expect(screen.getByRole("button")).toBeDisabled();
+    expect(screen.getByRole("button")).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("status")).toHaveTextContent(
       data.states.loadingLabel,
     );
@@ -60,5 +69,34 @@ describe("LoginScreen", () => {
       data.states.permissionDeniedDescription,
     );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("announces permission denial returned by Google sign-in", async () => {
+    const user = userEvent.setup();
+    let resolveSignIn: ((value: unknown) => void) | undefined;
+    authMocks.signInSocial.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSignIn = resolve;
+      }),
+    );
+
+    render(<LoginScreen data={data} state="error" />);
+    await user.click(screen.getByRole("button", { name: "Reintentar" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      data.states.loadingLabel,
+    );
+    expect(screen.getByRole("button")).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("button")).toHaveFocus();
+
+    await act(async () => {
+      resolveSignIn?.({ error: { code: "signup_disabled" } });
+    });
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      data.states.permissionDeniedTitle,
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(authMocks.signInSocial).toHaveBeenCalledTimes(1);
   });
 });

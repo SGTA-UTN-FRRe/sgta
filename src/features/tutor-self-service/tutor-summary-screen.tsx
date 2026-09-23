@@ -22,6 +22,7 @@ import {
   getBalanceLabel,
   getRequiredActionCopy,
   getTutorSelfServiceErrorMessage,
+  focusTutorPageTitle,
   requestTutorSelfService,
   TutorSelfServiceRequestError,
 } from "./tutor-self-service-screen-utils";
@@ -295,6 +296,7 @@ export function TutorSummaryScreen({
   );
 
   const retry = async () => {
+    focusTutorPageTitle();
     setState("loading");
 
     try {
@@ -321,6 +323,7 @@ export function TutorSummaryScreen({
             ? `Estado actual de ${data.tutor.displayName} y sus próximas guardias.`
             : "Balance, materias y próximas guardias del ciclo vigente."
         }
+        titleId="tutor-page-title"
         title="Mi resumen"
       />
       {state === "loading" && <SummaryLoading />}

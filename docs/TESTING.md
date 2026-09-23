@@ -116,7 +116,13 @@ covers owner-scoped summary, effective schedule, and hour-history reads through
 the running application. It asserts that a Tutor cannot reach Admin pages or
 mutation APIs, that only the linked Tutor's subjects, schedule, balance, and
 movements are rendered, that student/contact data is absent, and that the
-Compact, Medium, and Wide layouts remain usable.
+Compact (390px), Medium (900px), and Wide (1440px) layouts remain usable without
+page-level horizontal overflow. A keyboard journey opens Tutor navigation,
+visits each self-service route, queries a schedule date, checks focus restoration
+and visible focus, and verifies reduced-motion navigation styles. Login browser
+coverage checks keyboard focus, announced technical and access-denied states,
+and page-level overflow at those same widths; component coverage exercises the
+loading-to-permission-denied sign-in transition.
 
 The cycle lifecycle browser project runs after the shared-database journeys
 because it closes the seeded active cycle. It confirms the cycle explicitly,

@@ -59,6 +59,9 @@ const TUTOR_NAV: NavItem[] = [
   { label: "Mis horas", href: "/tutor/hours", icon: Clock3 },
 ];
 
+const MOBILE_DIALOG_FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 function isAdminVariant(variant: AppSidebarVariant) {
   return variant !== "tutor";
 }
@@ -66,8 +69,10 @@ function isAdminVariant(variant: AppSidebarVariant) {
 export function AppSidebar({ variant, user }: AppSidebarProps) {
   const pathname = usePathname() ?? "";
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileDialogRef = useRef<HTMLElement | null>(null);
   const mobileTriggerRef = useRef<HTMLButtonElement>(null);
   const mobileCloseRef = useRef<HTMLButtonElement>(null);
+  const mobileNavigationPending = useRef(false);
   const hasOpenedMobile = useRef(false);
 
   const isAdmin = isAdminVariant(variant);
@@ -103,6 +108,17 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
   }, [mobileOpen]);
 
   useEffect(() => {
+    if (!mobileNavigationPending.current) {
+      return;
+    }
+
+    mobileNavigationPending.current = false;
+    document
+      .querySelector<HTMLElement>('main [data-slot="page-header"] h1[tabindex="-1"]')
+      ?.focus();
+  }, [pathname]);
+
+  useEffect(() => {
     if (!mobileOpen) {
       return;
     }
@@ -110,6 +126,43 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setMobileOpen(false);
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const drawer = mobileDialogRef.current;
+      if (drawer === null) {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        drawer.querySelectorAll<HTMLElement>(MOBILE_DIALOG_FOCUSABLE_SELECTOR),
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (firstElement === undefined || lastElement === undefined) {
+        event.preventDefault();
+        return;
+      }
+
+      if (
+        event.shiftKey &&
+        (document.activeElement === firstElement ||
+          !drawer.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (
+        !event.shiftKey &&
+        (document.activeElement === lastElement ||
+          !drawer.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        firstElement.focus();
       }
     };
 
@@ -125,7 +178,12 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
       <Link
         key={item.href}
         href={item.href}
-        onClick={closeMobileNav}
+        onClick={() => {
+          if (mobileOpen && variant === "tutor" && pathname !== item.href) {
+            mobileNavigationPending.current = true;
+          }
+          closeMobileNav();
+        }}
         aria-label={item.label}
         aria-current={active ? "page" : undefined}
         title={item.label}
@@ -255,6 +313,7 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
             aria-label={productLabel}
             role="dialog"
             aria-modal="true"
+            ref={mobileDialogRef}
           >
             {navContent(true)}
           </aside>

@@ -13,6 +13,8 @@ export interface BreadcrumbItem {
 export interface PageHeaderProps {
   /** Primary contextual page title. */
   title: ReactNode;
+  /** Optional id for a title that receives programmatic focus after an update. */
+  titleId?: string;
   /** Optional supporting description or operational context. */
   description?: ReactNode;
   /** Breadcrumb items for contextual navigation. */
@@ -30,6 +32,7 @@ export interface PageHeaderProps {
  */
 export function PageHeader({
   title,
+  titleId,
   description,
   breadcrumbs,
   action,
@@ -76,7 +79,11 @@ export function PageHeader({
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          <h1
+            className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
+            id={titleId}
+            tabIndex={titleId === undefined ? undefined : -1}
+          >
             {title}
           </h1>
           {description && (

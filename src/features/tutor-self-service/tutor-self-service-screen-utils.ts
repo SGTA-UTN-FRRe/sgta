@@ -27,6 +27,10 @@ export class TutorSelfServiceRequestError extends Error {
   }
 }
 
+export function focusTutorPageTitle() {
+  document.getElementById("tutor-page-title")?.focus();
+}
+
 export function formatLongDate(date: string) {
   const label = longDateFormatter.format(new Date(`${date}T00:00:00Z`));
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;

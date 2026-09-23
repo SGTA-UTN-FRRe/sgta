@@ -605,7 +605,7 @@ This is not a visual rescue phase.
 - [x] Cycle closure preserves history, rejects closed-cycle writes, and starts a successor cycle with no inherited hour balance.
 - [ ] No P0 accessibility blocker remains.
 - [ ] Critical workflows work by keyboard.
-- [ ] Tutor Compact experience is production-ready.
+- [x] Tutor Compact experience is production-ready.
 - [ ] Admin core remains usable at supported widths.
 - [ ] No sensitive data leaks through logs/errors/routes.
 - [ ] Authorization regression passes.
