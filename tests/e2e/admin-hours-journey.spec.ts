@@ -8,6 +8,7 @@ import {
   E2E_MEETING_CATEGORY_ID,
   E2E_PRIMARY_TUTOR_ID,
 } from "./e2e-test-data";
+import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 import {
   activateWithKeyboard,
   selectWithKeyboard,
@@ -19,6 +20,7 @@ test.describe("authenticated Admin hour operations", () => {
     context,
     page,
   }) => {
+    const accessibilityViolations: string[] = [];
     const signedSessionToken = `${E2E_ADMIN_SESSION_TOKEN}.${await makeSignature(
       E2E_ADMIN_SESSION_TOKEN,
       E2E_AUTH_SECRET,
@@ -45,6 +47,12 @@ test.describe("authenticated Admin hour operations", () => {
     const movementDialog = page.getByRole("dialog", {
       name: "Registrar movimiento",
     });
+    accessibilityViolations.push(
+      ...(await collectSeriousAccessibilityViolations(
+        page,
+        "Hour movement dialog at Compact",
+      )),
+    );
     const selectAll = movementDialog.getByRole("checkbox", {
       name: "Seleccionar todos",
     });
@@ -164,5 +172,6 @@ test.describe("authenticated Admin hour operations", () => {
     await expect(
       reversalRow.getByRole("link", { name: "Ver movimiento original" }),
     ).toBeVisible();
+    expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 });

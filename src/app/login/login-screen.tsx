@@ -197,14 +197,14 @@ export function LoginScreen({
                 <p className="text-sm font-bold tracking-[0.12em] text-white">
                   SGTA
                 </p>
-                <p className="text-xs text-white/70">
+                <p className="text-xs text-white">
                   {data.institutionalContext}
                 </p>
               </div>
             </div>
 
             <div className="max-w-lg lg:pb-10">
-              <p className="text-sm font-bold tracking-[0.08em] text-accent">
+              <p className="text-sm font-bold tracking-[0.08em] text-white">
                 {data.institutionalContext}
               </p>
               <h2 className="mt-4 max-w-md text-3xl font-extrabold tracking-[-0.035em] text-white sm:text-4xl lg:text-[2.75rem] lg:leading-[1.08]">

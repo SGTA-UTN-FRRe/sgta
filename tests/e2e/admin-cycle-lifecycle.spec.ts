@@ -7,6 +7,7 @@ import {
   E2E_CYCLE_ID,
   E2E_PRIMARY_TUTOR_ID,
 } from "./e2e-test-data";
+import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 import { activateWithKeyboard, expectReducedMotion } from "./keyboard-helpers";
 
 test("closes a cycle and opens a successor without transferring balance", async ({
@@ -14,6 +15,7 @@ test("closes a cycle and opens a successor without transferring balance", async 
   page,
 }) => {
   test.setTimeout(120_000);
+  const accessibilityViolations: string[] = [];
 
   const signedSessionToken = `${E2E_ADMIN_SESSION_TOKEN}.${await makeSignature(
     E2E_ADMIN_SESSION_TOKEN,
@@ -51,6 +53,12 @@ test("closes a cycle and opens a successor without transferring balance", async 
   const closeConfirmation = page.getByRole("alertdialog", {
     name: "Confirmar cierre del ciclo",
   });
+  accessibilityViolations.push(
+    ...(await collectSeriousAccessibilityViolations(
+      page,
+      "Cycle-close confirmation dialog at Wide",
+    )),
+  );
   await expectReducedMotion(closeConfirmation);
   await expect(closeConfirmation.getByRole("button", { name: "Cancelar" })).toBeFocused();
   await expect(closeConfirmation).toContainText(initialWorkspace.currentCycle.name);
@@ -162,4 +170,5 @@ test("closes a cycle and opens a successor without transferring balance", async 
     .locator("li")
     .filter({ hasText: "2028" });
   await expect(successorCycleRow).toContainText("Abierto");
+  expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
 });

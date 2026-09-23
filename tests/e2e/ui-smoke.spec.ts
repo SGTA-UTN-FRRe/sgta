@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
+
 test.describe("UI smoke journeys", () => {
   test("redirects the root route to login", async ({ page }) => {
     await page.goto("/");
@@ -14,11 +16,17 @@ test.describe("UI smoke journeys", () => {
     await expect(page.getByRole("main")).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.getByRole("button", { name: /Continuar/ })).toBeVisible();
+    const accessibilityViolations = await collectSeriousAccessibilityViolations(
+      page,
+      "Login default state",
+    );
+    expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 
   test("announces login errors and permission denial at supported widths", async ({
     page,
   }) => {
+    const accessibilityViolations: string[] = [];
     for (const width of [390, 900, 1440]) {
       await page.setViewportSize({ height: 900, width });
       await page.goto("/login?error=internal_server_error");
@@ -41,6 +49,12 @@ test.describe("UI smoke journeys", () => {
         ),
       }));
       expect(errorWidths.scroll).toBeLessThanOrEqual(errorWidths.client);
+      accessibilityViolations.push(
+        ...(await collectSeriousAccessibilityViolations(
+          page,
+          `Login technical-error state at ${width}px`,
+        )),
+      );
 
       await page.goto("/login?error=signup_disabled");
       await expect(page.getByRole("status")).toContainText(
@@ -60,7 +74,15 @@ test.describe("UI smoke journeys", () => {
         ),
       }));
       expect(deniedWidths.scroll).toBeLessThanOrEqual(deniedWidths.client);
+      accessibilityViolations.push(
+        ...(await collectSeriousAccessibilityViolations(
+          page,
+          `Login permission-denied state at ${width}px`,
+        )),
+      );
     }
+
+    expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 
   test("redirects unauthenticated admin routes to login", async ({ page }) => {

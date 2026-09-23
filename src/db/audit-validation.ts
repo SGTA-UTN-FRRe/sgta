@@ -77,7 +77,8 @@ function validateValue(
     }
 
     const digits = value.match(/\d/g)?.length ?? 0;
-    if (digits >= 9 && /^[+().\-\s\d]+$/.test(value)) {
+    const isUuid = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(value);
+    if (!isUuid && digits >= 9 && /^[+().\-\s\d]+$/.test(value)) {
       return `${path} contains personal contact data`;
     }
 

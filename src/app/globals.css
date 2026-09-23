@@ -17,7 +17,7 @@
   /* Foreground */
   --foreground: #233251;
   --foreground-secondary: #526176;
-  --foreground-muted: #64748B;
+  --foreground-muted: #5F6B7A;
   --foreground-on-dark: #FFFFFF;
 
   /* Borders */
@@ -40,7 +40,7 @@
   /* Navigation */
   --nav-background: #FFFFFF;
   --nav-foreground: #233251;
-  --nav-muted: #64748B;
+  --nav-muted: #5F6B7A;
   --nav-hover: #F1F6FA;
   --nav-active: #EAF4FB;
   --nav-active-foreground: #0B5E9A;

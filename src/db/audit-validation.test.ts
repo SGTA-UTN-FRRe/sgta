@@ -79,4 +79,13 @@ describe("audit input validation", () => {
     expect(validateSafeAuditMetadata({ value: "student@example.test" })).not.toBeNull();
     expect(validateSafeAuditMetadata({ value: "+54 362 412 3456" })).not.toBeNull();
   });
+
+  it("allows opaque UUID identifiers in otherwise safe audit metadata", () => {
+    expect(
+      validateSafeAuditMetadata({
+        cycleId: "11111111-1111-4111-8111-111111111111",
+        tutorId: "66666666-6666-4666-8666-666666666666",
+      }),
+    ).toBeNull();
+  });
 });

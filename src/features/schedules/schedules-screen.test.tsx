@@ -144,7 +144,7 @@ describe("SchedulesScreen", () => {
         name: /Regular/,
       }),
     ).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getAllByRole("grid")).toHaveLength(2);
+    expect(screen.getAllByRole("group", { name: /^Grilla/ })).toHaveLength(2);
     expect(
       screen.getAllByRole("button", { name: /Benítez, Marina, LUN, 08:00 a 10:00/ }),
     ).not.toHaveLength(0);

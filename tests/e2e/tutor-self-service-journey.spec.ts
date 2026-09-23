@@ -6,6 +6,7 @@ import {
   E2E_SECONDARY_TUTOR_ID,
   E2E_TUTOR_SESSION_TOKEN,
 } from "./e2e-test-data";
+import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 
 const viewports = [
   { height: 844, name: "Compact", width: 390 },
@@ -45,6 +46,7 @@ test.describe("authenticated Tutor self-service", () => {
     context,
     page,
   }) => {
+    const accessibilityViolations: string[] = [];
     await signInTutor(context);
 
     const summaryResponse = await page.request.get("/api/tutor/summary");
@@ -139,6 +141,12 @@ test.describe("authenticated Tutor self-service", () => {
       await expect(page.locator("body")).not.toContainText("Grace");
       await expect(page.locator("body")).not.toContainText("Data Structures");
       await expectNoHorizontalOverflow(page);
+      accessibilityViolations.push(
+        ...(await collectSeriousAccessibilityViolations(
+          page,
+          `/tutor at ${viewport.name}`,
+        )),
+      );
     }
 
     for (const viewport of viewports) {
@@ -157,6 +165,12 @@ test.describe("authenticated Tutor self-service", () => {
         page.getByRole("button", { name: /editar|eliminar|asistencia|revertir/i }),
       ).toHaveCount(0);
       await expectNoHorizontalOverflow(page);
+      accessibilityViolations.push(
+        ...(await collectSeriousAccessibilityViolations(
+          page,
+          `/tutor/schedule at ${viewport.name}`,
+        )),
+      );
     }
 
     for (const viewport of viewports) {
@@ -174,7 +188,15 @@ test.describe("authenticated Tutor self-service", () => {
         page.getByRole("button", { name: /registrar|editar|revertir|eliminar/i }),
       ).toHaveCount(0);
       await expectNoHorizontalOverflow(page);
+      accessibilityViolations.push(
+        ...(await collectSeriousAccessibilityViolations(
+          page,
+          `/tutor/hours at ${viewport.name}`,
+        )),
+      );
     }
+
+    expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 
   test("supports keyboard navigation and reduced motion across Tutor routes", async ({

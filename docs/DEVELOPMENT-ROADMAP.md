@@ -609,7 +609,7 @@ This is not a visual rescue phase.
 - [x] Admin core remains usable at supported widths.
 - [x] No sensitive data leaks through logs/errors/routes.
 - [x] Authorization regression passes.
-- [ ] CI remains stable and reproducible.
+- [x] CI remains stable and reproducible.
 
 ### Phase 12 - Migration, production readiness, pilot, and first release
 

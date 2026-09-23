@@ -413,8 +413,8 @@ Verified canonical contrast examples:
 | Pair | Approx. ratio | Result |
 |---|---:|---|
 | `foreground` on `surface` | 12.75:1 | Pass |
-| `foreground-muted` on `surface` | 4.76:1 | Pass |
-| `foreground-muted` on `canvas` | 4.51:1 | Pass |
+| `foreground-muted` on `surface` | 5.43:1 | Pass |
+| `foreground-muted` on `canvas` | 5.14:1 | Pass |
 | `primary-foreground` on `primary` | 5.36:1 | Pass |
 | `primary-foreground` on `primary-hover` | 6.81:1 | Pass |
 
@@ -619,7 +619,7 @@ This section is the only canonical registry of exact visual values for SGTA.
   /* Foreground */
   --foreground: #233251;
   --foreground-secondary: #526176;
-  --foreground-muted: #64748B;
+  --foreground-muted: #5F6B7A;
   --foreground-on-dark: #FFFFFF;
 
   /* Borders */
@@ -642,7 +642,7 @@ This section is the only canonical registry of exact visual values for SGTA.
   /* Navigation */
   --nav-background: #FFFFFF;
   --nav-foreground: #233251;
-  --nav-muted: #64748B;
+  --nav-muted: #5F6B7A;
   --nav-hover: #F1F6FA;
   --nav-active: #EAF4FB;
   --nav-active-foreground: #0B5E9A;

@@ -5,6 +5,7 @@ import {
   E2E_ADMIN_SESSION_TOKEN,
   E2E_AUTH_SECRET,
 } from "./e2e-test-data";
+import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 import {
   activateWithKeyboard,
   expectReducedMotion,
@@ -17,6 +18,7 @@ test.describe("authenticated Admin tutor operations", () => {
     context,
     page,
   }) => {
+    const accessibilityViolations: string[] = [];
     const signedSessionToken = `${E2E_ADMIN_SESSION_TOKEN}.${await makeSignature(
       E2E_ADMIN_SESSION_TOKEN,
       E2E_AUTH_SECRET,
@@ -71,6 +73,12 @@ test.describe("authenticated Admin tutor operations", () => {
     await activateWithKeyboard(page, page.getByRole("button", { name: "Agregar tutor" }));
     const dialog = page.getByRole("dialog", { name: "Agregar tutor" });
     await expectReducedMotion(dialog);
+    accessibilityViolations.push(
+      ...(await collectSeriousAccessibilityViolations(
+        page,
+        "Add tutor dialog at Wide",
+      )),
+    );
     await dialog.getByRole("textbox", { name: "Nombre", exact: true }).fill("Katherine");
     await dialog.getByRole("textbox", { name: "Apellido", exact: true }).fill("Johnson");
     await selectWithKeyboard(page, dialog.getByLabel("Carrera"), { label: "Computer Science" });
@@ -115,5 +123,6 @@ test.describe("authenticated Admin tutor operations", () => {
       await page.setViewportSize(viewport);
       await expect(page.locator(`[data-layout="${viewport.layout}"]`)).toBeVisible();
     }
+    expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 });

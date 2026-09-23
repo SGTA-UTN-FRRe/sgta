@@ -9,6 +9,7 @@ import {
   E2E_PRIMARY_TUTOR_ID,
   E2E_TUTOR_SESSION_TOKEN,
 } from "./e2e-test-data";
+import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 import {
   activateWithKeyboard,
   expectReducedMotion,
@@ -22,6 +23,7 @@ test.describe("authenticated Admin consultation workflow", () => {
     page,
   }) => {
     test.setTimeout(120_000);
+    const accessibilityViolations: string[] = [];
 
     const unauthenticatedList = await page.request.get("/api/admin/consultations");
     expect(unauthenticatedList.status()).toBe(401);
@@ -71,6 +73,12 @@ test.describe("authenticated Admin consultation workflow", () => {
     )?.stagingId;
     expect(pendingStagingId).toEqual(expect.any(String));
     expect(JSON.stringify(initialWorkspace)).not.toContain(E2E_CONSULTATION_CONTACT);
+    accessibilityViolations.push(
+      ...(await collectSeriousAccessibilityViolations(
+        page,
+        "Consultations pending-review state at Compact",
+      )),
+    );
 
     await selectWithKeyboard(page, page.getByRole("combobox", { name: "Estado" }), "PENDING_REVIEW");
     await selectWithKeyboard(page, page.getByRole("combobox", { name: "Carrera" }), E2E_CAREER_ID);
@@ -90,6 +98,12 @@ test.describe("authenticated Admin consultation workflow", () => {
       name: "Detalle de Casey Duplicate",
     });
     await expect(firstReview).toBeVisible();
+    accessibilityViolations.push(
+      ...(await collectSeriousAccessibilityViolations(
+        page,
+        "Consultation review dialog at Compact",
+      )),
+    );
     await expectReducedMotion(firstReview);
     await expect(firstReview.getByText("Valores originales y normalizados")).toBeVisible();
     await expect(firstReview.getByText("La consulta podría estar repetida.")).toBeVisible();
@@ -239,6 +253,12 @@ test.describe("authenticated Admin consultation workflow", () => {
     await expect(partialStatus).toHaveAttribute("data-state", "degraded");
     await expect(page.getByRole("status").filter({ hasText: "1 con errores" })).toBeVisible();
     await expect(page.getByText("Casey Duplicate").first()).toBeVisible();
+    accessibilityViolations.push(
+      ...(await collectSeriousAccessibilityViolations(
+        page,
+        "Consultations degraded-source state at Medium",
+      )),
+    );
 
     await activateWithKeyboard(page, page.getByRole("button", { name: "Actualizar consultas" }));
     await expect(
@@ -250,6 +270,12 @@ test.describe("authenticated Admin consultation workflow", () => {
       .toBeVisible();
     await expect(page).toHaveURL(/careerId=/);
     await expect(page).not.toHaveURL(/search=/);
+    accessibilityViolations.push(
+      ...(await collectSeriousAccessibilityViolations(
+        page,
+        "Consultations unavailable-source state at Medium",
+      )),
+    );
 
     await page.goto(
       "/admin/reports?fromDate=2027-01-15&toDate=2027-01-17",
@@ -311,6 +337,12 @@ test.describe("authenticated Admin consultation workflow", () => {
         name: "No hay datos para los filtros seleccionados.",
       }),
     ).toBeVisible();
+    accessibilityViolations.push(
+      ...(await collectSeriousAccessibilityViolations(
+        page,
+        "Reports empty-period state at Wide",
+      )),
+    );
     await activateWithKeyboard(page, page.getByRole("link", { name: "Restablecer filtros" }));
     await expect(page).toHaveURL("http://localhost:3000/admin/reports");
 
@@ -331,6 +363,12 @@ test.describe("authenticated Admin consultation workflow", () => {
       "/admin/consultations",
     );
     await expect(page.getByRole("heading", { level: 2, name: "Hoy" })).toBeVisible();
+    accessibilityViolations.push(
+      ...(await collectSeriousAccessibilityViolations(
+        page,
+        "Admin overview degraded-source state at Wide",
+      )),
+    );
 
     const signedTutorToken = `${E2E_TUTOR_SESSION_TOKEN}.${await makeSignature(
       E2E_TUTOR_SESSION_TOKEN,
@@ -378,5 +416,6 @@ test.describe("authenticated Admin consultation workflow", () => {
     await expect(page.locator("body")).not.toContainText(E2E_CONSULTATION_CONTACT);
     await expect(page.locator("body")).not.toContainText("Casey Duplicate");
     expect((await page.request.get("/api/admin/consultations")).status()).toBe(401);
+    expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 });

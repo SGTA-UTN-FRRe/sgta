@@ -8,6 +8,7 @@ import {
   E2E_CYCLE_ID,
   E2E_PRIMARY_TUTOR_ID,
 } from "./e2e-test-data";
+import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 import {
   activateWithKeyboard,
   expectReducedMotion,
@@ -47,6 +48,7 @@ const viewports = [
 test.describe("Admin accessibility and responsive layouts", () => {
   test("keeps every Admin route usable at supported widths", async ({ context, page }) => {
     test.setTimeout(120_000);
+    const accessibilityViolations: string[] = [];
     const signedSessionToken = `${E2E_ADMIN_SESSION_TOKEN}.${await makeSignature(
       E2E_ADMIN_SESSION_TOKEN,
       E2E_AUTH_SECRET,
@@ -120,8 +122,16 @@ test.describe("Admin accessibility and responsive layouts", () => {
           expect(actionBounds!.x + actionBounds!.width).toBeLessThanOrEqual(viewport.width);
         }
 
+        accessibilityViolations.push(
+          ...(await collectSeriousAccessibilityViolations(
+            page,
+            `${route.path} at ${viewport.name}`,
+          )),
+        );
       }
     }
+
+    expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 
   test("keyboard navigation opens the mobile Admin route and focuses its heading", async ({
@@ -147,6 +157,10 @@ test.describe("Admin accessibility and responsive layouts", () => {
 
     const navigation = page.getByRole("dialog", { name: "Navegación de administración" });
     await expectReducedMotion(navigation);
+    const accessibilityViolations = await collectSeriousAccessibilityViolations(
+      page,
+      "Admin navigation drawer on Compact",
+    );
     await activateWithKeyboard(page, navigation.getByRole("link", { name: "Horarios" }));
     await expect(page).toHaveURL(/\/admin\/schedules$/);
     const pageTitle = page.getByRole("heading", { level: 1, name: "Horarios" });
@@ -154,5 +168,6 @@ test.describe("Admin accessibility and responsive layouts", () => {
     await expect
       .poll(() => pageTitle.evaluate((element) => getComputedStyle(element).boxShadow))
       .not.toBe("none");
+    expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 });

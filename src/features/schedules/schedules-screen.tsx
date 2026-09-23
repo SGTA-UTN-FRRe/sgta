@@ -784,7 +784,7 @@ function ScheduleGrid({
         <div
           aria-label={title}
           className="grid min-w-[40rem]"
-          role="grid"
+          role="group"
           style={{
             gridTemplateColumns: `4.5rem repeat(${days.length}, minmax(10rem, 1fr))`,
           }}
