@@ -21,6 +21,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -528,12 +529,28 @@ function TutorActionsMenu({
   const isOpen = openMenuKey === menuKey;
   const actionLabel = tutor.status === "ACTIVE" ? "Desactivar tutor" : "Reactivar";
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const menu = menuRef.current;
+    if (menu === null || menu.getClientRects().length === 0) {
+      return;
+    }
+
+    menu.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+  }, [isOpen]);
 
   return (
     <div className="relative flex justify-end">
       <button
         aria-expanded={isOpen}
         aria-haspopup="menu"
+        aria-controls={menuId}
         aria-label={`Acciones para ${tutor.formalName}`}
         className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-foreground-secondary transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
         onClick={() => onToggle(isOpen ? null : menuKey)}
@@ -550,6 +567,59 @@ function TutorActionsMenu({
             "absolute right-0 top-full z-30 mt-1 min-w-48 rounded-md border border-border bg-surface p-1 shadow-lg",
             view === "compact" && "right-0",
           )}
+          id={menuId}
+          onKeyDown={(event) => {
+            const menuItems = Array.from(
+              event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
+            );
+            const currentIndex = menuItems.indexOf(document.activeElement as HTMLButtonElement);
+
+            if (event.key === "Escape") {
+              event.preventDefault();
+              onToggle(null);
+              menuButtonRef.current?.focus();
+              return;
+            }
+
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+              event.preventDefault();
+              const direction = event.key === "ArrowDown" ? 1 : -1;
+              const nextIndex = (currentIndex + direction + menuItems.length) % menuItems.length;
+              menuItems[nextIndex]?.focus();
+              return;
+            }
+
+            if (event.key === "Home" || event.key === "End") {
+              event.preventDefault();
+              const target = event.key === "Home" ? menuItems[0] : menuItems.at(-1);
+              target?.focus();
+              return;
+            }
+
+            if (event.key === "Tab") {
+              event.preventDefault();
+              const trigger = menuButtonRef.current;
+              if (trigger === null) {
+                onToggle(null);
+                return;
+              }
+
+              const visibleFocusableElements = Array.from(
+                document.querySelectorAll<HTMLElement>(focusableSelector),
+              ).filter(
+                (element) =>
+                  element.getClientRects().length > 0 &&
+                  !event.currentTarget.contains(element),
+              );
+              const triggerIndex = visibleFocusableElements.indexOf(trigger);
+              const destination = visibleFocusableElements[
+                triggerIndex + (event.shiftKey ? 0 : 1)
+              ];
+              onToggle(null);
+              destination?.focus();
+            }
+          }}
+          ref={menuRef}
           role="menu"
         >
           <button
@@ -1486,8 +1556,19 @@ function StatusConfirmation({
   onConfirm: () => void;
   request: NonNullable<StatusRequest>;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const isDeactivation = request.tutor.status === "ACTIVE";
   const action = isDeactivation ? "Desactivar tutor" : "Reactivar";
+
+  useEffect(() => {
+    if (loading) {
+      dialogRef.current?.focus();
+    } else {
+      dialogRef.current
+        ?.querySelector<HTMLButtonElement>("button:not([disabled])")
+        ?.focus();
+    }
+  }, [loading]);
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-brand-navy/20 p-4">
@@ -1496,7 +1577,45 @@ function StatusConfirmation({
         aria-labelledby="status-confirmation-title"
         aria-modal="true"
         className="w-full max-w-lg rounded-lg border border-border bg-surface p-6 shadow-dialog"
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && !loading) {
+            event.preventDefault();
+            onCancel();
+            return;
+          }
+
+          if (event.key !== "Tab") {
+            return;
+          }
+
+          const focusableElements = Array.from(
+            event.currentTarget.querySelectorAll<HTMLElement>(focusableSelector),
+          );
+          const firstElement = focusableElements[0];
+          const lastElement = focusableElements[focusableElements.length - 1];
+
+          if (firstElement === undefined || lastElement === undefined) {
+            event.preventDefault();
+            dialogRef.current?.focus();
+          } else if (
+            event.shiftKey &&
+            (document.activeElement === firstElement ||
+              !event.currentTarget.contains(document.activeElement))
+          ) {
+            event.preventDefault();
+            lastElement.focus();
+          } else if (
+            !event.shiftKey &&
+            (document.activeElement === lastElement ||
+              !event.currentTarget.contains(document.activeElement))
+          ) {
+            event.preventDefault();
+            firstElement.focus();
+          }
+        }}
+        ref={dialogRef}
         role="alertdialog"
+        tabIndex={-1}
       >
         <h2 className="text-lg font-semibold text-foreground" id="status-confirmation-title">{action}</h2>
         <p className="mt-2 text-sm leading-6 text-foreground-secondary" id="status-confirmation-description">
@@ -1839,22 +1958,6 @@ export function TutorsScreen({
     }
     lastTriggerRef.current = null;
   }, [sheet, statusRequest]);
-
-  useEffect(() => {
-    if (!openMenuKey || sheet !== null || statusRequest !== null) {
-      return;
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setOpenMenuKey(null);
-      }
-    }
-
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [openMenuKey, sheet, statusRequest]);
 
   const clearFilters = useCallback(() => {
     setSearch("");

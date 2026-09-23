@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { Database } from "@/db/client-core";
 import { auditEvent } from "@/db/schema";
 
+vi.mock("server-only", () => ({}));
+
 import {
   CYCLE_ERROR_CODES,
   closeAdministrativeCycle,

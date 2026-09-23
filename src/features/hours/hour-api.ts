@@ -2,6 +2,8 @@ import "server-only";
 
 import { z } from "zod";
 
+import { getAuditRequestContext } from "@/db/audit-request-context";
+
 import {
   HOUR_ERROR_CODES,
   HourServiceError,
@@ -128,34 +130,16 @@ export function hourErrorResponse(error: unknown) {
   return hourJsonResponse({ error: "internal_server_error" }, 500);
 }
 
-export function getBoundedHourHeader(
-  request: Request,
-  name: string,
-  maxLength: number,
-) {
-  const value = request.headers.get(name)?.trim();
-
-  if (value === undefined || value.length === 0 || value.length > maxLength) {
-    return undefined;
-  }
-
-  return value;
-}
-
 export function getHourRequestContext(
   request: Request,
   actorId: string,
 ): HourMutationContext {
-  const forwardedFor = getBoundedHourHeader(request, "x-forwarded-for", 512);
-  const forwardedAddress = forwardedFor?.split(",", 1)[0]?.trim();
+  const requestContext = getAuditRequestContext(request);
 
   return {
     actorId,
-    requestId: getBoundedHourHeader(request, "x-request-id", 255),
-    ipAddress:
-      forwardedAddress !== undefined && forwardedAddress.length <= 45
-        ? forwardedAddress
-        : getBoundedHourHeader(request, "x-real-ip", 45),
+    requestId: requestContext.requestId,
+    ipAddress: requestContext.ipAddress,
   };
 }
 

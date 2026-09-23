@@ -1,4 +1,5 @@
 import { requireApiRole } from "@/auth/authorization";
+import { getAuditRequestContext } from "@/db/audit-request-context";
 import { getDatabase } from "@/db/client";
 import {
   closeAdministrativeCycle,
@@ -16,27 +17,6 @@ export const dynamic = "force-dynamic";
 type CloseCycleRouteContext = {
   params: Promise<{ cycleId: string }>;
 };
-
-function getBoundedHeader(request: Request, name: string, maxLength: number) {
-  const value = request.headers.get(name)?.trim();
-
-  if (value === undefined || value.length === 0 || value.length > maxLength) {
-    return undefined;
-  }
-
-  return value;
-}
-
-function getRequestIpAddress(request: Request) {
-  const forwardedFor = getBoundedHeader(request, "x-forwarded-for", 512);
-  const candidate = forwardedFor?.split(",", 1)[0]?.trim();
-
-  if (candidate !== undefined && candidate.length <= 45) {
-    return candidate;
-  }
-
-  return getBoundedHeader(request, "x-real-ip", 45);
-}
 
 export async function POST(
   request: Request,
@@ -57,10 +37,11 @@ export async function POST(
   }
 
   try {
+    const requestContext = getAuditRequestContext(request);
     const cycle = await closeAdministrativeCycle(getDatabase(), cycleId, {
       actorId: authorization.id,
-      requestId: getBoundedHeader(request, "x-request-id", 255),
-      ipAddress: getRequestIpAddress(request),
+      requestId: requestContext.requestId,
+      ipAddress: requestContext.ipAddress,
     });
 
     return Response.json(

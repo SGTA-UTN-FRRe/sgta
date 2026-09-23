@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -50,6 +50,9 @@ type Feedback = {
   kind: "error" | "success";
   message: string;
 };
+
+const DIALOG_FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 type CycleForm = {
   name: string;
@@ -463,7 +466,7 @@ function CareerSection({
       : careers.find((career) => career.id === form.id) ?? null;
 
   return (
-    <section aria-labelledby="career-settings-title">
+    <section aria-labelledby="career-settings-title" className="min-w-0">
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -650,7 +653,7 @@ function SubjectSection({
   }, [activeCareers, selectedCareer]);
 
   return (
-    <section aria-labelledby="subject-settings-title">
+    <section aria-labelledby="subject-settings-title" className="min-w-0">
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -862,7 +865,7 @@ function ScholarshipSection({
       : references.find((reference) => reference.id === form.id) ?? null;
 
   return (
-    <section aria-labelledby="scholarship-settings-title">
+    <section aria-labelledby="scholarship-settings-title" className="min-w-0">
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -1088,7 +1091,7 @@ function HourCategorySection({
       : categories.find((category) => category.id === form.id) ?? null;
 
   return (
-    <section aria-labelledby="hour-category-settings-title">
+    <section aria-labelledby="hour-category-settings-title" className="min-w-0">
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -1302,10 +1305,40 @@ export function SettingsScreen({
       : { kind: "error", message: initialErrorMessage },
   );
   const [closeConfirmationOpen, setCloseConfirmationOpen] = useState(false);
+  const closeCycleTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const closeCycleDialogRef = useRef<HTMLDivElement | null>(null);
+  const closeCycleHistoryRef = useRef<HTMLElement | null>(null);
+  const closeCycleDialogWasOpenRef = useRef(false);
 
   const isLoading = state === "loading";
   const screenState =
     currentCycle === null && state === "default" ? "required-action" : state;
+
+  useEffect(() => {
+    if (closeConfirmationOpen) {
+      closeCycleDialogWasOpenRef.current = true;
+      if (isLoading) {
+        closeCycleDialogRef.current?.focus();
+      } else {
+        closeCycleDialogRef.current
+          ?.querySelector<HTMLButtonElement>("button:not([disabled])")
+          ?.focus();
+      }
+      return;
+    }
+
+    if (!closeCycleDialogWasOpenRef.current) {
+      return;
+    }
+
+    closeCycleDialogWasOpenRef.current = false;
+    if (closeCycleTriggerRef.current?.isConnected) {
+      closeCycleTriggerRef.current.focus();
+    } else {
+      closeCycleHistoryRef.current?.focus();
+    }
+    closeCycleTriggerRef.current = null;
+  }, [closeConfirmationOpen, isLoading]);
 
   const updateStateForEditing = () => {
     setState("default");
@@ -1705,7 +1738,7 @@ export function SettingsScreen({
   };
 
   return (
-    <div data-slot="settings-screen" data-state={screenState}>
+    <div className="min-w-0" data-slot="settings-screen" data-state={screenState}>
       <PageHeader
         action={
           <Button
@@ -1790,7 +1823,10 @@ export function SettingsScreen({
                   </div>
                   <Button
                     disabled={isLoading}
-                    onClick={() => setCloseConfirmationOpen(true)}
+                    onClick={(event) => {
+                      closeCycleTriggerRef.current = event.currentTarget;
+                      setCloseConfirmationOpen(true);
+                    }}
                     type="button"
                     variant="destructive"
                   >
@@ -1874,7 +1910,7 @@ export function SettingsScreen({
           </Card>
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-2">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-2">
           <CareerSection
             careers={careers}
             disabled={isLoading}
@@ -1984,7 +2020,11 @@ export function SettingsScreen({
           onSubmit={handleHourCategorySubmit}
         />
 
-        <section aria-labelledby="cycle-history-title">
+        <section
+          aria-labelledby="cycle-history-title"
+          ref={closeCycleHistoryRef}
+          tabIndex={-1}
+        >
           <Card>
             <CardHeader>
               <CardTitle id="cycle-history-title">Historial de ciclos</CardTitle>
@@ -2030,7 +2070,45 @@ export function SettingsScreen({
             aria-labelledby="close-cycle-title"
             aria-modal="true"
             className="w-full max-w-lg rounded-lg border border-border bg-surface p-6 shadow-dialog"
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && !isLoading) {
+                event.preventDefault();
+                setCloseConfirmationOpen(false);
+                return;
+              }
+
+              if (event.key !== "Tab") {
+                return;
+              }
+
+              const focusableElements = Array.from(
+                event.currentTarget.querySelectorAll<HTMLElement>(DIALOG_FOCUSABLE_SELECTOR),
+              );
+              const firstElement = focusableElements[0];
+              const lastElement = focusableElements[focusableElements.length - 1];
+
+              if (firstElement === undefined || lastElement === undefined) {
+                event.preventDefault();
+                closeCycleDialogRef.current?.focus();
+              } else if (
+                event.shiftKey &&
+                (document.activeElement === firstElement ||
+                  !event.currentTarget.contains(document.activeElement))
+              ) {
+                event.preventDefault();
+                lastElement.focus();
+              } else if (
+                !event.shiftKey &&
+                (document.activeElement === lastElement ||
+                  !event.currentTarget.contains(document.activeElement))
+              ) {
+                event.preventDefault();
+                firstElement.focus();
+              }
+            }}
+            ref={closeCycleDialogRef}
             role="alertdialog"
+            tabIndex={-1}
           >
             <div className="flex items-start gap-3">
               <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />

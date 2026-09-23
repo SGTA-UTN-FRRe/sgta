@@ -602,13 +602,14 @@ This is not a visual rescue phase.
 
 #### Exit criteria
 
-- [ ] No P0 accessibility blocker remains.
-- [ ] Critical workflows work by keyboard.
-- [ ] Tutor Compact experience is production-ready.
-- [ ] Admin core remains usable at supported widths.
-- [ ] No sensitive data leaks through logs/errors/routes.
-- [ ] Authorization regression passes.
-- [ ] CI remains stable and reproducible.
+- [x] Cycle closure preserves history, rejects closed-cycle writes, and starts a successor cycle with no inherited hour balance.
+- [x] No P0 accessibility blocker remains.
+- [x] Critical workflows work by keyboard.
+- [x] Tutor Compact experience is production-ready.
+- [x] Admin core remains usable at supported widths.
+- [x] No sensitive data leaks through logs/errors/routes.
+- [x] Authorization regression passes.
+- [x] CI remains stable and reproducible.
 
 ### Phase 12 - Migration, production readiness, pilot, and first release
 

@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import { recordAuditEvent } from "@/db/audit-core";
 import type { Database } from "@/db/client-core";
+import "server-only";
+
 import {
   administrativeCycle,
   type AdministrativeCycleStatus,

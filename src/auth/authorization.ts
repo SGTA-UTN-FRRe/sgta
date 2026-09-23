@@ -21,6 +21,13 @@ export type AuthorizedUserOptions = {
   allowUnconfigured?: boolean;
 };
 
+export class AuthorizationUnavailableError extends Error {
+  constructor() {
+    super("Authorization data is temporarily unavailable.");
+    this.name = "AuthorizationUnavailableError";
+  }
+}
+
 export async function getAuthorizedUser(
   options: AuthorizedUserOptions = {},
 ): Promise<AuthorizedUser | null> {
@@ -50,12 +57,22 @@ export async function getAuthorizedUser(
       return null;
     }
 
-    throw error;
+    throw new AuthorizationUnavailableError();
   }
 }
 
 export async function requireRole(role: UserRole): Promise<AuthorizedUser> {
-  const user = await getAuthorizedUser({ allowUnconfigured: true });
+  let user: AuthorizedUser | null;
+
+  try {
+    user = await getAuthorizedUser({ allowUnconfigured: true });
+  } catch (error) {
+    if (!(error instanceof AuthorizationUnavailableError)) {
+      throw error;
+    }
+
+    redirect("/login?error=authorization_unavailable");
+  }
 
   if (user === null) {
     redirect("/login");
@@ -81,7 +98,23 @@ function authorizationError(status: 401 | 403, code: "unauthorized" | "forbidden
 export async function requireApiRole(
   role: UserRole,
 ): Promise<AuthorizedUser | Response> {
-  const user = await getAuthorizedUser({ allowUnconfigured: true });
+  let user: AuthorizedUser | null;
+
+  try {
+    user = await getAuthorizedUser({ allowUnconfigured: true });
+  } catch (error) {
+    if (!(error instanceof AuthorizationUnavailableError)) {
+      throw error;
+    }
+
+    return Response.json(
+      { error: "authorization_unavailable" },
+      {
+        status: 503,
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
+  }
 
   if (user === null) {
     return authorizationError(401, "unauthorized");

@@ -65,6 +65,7 @@ import { requireApiRole, requireRole } from "@/auth/authorization";
 import { createAuthOptions } from "@/auth/options";
 import type { AuthEnvironment } from "@/auth/options";
 import { recordAuditEvent, listAuditEvents } from "@/db/audit-core";
+import type { AuditEventInput } from "@/db/audit-validation";
 import {
   account,
   activity,
@@ -418,7 +419,7 @@ describe("PostgreSQL foundation integration", () => {
             'consultation_import_run_status_started_idx',
             'consultation_import_run_actor_started_idx',
             'consultation_staging_source_identity_unique',
-            'consultation_staging_review_updated_idx',
+            'consultation_staging_pending_queue_idx',
             'consultation_staging_source_run_idx',
             'consultation_staging_career_idx',
             'consultation_staging_tutor_idx',
@@ -433,6 +434,7 @@ describe("PostgreSQL foundation integration", () => {
             'hour_movement_attendance_idx',
             'hour_movement_category_idx',
             'hour_movement_cycle_tutor_date_idx',
+            'hour_movement_movement_date_idx',
             'hour_movement_reversal_unique',
             'schedule_assignment_date_idx',
             'schedule_assignment_plan_status_idx',
@@ -596,7 +598,7 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("8");
+    expect(migrations[0]?.migration_count).toBe("9");
     expect(enumValues).toEqual([
       { typname: "activity_kind", enumlabel: "MEETING" },
       { typname: "activity_kind", enumlabel: "WORKSHOP" },
@@ -674,7 +676,7 @@ describe("PostgreSQL foundation integration", () => {
       "consultation_import_run_status_started_idx",
       "consultation_staging_career_idx",
       "consultation_staging_duplicate_resolution_idx",
-      "consultation_staging_review_updated_idx",
+      "consultation_staging_pending_queue_idx",
       "consultation_staging_source_identity_unique",
       "consultation_staging_source_run_idx",
       "consultation_staging_subject_idx",
@@ -691,6 +693,7 @@ describe("PostgreSQL foundation integration", () => {
       "hour_movement_attendance_idx",
       "hour_movement_category_idx",
       "hour_movement_cycle_tutor_date_idx",
+      "hour_movement_movement_date_idx",
       "hour_movement_reversal_unique",
       "schedule_assignment_date_idx",
       "schedule_assignment_plan_status_idx",
@@ -5010,6 +5013,16 @@ describe("PostgreSQL foundation integration", () => {
   it("records the complete cycle lifecycle with actor attribution and history", async () => {
     const database = getIntegrationDatabase();
     const { admin } = await seedIdentities();
+    const auditContext = {
+      actorId: admin.id,
+      requestId: "cycle-request-1",
+      ipAddress: "203.0.113.20",
+    };
+    const careerRecord = await createCareer(
+      database,
+      { name: "Cycle Lifecycle Engineering" },
+      auditContext,
+    );
     const created = await createAdministrativeCycle(
       database,
       {
@@ -5017,12 +5030,44 @@ describe("PostgreSQL foundation integration", () => {
         startDate: "2027-01-01",
         endDate: "2027-12-31",
       },
-      {
-        actorId: admin.id,
-        requestId: "cycle-request-1",
-        ipAddress: "203.0.113.20",
-      },
+      auditContext,
     );
+    const historicalTutor = await createTutor(
+      database,
+      {
+        firstName: "Cycle",
+        lastName: "Lifecycle Tutor",
+        primaryCareerId: careerRecord.id,
+        subjectIds: [],
+        cycleId: created.id,
+      },
+      auditContext,
+    );
+    const category = await createHourCategory(
+      database,
+      { name: "Lifecycle credit" },
+      auditContext,
+    );
+    const historicalMovement = await recordBulkHourMovement(
+      database,
+      {
+        cycleId: created.id,
+        tutorIds: [historicalTutor.id],
+        categoryId: category.id,
+        direction: "CREDIT",
+        duration: { durationMinutes: 90 },
+        movementDate: "2027-06-15",
+        note: "Historical cycle balance",
+      },
+      auditContext,
+    );
+
+    await expect(listHourBalances(database, created.id)).resolves.toEqual([
+      expect.objectContaining({
+        tutor: expect.objectContaining({ id: historicalTutor.id }),
+        signedBalanceMinutes: 90,
+      }),
+    ]);
 
     await expect(getCurrentAdministrativeCycle(database)).resolves.toMatchObject({
       id: created.id,
@@ -5040,9 +5085,57 @@ describe("PostgreSQL foundation integration", () => {
     await expect(listAdministrativeCycles(database)).resolves.toEqual([
       expect.objectContaining({ id: created.id, status: "CLOSED" }),
     ]);
+    await expect(listHourBalances(database, created.id)).resolves.toEqual([
+      expect.objectContaining({
+        tutor: expect.objectContaining({ id: historicalTutor.id }),
+        cycle: expect.objectContaining({ id: created.id, status: "CLOSED" }),
+        signedBalanceMinutes: 90,
+      }),
+    ]);
+    await expect(
+      listHourMovements(database, { cycleId: created.id }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        id: historicalMovement.movements[0]!.id,
+        cycle: expect.objectContaining({ id: created.id, status: "CLOSED" }),
+        signedDurationMinutes: 90,
+      }),
+    ]);
     await expect(
       closeAdministrativeCycle(database, created.id, { actorId: admin.id }),
     ).rejects.toMatchObject({ code: "cycle_already_closed" });
+
+    const successor = await createAdministrativeCycle(
+      database,
+      {
+        name: "Integration Cycle 2028",
+        startDate: "2028-01-01",
+        endDate: "2028-12-31",
+      },
+      { ...auditContext, requestId: "cycle-request-3" },
+    );
+    await updateTutor(
+      database,
+      historicalTutor.id,
+      { cycleId: successor.id },
+      { ...auditContext, requestId: "cycle-tutor-request-1" },
+    );
+
+    await expect(getCurrentAdministrativeCycle(database)).resolves.toMatchObject({
+      id: successor.id,
+      status: "OPEN",
+    });
+    await expect(listHourBalances(database, successor.id)).resolves.toEqual([
+      expect.objectContaining({
+        tutor: expect.objectContaining({ id: historicalTutor.id }),
+        cycle: expect.objectContaining({ id: successor.id, status: "OPEN" }),
+        signedBalanceMinutes: 0,
+        state: "current",
+      }),
+    ]);
+    await expect(
+      listHourMovements(database, { cycleId: successor.id }),
+    ).resolves.toEqual([]);
 
     const cycleEvents = await listAuditEvents(database, 100);
     const lifecycleEvents = cycleEvents.filter(
@@ -5078,15 +5171,25 @@ describe("PostgreSQL foundation integration", () => {
 
   it("rejects sensitive audit metadata before it reaches PostgreSQL", async () => {
     const database = getIntegrationDatabase();
+    const invalidAuditContexts: Array<
+      Pick<AuditEventInput, "metadata" | "requestId" | "ipAddress">
+    > = [
+      { metadata: { authorization: "Bearer synthetic-token" } },
+      { metadata: { studentContact: "student@example.test" } },
+      { requestId: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.signature" },
+      { ipAddress: "student@example.test" },
+    ];
 
-    await expect(
-      recordAuditEvent(database, {
-        action: "sensitive.integration.test",
-        entityType: "test",
-        entityId: "sensitive-1",
-        metadata: { authorization: "Bearer synthetic-token" },
-      }),
-    ).rejects.toThrow();
+    for (const [index, context] of invalidAuditContexts.entries()) {
+      await expect(
+        recordAuditEvent(database, {
+          action: "sensitive.integration.test",
+          entityType: "test",
+          entityId: `sensitive-${index + 1}`,
+          ...context,
+        }),
+      ).rejects.toThrow();
+    }
 
     await expect(
       database

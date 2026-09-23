@@ -23,6 +23,13 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testIgnore: "**/admin-cycle-lifecycle.spec.ts",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "cycle-lifecycle",
+      dependencies: ["chromium"],
+      testMatch: "**/admin-cycle-lifecycle.spec.ts",
       use: { ...devices["Desktop Chrome"] },
     },
   ],

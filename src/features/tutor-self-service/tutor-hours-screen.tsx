@@ -11,6 +11,7 @@ import type {
 import {
   formatLongDate,
   formatSignedMinutes,
+  focusTutorPageTitle,
   getBalanceLabel,
   getMovementDirectionLabel,
   getRequiredActionCopy,
@@ -249,6 +250,7 @@ export function TutorHoursScreen({
   );
 
   const retry = async () => {
+    focusTutorPageTitle();
     setState("loading");
 
     try {
@@ -271,6 +273,7 @@ export function TutorHoursScreen({
     <div className="space-y-6 pb-10">
       <PageHeader
         description="Consultar el balance firmado y su historial personal."
+        titleId="tutor-page-title"
         title="Mis horas"
       />
       {state === "loading" && <HoursLoading />}

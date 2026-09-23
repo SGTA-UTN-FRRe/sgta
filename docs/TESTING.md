@@ -53,11 +53,20 @@ Tests live next to the implementation under `src/` and run in the Vitest `jsdom`
 
 The unit/component suite remains independent of PostgreSQL, Docker, and external services. Do not call these tests integration tests merely because they use React Testing Library.
 
+Authorization unit tests cover database-authoritative role and enabled-state
+checks, plus a generic no-store response when the identity service fails. Audit
+validation tests reject credential-bearing keys and request identifiers,
+personal contact keys and values, oversized metadata, and non-IP values in the
+audit address field. API request metadata accepts only bounded opaque request
+IDs and syntactically valid IP addresses before it reaches audit persistence.
+
 ### Integration tests
 
 Integration scenarios live under `tests/integration/` and run through the separate `vitest.integration.config.ts` configuration in the Node.js environment. Each run starts a fresh PostgreSQL container with Testcontainers, applies the committed Drizzle migration twice to prove rerunnability, uses deterministic synthetic fixtures, and tears down the pool and container after the suite. The feature coverage includes Career, Subject, Tutor, TutorSubject, TutorCycleMembership, scholarship-reference lifecycle, duplicate/conflict handling, open/closed cycle rules, derived Materias reconstruction, hour categories, activity origins, immutable movement reversals, safe audit actor attribution, transaction rollback, sensitive-metadata rejection, and Admin-versus-Tutor API/page authorization. Consultation unit and integration coverage verifies GET-only source access, import idempotency and source-change handling, anomaly and duplicate review, SUBJECT/GENERAL invariants, pending-classification exclusion, source-outage preservation, audit safety, transactional rollback, and Admin-only APIs.
 
 Docker is a local and CI prerequisite for this boundary. Testcontainers chooses an available host port; no fixed port, local database, production URL, Google credential, or personal data is used. There is no separate Docker check or public Docker gate.
+
+The on-demand PostgreSQL query-plan review runs with `corepack pnpm db:query-audit`. It starts a disposable PostgreSQL 16 container, reapplies the committed migrations, seeds deterministic synthetic rows, and prints `EXPLAIN (ANALYZE, BUFFERS)` output for current high-use query shapes. It is a review tool, not a CI gate or a numeric performance budget.
 
 Tutor self-service integration scenarios prove owner resolution for linked Tutor
 identities, the unlinked identity state, current-cycle and scholarship context,
@@ -86,11 +95,15 @@ upcoming duties, negative balances, review count, and degraded-source state.
 
 ### End-to-end tests
 
-Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus authenticated Admin journeys for live tutor/Materias, scheduling/attendance, hour-accounting, and consultation operations. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the normal Next.js server; the consultation journey uses a local HTTP fixture for the Sheets values-read contract, not Google or an external endpoint. The suite uses one worker because its authenticated journeys share a database and some workflows write to it.
+Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus authenticated Admin journeys for live tutor/Materias, scheduling/attendance, hour-accounting, consultation operations, and cycle lifecycle. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the normal Next.js server; the consultation journey uses a local HTTP fixture for the Sheets values-read contract, not Google or an external endpoint. The suite uses one worker because its authenticated journeys share a database and some workflows write to it.
+
+The Admin accessibility journey visits `/admin`, `/admin/tutors`, `/admin/tutors/subjects`, `/admin/schedules`, `/admin/schedules/attendance`, `/admin/hours`, `/admin/hours/movements`, `/admin/consultations`, `/admin/reports`, and `/admin/settings` at 390px, 900px, and 1440px. It checks page-level horizontal overflow, primary-action visibility, and header-action bounds. Its keyboard navigation scenario opens the mobile Admin drawer, follows a route link, and verifies focus moves to the new page heading.
+
+The browser suite runs `@axe-core/playwright` against those Admin routes and the three Tutor self-service routes at Compact, Medium, and Wide widths, plus login and representative feedback, dialog, degraded-source, unavailable-source, and empty-report states. Scans use WCAG 2.2 A/AA tags and fail on serious or critical violations without disabling rules.
 
 E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Docker is required locally because the authenticated web server owns an isolated PostgreSQL container. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
 
-The consultation Admin journey covers source import summary and idempotent refresh, filter/search behavior, duplicate and anomaly decisions, SUBJECT and GENERAL consolidation, pending classification exclusion, source degradation and unavailability, canonical-data preservation, and Compact/Medium/Wide layouts. It also asserts unauthenticated and Tutor API/page denial and the absence of student contact from Tutor and public routes. Its source fixture is bound to loopback and accepts only the synthetic test token.
+The consultation Admin journey covers source import summary and idempotent refresh, filter/search behavior, duplicate and anomaly decisions, SUBJECT and GENERAL consolidation, pending classification exclusion, source degradation and unavailability, canonical-data preservation, and Compact/Medium/Wide layouts. Import, review, and report-filter controls are operated with the keyboard, including native select and checkbox keys; reduced-motion behavior is checked for review and feedback states. It also asserts unauthenticated and Tutor API/page denial and the absence of student contact from Tutor and public routes. Its source fixture is bound to loopback and accepts only the synthetic test token.
 
 The same authenticated Admin journey exercises live `/admin` overview links
 and source degradation, plus `/admin/reports` period and dimension filters,
@@ -107,16 +120,34 @@ origin, and movement history. The authenticated Admin journey covers the live
 schedule plan switch and assignment edit, then the Compact attendance flow:
 Present without a balance change, Falta with cancellation and reload
 persistence, adjusted debit confirmation, linked movement history, and explicit
-recovery recognition. The existing Admin hours journey continues to cover the
-Compact, Medium, and Wide workflow through bulk meeting credit, balance/history
-refresh, movement-history navigation, and non-destructive reversal.
+recovery recognition. These actions are activated with keyboard input, and the
+schedule plan controls expose selected state through button semantics. The
+existing Admin hours journey continues to cover the Compact, Medium, and Wide
+workflow through keyboard-operated bulk meeting credit, balance/history refresh,
+movement-history navigation, and non-destructive reversal. The tutor journey
+also checks keyboard navigation through row actions and the status confirmation
+dialog, while the cycle lifecycle journey closes the cycle and creates its
+successor with keyboard activation.
 
 The authenticated Tutor journey signs a real Better Auth session cookie and
 covers owner-scoped summary, effective schedule, and hour-history reads through
 the running application. It asserts that a Tutor cannot reach Admin pages or
 mutation APIs, that only the linked Tutor's subjects, schedule, balance, and
 movements are rendered, that student/contact data is absent, and that the
-Compact, Medium, and Wide layouts remain usable.
+Compact (390px), Medium (900px), and Wide (1440px) layouts remain usable without
+page-level horizontal overflow. A keyboard journey opens Tutor navigation,
+visits each self-service route, queries a schedule date, checks focus restoration
+and visible focus, and verifies reduced-motion navigation styles. Login browser
+coverage checks keyboard focus, announced technical and access-denied states,
+and page-level overflow at those same widths; component coverage exercises the
+loading-to-permission-denied sign-in transition.
+
+The cycle lifecycle browser project runs after the shared-database journeys
+because it closes the seeded active cycle. It confirms the cycle explicitly,
+reloads Settings to verify that the closed cycle remains visible, creates a
+successor, adds the existing synthetic Tutor to it, and verifies that the old
+movement history remains readable while the successor has a zero balance and
+no transfer movements.
 
 ### Integration and contract checks
 

@@ -23,6 +23,7 @@ vi.mock("./policy", () => ({
 vi.mock("@/db/client", () => ({ getDatabase: mocks.getDatabase }));
 
 import {
+  AuthorizationUnavailableError,
   getAuthorizedUser,
   requireApiRole,
   requireRole,
@@ -159,6 +160,42 @@ describe("server authorization boundary", () => {
     expect(response).toHaveProperty("status", 403);
     await expect((response as Response).json()).resolves.toEqual({
       error: "forbidden",
+    });
+  });
+
+  it("redirects protected pages to a safe login error when identity lookup fails", async () => {
+    mocks.getSession.mockResolvedValue({ user: { id: admin.id } });
+    mocks.findAuthorizedUserById.mockRejectedValue(
+      new Error("PostgreSQL password=private-database-secret"),
+    );
+
+    await expect(requireRole("ADMIN")).rejects.toThrow(
+      "redirect:/login?error=authorization_unavailable",
+    );
+    expect(redirect).toHaveBeenCalledWith(
+      "/login?error=authorization_unavailable",
+    );
+  });
+
+  it("hides authorization backend details from direct API failures", async () => {
+    mocks.getSession.mockResolvedValue({ user: { id: admin.id } });
+    mocks.findAuthorizedUserById.mockRejectedValue(
+      new Error("PostgreSQL password=private-database-secret"),
+    );
+
+    const authorizationError = await getAuthorizedUser().catch((error: unknown) => error);
+    expect(authorizationError).toBeInstanceOf(AuthorizationUnavailableError);
+    expect((authorizationError as Error).message).toBe(
+      "Authorization data is temporarily unavailable.",
+    );
+    expect((authorizationError as Error & { cause?: unknown }).cause).toBeUndefined();
+
+    const response = await requireApiRole("ADMIN");
+    expect(response).toBeInstanceOf(Response);
+    expect(response).toHaveProperty("status", 503);
+    expect((response as Response).headers.get("Cache-Control")).toBe("no-store");
+    await expect((response as Response).json()).resolves.toEqual({
+      error: "authorization_unavailable",
     });
   });
 

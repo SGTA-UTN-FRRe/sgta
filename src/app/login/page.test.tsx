@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getAuthorizedUser } from "@/auth/authorization";
+import {
+  AuthorizationUnavailableError,
+  getAuthorizedUser,
+} from "@/auth/authorization";
 
 import LoginPage from "./page";
 
@@ -15,13 +18,19 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("@/auth/authorization", () => ({
-  getAuthorizedUser: vi.fn(),
-}));
+vi.mock("server-only", () => ({}));
+vi.mock("@/auth/authorization", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/auth/authorization")>();
+  return { ...actual, getAuthorizedUser: vi.fn() };
+});
 
 vi.mock("./login-screen", () => ({ LoginScreen }));
 
 describe("Login route", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("keeps an unauthenticated request on the login screen", async () => {
     vi.mocked(getAuthorizedUser).mockResolvedValue(null);
 
@@ -61,5 +70,25 @@ describe("Login route", () => {
       LoginPage({ searchParams: Promise.resolve({}) }),
     ).rejects.toThrow("redirect:/tutor");
     expect(redirect).toHaveBeenCalledWith("/tutor");
+  });
+
+  it("shows generic login feedback when the identity service is unavailable", async () => {
+    vi.mocked(getAuthorizedUser).mockRejectedValue(
+      new AuthorizationUnavailableError(),
+    );
+
+    const page = await LoginPage({ searchParams: Promise.resolve({}) });
+
+    expect(page).toMatchObject({ props: { state: "error" } });
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("does not retry an unavailable identity lookup through its recovery URL", async () => {
+    const page = await LoginPage({
+      searchParams: Promise.resolve({ error: "authorization_unavailable" }),
+    });
+
+    expect(page).toMatchObject({ props: { state: "error" } });
+    expect(getAuthorizedUser).not.toHaveBeenCalled();
   });
 });

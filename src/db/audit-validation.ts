@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import { z } from "zod";
 
 export type SafeJsonPrimitive = string | number | boolean | null;
@@ -26,6 +27,16 @@ const forbiddenKeyFragments = [
   "privatekey",
   "providerprofile",
   "profile",
+  "email",
+  "student",
+  "contact",
+  "phone",
+  "address",
+  "dateofbirth",
+  "birthdate",
+  "institutionalidentifier",
+  "name",
+  "telephone",
 ];
 
 type ValidationState = {
@@ -59,6 +70,16 @@ function validateValue(
 
     if (/^(?:bearer|basic)\s+/i.test(value)) {
       return `${path} contains an authorization value`;
+    }
+
+    if (/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i.test(value)) {
+      return `${path} contains personal contact data`;
+    }
+
+    const digits = value.match(/\d/g)?.length ?? 0;
+    const isUuid = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(value);
+    if (!isUuid && digits >= 9 && /^[+().\-\s\d]+$/.test(value)) {
+      return `${path} contains personal contact data`;
     }
 
     return null;
@@ -170,11 +191,34 @@ export function validateSafeAuditMetadata(value: unknown): string | null {
   return null;
 }
 
+export function isSafeAuditRequestId(value: unknown): value is string {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const requestId = value.trim();
+  if (
+    requestId.length === 0 ||
+    requestId.length > 255 ||
+    !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(requestId)
+  ) {
+    return false;
+  }
+
+  return (
+    !/^(?:bearer|basic|token|secret|password|sk|pk|ghp|github_pat|ya29|AIza)[._:-]/i.test(
+      requestId,
+    ) &&
+    !/^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+){2}$/.test(requestId) &&
+    !/^\d[\d-]{6,}$/.test(requestId)
+  );
+}
+
 export const safeAuditMetadataSchema = z.custom<SafeAuditMetadata>(
   (value) => validateSafeAuditMetadata(value) === null,
   {
     message:
-      "metadata must be bounded JSON without credentials, cookies, authorization values, passwords, tokens, or provider profiles",
+      "metadata must be bounded JSON without credentials, personal contact data, authorization values, passwords, tokens, or provider profiles",
   },
 );
 
@@ -187,6 +231,25 @@ const optionalAuditText = (max: number) =>
     z.string().trim().min(1).max(max).optional(),
   );
 
+const optionalRequestId = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z
+    .string()
+    .trim()
+    .max(255)
+    .refine(isSafeAuditRequestId, "requestId must be a bounded opaque identifier")
+    .optional(),
+);
+
+const optionalIpAddress = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z
+    .string()
+    .max(45)
+    .refine((value) => isIP(value) !== 0, "ipAddress must be a valid IP address")
+    .optional(),
+);
+
 export const auditEventInputSchema = z
   .object({
     actorId: optionalAuditText(255).nullable().optional(),
@@ -194,8 +257,8 @@ export const auditEventInputSchema = z
     entityType: requiredAuditText(100),
     entityId: requiredAuditText(255),
     metadata: safeAuditMetadataSchema.optional().default({}),
-    requestId: optionalAuditText(255).nullable().optional(),
-    ipAddress: optionalAuditText(45).nullable().optional(),
+    requestId: optionalRequestId.nullable().optional(),
+    ipAddress: optionalIpAddress.nullable().optional(),
   })
   .strict();
 

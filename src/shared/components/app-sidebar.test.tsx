@@ -1,4 +1,4 @@
-﻿import { render, screen } from "@testing-library/react";
+﻿import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { AppSidebar } from "./app-sidebar";
@@ -52,7 +52,7 @@ describe("AppSidebar", () => {
     );
   });
 
-  it("returns focus to the mobile trigger after closing the drawer", async () => {
+  it("contains keyboard focus in the mobile drawer and restores the trigger", async () => {
     const user = userEvent.setup();
     render(<AppSidebar variant="admin" />);
 
@@ -60,6 +60,24 @@ describe("AppSidebar", () => {
     await user.click(trigger);
 
     expect(document.activeElement).toHaveAttribute("aria-label", "Cerrar navegación");
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Navegación de administración",
+    });
+    const links = within(dialog).getAllByRole("link");
+    const firstLink = links[0];
+    const lastLink = links.at(-1);
+
+    if (firstLink === undefined || lastLink === undefined) {
+      throw new Error("The mobile drawer should contain navigation links.");
+    }
+
+    lastLink.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(firstLink).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(lastLink).toHaveFocus();
 
     await user.keyboard("{Escape}");
 

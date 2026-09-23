@@ -13,6 +13,7 @@ import {
   formatLongDate,
   formatTime,
   formatTimeRange,
+  focusTutorPageTitle,
   getAssignmentKindLabel,
   getPlanKindLabel,
   getRequiredActionCopy,
@@ -326,6 +327,7 @@ export function TutorScheduleScreen({
   );
 
   const query = async (date?: string) => {
+    focusTutorPageTitle();
     setState("loading");
 
     try {
@@ -349,6 +351,7 @@ export function TutorScheduleScreen({
     <div className="space-y-6 pb-10">
       <PageHeader
         description="Consultar las guardias efectivas del ciclo vigente."
+        titleId="tutor-page-title"
         title="Mi horario"
       />
       {state === "loading" && <ScheduleLoading />}

@@ -146,8 +146,8 @@ export function LoginScreen({
   onRetry,
 }: LoginScreenProps) {
   const [interactionState, setInteractionState] =
-    useState<LoginPreviewState>("default");
-  const currentState = state === "default" ? interactionState : state;
+    useState<LoginPreviewState | null>(null);
+  const currentState = interactionState ?? state;
 
   const isLoading = currentState === "loading";
   const isError = currentState === "error";
@@ -197,14 +197,14 @@ export function LoginScreen({
                 <p className="text-sm font-bold tracking-[0.12em] text-white">
                   SGTA
                 </p>
-                <p className="text-xs text-white/70">
+                <p className="text-xs text-white">
                   {data.institutionalContext}
                 </p>
               </div>
             </div>
 
             <div className="max-w-lg lg:pb-10">
-              <p className="text-sm font-bold tracking-[0.08em] text-accent">
+              <p className="text-sm font-bold tracking-[0.08em] text-white">
                 {data.institutionalContext}
               </p>
               <h2 className="mt-4 max-w-md text-3xl font-extrabold tracking-[-0.035em] text-white sm:text-4xl lg:text-[2.75rem] lg:leading-[1.08]">
@@ -247,12 +247,12 @@ export function LoginScreen({
               aria-describedby="login-status login-recovery login-access-note"
               className="rounded-[var(--radius-xl)] border border-border-subtle bg-surface p-6 shadow-sm sm:p-8"
             >
-              <LoginFeedback data={data} state={state} />
+              <LoginFeedback data={data} state={currentState} />
 
               <Button
-                className="mt-7 w-full"
-                disabled={isLoading}
-                onClick={handleContinue}
+                aria-disabled={isLoading}
+                className="mt-7 w-full aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                onClick={isLoading ? undefined : handleContinue}
                 size="lg"
                 type="button"
               >

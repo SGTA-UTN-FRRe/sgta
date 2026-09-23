@@ -8,12 +8,19 @@ import {
   E2E_MEETING_CATEGORY_ID,
   E2E_PRIMARY_TUTOR_ID,
 } from "./e2e-test-data";
+import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
+import {
+  activateWithKeyboard,
+  selectWithKeyboard,
+  setCheckboxWithKeyboard,
+} from "./keyboard-helpers";
 
 test.describe("authenticated Admin hour operations", () => {
   test("registers selected meeting credit and reverses it from movement history", async ({
     context,
     page,
   }) => {
+    const accessibilityViolations: string[] = [];
     const signedSessionToken = `${E2E_ADMIN_SESSION_TOKEN}.${await makeSignature(
       E2E_ADMIN_SESSION_TOKEN,
       E2E_AUTH_SECRET,
@@ -36,10 +43,16 @@ test.describe("authenticated Admin hour operations", () => {
       page.locator(`article#balance-${E2E_PRIMARY_TUTOR_ID}`),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Registrar movimiento" }).click();
+    await activateWithKeyboard(page, page.getByRole("button", { name: "Registrar movimiento" }));
     const movementDialog = page.getByRole("dialog", {
       name: "Registrar movimiento",
     });
+    accessibilityViolations.push(
+      ...(await collectSeriousAccessibilityViolations(
+        page,
+        "Hour movement dialog at Compact",
+      )),
+    );
     const selectAll = movementDialog.getByRole("checkbox", {
       name: "Seleccionar todos",
     });
@@ -50,11 +63,11 @@ test.describe("authenticated Admin hour operations", () => {
       name: "Seleccionar a Curie, Marie",
     });
 
-    await exceptionTutor.uncheck();
-    await attendanceTutor.uncheck();
-    await selectAll.check();
-    await exceptionTutor.uncheck();
-    await attendanceTutor.uncheck();
+    await setCheckboxWithKeyboard(page, exceptionTutor, false);
+    await setCheckboxWithKeyboard(page, attendanceTutor, false);
+    await setCheckboxWithKeyboard(page, selectAll, true);
+    await setCheckboxWithKeyboard(page, exceptionTutor, false);
+    await setCheckboxWithKeyboard(page, attendanceTutor, false);
     await expect(selectAll).not.toBeChecked();
     await expect(
       movementDialog.getByRole("checkbox", {
@@ -64,13 +77,12 @@ test.describe("authenticated Admin hour operations", () => {
     await expect(exceptionTutor).not.toBeChecked();
     await expect(attendanceTutor).not.toBeChecked();
 
-    await movementDialog.getByLabel("Categoría").selectOption({
-      value: E2E_MEETING_CATEGORY_ID,
-    });
+    await selectWithKeyboard(page, movementDialog.getByLabel("Categoría"), E2E_MEETING_CATEGORY_ID);
     await movementDialog.getByLabel("Nota").fill("E2E meeting credit");
-    await movementDialog
-      .getByRole("button", { name: "Registrar movimientos" })
-      .click();
+    await activateWithKeyboard(
+      page,
+      movementDialog.getByRole("button", { name: "Registrar movimientos" }),
+    );
 
     await expect(
       page.getByRole("status").filter({ hasText: "Origen: Reunión" }),
@@ -91,7 +103,10 @@ test.describe("authenticated Admin hour operations", () => {
       `div.hidden.lg\\:block tr#balance-${E2E_PRIMARY_TUTOR_ID}`,
     );
     await expect(primaryBalance).toContainText("+02:00");
-    await primaryBalance.getByRole("button", { name: "Ver movimientos" }).click();
+    await activateWithKeyboard(
+      page,
+      primaryBalance.getByRole("button", { name: "Ver movimientos" }),
+    );
 
     const contextualHistory = page.getByRole("dialog", {
       name: "Lovelace, Ada",
@@ -100,9 +115,10 @@ test.describe("authenticated Admin hour operations", () => {
     await expect(
       contextualHistory.getByText("Seeded meeting movement."),
     ).toBeVisible();
-    await contextualHistory
-      .getByRole("link", { name: "Ver historial completo" })
-      .click();
+    await activateWithKeyboard(
+      page,
+      contextualHistory.getByRole("link", { name: "Ver historial completo" }),
+    );
 
     await expect(page).toHaveURL(
       new RegExp(
@@ -123,7 +139,7 @@ test.describe("authenticated Admin hour operations", () => {
     const originalMovementId = await originalRow.getAttribute("data-movement-id");
     expect(originalMovementId).not.toBeNull();
     await expect(originalRow).toHaveAttribute("data-reversal-state", "CONFIRMED");
-    await reversalButton.click();
+    await activateWithKeyboard(page, reversalButton);
 
     const reversalDialog = page.getByRole("dialog", {
       name: "Revertir movimiento",
@@ -131,9 +147,10 @@ test.describe("authenticated Admin hour operations", () => {
     await expect(
       reversalDialog.getByText(/el original permanecerá visible como revertido/i),
     ).toBeVisible();
-    await reversalDialog
-      .getByRole("button", { name: "Confirmar reversión" })
-      .click();
+    await activateWithKeyboard(
+      page,
+      reversalDialog.getByRole("button", { name: "Confirmar reversión" }),
+    );
 
     await expect(
       page.getByRole("status").filter({ hasText: "Reversión registrada" }),
@@ -155,5 +172,6 @@ test.describe("authenticated Admin hour operations", () => {
     await expect(
       reversalRow.getByRole("link", { name: "Ver movimiento original" }),
     ).toBeVisible();
+    expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 });
