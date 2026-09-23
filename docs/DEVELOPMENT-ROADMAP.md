@@ -602,6 +602,7 @@ This is not a visual rescue phase.
 
 #### Exit criteria
 
+- [x] Cycle closure preserves history, rejects closed-cycle writes, and starts a successor cycle with no inherited hour balance.
 - [ ] No P0 accessibility blocker remains.
 - [ ] Critical workflows work by keyboard.
 - [ ] Tutor Compact experience is production-ready.

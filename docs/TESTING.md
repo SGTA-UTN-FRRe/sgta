@@ -86,7 +86,7 @@ upcoming duties, negative balances, review count, and degraded-source state.
 
 ### End-to-end tests
 
-Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus authenticated Admin journeys for live tutor/Materias, scheduling/attendance, hour-accounting, and consultation operations. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the normal Next.js server; the consultation journey uses a local HTTP fixture for the Sheets values-read contract, not Google or an external endpoint. The suite uses one worker because its authenticated journeys share a database and some workflows write to it.
+Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus authenticated Admin journeys for live tutor/Materias, scheduling/attendance, hour-accounting, consultation operations, and cycle lifecycle. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the normal Next.js server; the consultation journey uses a local HTTP fixture for the Sheets values-read contract, not Google or an external endpoint. The suite uses one worker because its authenticated journeys share a database and some workflows write to it.
 
 E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Docker is required locally because the authenticated web server owns an isolated PostgreSQL container. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
 
@@ -117,6 +117,13 @@ the running application. It asserts that a Tutor cannot reach Admin pages or
 mutation APIs, that only the linked Tutor's subjects, schedule, balance, and
 movements are rendered, that student/contact data is absent, and that the
 Compact, Medium, and Wide layouts remain usable.
+
+The cycle lifecycle browser project runs after the shared-database journeys
+because it closes the seeded active cycle. It confirms the cycle explicitly,
+reloads Settings to verify that the closed cycle remains visible, creates a
+successor, adds the existing synthetic Tutor to it, and verifies that the old
+movement history remains readable while the successor has a zero balance and
+no transfer movements.
 
 ### Integration and contract checks
 
