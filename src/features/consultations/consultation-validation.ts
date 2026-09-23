@@ -337,6 +337,9 @@ export const consultationReviewDecisionSchema = z
 export const consultationAnomalyCodeSchema = z.enum(
   consultationAnomalyCodeEnum.enumValues,
 );
+export type ConsultationAnomalyCode = z.output<
+  typeof consultationAnomalyCodeSchema
+>;
 
 const nonNegativeIntegerSchema = z.number().int().min(0);
 const safeTimestampSchema = z.string().trim().min(1).max(40);
