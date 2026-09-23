@@ -27,8 +27,8 @@ The current repository uses these conceptual gates:
 | --- | --- | --- |
 | `Quality` | `corepack pnpm lint` and `corepack pnpm typecheck` | ESLint and strict TypeScript validation. |
 | `Tests` | `corepack pnpm test` | Co-located Vitest and Testing Library unit/component tests. |
-| `Integration` | `corepack pnpm test:integration` | PostgreSQL-backed foundation, Tutor self-service, tutor/academic, scheduling/attendance, and Admin hour-accounting coverage against an isolated Testcontainers database. |
-| `E2E` | `corepack pnpm test:e2e` | Critical browser smoke plus authenticated Tutor self-service and Admin tutor, scheduling/attendance, and hour-accounting workflow coverage through the running Next.js application. |
+| `Integration` | `corepack pnpm test:integration` | PostgreSQL-backed foundation, Tutor self-service, tutor/academic, scheduling/attendance, Admin hour accounting, and consultation import/review coverage against an isolated Testcontainers database. |
+| `E2E` | `corepack pnpm test:e2e` | Critical browser smoke plus authenticated Tutor self-service and Admin tutor, scheduling/attendance, hour-accounting, and consultation workflow coverage through the running Next.js application. |
 | `Production` | `corepack pnpm build` | Verification that the deployable Next.js build can be produced. |
 | `CI Gate` | aggregate workflow job | Stable final result for branch protection and pull-request merge readiness. |
 
@@ -55,7 +55,7 @@ The unit/component suite remains independent of PostgreSQL, Docker, and external
 
 ### Integration tests
 
-Integration scenarios live under `tests/integration/` and run through the separate `vitest.integration.config.ts` configuration in the Node.js environment. Each run starts a fresh PostgreSQL container with Testcontainers, applies the committed Drizzle migration twice to prove rerunnability, uses deterministic synthetic fixtures, and tears down the pool and container after the suite. The feature coverage includes Career, Subject, Tutor, TutorSubject, TutorCycleMembership, scholarship-reference lifecycle, duplicate/conflict handling, open/closed cycle rules, derived Materias reconstruction, hour categories, activity origins, immutable movement reversals, safe audit actor attribution, transaction rollback, sensitive-metadata rejection, and Admin-versus-Tutor API/page authorization.
+Integration scenarios live under `tests/integration/` and run through the separate `vitest.integration.config.ts` configuration in the Node.js environment. Each run starts a fresh PostgreSQL container with Testcontainers, applies the committed Drizzle migration twice to prove rerunnability, uses deterministic synthetic fixtures, and tears down the pool and container after the suite. The feature coverage includes Career, Subject, Tutor, TutorSubject, TutorCycleMembership, scholarship-reference lifecycle, duplicate/conflict handling, open/closed cycle rules, derived Materias reconstruction, hour categories, activity origins, immutable movement reversals, safe audit actor attribution, transaction rollback, sensitive-metadata rejection, and Admin-versus-Tutor API/page authorization. Consultation unit and integration coverage verifies GET-only source access, import idempotency and source-change handling, anomaly and duplicate review, SUBJECT/GENERAL invariants, pending-classification exclusion, source-outage preservation, audit safety, transactional rollback, and Admin-only APIs.
 
 Docker is a local and CI prerequisite for this boundary. Testcontainers chooses an available host port; no fixed port, local database, production URL, Google credential, or personal data is used. There is no separate Docker check or public Docker gate.
 
@@ -77,9 +77,11 @@ coverage and safe DTO assertions.
 
 ### End-to-end tests
 
-Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus authenticated Admin journeys for live tutor/Materias, scheduling/attendance, and hour-accounting operations. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the normal Next.js server; it does not bypass server-side authorization or call Google.
+Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus authenticated Admin journeys for live tutor/Materias, scheduling/attendance, hour-accounting, and consultation operations. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the normal Next.js server; the consultation journey uses a local HTTP fixture for the Sheets values-read contract, not Google or an external endpoint. The suite uses one worker because its authenticated journeys share a database and some workflows write to it.
 
 E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Docker is required locally because the authenticated web server owns an isolated PostgreSQL container. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
+
+The consultation Admin journey covers source import summary and idempotent refresh, filter/search behavior, duplicate and anomaly decisions, SUBJECT and GENERAL consolidation, pending classification exclusion, source degradation and unavailability, canonical-data preservation, and Compact/Medium/Wide layouts. It also asserts unauthenticated and Tutor API/page denial and the absence of student contact from Tutor and public routes. Its source fixture is bound to loopback and accepts only the synthetic test token.
 
 The authenticated server wrapper also seeds linked and unlinked Tutor identities,
 deterministic Tutor subjects, regular and special schedules, and owner-specific
@@ -103,7 +105,7 @@ Compact, Medium, and Wide layouts remain usable.
 
 ### Integration and contract checks
 
-There is currently no `Contract` gate. The `Integration` gate covers the real database-backed behavior, migrations, tutor/academic operations, scheduling/attendance workflows, and hour-accounting workflows introduced by the current runtime. A separate `Contract` gate remains deferred until an independent contract boundary needs it.
+There is currently no `Contract` gate. The `Integration` gate covers the real database-backed behavior, migrations, tutor/academic operations, scheduling/attendance, hour accounting, and consultation intake/review workflows introduced by the current runtime. A separate `Contract` gate remains deferred until an independent contract boundary needs it.
 
 Docker is an execution prerequisite for `Integration`, not a separate public gate.
 

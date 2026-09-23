@@ -80,8 +80,9 @@ The repository already has a useful scaffold:
 The secure platform foundation is now implemented: PostgreSQL/Drizzle persistence,
 provisioned Google-only authentication, server-side role authorization,
 AdministrativeCycle lifecycle controls, safe audit events, isolated integration
-coverage, and the live Admin hour-accounting vertical. Consultation, reporting,
-and production workflows remain unimplemented.
+coverage, the live Admin hour-accounting vertical, and read-only consultation
+intake with Admin curation. Reporting and production workflows remain
+unimplemented.
 
 Therefore the project continues from the scaffold rather than restarting from zero.
 
@@ -97,7 +98,7 @@ Therefore the project continues from the scaffold rather than restarting from ze
 | 6 | Hour ledger, activities, and recovery | P0 | Complete |
 | 7 | Scheduling and attendance | P0 | Planned |
 | 8 | Tutor self-service | P0 | Complete |
-| 9 | Consultation intake and data curation | P0 | Planned |
+| 9 | Consultation intake and data curation | P0 | Complete |
 | 10 | Admin overview and reporting | P0 | Planned |
 | 11 | Cross-surface hardening and lifecycle completion | P0 | Planned |
 | 12 | Migration, production readiness, pilot, and first release | P0 | Planned |
@@ -482,7 +483,7 @@ Give tutors a polished read-only product that answers routine questions without 
 ### Phase 9 - Consultation intake and data curation
 
 - **Priority:** P0
-- **Status:** Planned
+- **Status:** Complete
 - **Depends on:** Phase 5
 - **Can run in parallel with:** independent parts of Phases 6 to 8
 
@@ -517,12 +518,12 @@ Integrate the external consultation source through a safe, reviewable, read-only
 
 #### Exit criteria
 
-- [ ] Integration is read-only.
-- [ ] Reimport is idempotent.
-- [ ] Ambiguous data goes to review.
-- [ ] Every consolidated consultation is SUBJECT or GENERAL.
-- [ ] Pending rows do not contaminate subject metrics.
-- [ ] Canonical consultations remain usable when Sheets is unavailable.
+- [x] Integration is read-only.
+- [x] Reimport is idempotent.
+- [x] Ambiguous data goes to review.
+- [x] Every consolidated consultation is SUBJECT or GENERAL.
+- [x] Pending rows do not contaminate subject metrics.
+- [x] Canonical consultations remain usable when Sheets is unavailable.
 
 ### Phase 10 - Admin overview and reporting
 

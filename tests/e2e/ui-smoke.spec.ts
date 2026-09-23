@@ -26,6 +26,7 @@ test.describe("UI smoke journeys", () => {
       "/admin/hours/movements",
       "/admin/schedules",
       "/admin/schedules/attendance",
+      "/admin/consultations",
     ]) {
       await page.goto(route);
 

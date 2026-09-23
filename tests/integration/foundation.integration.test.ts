@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
@@ -24,6 +24,11 @@ import {
   POST as postAdminHourMovement,
 } from "@/app/api/admin/hours/movements/route";
 import { POST as postAdminHourMovementReverse } from "@/app/api/admin/hours/movements/[movementId]/reverse/route";
+import { GET as getAdminConsultations } from "@/app/api/admin/consultations/route";
+import {
+  GET as getAdminConsultationReview,
+  PATCH as patchAdminConsultationReview,
+} from "@/app/api/admin/consultations/review/[stagingId]/route";
 import { GET as getAdminTutorDetail, PATCH as patchAdminTutorDetail } from "@/app/api/admin/tutors/[tutorId]/route";
 import { PATCH as patchAdminTutorStatus } from "@/app/api/admin/tutors/[tutorId]/status/route";
 import {
@@ -67,6 +72,10 @@ import {
   attendanceRecord,
   auditEvent,
   career,
+  consultation,
+  consultationDuplicateCandidate,
+  consultationImportRun,
+  consultationStaging,
   dutyOccurrence,
   hourCategory,
   hourMovement,
@@ -142,6 +151,19 @@ import {
   getTutorSelfServiceSummary,
 } from "@/features/tutor-self-service/tutor-self-service-service";
 import { provisionUser } from "@/auth/provisioning";
+import { importConsultationRows } from "@/features/consultations/consultation-import-service";
+import {
+  ConsultationSourceError,
+  CONSULTATION_SOURCE_ERROR_CODES,
+  type ConsultationSourceAdapter,
+} from "@/features/consultations/consultation-source";
+import {
+  CONSULTATION_ERROR_CODES,
+  decideConsultationReview,
+  getConsultationReview,
+  getConsultationWorkspace,
+} from "@/features/consultations/consultation-service";
+import { consultationSourceConfigSchema } from "@/features/consultations/consultation-validation";
 
 import {
   getIntegrationConnectionString,
@@ -162,7 +184,7 @@ const authEnvironment = {
 
 async function resetDatabase() {
   await getIntegrationDatabase().execute(
-    sql`TRUNCATE TABLE "hour_movement", "activity", "attendance_record", "duty_occurrence", "schedule_assignment", "schedule_plan", "hour_category", "tutor_cycle_membership", "tutor_subject", "tutor", "scholarship_reference", "subject", "career", "audit_event", "session", "account", "verification", "administrative_cycle", "user" CASCADE`,
+    sql`TRUNCATE TABLE "consultation_duplicate_candidate", "consultation", "consultation_staging", "consultation_import_run", "hour_movement", "activity", "attendance_record", "duty_occurrence", "schedule_assignment", "schedule_plan", "hour_category", "tutor_cycle_membership", "tutor_subject", "tutor", "scholarship_reference", "subject", "career", "audit_event", "session", "account", "verification", "administrative_cycle", "user" CASCADE`,
   );
 }
 
@@ -206,6 +228,26 @@ function getRows<T>(result: { rows: unknown[] }) {
   return result.rows as T[];
 }
 
+function postgresIdentifier(identifier: string) {
+  return identifier.slice(0, 63);
+}
+
+async function expectPostgresErrorCode(
+  operation: Promise<unknown>,
+  code: string,
+) {
+  const error = await operation.then(
+    () => null,
+    (caught: unknown) => caught,
+  );
+  expect(error).not.toBeNull();
+  const queryError = error as {
+    code?: string;
+    cause?: { code?: string };
+  };
+  expect(queryError.code ?? queryError.cause?.code).toBe(code);
+}
+
 function makeJsonRequest(
   url: string,
   method: "GET" | "PATCH" | "POST" = "GET",
@@ -220,6 +262,99 @@ function makeJsonRequest(
           body: JSON.stringify(body),
         }),
   });
+}
+
+async function seedConsultationReviewData(adminId: string) {
+  const database = getIntegrationDatabase();
+  const now = new Date("2026-09-22T12:00:00.000Z");
+  const [careerRecord] = await database
+    .insert(career)
+    .values({
+      name: "Historical Engineering",
+      normalizedName: "historical engineering",
+      status: "INACTIVE",
+    })
+    .returning();
+  if (careerRecord === undefined) {
+    throw new Error("The consultation review Career fixture was not created.");
+  }
+  const [subjectRecord] = await database
+    .insert(subject)
+    .values({
+      careerId: careerRecord.id,
+      name: "Historical Algebra",
+      normalizedName: "historical algebra",
+      status: "INACTIVE",
+    })
+    .returning();
+  const [tutorRecord] = await database
+    .insert(tutor)
+    .values({
+      firstName: "Review",
+      lastName: "Tutor",
+      preferredDisplayName: "Review Tutor",
+      primaryCareerId: careerRecord.id,
+      status: "INACTIVE",
+    })
+    .returning();
+  const [run] = await database
+    .insert(consultationImportRun)
+    .values({
+      actorId: adminId,
+      status: "SUCCEEDED",
+      sourceSpreadsheetId: "consultation-review-fixture",
+      sourceRange: "Review!A:I",
+      startedAt: now,
+      completedAt: now,
+    })
+    .returning();
+  if (subjectRecord === undefined || tutorRecord === undefined || run === undefined) {
+    throw new Error("The consultation review reference fixtures were not created.");
+  }
+
+  async function insertStaging(
+    sourceRowKey: string,
+    overrides: Partial<typeof consultationStaging.$inferInsert> = {},
+  ) {
+    const [staging] = await database
+      .insert(consultationStaging)
+      .values({
+        sourceSpreadsheetId: "consultation-review-fixture",
+        sourceTab: "Review",
+        sourceRowKey,
+        sourceFingerprint: "d".repeat(64),
+        firstSeenRunId: run.id,
+        lastSeenRunId: run.id,
+        rawCareer: "Historical Engineering",
+        rawStudentFirstName: "Private Student",
+        rawStudentLastName: "Example",
+        rawConsultationDate: "22/09/2026",
+        rawTutor: "Review Tutor",
+        rawAcademicStage: "Second year",
+        rawModality: "Virtual",
+        rawTopic: "Private source topic",
+        rawContact: "student.contact@example.test",
+        normalizedCareer: "historical engineering",
+        careerId: careerRecord.id,
+        normalizedStudentFirstName: "private student",
+        normalizedStudentLastName: "example",
+        normalizedConsultationDate: "2026-09-22",
+        normalizedTutor: "review tutor",
+        tutorId: tutorRecord.id,
+        normalizedAcademicStage: "second year",
+        normalizedModality: "virtual",
+        normalizedTopic: "private source topic",
+        normalizedContact: "student.contact@example.test",
+        ...overrides,
+      })
+      .returning();
+    if (staging === undefined) {
+      throw new Error("The consultation review staging fixture was not created.");
+    }
+    return staging;
+  }
+
+  return { careerRecord, subjectRecord, tutorRecord, insertStaging, now };
 }
 
 beforeEach(async () => {
@@ -246,7 +381,7 @@ describe("PostgreSQL foundation integration", () => {
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
-          AND table_name IN ('user', 'session', 'account', 'verification', 'administrative_cycle', 'audit_event', 'career', 'subject', 'scholarship_reference', 'tutor', 'tutor_subject', 'tutor_cycle_membership', 'schedule_plan', 'schedule_assignment', 'duty_occurrence', 'attendance_record', 'hour_category', 'activity', 'hour_movement')
+          AND table_name IN ('user', 'session', 'account', 'verification', 'administrative_cycle', 'audit_event', 'career', 'subject', 'scholarship_reference', 'tutor', 'tutor_subject', 'tutor_cycle_membership', 'schedule_plan', 'schedule_assignment', 'duty_occurrence', 'attendance_record', 'hour_category', 'activity', 'hour_movement', 'consultation_import_run', 'consultation_staging', 'consultation', 'consultation_duplicate_candidate')
         ORDER BY table_name
       `),
     );
@@ -254,14 +389,6 @@ describe("PostgreSQL foundation integration", () => {
       await database.execute(sql`
         SELECT count(*)::text AS migration_count
         FROM "drizzle"."__drizzle_migrations"
-      `),
-    );
-    const deferredTables = getRows<{ table_name: string }>(
-      await database.execute(sql`
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = 'public'
-          AND table_name IN ('consultation')
       `),
     );
     const indexes = getRows<{ indexname: string }>(
@@ -276,6 +403,27 @@ describe("PostgreSQL foundation integration", () => {
             'attendance_record_occurrence_unique',
             'attendance_record_status_idx',
             'career_normalized_name_unique',
+            'consultation_date_idx',
+            'consultation_classification_date_idx',
+            'consultation_career_date_idx',
+            'consultation_tutor_date_idx',
+            'consultation_subject_date_idx',
+            'consultation_cycle_date_idx',
+            'consultation_staging_unique',
+            'consultation_duplicate_candidate_pair_unique',
+            'consultation_duplicate_candidate_decision_created_idx',
+            'consultation_duplicate_candidate_first_staging_idx',
+            'consultation_duplicate_candidate_second_staging_idx',
+            'consultation_import_run_active_source_unique',
+            'consultation_import_run_status_started_idx',
+            'consultation_import_run_actor_started_idx',
+            'consultation_staging_source_identity_unique',
+            'consultation_staging_review_updated_idx',
+            'consultation_staging_source_run_idx',
+            'consultation_staging_career_idx',
+            'consultation_staging_tutor_idx',
+            'consultation_staging_subject_idx',
+            'consultation_staging_duplicate_resolution_idx',
             'duty_occurrence_assignment_date_unique',
             'duty_occurrence_cycle_date_idx',
             'duty_occurrence_tutor_date_idx',
@@ -309,7 +457,8 @@ describe("PostgreSQL foundation integration", () => {
         SELECT conname
         FROM pg_constraint
           WHERE contype = 'f'
-          AND conname IN (
+        AND (
+          conname IN (
             'activity_actor_id_user_id_fk',
             'activity_cycle_id_administrative_cycle_id_fk',
             'activity_duty_occurrence_id_duty_occurrence_id_fk',
@@ -338,6 +487,13 @@ describe("PostgreSQL foundation integration", () => {
             'tutor_subject_tutor_id_tutor_id_fk',
             'tutor_subject_subject_id_subject_id_fk'
           )
+          OR conrelid::regclass::text IN (
+            'consultation',
+            'consultation_duplicate_candidate',
+            'consultation_import_run',
+            'consultation_staging'
+          )
+        )
         ORDER BY conname
       `),
     );
@@ -354,6 +510,26 @@ describe("PostgreSQL foundation integration", () => {
             'career_name_not_blank_check',
             'career_normalized_name_not_blank_check',
             'career_normalized_name_check',
+            'consultation_import_run_counts_non_negative_check',
+            'consultation_import_run_completion_check',
+            'consultation_import_run_source_bounds_check',
+            'consultation_import_run_error_code_check',
+            'consultation_import_run_request_id_check',
+            'consultation_staging_source_identity_bounds_check',
+            'consultation_staging_source_fingerprint_check',
+            'consultation_staging_anomaly_flags_bounds_check',
+            'consultation_staging_acknowledged_anomalies_bounds_check',
+            'consultation_staging_raw_field_bounds_check',
+            'consultation_staging_normalized_field_bounds_check',
+            'consultation_staging_classification_subject_check',
+            'consultation_staging_review_state_check',
+            'consultation_staging_review_version_check',
+            'consultation_classification_subject_check',
+            'consultation_student_name_bounds_check',
+            'consultation_duplicate_candidate_order_check',
+            'consultation_duplicate_candidate_rule_code_check',
+            'consultation_duplicate_candidate_match_hash_check',
+            'consultation_duplicate_candidate_decision_check',
             'hour_category_name_not_blank_check',
             'hour_category_normalized_name_not_blank_check',
             'hour_category_normalized_name_check',
@@ -389,7 +565,7 @@ describe("PostgreSQL foundation integration", () => {
         SELECT type.typname, enum.enumlabel
         FROM pg_type AS type
         JOIN pg_enum AS enum ON enum.enumtypid = type.oid
-        WHERE type.typname IN ('user_role', 'administrative_cycle_status', 'record_status', 'hour_movement_direction', 'activity_kind', 'schedule_plan_kind', 'schedule_assignment_pattern', 'schedule_assignment_kind', 'attendance_status', 'attendance_debit_status')
+        WHERE type.typname IN ('user_role', 'administrative_cycle_status', 'record_status', 'hour_movement_direction', 'activity_kind', 'schedule_plan_kind', 'schedule_assignment_pattern', 'schedule_assignment_kind', 'attendance_status', 'attendance_debit_status', 'consultation_source_provider', 'consultation_classification', 'consultation_staging_status', 'consultation_import_run_status', 'consultation_duplicate_decision', 'consultation_anomaly_code')
         ORDER BY type.typname, enum.enumsortorder
       `),
     );
@@ -402,6 +578,10 @@ describe("PostgreSQL foundation integration", () => {
       "attendance_record",
       "audit_event",
       "career",
+      "consultation",
+      "consultation_duplicate_candidate",
+      "consultation_import_run",
+      "consultation_staging",
       "duty_occurrence",
       "hour_category",
       "hour_movement",
@@ -416,7 +596,7 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("5");
+    expect(migrations[0]?.migration_count).toBe("8");
     expect(enumValues).toEqual([
       { typname: "activity_kind", enumlabel: "MEETING" },
       { typname: "activity_kind", enumlabel: "WORKSHOP" },
@@ -431,6 +611,36 @@ describe("PostgreSQL foundation integration", () => {
       { typname: "attendance_status", enumlabel: "PENDING" },
       { typname: "attendance_status", enumlabel: "PRESENT" },
       { typname: "attendance_status", enumlabel: "ABSENT" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_SOURCE_ROW_KEY" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_CAREER" },
+      { typname: "consultation_anomaly_code", enumlabel: "UNRESOLVED_CAREER" },
+      { typname: "consultation_anomaly_code", enumlabel: "AMBIGUOUS_CAREER" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_STUDENT_FIRST_NAME" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_STUDENT_LAST_NAME" },
+      { typname: "consultation_anomaly_code", enumlabel: "INVALID_CONSULTATION_DATE" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_TUTOR" },
+      { typname: "consultation_anomaly_code", enumlabel: "UNRESOLVED_TUTOR" },
+      { typname: "consultation_anomaly_code", enumlabel: "AMBIGUOUS_TUTOR" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_ACADEMIC_STAGE" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_MODALITY" },
+      { typname: "consultation_anomaly_code", enumlabel: "MISSING_TOPIC" },
+      { typname: "consultation_anomaly_code", enumlabel: "POSSIBLE_DUPLICATE" },
+      { typname: "consultation_anomaly_code", enumlabel: "SOURCE_ROW_CHANGED" },
+      { typname: "consultation_classification", enumlabel: "SUBJECT" },
+      { typname: "consultation_classification", enumlabel: "GENERAL" },
+      { typname: "consultation_classification", enumlabel: "PENDING_CLASSIFICATION" },
+      { typname: "consultation_duplicate_decision", enumlabel: "PENDING" },
+      { typname: "consultation_duplicate_decision", enumlabel: "DUPLICATE" },
+      { typname: "consultation_duplicate_decision", enumlabel: "NOT_DUPLICATE" },
+      { typname: "consultation_import_run_status", enumlabel: "RUNNING" },
+      { typname: "consultation_import_run_status", enumlabel: "SUCCEEDED" },
+      { typname: "consultation_import_run_status", enumlabel: "PARTIAL" },
+      { typname: "consultation_import_run_status", enumlabel: "FAILED" },
+      { typname: "consultation_source_provider", enumlabel: "GOOGLE_SHEETS" },
+      { typname: "consultation_staging_status", enumlabel: "PENDING_REVIEW" },
+      { typname: "consultation_staging_status", enumlabel: "READY" },
+      { typname: "consultation_staging_status", enumlabel: "CONSOLIDATED" },
+      { typname: "consultation_staging_status", enumlabel: "DUPLICATE" },
       { typname: "hour_movement_direction", enumlabel: "CREDIT" },
       { typname: "hour_movement_direction", enumlabel: "DEBIT" },
       { typname: "record_status", enumlabel: "ACTIVE" },
@@ -444,7 +654,6 @@ describe("PostgreSQL foundation integration", () => {
       { typname: "user_role", enumlabel: "ADMIN" },
       { typname: "user_role", enumlabel: "TUTOR" },
     ]);
-    expect(deferredTables).toEqual([]);
     expect(indexes.map((row) => row.indexname)).toEqual([
       "activity_cycle_date_idx",
       "activity_duty_occurrence_idx",
@@ -452,6 +661,27 @@ describe("PostgreSQL foundation integration", () => {
       "attendance_record_occurrence_unique",
       "attendance_record_status_idx",
       "career_normalized_name_unique",
+      "consultation_career_date_idx",
+      "consultation_classification_date_idx",
+      "consultation_cycle_date_idx",
+      "consultation_date_idx",
+      "consultation_duplicate_candidate_decision_created_idx",
+      "consultation_duplicate_candidate_first_staging_idx",
+      "consultation_duplicate_candidate_pair_unique",
+      "consultation_duplicate_candidate_second_staging_idx",
+      "consultation_import_run_active_source_unique",
+      "consultation_import_run_actor_started_idx",
+      "consultation_import_run_status_started_idx",
+      "consultation_staging_career_idx",
+      "consultation_staging_duplicate_resolution_idx",
+      "consultation_staging_review_updated_idx",
+      "consultation_staging_source_identity_unique",
+      "consultation_staging_source_run_idx",
+      "consultation_staging_subject_idx",
+      "consultation_staging_tutor_idx",
+      "consultation_staging_unique",
+      "consultation_subject_date_idx",
+      "consultation_tutor_date_idx",
       "duty_occurrence_assignment_date_unique",
       "duty_occurrence_cycle_date_idx",
       "duty_occurrence_tutor_date_idx",
@@ -505,7 +735,33 @@ describe("PostgreSQL foundation integration", () => {
       "tutor_primary_career_id_career_id_fk",
       "tutor_subject_subject_id_subject_id_fk",
       "tutor_subject_tutor_id_tutor_id_fk",
-    ]);
+      "consultation_staging_id_consultation_staging_id_fk",
+      "consultation_cycle_id_administrative_cycle_id_fk",
+      "consultation_career_id_career_id_fk",
+      "consultation_tutor_id_tutor_id_fk",
+      "consultation_subject_id_subject_id_fk",
+      postgresIdentifier(
+        "consultation_duplicate_candidate_first_staging_id_consultation_staging_id_fk",
+      ),
+      postgresIdentifier(
+        "consultation_duplicate_candidate_second_staging_id_consultation_staging_id_fk",
+      ),
+      postgresIdentifier(
+        "consultation_duplicate_candidate_duplicate_staging_id_consultation_staging_id_fk",
+      ),
+      postgresIdentifier("consultation_duplicate_candidate_decided_by_user_id_fk"),
+      "consultation_import_run_actor_id_user_id_fk",
+      postgresIdentifier(
+        "consultation_staging_first_seen_run_id_consultation_import_run_id_fk",
+      ),
+      postgresIdentifier(
+        "consultation_staging_last_seen_run_id_consultation_import_run_id_fk",
+      ),
+      "consultation_staging_career_id_career_id_fk",
+      "consultation_staging_tutor_id_tutor_id_fk",
+      "consultation_staging_subject_id_subject_id_fk",
+      postgresIdentifier("consultation_staging_reviewed_by_user_id_fk"),
+    ].sort());
     expect(checks.map((row) => row.conname)).toEqual([
       "activity_duration_minutes_positive_check",
       "activity_note_not_blank_check",
@@ -514,6 +770,26 @@ describe("PostgreSQL foundation integration", () => {
       "career_name_not_blank_check",
       "career_normalized_name_check",
       "career_normalized_name_not_blank_check",
+      "consultation_classification_subject_check",
+      "consultation_student_name_bounds_check",
+      "consultation_duplicate_candidate_order_check",
+      "consultation_duplicate_candidate_rule_code_check",
+      "consultation_duplicate_candidate_match_hash_check",
+      "consultation_duplicate_candidate_decision_check",
+      "consultation_import_run_counts_non_negative_check",
+      "consultation_import_run_completion_check",
+      "consultation_import_run_source_bounds_check",
+      "consultation_import_run_error_code_check",
+      "consultation_import_run_request_id_check",
+      "consultation_staging_source_identity_bounds_check",
+      "consultation_staging_source_fingerprint_check",
+      "consultation_staging_anomaly_flags_bounds_check",
+      "consultation_staging_acknowledged_anomalies_bounds_check",
+      "consultation_staging_raw_field_bounds_check",
+      "consultation_staging_normalized_field_bounds_check",
+      "consultation_staging_classification_subject_check",
+      "consultation_staging_review_state_check",
+      "consultation_staging_review_version_check",
       "duty_occurrence_modality_not_blank_check",
       "duty_occurrence_time_range_check",
       "hour_category_name_not_blank_check",
@@ -540,10 +816,932 @@ describe("PostgreSQL foundation integration", () => {
       "tutor_institutional_identifier_normalized_check",
       "tutor_last_name_not_blank_check",
       "tutor_preferred_display_name_check",
-    ]);
+    ].sort());
     expect(getIntegrationConnectionString()).toMatch(
       /^postgres(?:ql)?:\/\/[^/]+\/sgta_integration$/,
     );
+  });
+
+  it("enforces consultation source identity and canonical classification constraints", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Computer Science", normalizedName: "computer science" })
+      .returning({ id: career.id });
+
+    if (createdCareer === undefined) {
+      throw new Error("The consultation fixture Career was not created.");
+    }
+
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Casey",
+        lastName: "Tutor",
+        primaryCareerId: createdCareer.id,
+      })
+      .returning({ id: tutor.id });
+
+    if (createdTutor === undefined) {
+      throw new Error("The consultation fixture Tutor was not created.");
+    }
+
+    const [createdSubject] = await database
+      .insert(subject)
+      .values({
+        careerId: createdCareer.id,
+        name: "Discrete Mathematics",
+        normalizedName: "discrete mathematics",
+      })
+      .returning({ id: subject.id });
+
+    if (createdSubject === undefined) {
+      throw new Error("The consultation fixture Subject was not created.");
+    }
+
+    const [run] = await database
+      .insert(consultationImportRun)
+      .values({
+        actorId: admin.id,
+        status: "SUCCEEDED",
+        sourceSpreadsheetId: "synthetic-sheet-id",
+        sourceRange: "Responses 1!A:I",
+        completedAt: new Date(),
+      })
+      .returning({ id: consultationImportRun.id });
+
+    if (run === undefined) {
+      throw new Error("The consultation fixture import run was not created.");
+    }
+
+    const insertStaging = (
+      sourceRowKey: string,
+      overrides: Partial<typeof consultationStaging.$inferInsert> = {},
+    ) =>
+      database
+        .insert(consultationStaging)
+        .values({
+          sourceProvider: "GOOGLE_SHEETS",
+          sourceSpreadsheetId: "synthetic-sheet-id",
+          sourceTab: "Responses 1",
+          sourceRowKey,
+          sourceFingerprint: "a".repeat(64),
+          firstSeenRunId: run.id,
+          lastSeenRunId: run.id,
+          ...overrides,
+        })
+        .returning({ id: consultationStaging.id });
+
+    const [generalStaging] = await insertStaging("row-general");
+    const [subjectStaging] = await insertStaging("row-subject");
+    const [subjectWithoutSubjectStaging] = await insertStaging(
+      "row-subject-without-subject",
+    );
+    const [generalWithSubjectStaging] = await insertStaging(
+      "row-general-with-subject",
+    );
+    const [pendingClassificationStaging] = await insertStaging(
+      "row-pending-classification",
+    );
+
+    if (
+      generalStaging === undefined ||
+      subjectStaging === undefined ||
+      subjectWithoutSubjectStaging === undefined ||
+      generalWithSubjectStaging === undefined ||
+      pendingClassificationStaging === undefined
+    ) {
+      throw new Error("The consultation staging fixtures were not created.");
+    }
+
+    const canonicalFields = {
+      consultationDate: "2026-09-22",
+      studentFirstName: "Ana",
+      studentLastName: "Pérez",
+      careerId: createdCareer.id,
+      tutorId: createdTutor.id,
+      academicStage: "Second year",
+      modality: "Virtual",
+      rawTopic: "Synthetic topic",
+    };
+
+    await database.insert(consultation).values({
+      ...canonicalFields,
+      stagingId: generalStaging.id,
+      classification: "GENERAL",
+      subjectId: null,
+    });
+    await database.insert(consultation).values({
+      ...canonicalFields,
+      stagingId: subjectStaging.id,
+      classification: "SUBJECT",
+      subjectId: createdSubject.id,
+    });
+
+    await expectPostgresErrorCode(
+      insertStaging("row-general"),
+      "23505",
+    );
+    await expectPostgresErrorCode(
+      database.insert(consultation).values({
+        ...canonicalFields,
+        stagingId: generalStaging.id,
+        classification: "GENERAL",
+        subjectId: null,
+      }),
+      "23505",
+    );
+    await expectPostgresErrorCode(
+      database.insert(consultation).values({
+        ...canonicalFields,
+        stagingId: subjectWithoutSubjectStaging.id,
+        classification: "SUBJECT",
+        subjectId: null,
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      database.insert(consultation).values({
+        ...canonicalFields,
+        stagingId: generalWithSubjectStaging.id,
+        classification: "GENERAL",
+        subjectId: createdSubject.id,
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      database.insert(consultation).values({
+        ...canonicalFields,
+        stagingId: pendingClassificationStaging.id,
+        classification: "PENDING_CLASSIFICATION",
+        subjectId: null,
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      insertStaging("row-invalid-fingerprint", {
+        sourceFingerprint: "not-a-fingerprint",
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      insertStaging("row-oversized-name", {
+        rawStudentFirstName: "A".repeat(201),
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      insertStaging("row-many-anomalies", {
+        anomalyFlags: Array.from(
+          { length: 33 },
+          () => "MISSING_CAREER" as const,
+        ),
+      }),
+      "23514",
+    );
+    await expectPostgresErrorCode(
+      insertStaging("row-ready-pending-classification", {
+        status: "READY",
+        reviewedBy: admin.id,
+        reviewedAt: new Date(),
+      }),
+      "23514",
+    );
+
+    const canonicalRows = await database
+      .select({ classification: consultation.classification })
+      .from(consultation);
+    expect(canonicalRows.map((row) => row.classification)).toEqual([
+      "GENERAL",
+      "SUBJECT",
+    ]);
+    await expectPostgresErrorCode(
+      database.delete(career).where(eq(career.id, createdCareer.id)),
+      "23503",
+    );
+  });
+
+  it("imports source rows idempotently, reopens changed reviews, and preserves canonical data", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Computer Science", normalizedName: "computer science" })
+      .returning({ id: career.id });
+    if (createdCareer === undefined) {
+      throw new Error("The import fixture Career was not created.");
+    }
+
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Casey",
+        lastName: "Tutor",
+        preferredDisplayName: "Casey Tutor",
+        primaryCareerId: createdCareer.id,
+      })
+      .returning({ id: tutor.id });
+    if (createdTutor === undefined) {
+      throw new Error("The import fixture Tutor was not created.");
+    }
+
+    const config = consultationSourceConfigSchema.parse({
+      spreadsheetId: "synthetic-import-sheet",
+      range: "Responses!A:I",
+      serviceAccountEmail: "consultations@example.test",
+      privateKey:
+        "-----BEGIN PRIVATE KEY-----\nsynthetic-integration-key\n-----END PRIVATE KEY-----",
+      headerMap: {
+        career: "Career",
+        studentFirstName: "First name",
+        studentLastName: "Last name",
+        consultationDate: "Date",
+        tutor: "Tutor",
+        academicStage: "Stage",
+        modality: "Modality",
+        topic: "Topic",
+        contact: "Contact",
+      },
+    });
+    const sourceConfiguration = { status: "configured" as const, config };
+    const sourceRow = (sourceRowKey: string, sourceFingerprint: string, topic: string) => ({
+      sourceRowKey,
+      sourceFingerprint: sourceFingerprint.repeat(64),
+      career: "Computer Science",
+      studentFirstName: "Ana",
+      studentLastName: "Diaz",
+      consultationDate: "22/09/2026",
+      tutor: "Casey Tutor",
+      academicStage: "Second year",
+      modality: "Virtual",
+      topic,
+      contact: "ana@example.test",
+    });
+
+    let sourceRows = [sourceRow("row:2", "a", "Original topic")];
+    let sourceFailure = false;
+    let sourceReadCount = 0;
+    const sourceAdapter: ConsultationSourceAdapter = {
+      async readRows() {
+        sourceReadCount += 1;
+        if (sourceFailure) {
+          throw new ConsultationSourceError(CONSULTATION_SOURCE_ERROR_CODES.unavailable);
+        }
+        return { sourceTab: "Responses", rows: sourceRows };
+      },
+    };
+    let currentTime = new Date("2026-09-22T12:00:00.000Z");
+    const dependencies = {
+      db: database,
+      sourceConfiguration,
+      sourceAdapter,
+      now: () => new Date(currentTime),
+    };
+
+    const firstImport = await importConsultationRows({ actorId: admin.id }, dependencies);
+    expect(firstImport).toMatchObject({
+      outcome: "completed",
+      summary: { status: "SUCCEEDED", newRows: 1, alreadyProcessedRows: 0, reviewRows: 1 },
+    });
+
+    const [stagingBeforeReview] = await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.sourceRowKey, "row:2"));
+    if (stagingBeforeReview === undefined) {
+      throw new Error("The import staging row was not created.");
+    }
+
+    await database
+      .update(consultationStaging)
+      .set({
+        status: "CONSOLIDATED",
+        classification: "GENERAL",
+        reviewedBy: admin.id,
+        reviewedAt: currentTime,
+        anomalyFlags: [],
+      })
+      .where(eq(consultationStaging.id, stagingBeforeReview.id));
+    await database.insert(consultation).values({
+      stagingId: stagingBeforeReview.id,
+      consultationDate: "2026-09-22",
+      studentFirstName: "Ana",
+      studentLastName: "Diaz",
+      studentContact: "ana@example.test",
+      careerId: createdCareer.id,
+      tutorId: createdTutor.id,
+      academicStage: "Second year",
+      modality: "Virtual",
+      rawTopic: "Original topic",
+      classification: "GENERAL",
+      subjectId: null,
+    });
+
+    currentTime = new Date("2026-09-22T12:01:00.000Z");
+    sourceRows = [
+      sourceRow("row:2", "b", "Changed source topic"),
+      sourceRow("row:3", "c", "Same consultation from another row"),
+      {
+        ...sourceRow("row:4", "d", ""),
+        career: "Unlisted career",
+        tutor: "Unlisted tutor",
+        consultationDate: "09/22/2026",
+        academicStage: "",
+        modality: "",
+      },
+    ];
+    const changedImport = await importConsultationRows({ actorId: admin.id }, dependencies);
+    expect(changedImport).toMatchObject({
+      outcome: "completed",
+      summary: {
+        status: "SUCCEEDED",
+        newRows: 2,
+        alreadyProcessedRows: 0,
+        reviewRows: 3,
+        duplicateCandidates: 1,
+      },
+    });
+
+    const [anomalyStaging] = await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.sourceRowKey, "row:4"));
+    expect(anomalyStaging?.anomalyFlags).toEqual(
+      expect.arrayContaining([
+        "UNRESOLVED_CAREER",
+        "UNRESOLVED_TUTOR",
+        "INVALID_CONSULTATION_DATE",
+        "MISSING_TOPIC",
+        "MISSING_ACADEMIC_STAGE",
+        "MISSING_MODALITY",
+      ]),
+    );
+
+    const [reopenedStaging] = await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.id, stagingBeforeReview.id));
+    const [preservedCanonical] = await database
+      .select()
+      .from(consultation)
+      .where(eq(consultation.stagingId, stagingBeforeReview.id));
+    expect(reopenedStaging).toMatchObject({
+      status: "PENDING_REVIEW",
+      classification: "PENDING_CLASSIFICATION",
+      rawTopic: "Changed source topic",
+      sourceChangeCount: 1,
+      sourceChangedAt: currentTime,
+    });
+    expect(reopenedStaging?.anomalyFlags).toEqual(
+      expect.arrayContaining(["SOURCE_ROW_CHANGED", "POSSIBLE_DUPLICATE"]),
+    );
+    expect(preservedCanonical).toMatchObject({
+      classification: "GENERAL",
+      rawTopic: "Original topic",
+    });
+    const [duplicateCandidate] = await database
+      .select()
+      .from(consultationDuplicateCandidate);
+    if (duplicateCandidate === undefined) {
+      throw new Error("The exact duplicate candidate was not created.");
+    }
+
+    const duplicateStaging = (await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.sourceSpreadsheetId, config.spreadsheetId)))
+      .filter((row) => row.sourceRowKey === "row:2" || row.sourceRowKey === "row:3");
+    expect(duplicateStaging).toHaveLength(2);
+    for (const row of duplicateStaging) {
+      await database
+        .update(consultationStaging)
+        .set({
+          status: "CONSOLIDATED",
+          classification: "GENERAL",
+          reviewedBy: admin.id,
+          reviewedAt: currentTime,
+        })
+        .where(eq(consultationStaging.id, row.id));
+    }
+    const secondDuplicateRow = duplicateStaging.find((row) => row.sourceRowKey === "row:3");
+    if (secondDuplicateRow === undefined) {
+      throw new Error("The second duplicate staging row was not found.");
+    }
+    await database.insert(consultation).values({
+      stagingId: secondDuplicateRow.id,
+      consultationDate: "2026-09-22",
+      studentFirstName: "Ana",
+      studentLastName: "Diaz",
+      studentContact: "ana@example.test",
+      careerId: createdCareer.id,
+      tutorId: createdTutor.id,
+      academicStage: "Second year",
+      modality: "Virtual",
+      rawTopic: "Same consultation from another row",
+      classification: "GENERAL",
+      subjectId: null,
+    });
+    await database
+      .update(consultationDuplicateCandidate)
+      .set({ decision: "NOT_DUPLICATE", decidedBy: admin.id, decidedAt: currentTime })
+      .where(eq(consultationDuplicateCandidate.id, duplicateCandidate.id));
+
+    currentTime = new Date("2026-09-22T12:02:00.000Z");
+    const repeatedImport = await importConsultationRows({ actorId: admin.id }, dependencies);
+    expect(repeatedImport).toMatchObject({
+      outcome: "completed",
+      summary: {
+        newRows: 0,
+        alreadyProcessedRows: 3,
+        reviewRows: 1,
+        duplicateCandidates: 1,
+      },
+    });
+    const repeatedDuplicateRows = (await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.sourceSpreadsheetId, config.spreadsheetId)))
+      .filter((row) => row.sourceRowKey === "row:2" || row.sourceRowKey === "row:3");
+    expect(repeatedDuplicateRows.map((row) => row.status)).toEqual([
+      "CONSOLIDATED",
+      "CONSOLIDATED",
+    ]);
+    const [repeatedCandidate] = await database
+      .select()
+      .from(consultationDuplicateCandidate)
+      .where(eq(consultationDuplicateCandidate.id, duplicateCandidate.id));
+    expect(repeatedCandidate?.decision).toBe("NOT_DUPLICATE");
+
+    sourceFailure = true;
+    currentTime = new Date("2026-09-22T12:03:00.000Z");
+    const unavailableImport = await importConsultationRows(
+      { actorId: admin.id },
+      dependencies,
+    );
+    expect(unavailableImport).toMatchObject({
+      outcome: "failed",
+      summary: { status: "FAILED", errorCode: "source_unavailable" },
+    });
+    expect(await database.select().from(consultation)).toHaveLength(2);
+    expect(await database.select().from(consultationStaging)).toHaveLength(3);
+
+    const failedAudit = await database
+      .select({ metadata: auditEvent.metadata })
+      .from(auditEvent)
+      .where(eq(auditEvent.entityId, unavailableImport.summary.runId!));
+    expect(JSON.stringify(failedAudit)).not.toContain("Ana");
+    expect(JSON.stringify(failedAudit)).not.toContain("ana@example.test");
+    expect(JSON.stringify(failedAudit)).toContain("source_unavailable");
+
+    const missingConfiguration = await importConsultationRows(
+      { actorId: admin.id },
+      {
+        ...dependencies,
+        sourceConfiguration: { status: "unavailable", code: "source_not_configured" },
+      },
+    );
+    expect(missingConfiguration).toMatchObject({
+      outcome: "failed",
+      summary: { status: "FAILED", errorCode: "source_not_configured" },
+    });
+    expect(sourceReadCount).toBe(4);
+    expect(await database.select().from(consultation)).toHaveLength(2);
+  });
+
+  it("resolves explicit references, consolidates atomically, and makes decision retries idempotent", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const fixtures = await seedConsultationReviewData(admin.id);
+    const staging = await fixtures.insertStaging("task3-explicit-resolution", {
+      rawCareer: null,
+      rawTutor: null,
+      rawConsultationDate: "not a date",
+      normalizedCareer: null,
+      careerId: null,
+      normalizedTutor: null,
+      tutorId: null,
+      normalizedConsultationDate: null,
+      anomalyFlags: [
+        "MISSING_CAREER",
+        "MISSING_TUTOR",
+        "INVALID_CONSULTATION_DATE",
+        "SOURCE_ROW_CHANGED",
+      ],
+    });
+    await database.insert(administrativeCycle).values({
+      name: "Historical Consultation Cycle",
+      startDate: "2026-01-01",
+      endDate: "2026-12-31",
+      status: "CLOSED",
+    });
+
+    const reviewBefore = await getConsultationReview(database, staging.id);
+    expect(reviewBefore.references.careers).toContainEqual(
+      expect.objectContaining({ id: fixtures.careerRecord.id, status: "INACTIVE" }),
+    );
+    expect(reviewBefore.references.tutors).toContainEqual(
+      expect.objectContaining({ id: fixtures.tutorRecord.id, status: "INACTIVE" }),
+    );
+    expect(reviewBefore.references.subjects).toContainEqual(
+      expect.objectContaining({ id: fixtures.subjectRecord.id, status: "INACTIVE" }),
+    );
+
+    const decision = {
+      expectedVersion: 1,
+      careerId: fixtures.careerRecord.id,
+      tutorId: fixtures.tutorRecord.id,
+      consultationDate: "2026-09-22",
+      classification: "SUBJECT" as const,
+      subjectId: fixtures.subjectRecord.id,
+      acknowledgedAnomalies: ["SOURCE_ROW_CHANGED" as const],
+    };
+    const context = {
+      actorId: admin.id,
+      requestId: "consultation-review-atomic-test",
+      ipAddress: "192.0.2.10",
+    };
+    const result = await decideConsultationReview(
+      database,
+      staging.id,
+      decision,
+      context,
+    );
+
+    expect(result.outcome).toBe("consolidated");
+    expect(result.review).toMatchObject({
+      status: "CONSOLIDATED",
+      classification: "SUBJECT",
+      acknowledgedAnomalies: ["SOURCE_ROW_CHANGED"],
+      canonical: {
+        classification: "SUBJECT",
+        subject: "Historical Algebra",
+        career: "Historical Engineering",
+        tutor: "Review Tutor",
+      },
+    });
+    const [canonical] = await database
+      .select()
+      .from(consultation)
+      .where(eq(consultation.stagingId, staging.id));
+    expect(canonical).toMatchObject({
+      cycleId: expect.any(String),
+      subjectId: fixtures.subjectRecord.id,
+      studentContact: "student.contact@example.test",
+    });
+
+    await expect(
+      decideConsultationReview(database, staging.id, decision, context),
+    ).resolves.toMatchObject({ outcome: "consolidated" });
+    expect(
+      await database
+        .select()
+        .from(consultation)
+        .where(eq(consultation.stagingId, staging.id)),
+    ).toHaveLength(1);
+
+    const auditRows = await database
+      .select({ actorId: auditEvent.actorId, action: auditEvent.action, metadata: auditEvent.metadata })
+      .from(auditEvent)
+      .where(
+        and(
+          inArray(auditEvent.action, ["consultation_review.decided", "consultation.consolidated"]),
+          or(eq(auditEvent.entityId, staging.id), eq(auditEvent.entityType, "consultation")),
+        ),
+      );
+    expect(auditRows).toHaveLength(2);
+    expect(auditRows.every((event) => event.actorId === admin.id)).toBe(true);
+    expect(JSON.stringify(auditRows)).not.toContain("Private Student");
+    expect(JSON.stringify(auditRows)).not.toContain("student.contact@example.test");
+    expect(JSON.stringify(auditRows)).not.toContain("Private source topic");
+
+    const workspace = await getConsultationWorkspace(database, {});
+    expect(workspace).toMatchObject({
+      rows: [{ stagingId: staging.id, classification: "SUBJECT" }],
+      reviewQueue: [],
+      pendingReviewCount: 0,
+      totalRows: 1,
+    });
+  });
+
+  it("rejects stale decisions and keeps pending classifications out of canonical rows", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const fixtures = await seedConsultationReviewData(admin.id);
+    const canonicalStage = await fixtures.insertStaging("task3-stale-review");
+    await decideConsultationReview(
+      database,
+      canonicalStage.id,
+      { expectedVersion: 1, classification: "GENERAL" },
+      { actorId: admin.id },
+    );
+
+    await expect(
+      decideConsultationReview(
+        database,
+        canonicalStage.id,
+        {
+          expectedVersion: 1,
+          classification: "SUBJECT",
+          subjectId: fixtures.subjectRecord.id,
+        },
+        { actorId: admin.id },
+      ),
+    ).rejects.toMatchObject({ code: CONSULTATION_ERROR_CODES.staleReview });
+
+    const pendingStage = await fixtures.insertStaging("task3-pending-classification");
+    const pendingDecision = await decideConsultationReview(
+      database,
+      pendingStage.id,
+      { expectedVersion: 1, acknowledgedAnomalies: [] },
+      { actorId: admin.id },
+    );
+    expect(pendingDecision.outcome).toBe("review_saved");
+    expect(pendingDecision.review.status).toBe("PENDING_REVIEW");
+    expect(pendingDecision.review.canonical).toBeNull();
+
+    const workspace = await getConsultationWorkspace(database, {});
+    expect(workspace.rows).toHaveLength(1);
+    expect(workspace.reviewQueue).toEqual([
+      expect.objectContaining({
+        stagingId: pendingStage.id,
+        classification: "PENDING_CLASSIFICATION",
+        hasCanonical: false,
+      }),
+    ]);
+    const subjectResults = await getConsultationWorkspace(database, {
+      classification: "SUBJECT",
+    });
+    expect(subjectResults.rows).toEqual([]);
+  });
+
+  it("retains confirmed duplicate evidence and rolls back a decision when audit persistence fails", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const fixtures = await seedConsultationReviewData(admin.id);
+    const duplicate = await fixtures.insertStaging("task3-confirmed-duplicate", {
+      anomalyFlags: ["POSSIBLE_DUPLICATE"],
+    });
+    const survivor = await fixtures.insertStaging("task3-duplicate-survivor", {
+      anomalyFlags: ["POSSIBLE_DUPLICATE"],
+    });
+    const [candidate] = await database
+      .insert(consultationDuplicateCandidate)
+      .values({
+        firstStagingId: duplicate.id < survivor.id ? duplicate.id : survivor.id,
+        secondStagingId: duplicate.id < survivor.id ? survivor.id : duplicate.id,
+        ruleCode: "exact_person_date_career_tutor",
+        matchKeyHash: "e".repeat(64),
+      })
+      .returning();
+    if (candidate === undefined) {
+      throw new Error("The duplicate candidate fixture was not created.");
+    }
+
+    const duplicateResult = await decideConsultationReview(
+      database,
+      duplicate.id,
+      {
+        expectedVersion: 1,
+        duplicateDecisions: [{ candidateId: candidate.id, decision: "DUPLICATE" }],
+      },
+      { actorId: admin.id },
+    );
+    expect(duplicateResult.outcome).toBe("duplicate");
+    expect(duplicateResult.review.status).toBe("DUPLICATE");
+    expect(await database.select().from(consultation)).toHaveLength(0);
+    expect(await database.select().from(consultationStaging)).toHaveLength(2);
+    const [confirmedCandidate] = await database
+      .select()
+      .from(consultationDuplicateCandidate)
+      .where(eq(consultationDuplicateCandidate.id, candidate.id));
+    expect(confirmedCandidate).toMatchObject({
+      decision: "DUPLICATE",
+      duplicateStagingId: duplicate.id,
+      decidedBy: admin.id,
+    });
+    await expect(
+      decideConsultationReview(
+        database,
+        survivor.id,
+        {
+          expectedVersion: 1,
+          duplicateDecisions: [{ candidateId: candidate.id, decision: "DUPLICATE" }],
+        },
+        { actorId: admin.id },
+      ),
+    ).rejects.toMatchObject({
+      code: CONSULTATION_ERROR_CODES.duplicateDecisionConflict,
+    });
+
+    const rollbackRow = await fixtures.insertStaging("task3-audit-rollback", {
+      anomalyFlags: ["POSSIBLE_DUPLICATE"],
+    });
+    const rollbackPeer = await fixtures.insertStaging("task3-audit-rollback-peer", {
+      anomalyFlags: ["POSSIBLE_DUPLICATE"],
+    });
+    const [rollbackCandidate] = await database
+      .insert(consultationDuplicateCandidate)
+      .values({
+        firstStagingId: rollbackRow.id < rollbackPeer.id ? rollbackRow.id : rollbackPeer.id,
+        secondStagingId: rollbackRow.id < rollbackPeer.id ? rollbackPeer.id : rollbackRow.id,
+        ruleCode: "exact_person_date_career_tutor",
+        matchKeyHash: "f".repeat(64),
+      })
+      .returning();
+    if (rollbackCandidate === undefined) {
+      throw new Error("The rollback duplicate candidate fixture was not created.");
+    }
+
+    await expect(
+      decideConsultationReview(
+        database,
+        rollbackRow.id,
+        {
+          expectedVersion: 1,
+          duplicateDecisions: [
+            { candidateId: rollbackCandidate.id, decision: "DUPLICATE" },
+          ],
+        },
+        { actorId: admin.id, requestId: "r".repeat(256) },
+      ),
+    ).rejects.toMatchObject({
+      code: CONSULTATION_ERROR_CODES.transactionFailed,
+    });
+    const [unchangedStaging] = await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.id, rollbackRow.id));
+    const [unchangedCandidate] = await database
+      .select()
+      .from(consultationDuplicateCandidate)
+      .where(eq(consultationDuplicateCandidate.id, rollbackCandidate.id));
+    expect(unchangedStaging).toMatchObject({
+      status: "PENDING_REVIEW",
+      reviewVersion: 1,
+    });
+    expect(unchangedCandidate).toMatchObject({
+      decision: "PENDING",
+      duplicateStagingId: null,
+      decidedBy: null,
+    });
+  });
+
+  it("enforces database-backed Admin authorization on consultation APIs", async () => {
+    const database = getIntegrationDatabase();
+    const { admin, tutor: tutorIdentity } = await seedIdentities();
+    const fixtures = await seedConsultationReviewData(admin.id);
+    const staging = await fixtures.insertStaging("task3-admin-route-auth");
+    const detailRequest = new Request(
+      `http://localhost/api/admin/consultations/review/${staging.id}`,
+    );
+    const listRequest = new Request("http://localhost/api/admin/consultations");
+    const reviewContext = { params: Promise.resolve({ stagingId: staging.id }) };
+
+    authMocks.getSession.mockResolvedValue({ user: { id: tutorIdentity.id } });
+    const tutorResponses = await Promise.all([
+      getAdminConsultations(listRequest),
+      getAdminConsultationReview(detailRequest, reviewContext),
+      patchAdminConsultationReview(
+        makeJsonRequest(
+          `http://localhost/api/admin/consultations/review/${staging.id}`,
+          "PATCH",
+          { expectedVersion: 1, classification: "GENERAL" },
+        ),
+        reviewContext,
+      ),
+    ]);
+    expect(tutorResponses.map((response) => response.status)).toEqual([
+      403,
+      403,
+      403,
+    ]);
+    expect(tutorResponses.every((response) => response.headers.get("Cache-Control") === "no-store")).toBe(true);
+    const [unchanged] = await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.id, staging.id));
+    expect(unchanged).toMatchObject({ status: "PENDING_REVIEW", reviewVersion: 1 });
+
+    authMocks.getSession.mockResolvedValue({ user: { id: admin.id } });
+    const adminWorkspace = await getAdminConsultations(listRequest);
+    const adminDetail = await getAdminConsultationReview(detailRequest, reviewContext);
+    expect(adminWorkspace.status).toBe(200);
+    expect(adminDetail.status).toBe(200);
+    const adminDecision = await patchAdminConsultationReview(
+      makeJsonRequest(
+        `http://localhost/api/admin/consultations/review/${staging.id}`,
+        "PATCH",
+        { expectedVersion: 1, classification: "GENERAL" },
+      ),
+      reviewContext,
+    );
+    expect(adminDecision.status).toBe(200);
+    expect(await adminDecision.json()).toMatchObject({
+      outcome: "consolidated",
+      review: { status: "CONSOLIDATED", classification: "GENERAL" },
+    });
+  });
+
+  it("rejects a concurrent source read and recovers an expired import lease", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const config = consultationSourceConfigSchema.parse({
+      spreadsheetId: "synthetic-lease-sheet",
+      range: "Responses!A:I",
+      serviceAccountEmail: "consultations@example.test",
+      privateKey:
+        "-----BEGIN PRIVATE KEY-----\nsynthetic-integration-key\n-----END PRIVATE KEY-----",
+      headerMap: {
+        career: "Career",
+        studentFirstName: "First name",
+        studentLastName: "Last name",
+        consultationDate: "Date",
+        tutor: "Tutor",
+        academicStage: "Stage",
+        modality: "Modality",
+        topic: "Topic",
+      },
+    });
+    const sourceConfiguration = { status: "configured" as const, config };
+    const fixedTime = new Date("2026-09-22T13:00:00.000Z");
+    let signalStarted: (() => void) | undefined;
+    let releaseRead: ((batch: { sourceTab: string; rows: unknown[] }) => void) | undefined;
+    const readStarted = new Promise<void>((resolve) => {
+      signalStarted = resolve;
+    });
+    const blockedRead = new Promise<{ sourceTab: string; rows: unknown[] }>((resolve) => {
+      releaseRead = resolve;
+    });
+    const sourceAdapter: ConsultationSourceAdapter = {
+      readRows: vi.fn(() => {
+        signalStarted?.();
+        return blockedRead;
+      }),
+    };
+    const dependencies = {
+      db: database,
+      sourceConfiguration,
+      sourceAdapter,
+      now: () => new Date(fixedTime),
+    };
+
+    const activeImport = importConsultationRows({ actorId: admin.id }, dependencies);
+    await readStarted;
+    const concurrentImport = await importConsultationRows(
+      { actorId: admin.id },
+      dependencies,
+    );
+    expect(concurrentImport).toMatchObject({
+      outcome: "conflict",
+      summary: { status: "RUNNING", errorCode: null },
+    });
+    expect(sourceAdapter.readRows).toHaveBeenCalledOnce();
+    releaseRead?.({ sourceTab: "Responses", rows: [] });
+    expect(await activeImport).toMatchObject({ outcome: "completed" });
+
+    const [expiredRun] = await database
+      .insert(consultationImportRun)
+      .values({
+        actorId: admin.id,
+        status: "RUNNING",
+        sourceSpreadsheetId: config.spreadsheetId,
+        sourceRange: config.range,
+        startedAt: new Date(fixedTime.getTime() - 31 * 60 * 1000),
+      })
+      .returning({ id: consultationImportRun.id });
+    if (expiredRun === undefined) {
+      throw new Error("The expired import lease fixture was not created.");
+    }
+
+    const activeRunsBeforeRecovery = await database
+      .select({ id: consultationImportRun.id, startedAt: consultationImportRun.startedAt })
+      .from(consultationImportRun)
+      .where(
+        and(
+          eq(consultationImportRun.status, "RUNNING"),
+          eq(consultationImportRun.sourceSpreadsheetId, config.spreadsheetId),
+          eq(consultationImportRun.sourceRange, config.range),
+        ),
+      );
+    expect(activeRunsBeforeRecovery.map((run) => run.id)).toEqual([expiredRun.id]);
+
+    const recoveredImport = await importConsultationRows(
+      { actorId: admin.id },
+      {
+        ...dependencies,
+        sourceAdapter: { async readRows() { return { sourceTab: "Responses", rows: [] }; } },
+      },
+    );
+    expect(recoveredImport.outcome).toBe("completed");
+    const [recoveredRun] = await database
+      .select()
+      .from(consultationImportRun)
+      .where(eq(consultationImportRun.id, expiredRun.id));
+    expect(recoveredRun).toMatchObject({
+      status: "FAILED",
+      errorCode: "import_lease_expired",
+    });
   });
 
   it("persists hour accounting facts and enforces non-destructive constraints", async () => {
