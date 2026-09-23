@@ -63,6 +63,7 @@ import {
   E2E_TUTOR_USER_ID,
   E2E_UNLINKED_TUTOR_USER_ID,
 } from "./e2e-test-data";
+import { startConsultationSourceFixture, type StartedConsultationSourceFixture } from "./consultation-source-fixture";
 
 const POSTGRES_IMAGE = "postgres:16.4-alpine";
 const E2E_DATABASE_NAME = "sgta_e2e";
@@ -70,6 +71,7 @@ const E2E_DATABASE_USER = "sgta_e2e";
 const E2E_DATABASE_PASSWORD = "sgta_e2e_password";
 let container: StartedPostgreSqlContainer | undefined;
 let databaseHandle: DatabaseHandle | undefined;
+let consultationSourceFixture: StartedConsultationSourceFixture | undefined;
 let serverProcess: ReturnType<typeof spawn> | undefined;
 let shuttingDown = false;
 
@@ -482,11 +484,28 @@ async function seedDatabase() {
 async function closeDatabase() {
   const currentHandle = databaseHandle;
   const currentContainer = container;
+  const currentSourceFixture = consultationSourceFixture;
   databaseHandle = undefined;
   container = undefined;
+  consultationSourceFixture = undefined;
 
-  await currentHandle?.close();
-  await currentContainer?.stop();
+  let cleanupError: unknown;
+  try {
+    await currentHandle?.close();
+  } catch (error) {
+    cleanupError = error;
+  }
+  try {
+    await currentContainer?.stop();
+  } catch (error) {
+    cleanupError ??= error;
+  }
+  try {
+    await currentSourceFixture?.close();
+  } catch (error) {
+    cleanupError ??= error;
+  }
+  if (cleanupError !== undefined) throw cleanupError;
 }
 
 async function shutdown(exitCode: number) {
@@ -505,6 +524,7 @@ async function shutdown(exitCode: number) {
 }
 
 async function main() {
+  consultationSourceFixture = await startConsultationSourceFixture();
   container = await new PostgreSqlContainer(POSTGRES_IMAGE)
     .withDatabase(E2E_DATABASE_NAME)
     .withUsername(E2E_DATABASE_USER)
@@ -535,6 +555,22 @@ async function main() {
       BETTER_AUTH_SECRET: E2E_AUTH_SECRET,
       GOOGLE_CLIENT_ID: "e2e-google-client-id",
       GOOGLE_CLIENT_SECRET: "e2e-google-client-secret",
+      GOOGLE_SHEETS_SPREADSHEET_ID: "e2e_consultation_source",
+      GOOGLE_SHEETS_RANGE: "Consultations!A:I",
+      GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: "consultation-reader@example.test",
+      GOOGLE_SHEETS_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----e2e-only-not-a-credential-----END PRIVATE KEY-----",
+      GOOGLE_SHEETS_HEADER_MAP: JSON.stringify({
+        career: "Career",
+        studentFirstName: "Student first name",
+        studentLastName: "Student last name",
+        consultationDate: "Consultation date",
+        tutor: "Tutor",
+        academicStage: "Academic stage",
+        modality: "Modality",
+        topic: "Topic",
+        contact: "Contact",
+      }),
+      SGTA_E2E_CONSULTATION_SOURCE_URL: consultationSourceFixture.apiBaseUrl,
       NEXT_TELEMETRY_DISABLED: "1",
       PORT: "3000",
     },

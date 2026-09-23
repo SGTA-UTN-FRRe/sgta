@@ -38,6 +38,26 @@ const optionalApplicationUrl = z.preprocess(
     .optional(),
 );
 
+const optionalTestSourceUrl = z.preprocess(
+  emptyToUndefined,
+  z
+    .string()
+    .trim()
+    .url("must be a valid URL")
+    .refine((value) => {
+      const url = new URL(value);
+      return (
+        url.protocol === "http:" &&
+        url.hostname === "127.0.0.1" &&
+        url.port.length > 0 &&
+        url.pathname === "/" &&
+        url.search.length === 0 &&
+        url.hash.length === 0
+      );
+    }, "must be a loopback HTTP URL with an explicit port")
+    .optional(),
+);
+
 function isHttpUrl(value: string) {
   try {
     const protocol = new URL(value).protocol;
@@ -88,6 +108,7 @@ const serverEnvSchema = z
     GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: optionalNonEmptyString,
     GOOGLE_SHEETS_PRIVATE_KEY: optionalNonEmptyString,
     GOOGLE_SHEETS_HEADER_MAP: optionalNonEmptyString,
+    SGTA_E2E_CONSULTATION_SOURCE_URL: optionalTestSourceUrl,
     TEST_DATABASE_URL: optionalPostgresUrl,
   })
   .superRefine((value, context) => {
@@ -99,6 +120,17 @@ const serverEnvSchema = z
         code: "custom",
         path: [hasClientId ? "GOOGLE_CLIENT_SECRET" : "GOOGLE_CLIENT_ID"],
         message: "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be provided together",
+      });
+    }
+
+    if (
+      value.SGTA_E2E_CONSULTATION_SOURCE_URL !== undefined &&
+      value.NODE_ENV !== "test"
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["SGTA_E2E_CONSULTATION_SOURCE_URL"],
+        message: "is available only when NODE_ENV is test",
       });
     }
   });

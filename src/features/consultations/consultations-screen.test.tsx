@@ -306,10 +306,18 @@ describe("ConsultationsScreen", () => {
     expect(await screen.findAllByText("Álgebra lineal")).not.toHaveLength(0);
   });
 
-  it("distinguishes search-empty results and rejects invalid URL filters", async () => {
+  it("shows search-empty after a successful import and rejects invalid URL filters", async () => {
     const user = userEvent.setup();
-    fetchMock.mockResolvedValue(jsonResponse(createConsultationWorkspace({ rows: [], totalRows: 0, reviewQueue: [] })));
+    fetchMock.mockImplementation(async (_input: RequestInfo | URL, init?: RequestInit) =>
+      init?.method === "POST"
+        ? jsonResponse({ outcome: "completed", summary: createConsultationWorkspace().import })
+        : jsonResponse(createConsultationWorkspace({ rows: [], totalRows: 0, reviewQueue: [] })),
+    );
     renderScreen();
+
+    await user.click(screen.getByRole("button", { name: "Actualizar consultas" }));
+    expect(await screen.findByText(/Actualización completada:/)).toBeInTheDocument();
+    expect(screenRoot()).toHaveAttribute("data-state", "success");
     await user.type(screen.getByRole("searchbox", { name: "Buscar consultas" }), "sin coincidencias");
 
     expect(await screen.findByText("No hay resultados para estos filtros")).toBeInTheDocument();

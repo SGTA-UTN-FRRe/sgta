@@ -380,6 +380,30 @@ function sourceFailureCode(error: unknown) {
   return CONSULTATION_SOURCE_ERROR_CODES.unavailable;
 }
 
+function createDefaultSourceAdapter(
+  config: Parameters<typeof createGoogleSheetsConsultationSourceAdapter>[0],
+): ConsultationSourceAdapter {
+  const environment = getServerEnv();
+
+  if (environment.NODE_ENV !== "test") {
+    return createGoogleSheetsConsultationSourceAdapter(config);
+  }
+
+  const apiBaseUrl = environment.SGTA_E2E_CONSULTATION_SOURCE_URL;
+  if (apiBaseUrl === undefined) {
+    return {
+      async readRows() {
+        throw new ConsultationSourceError(CONSULTATION_SOURCE_ERROR_CODES.unavailable);
+      },
+    };
+  }
+
+  return createGoogleSheetsConsultationSourceAdapter(config, {
+    apiBaseUrl,
+    getAccessToken: async () => "sgta-test-consultation-reader-token",
+  });
+}
+
 function toTimestamp(value: Date | null | undefined) {
   return value?.toISOString() ?? null;
 }
@@ -417,12 +441,19 @@ async function readLastSuccessfulAt(db: Database) {
 }
 
 function isUniqueViolation(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
-  );
+  const seen = new Set<object>();
+  let current = error;
+
+  while (typeof current === "object" && current !== null && !seen.has(current)) {
+    seen.add(current);
+    const queryError = current as { code?: unknown; cause?: unknown };
+    if (queryError.code === "23505") {
+      return true;
+    }
+    current = queryError.cause;
+  }
+
+  return false;
 }
 
 async function createFailedRun(
@@ -1139,8 +1170,7 @@ export async function importConsultationRows(
     };
   }
 
-  const source =
-    dependencies.sourceAdapter ?? createGoogleSheetsConsultationSourceAdapter(config);
+  const source = dependencies.sourceAdapter ?? createDefaultSourceAdapter(config);
   let batch: Awaited<ReturnType<ConsultationSourceAdapter["readRows"]>>;
   try {
     batch = await source.readRows({ maxRows: input.maxRows });

@@ -80,10 +80,15 @@ function valuesResponse(overrides: Record<string, unknown> = {}) {
 
 function createAdapter(
   fetchImpl: typeof fetch,
-  overrides: { getAccessToken?: () => Promise<string>; maxResponseBytes?: number } = {},
+  overrides: {
+    apiBaseUrl?: string;
+    getAccessToken?: () => Promise<string>;
+    maxResponseBytes?: number;
+  } = {},
 ) {
   return createGoogleSheetsConsultationSourceAdapter(sourceConfig, {
     fetchImpl,
+    apiBaseUrl: overrides.apiBaseUrl,
     getAccessToken: overrides.getAccessToken ?? vi.fn().mockResolvedValue("synthetic-access-token"),
     maxResponseBytes: overrides.maxResponseBytes,
   });
@@ -128,6 +133,23 @@ describe("Google Sheets consultation source", () => {
       },
     });
     expect(init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("can use an injected local source endpoint with a test access token", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(valuesResponse());
+    const source = createAdapter(fetchImpl, {
+      apiBaseUrl: "http://127.0.0.1:43127",
+      getAccessToken: vi.fn().mockResolvedValue("synthetic-fixture-token"),
+    });
+
+    await source.readRows({ maxRows: 2 });
+
+    const [url, init] = fetchImpl.mock.calls[0] ?? [];
+    expect(new URL(String(url)).origin).toBe("http://127.0.0.1:43127");
+    expect(init).toMatchObject({
+      method: "GET",
+      headers: { Authorization: "Bearer synthetic-fixture-token" },
+    });
   });
 
   it("creates stable fingerprints from approved fields only", async () => {

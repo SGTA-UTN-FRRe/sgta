@@ -365,17 +365,19 @@ export function ConsultationsScreen({
       ? "error"
       : listError !== null || (importError !== null && workspace?.import.status !== "FAILED")
         ? "error"
-      : importMessage
-        ? "success"
-        : workspace?.import.status === "FAILED"
-          ? "unavailable"
-          : workspace?.import.status === "PARTIAL"
-            ? "degraded"
-            : hasVisibleRecords
-              ? "default"
+      : workspace?.import.status === "FAILED"
+        ? "unavailable"
+        : workspace?.import.status === "PARTIAL"
+          ? "degraded"
+          : hasVisibleRecords
+              ? importMessage
+                ? "success"
+                : "default"
               : activeFilters
                 ? "search-empty"
-                : "empty";
+                : importMessage
+                  ? "success"
+                  : "empty";
 
   const fetchWorkspace = useCallback(
     async (nextFilters: ConsultationFilterState, signal?: AbortSignal) => {

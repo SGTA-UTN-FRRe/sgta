@@ -62,6 +62,7 @@ export type ConsultationSourceAdapter = {
 export type ConsultationSourceAdapterDependencies = {
   fetchImpl?: typeof fetch;
   getAccessToken?: () => Promise<string>;
+  apiBaseUrl?: string;
   timeoutMs?: number;
   maxResponseBytes?: number;
 };
@@ -316,6 +317,7 @@ export function createGoogleSheetsConsultationSourceAdapter(
   const timeoutMs = dependencies.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const maxResponseBytes = dependencies.maxResponseBytes ?? MAX_RESPONSE_BYTES;
   const fetchImpl = dependencies.fetchImpl ?? globalThis.fetch;
+  const apiBaseUrl = dependencies.apiBaseUrl ?? SHEETS_VALUES_ENDPOINT;
   const authClient =
     dependencies.getAccessToken === undefined
       ? new JWT({
@@ -365,7 +367,7 @@ export function createGoogleSheetsConsultationSourceAdapter(
       const accessToken = await getAccessToken();
       const endpoint = new URL(
         `/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}/values/${encodeURIComponent(config.range)}`,
-        SHEETS_VALUES_ENDPOINT,
+        apiBaseUrl,
       );
       endpoint.searchParams.set("majorDimension", "ROWS");
       endpoint.searchParams.set("valueRenderOption", "FORMATTED_VALUE");

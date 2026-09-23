@@ -236,7 +236,16 @@ async function expectPostgresErrorCode(
   operation: Promise<unknown>,
   code: string,
 ) {
-  await expect(operation).rejects.toMatchObject({ code });
+  const error = await operation.then(
+    () => null,
+    (caught: unknown) => caught,
+  );
+  expect(error).not.toBeNull();
+  const queryError = error as {
+    code?: string;
+    cause?: { code?: string };
+  };
+  expect(queryError.code ?? queryError.cause?.code).toBe(code);
 }
 
 function makeJsonRequest(
@@ -509,6 +518,7 @@ describe("PostgreSQL foundation integration", () => {
             'consultation_staging_source_identity_bounds_check',
             'consultation_staging_source_fingerprint_check',
             'consultation_staging_anomaly_flags_bounds_check',
+            'consultation_staging_acknowledged_anomalies_bounds_check',
             'consultation_staging_raw_field_bounds_check',
             'consultation_staging_normalized_field_bounds_check',
             'consultation_staging_classification_subject_check',
@@ -1703,6 +1713,18 @@ describe("PostgreSQL foundation integration", () => {
     if (expiredRun === undefined) {
       throw new Error("The expired import lease fixture was not created.");
     }
+
+    const activeRunsBeforeRecovery = await database
+      .select({ id: consultationImportRun.id, startedAt: consultationImportRun.startedAt })
+      .from(consultationImportRun)
+      .where(
+        and(
+          eq(consultationImportRun.status, "RUNNING"),
+          eq(consultationImportRun.sourceSpreadsheetId, config.spreadsheetId),
+          eq(consultationImportRun.sourceRange, config.range),
+        ),
+      );
+    expect(activeRunsBeforeRecovery.map((run) => run.id)).toEqual([expiredRun.id]);
 
     const recoveredImport = await importConsultationRows(
       { actorId: admin.id },

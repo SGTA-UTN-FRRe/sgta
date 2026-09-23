@@ -9,6 +9,7 @@ export const E2E_SECONDARY_TUTOR_USER_ID = "e2e-secondary-tutor-user";
 export const E2E_UNLINKED_TUTOR_USER_ID = "e2e-unlinked-tutor-user";
 
 export const E2E_AUTH_SECRET = "e2e-only-secret-12345678901234567890";
+export const E2E_CONSULTATION_CONTACT = "casey.duplicate@example.test";
 
 export const E2E_CYCLE_ID = "11111111-1111-4111-8111-111111111111";
 export const E2E_CAREER_ID = "22222222-2222-4222-8222-222222222222";

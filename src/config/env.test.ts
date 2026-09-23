@@ -100,4 +100,27 @@ describe("server environment configuration", () => {
     );
     expect(() => getDatabaseUrl("application", env)).toThrow("DATABASE_URL");
   });
+
+  it("accepts only an explicit loopback consultation source in test mode", () => {
+    const sourceUrl = "http://127.0.0.1:43127";
+
+    expect(
+      parseServerEnv({
+        NODE_ENV: "test",
+        SGTA_E2E_CONSULTATION_SOURCE_URL: sourceUrl,
+      }).SGTA_E2E_CONSULTATION_SOURCE_URL,
+    ).toBe(sourceUrl);
+    expect(() =>
+      parseServerEnv({
+        NODE_ENV: "development",
+        SGTA_E2E_CONSULTATION_SOURCE_URL: sourceUrl,
+      }),
+    ).toThrow("is available only when NODE_ENV is test");
+    expect(() =>
+      parseServerEnv({
+        NODE_ENV: "test",
+        SGTA_E2E_CONSULTATION_SOURCE_URL: "https://sheets.googleapis.com",
+      }),
+    ).toThrow("must be a loopback HTTP URL with an explicit port");
+  });
 });
