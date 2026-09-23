@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml/badge.svg)](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml)
 
-> Current repository status: an executable Next.js application with live tutor self-service, academic, hour-accounting, scheduling, attendance, and consultation-intake workflows, the SGTA UI, and a secure platform foundation.
+> Current repository status: an executable Next.js application with a live Admin overview and reports, tutor self-service, academic, hour-accounting, scheduling, attendance, and consultation-intake workflows, the SGTA UI, and a secure platform foundation.
 
-SGTA is the operational workspace for the Tutorias area at UTN FRRe. The repository currently contains the application shell, protected role-based navigation, PostgreSQL persistence, provisioned Google-only authentication, AdministrativeCycle lifecycle controls, live Tutor self-service, Admin tutor, academic catalog, hour-accounting, scheduling, attendance, and consultation-intake operations, safe audit events, and shared UI components. Reporting and production workflows remain deferred.
+SGTA is the operational workspace for the Tutorias area at UTN FRRe. The repository currently contains the application shell, protected role-based navigation, PostgreSQL persistence, provisioned Google-only authentication, AdministrativeCycle lifecycle controls, the live Admin overview and canonical operational reports, Tutor self-service, Admin tutor and academic catalog workflows, hour accounting, scheduling, attendance, consultation intake, safe audit events, and shared UI components. Production workflows remain deferred.
 
 ## Current state
 
@@ -13,6 +13,8 @@ The current runtime provides:
 - a public `/login` route, with `/` routing enabled Admins to `/admin`, enabled Tutors to `/tutor`, and other requests to `/login`;
 - server-side Admin and Tutor page guards, with `/forbidden` recovery and `401`/`403` API responses;
 - Admin route surfaces for the overview, live tutor and Materias workflows, schedules, hours, consultations, reports, and configuration;
+- a live `/admin` overview with current-cycle context, actionable attendance, balance, and consultation attention, today's and upcoming duties, and deliberate consultation-source degradation;
+- read-only `/admin/reports` with shareable period and dimension filters, canonical consultation demand, current-cycle coverage and balances, planned attendance, movements, and activities;
 - live Admin tutor management at `/admin/tutors`, including search/filter, create/edit, academic relationships, current-cycle membership, and non-destructive inactivation/reactivation;
 - derived current-cycle Materias coverage at `/admin/tutors/subjects`, reconstructed from canonical Subject, TutorSubject, Tutor, and TutorCycleMembership rows;
 - low-frequency Career, Subject, and scholarship-reference maintenance from `/admin/settings`, with active/inactive lifecycle controls and no hard deletion;
@@ -27,16 +29,16 @@ The current runtime provides:
 - cycle administration at `/admin/settings`, including current-cycle context, explicit close confirmation, preserved history, and recovery states;
 - append-only audit recording for provisioning, session creation, cycle creation/close, and consultation import/review with bounded non-sensitive metadata;
 - shared components for navigation, page headers, empty states, status badges, Faro branding, buttons, cards, inputs, and tables;
-- unit/component tests, protected route coverage, isolated PostgreSQL/Testcontainers integration tests, and Playwright coverage for unauthenticated protection plus authenticated Tutor self-service and Admin tutor/Materias, scheduling/attendance, hour-accounting, and consultation journeys across supported viewports.
+- unit/component tests, protected route coverage, isolated PostgreSQL/Testcontainers integration tests, and Playwright coverage for unauthenticated protection plus authenticated Tutor self-service and Admin overview/reporting, tutor/Materias, scheduling/attendance, hour-accounting, and consultation journeys across supported viewports.
 
-The Admin report page remains a scaffold and does not yet read or write reporting data. Consultation Sheets access is a server-only, read-only boundary; Admin curation controls staging and canonical records, while source failures leave canonical history available. The Admin schedule page supports protected regular/special plan creation, switching, assignment editing, lifecycle changes, conflict feedback, stable occurrence materialization, and responsive live refreshes. Attendance supports date-scoped occurrence marking, explicit active-category absence debit decisions, persisted absence-without-debit state, traceable correction, recovery recognition, and historical reads after cycle close. Tutor self-service pages are live read-only views backed by server-side owner resolution for the current cycle, scholarship reference, effective schedule, signed balance, and movement history. Protected Tutor, Materias, Settings, consultation, and API surfaces require the server-side identity and role boundary when authentication is configured.
+The Admin overview and reports read current canonical operational data on the server. Reports use URL-backed filters and do not persist results or query the consultation source; a source outage leaves consolidated consultation reporting available. Consultation Sheets access remains a server-only, read-only boundary; Admin curation controls staging and canonical records, while source failures leave canonical history available. The Admin schedule page supports protected regular/special plan creation, switching, assignment editing, lifecycle changes, conflict feedback, stable occurrence materialization, and responsive live refreshes. Attendance supports date-scoped occurrence marking, explicit active-category absence debit decisions, persisted absence-without-debit state, traceable correction, recovery recognition, and historical reads after cycle close. Tutor self-service pages are live read-only views backed by server-side owner resolution for the current cycle, scholarship reference, effective schedule, signed balance, and movement history. Protected Tutor, Materias, Settings, consultation, and API surfaces require the server-side identity and role boundary when authentication is configured.
 
 ## Not implemented in the current runtime
 
 The following remain future work described by the shared decision documents:
 
 - formal scholarship certification;
-- reporting, production deployment, backups, and operational data migration.
+- production deployment, backups, and operational data migration.
 
 The configured Google path still requires deployment credentials and provider setup; no real account or production data is included in the repository. Do not treat target-state statements in `docs/` as evidence that deferred capabilities already run in the application.
 
@@ -69,7 +71,7 @@ Server session and role boundary
    └──► Drizzle / PostgreSQL (src/db/)
 ```
 
-The `src/auth/` and `src/db/` directories are active server-only boundaries. `src/features/` contains the implemented cycle/settings, Tutor self-service and academic, scheduling/attendance, hour-accounting, and consultation-intake slices while reporting and later domain verticals remain unimplemented. Client components receive safe display data and do not own authentication or role decisions.
+The `src/auth/` and `src/db/` directories are active server-only boundaries. `src/features/` contains the implemented Admin overview and reporting, cycle/settings, Tutor self-service and academic, scheduling/attendance, hour-accounting, and consultation-intake slices plus reserved locations for later domain verticals. Client components receive safe display data and do not own authentication or role decisions.
 
 ## Current routes
 
@@ -77,7 +79,7 @@ The `src/auth/` and `src/db/` directories are active server-only boundaries. `sr
 | --- | --- |
 | `/` | Routes an enabled Admin to `/admin`, an enabled Tutor to `/tutor`, and other requests to `/login`. |
 | `/login` | Restricted Google sign-in screen for enabled provisioned identities. |
-| `/admin` | Admin-protected shell with overview skeleton. |
+| `/admin` | Admin-protected live operational overview with attention links, cycle context, and today/upcoming duties. |
 | `/admin/tutors` | Admin-protected live tutor management and academic relationship workflow. |
 | `/admin/tutors/subjects` | Admin-protected derived Materias coverage for the open cycle. |
 | `/admin/schedules` | Admin-protected live schedule planning and editing for cycle plans and assignments. |
@@ -85,7 +87,7 @@ The `src/auth/` and `src/db/` directories are active server-only boundaries. `sr
 | `/admin/hours` | Admin-protected live hour balances and movement registration. |
 | `/admin/hours/movements` | Admin-protected movement history and reversal workflow. |
 | `/admin/consultations` | Admin-protected consultation import, review, classification, filtering, and canonical history. |
-| `/admin/reports` | Reporting route skeleton. |
+| `/admin/reports` | Admin-protected read-only operational reports with URL-backed period and dimension filters. |
 | `/admin/settings` | Admin-protected AdministrativeCycle lifecycle, low-frequency reference-data, and hour-category controls. |
 | `/tutor` | Tutor-protected owner-scoped current-cycle summary. |
 | `/tutor/schedule` | Tutor-protected effective schedule with regular/special plan resolution. |

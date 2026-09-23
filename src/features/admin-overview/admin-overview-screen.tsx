@@ -12,10 +12,12 @@ import type { ReactNode } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import {
   adminOverviewStateFixtures,
-  type AdminOverviewScreenData,
-  type AttentionItem,
-  type AttentionTone,
 } from "@/mocks/admin-overview.mock";
+import type {
+  AdminOverviewScreenData,
+  AttentionItem,
+  AttentionTone,
+} from "@/features/admin-overview/admin-overview-types";
 import type { ScreenStateFixture } from "@/mocks/screen-state";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
@@ -125,7 +127,16 @@ function CycleContext({
     );
   }
 
-  const currentDate = data.upcomingDuties[0]?.date ?? "2026-09-16";
+  if (data.cycle === null) {
+    return (
+      <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <StatusBadge label="Ciclo no disponible" variant="danger" />
+        <span className="text-sm text-foreground-secondary">
+          No se pudo consultar el ciclo administrativo vigente.
+        </span>
+      </span>
+    );
+  }
 
   return (
     <span className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-foreground-secondary">
@@ -139,7 +150,9 @@ function CycleContext({
       </span>
       <span className="inline-flex items-center gap-1.5">
         <CalendarDays aria-hidden="true" className="h-4 w-4" />
-        <time dateTime={currentDate}>{formatDateContext(currentDate)}</time>
+        <time dateTime={data.currentDate}>
+          {formatDateContext(data.currentDate)}
+        </time>
       </span>
       <StatusBadge
         label={data.cycle.statusLabel}
@@ -324,14 +337,21 @@ function AttentionSection({
 
       {(state === "default" || state === "degraded") && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.attention
-            .filter(
-              (item) =>
-                state !== "degraded" || item.id !== "consultations-to-review",
-            )
-            .map((item) => (
-              <AttentionCard key={item.id} {...item} />
-            ))}
+          {data.attention.map((item) => (
+            <AttentionCard key={item.id} {...item} />
+          ))}
+
+          {(data.attentionFailures ?? []).map((failure) => (
+            <OverviewNotice
+              actionHref={failure.actionHref}
+              actionLabel={failure.actionLabel}
+              description={failure.description}
+              icon={<CircleAlert aria-hidden="true" className="h-5 w-5" />}
+              key={failure.id}
+              title={failure.title}
+              tone="danger"
+            />
+          ))}
 
           {state === "degraded" && stateData && (
             <OverviewNotice
@@ -343,6 +363,16 @@ function AttentionSection({
               tone="warning"
             />
           )}
+
+          {data.attention.length === 0 &&
+            (data.attentionFailures ?? []).length === 0 &&
+            state === "degraded" && (
+              <EmptyState
+                className="min-h-[14rem]"
+                description="La operación del ciclo está al día. Las nuevas tareas aparecerán aquí cuando requieran seguimiento."
+                title={data.emptyAttentionLabel}
+              />
+            )}
         </div>
       )}
     </section>
@@ -352,7 +382,7 @@ function AttentionSection({
 function DutyRow({
   date,
   dayLabel,
-  location,
+  modality,
   time,
   tutor,
 }: AdminOverviewScreenData["upcomingDuties"][number]) {
@@ -378,7 +408,9 @@ function DutyRow({
             <Clock3 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
             <span>{time}</span>
           </p>
-          <p className="mt-1 truncate text-xs text-foreground-muted">{location}</p>
+          <p className="mt-1 truncate text-xs text-foreground-muted">
+            Modalidad: {modality}
+          </p>
         </div>
 
         <ArrowUpRight
@@ -449,6 +481,22 @@ function UpcomingSection({
 
       {isLoading ? (
         <DutySkeletons />
+      ) : data.upcomingFailure !== undefined &&
+        data.upcomingFailure !== null ? (
+        <OverviewNotice
+          actionHref={data.upcomingFailure.actionHref}
+          actionLabel={data.upcomingFailure.actionLabel}
+          description={data.upcomingFailure.description}
+          icon={<CircleAlert aria-hidden="true" className="h-5 w-5" />}
+          title={data.upcomingFailure.title}
+          tone="danger"
+        />
+      ) : data.upcomingDuties.length === 0 ? (
+        <EmptyState
+          className="min-h-[10rem]"
+          description="No hay guardias programadas para los próximos días del ciclo."
+          title="Sin guardias próximas"
+        />
       ) : (
         <ol className="overflow-hidden rounded-md border border-border bg-surface">
           {data.upcomingDuties.map((duty) => (

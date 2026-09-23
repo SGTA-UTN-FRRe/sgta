@@ -6,6 +6,7 @@ import {
   E2E_AUTH_SECRET,
   E2E_CAREER_ID,
   E2E_CONSULTATION_CONTACT,
+  E2E_PRIMARY_TUTOR_ID,
   E2E_TUTOR_SESSION_TOKEN,
 } from "./e2e-test-data";
 
@@ -213,6 +214,85 @@ test.describe("authenticated Admin consultation workflow", () => {
       .toBeVisible();
     await expect(page).toHaveURL(/careerId=/);
     await expect(page).not.toHaveURL(/search=/);
+
+    await page.goto(
+      "/admin/reports?fromDate=2027-01-15&toDate=2027-01-17",
+    );
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Reportes" }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Desde")).toHaveValue("2027-01-15");
+    await expect(page.getByLabel("Hasta")).toHaveValue("2027-01-17");
+    await expect(page.getByText("Consultas consolidadas en el período")).toBeVisible();
+    await expect(page.getByText("2", { exact: true }).first()).toBeVisible();
+
+    await page.getByRole("combobox", { name: "Carrera" }).selectOption(E2E_CAREER_ID);
+    await page.getByRole("combobox", { name: "Materia" }).selectOption(
+      "33333333-3333-4333-8333-333333333333",
+    );
+    await page.getByRole("combobox", { name: "Tutor" }).selectOption(E2E_PRIMARY_TUTOR_ID);
+    await page.getByRole("combobox", { name: "Modalidad" }).selectOption("Remote");
+    await page.getByRole("button", { name: "Aplicar filtros" }).click();
+    await expect(page).toHaveURL(/careerId=/);
+    await expect(page).toHaveURL(/subjectId=/);
+    await expect(page).toHaveURL(/tutorId=/);
+    await expect(page).toHaveURL(/modality=Remote/);
+    const reportFilters = page.locator('form[action="/admin/reports"]');
+    await expect(reportFilters.getByLabel("Materia")).toHaveValue(
+      "33333333-3333-4333-8333-333333333333",
+    );
+    await page.reload();
+    await expect(reportFilters.getByLabel("Modalidad")).toHaveValue("Remote");
+
+    const rankedTable = page.getByRole("region", { name: "Carrera" });
+    await rankedTable.focus();
+    await expect(rankedTable).toBeFocused();
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 768, height: 1024 },
+      { width: 1440, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Reportes" }),
+      ).toBeVisible();
+      const pageWidth = await page.evaluate(
+        () => document.documentElement.scrollWidth,
+      );
+      expect(pageWidth, `Reportes overflows at ${viewport.width}px`).toBeLessThanOrEqual(
+        viewport.width,
+      );
+    }
+
+    await page.goto(
+      "/admin/reports?fromDate=2026-01-01&toDate=2026-01-01",
+    );
+    await expect(
+      page.getByRole("heading", {
+        level: 3,
+        name: "No hay datos para los filtros seleccionados.",
+      }),
+    ).toBeVisible();
+    await page.getByRole("link", { name: "Restablecer filtros" }).click();
+    await expect(page).toHaveURL("http://localhost:3000/admin/reports");
+
+    await page.goto(
+      "/admin/reports?fromDate=2027-01-15&toDate=2027-01-17",
+    );
+    await expect(page.getByText("2", { exact: true }).first()).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(E2E_CONSULTATION_CONTACT);
+    await expect(page.locator("body")).not.toContainText("Casey");
+
+    await page.goto("/admin");
+    await expect(page.locator('[data-slot="admin-overview-screen"]')).toHaveAttribute(
+      "data-state",
+      "degraded",
+    );
+    await expect(page.getByRole("link", { name: /Revisar consultas/i })).toHaveAttribute(
+      "href",
+      "/admin/consultations",
+    );
+    await expect(page.getByRole("heading", { level: 2, name: "Hoy" })).toBeVisible();
 
     const signedTutorToken = `${E2E_TUTOR_SESSION_TOKEN}.${await makeSignature(
       E2E_TUTOR_SESSION_TOKEN,

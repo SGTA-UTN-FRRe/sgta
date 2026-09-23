@@ -1,39 +1,13 @@
 import type { ScreenStateFixture } from "./screen-state";
+import type { AdminOverviewScreenData } from "@/features/admin-overview/admin-overview-types";
 
-export type AttentionTone = "warning" | "danger" | "info";
-
-export interface CycleSummary {
-  name: string;
-  period: string;
-  status: "open" | "closed";
-  statusLabel: string;
-}
-
-export interface AttentionItem {
-  id: string;
-  label: string;
-  count: number;
-  description: string;
-  href: string;
-  tone: AttentionTone;
-}
-
-export interface DutyView {
-  id: string;
-  date: string;
-  dayLabel: string;
-  time: string;
-  tutor: string;
-  location: string;
-}
-
-export interface AdminOverviewScreenData {
-  cycle: CycleSummary;
-  attention: AttentionItem[];
-  upcomingDuties: DutyView[];
-  emptyAttentionLabel: string;
-  requiredCycleAction: string;
-}
+export type {
+  AdminOverviewScreenData,
+  AttentionItem,
+  AttentionTone,
+  CycleSummary,
+  DutyView,
+} from "@/features/admin-overview/admin-overview-types";
 
 export const adminOverviewScreenData = {
   cycle: {
@@ -42,13 +16,14 @@ export const adminOverviewScreenData = {
     status: "open",
     statusLabel: "Ciclo abierto",
   },
+  currentDate: "2026-09-16",
   attention: [
     {
       id: "pending-attendance",
       label: "Asistencia pendiente",
       count: 3,
       description: "Guardias de los últimos dos días esperan registro.",
-      href: "/admin/schedules?view=attendance",
+      href: "/admin/schedules/attendance?date=2026-09-16",
       tone: "warning",
     },
     {
@@ -56,7 +31,7 @@ export const adminOverviewScreenData = {
       label: "Saldo negativo",
       count: 2,
       description: "Tutores que requieren seguimiento de horas.",
-      href: "/admin/hours?status=owes",
+      href: "/admin/hours",
       tone: "danger",
     },
     {
@@ -64,7 +39,7 @@ export const adminOverviewScreenData = {
       label: "Consultas por revisar",
       count: 7,
       description: "Registros nuevos o con clasificación pendiente.",
-      href: "/admin/consultations?status=review",
+      href: "/admin/consultations?status=PENDING_REVIEW",
       tone: "info",
     },
   ],
@@ -75,7 +50,7 @@ export const adminOverviewScreenData = {
       dayLabel: "Hoy",
       time: "16:00 — 18:00",
       tutor: "Benítez, Marina",
-      location: "Aula 204 · Presencial",
+      modality: "Presencial",
     },
     {
       id: "duty-tomorrow-1",
@@ -83,7 +58,7 @@ export const adminOverviewScreenData = {
       dayLabel: "Mañana",
       time: "14:00 — 16:00",
       tutor: "Acosta, Tomás",
-      location: "Sala virtual · Remota",
+      modality: "Remota",
     },
     {
       id: "duty-friday-1",
@@ -91,7 +66,7 @@ export const adminOverviewScreenData = {
       dayLabel: "Viernes",
       time: "10:00 — 12:00",
       tutor: "Funes, Lucía",
-      location: "Aula 108 · Presencial",
+      modality: "Presencial",
     },
   ],
   emptyAttentionLabel: "No hay acciones pendientes.",
@@ -117,9 +92,10 @@ export const adminOverviewStateFixtures = [
   },
   {
     state: "degraded",
-    title: "Consultas temporalmente no disponibles",
-    description: "La fuente de consultas no responde. El resto de la operación sigue disponible.",
-    actionLabel: "Reintentar consultas",
+    title: "Importación de consultas con incidencias",
+    description:
+      "La última importación no se completó por completo. La cola local y el resto de la operación siguen disponibles.",
+    actionLabel: "Revisar consultas",
   },
   {
     state: "required-action",

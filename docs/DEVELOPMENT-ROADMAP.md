@@ -528,7 +528,7 @@ Integrate the external consultation source through a safe, reviewable, read-only
 ### Phase 10 - Admin overview and reporting
 
 - **Priority:** P0
-- **Status:** Planned
+- **Status:** Complete
 - **Depends on:** canonical operational and consultation modules
 
 #### Objective
@@ -564,11 +564,11 @@ Visualization:
 
 #### Exit criteria
 
-- [ ] Attention items link to relevant workflows.
-- [ ] Metrics derive only from canonical data.
-- [ ] No manual reporting source of truth exists.
-- [ ] Charts exist only where they improve comprehension.
-- [ ] Degraded external-source behavior is deliberate.
+- [x] Attention items link to relevant workflows.
+- [x] Metrics derive only from canonical data.
+- [x] No manual reporting source of truth exists.
+- [x] Charts exist only where they improve comprehension.
+- [x] Degraded external-source behavior is deliberate.
 
 ### Phase 11 - Cross-surface hardening and lifecycle completion
 
