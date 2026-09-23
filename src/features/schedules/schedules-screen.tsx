@@ -973,20 +973,6 @@ function PlanEditor({
     panelRef,
   });
 
-  /* eslint-disable react-hooks/set-state-in-effect -- reset the modal draft whenever it opens for the current cycle. */
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    setName("");
-    setKind("SPECIAL");
-    setValidFrom(cycle.startDate);
-    setValidTo(cycle.endDate);
-    setError(null);
-  }, [cycle.endDate, cycle.startDate, open]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
   if (!open) {
     return null;
   }
