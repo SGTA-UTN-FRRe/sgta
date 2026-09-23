@@ -453,7 +453,7 @@ async function getCurrentBalanceReport(
   }
 
   const balances = db
-    .select({ balance: signedBalanceMinutes })
+    .select({ balance: signedBalanceMinutes.as("balance") })
     .from(tutor)
     .innerJoin(
       tutorCycleMembership,

@@ -184,7 +184,7 @@ function ReportFiltersForm({
           </p>
         )}
         <form action="/admin/reports" className="space-y-4" method="get">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
             <div className="flex min-w-0 flex-col gap-2">
               <FieldLabel htmlFor="fromDate">Desde</FieldLabel>
               <Input
@@ -472,7 +472,7 @@ function DemandSection({
         />
       ) : (
         <>
-          <div className="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
             <ReportCard title="Por carrera">
               <GroupTable groups={section.data.byCareer} title="Carrera" />
             </ReportCard>
@@ -674,7 +674,7 @@ function CoverageAndAttendance({
         id="coverage-heading"
         title="Cobertura y asistencia"
       />
-      <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
         <CoverageSection report={report} retryHref={retryHref} />
         <AttendanceSection section={report.attendance} retryHref={retryHref} />
         <div className="xl:col-span-2">
@@ -861,7 +861,7 @@ function HoursAndActivities({
         id="hours-heading"
         title="Horas y actividades"
       />
-      <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
         <CurrentBalancesSection report={report} retryHref={retryHref} />
         <MovementsSection retryHref={retryHref} section={report.movements} />
         <div className="xl:col-span-2">
