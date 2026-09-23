@@ -978,6 +978,17 @@ export const consultationStaging = pgTable(
     index("consultation_staging_subject_idx")
       .on(table.subjectId)
       .where(sql`${table.subjectId} IS NOT NULL`),
+    index("consultation_staging_duplicate_resolution_idx")
+      .on(
+        table.careerId,
+        table.tutorId,
+        table.normalizedConsultationDate,
+        table.normalizedStudentFirstName,
+        table.normalizedStudentLastName,
+      )
+      .where(
+        sql`${table.careerId} IS NOT NULL AND ${table.tutorId} IS NOT NULL AND ${table.normalizedConsultationDate} IS NOT NULL AND ${table.normalizedStudentFirstName} IS NOT NULL AND ${table.normalizedStudentLastName} IS NOT NULL`,
+      ),
   ],
 );
 

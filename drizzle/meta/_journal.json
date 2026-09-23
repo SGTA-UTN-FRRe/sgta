@@ -43,6 +43,13 @@
       "when": 1790127959851,
       "tag": "0005_good_ronan",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790129277201,
+      "tag": "0006_shiny_galactus",
+      "breakpoints": true
     }
   ]
 }

@@ -68,6 +68,7 @@ import {
   auditEvent,
   career,
   consultation,
+  consultationDuplicateCandidate,
   consultationImportRun,
   consultationStaging,
   dutyOccurrence,
@@ -145,6 +146,13 @@ import {
   getTutorSelfServiceSummary,
 } from "@/features/tutor-self-service/tutor-self-service-service";
 import { provisionUser } from "@/auth/provisioning";
+import { importConsultationRows } from "@/features/consultations/consultation-import-service";
+import {
+  ConsultationSourceError,
+  CONSULTATION_SOURCE_ERROR_CODES,
+  type ConsultationSourceAdapter,
+} from "@/features/consultations/consultation-source";
+import { consultationSourceConfigSchema } from "@/features/consultations/consultation-validation";
 
 import {
   getIntegrationConnectionString,
@@ -302,6 +310,7 @@ describe("PostgreSQL foundation integration", () => {
             'consultation_staging_career_idx',
             'consultation_staging_tutor_idx',
             'consultation_staging_subject_idx',
+            'consultation_staging_duplicate_resolution_idx',
             'duty_occurrence_assignment_date_unique',
             'duty_occurrence_cycle_date_idx',
             'duty_occurrence_tutor_date_idx',
@@ -473,7 +482,7 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("6");
+    expect(migrations[0]?.migration_count).toBe("7");
     expect(enumValues).toEqual([
       { typname: "activity_kind", enumlabel: "MEETING" },
       { typname: "activity_kind", enumlabel: "WORKSHOP" },
@@ -550,6 +559,7 @@ describe("PostgreSQL foundation integration", () => {
       "consultation_import_run_actor_started_idx",
       "consultation_import_run_status_started_idx",
       "consultation_staging_career_idx",
+      "consultation_staging_duplicate_resolution_idx",
       "consultation_staging_review_updated_idx",
       "consultation_staging_source_identity_unique",
       "consultation_staging_source_run_idx",
@@ -892,6 +902,382 @@ describe("PostgreSQL foundation integration", () => {
       database.delete(career).where(eq(career.id, createdCareer.id)),
       "23503",
     );
+  });
+
+  it("imports source rows idempotently, reopens changed reviews, and preserves canonical data", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Computer Science", normalizedName: "computer science" })
+      .returning({ id: career.id });
+    if (createdCareer === undefined) {
+      throw new Error("The import fixture Career was not created.");
+    }
+
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Casey",
+        lastName: "Tutor",
+        preferredDisplayName: "Casey Tutor",
+        primaryCareerId: createdCareer.id,
+      })
+      .returning({ id: tutor.id });
+    if (createdTutor === undefined) {
+      throw new Error("The import fixture Tutor was not created.");
+    }
+
+    const config = consultationSourceConfigSchema.parse({
+      spreadsheetId: "synthetic-import-sheet",
+      range: "Responses!A:I",
+      serviceAccountEmail: "consultations@example.test",
+      privateKey:
+        "-----BEGIN PRIVATE KEY-----\nsynthetic-integration-key\n-----END PRIVATE KEY-----",
+      headerMap: {
+        career: "Career",
+        studentFirstName: "First name",
+        studentLastName: "Last name",
+        consultationDate: "Date",
+        tutor: "Tutor",
+        academicStage: "Stage",
+        modality: "Modality",
+        topic: "Topic",
+        contact: "Contact",
+      },
+    });
+    const sourceConfiguration = { status: "configured" as const, config };
+    const sourceRow = (sourceRowKey: string, sourceFingerprint: string, topic: string) => ({
+      sourceRowKey,
+      sourceFingerprint: sourceFingerprint.repeat(64),
+      career: "Computer Science",
+      studentFirstName: "Ana",
+      studentLastName: "Diaz",
+      consultationDate: "22/09/2026",
+      tutor: "Casey Tutor",
+      academicStage: "Second year",
+      modality: "Virtual",
+      topic,
+      contact: "ana@example.test",
+    });
+
+    let sourceRows = [sourceRow("row:2", "a", "Original topic")];
+    let sourceFailure = false;
+    let sourceReadCount = 0;
+    const sourceAdapter: ConsultationSourceAdapter = {
+      async readRows() {
+        sourceReadCount += 1;
+        if (sourceFailure) {
+          throw new ConsultationSourceError(CONSULTATION_SOURCE_ERROR_CODES.unavailable);
+        }
+        return { sourceTab: "Responses", rows: sourceRows };
+      },
+    };
+    let currentTime = new Date("2026-09-22T12:00:00.000Z");
+    const dependencies = {
+      db: database,
+      sourceConfiguration,
+      sourceAdapter,
+      now: () => new Date(currentTime),
+    };
+
+    const firstImport = await importConsultationRows({ actorId: admin.id }, dependencies);
+    expect(firstImport).toMatchObject({
+      outcome: "completed",
+      summary: { status: "SUCCEEDED", newRows: 1, alreadyProcessedRows: 0, reviewRows: 1 },
+    });
+
+    const [stagingBeforeReview] = await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.sourceRowKey, "row:2"));
+    if (stagingBeforeReview === undefined) {
+      throw new Error("The import staging row was not created.");
+    }
+
+    await database
+      .update(consultationStaging)
+      .set({
+        status: "CONSOLIDATED",
+        classification: "GENERAL",
+        reviewedBy: admin.id,
+        reviewedAt: currentTime,
+        anomalyFlags: [],
+      })
+      .where(eq(consultationStaging.id, stagingBeforeReview.id));
+    await database.insert(consultation).values({
+      stagingId: stagingBeforeReview.id,
+      consultationDate: "2026-09-22",
+      studentFirstName: "Ana",
+      studentLastName: "Diaz",
+      studentContact: "ana@example.test",
+      careerId: createdCareer.id,
+      tutorId: createdTutor.id,
+      academicStage: "Second year",
+      modality: "Virtual",
+      rawTopic: "Original topic",
+      classification: "GENERAL",
+      subjectId: null,
+    });
+
+    currentTime = new Date("2026-09-22T12:01:00.000Z");
+    sourceRows = [
+      sourceRow("row:2", "b", "Changed source topic"),
+      sourceRow("row:3", "c", "Same consultation from another row"),
+      {
+        ...sourceRow("row:4", "d", ""),
+        career: "Unlisted career",
+        tutor: "Unlisted tutor",
+        consultationDate: "09/22/2026",
+        academicStage: "",
+        modality: "",
+      },
+    ];
+    const changedImport = await importConsultationRows({ actorId: admin.id }, dependencies);
+    expect(changedImport).toMatchObject({
+      outcome: "completed",
+      summary: {
+        status: "SUCCEEDED",
+        newRows: 2,
+        alreadyProcessedRows: 0,
+        reviewRows: 3,
+        duplicateCandidates: 1,
+      },
+    });
+
+    const [anomalyStaging] = await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.sourceRowKey, "row:4"));
+    expect(anomalyStaging?.anomalyFlags).toEqual(
+      expect.arrayContaining([
+        "UNRESOLVED_CAREER",
+        "UNRESOLVED_TUTOR",
+        "INVALID_CONSULTATION_DATE",
+        "MISSING_TOPIC",
+        "MISSING_ACADEMIC_STAGE",
+        "MISSING_MODALITY",
+      ]),
+    );
+
+    const [reopenedStaging] = await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.id, stagingBeforeReview.id));
+    const [preservedCanonical] = await database
+      .select()
+      .from(consultation)
+      .where(eq(consultation.stagingId, stagingBeforeReview.id));
+    expect(reopenedStaging).toMatchObject({
+      status: "PENDING_REVIEW",
+      classification: "PENDING_CLASSIFICATION",
+      rawTopic: "Changed source topic",
+      sourceChangeCount: 1,
+      sourceChangedAt: currentTime,
+    });
+    expect(reopenedStaging?.anomalyFlags).toEqual(
+      expect.arrayContaining(["SOURCE_ROW_CHANGED", "POSSIBLE_DUPLICATE"]),
+    );
+    expect(preservedCanonical).toMatchObject({
+      classification: "GENERAL",
+      rawTopic: "Original topic",
+    });
+    const [duplicateCandidate] = await database
+      .select()
+      .from(consultationDuplicateCandidate);
+    if (duplicateCandidate === undefined) {
+      throw new Error("The exact duplicate candidate was not created.");
+    }
+
+    const duplicateStaging = (await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.sourceSpreadsheetId, config.spreadsheetId)))
+      .filter((row) => row.sourceRowKey === "row:2" || row.sourceRowKey === "row:3");
+    expect(duplicateStaging).toHaveLength(2);
+    for (const row of duplicateStaging) {
+      await database
+        .update(consultationStaging)
+        .set({
+          status: "CONSOLIDATED",
+          classification: "GENERAL",
+          reviewedBy: admin.id,
+          reviewedAt: currentTime,
+        })
+        .where(eq(consultationStaging.id, row.id));
+    }
+    const secondDuplicateRow = duplicateStaging.find((row) => row.sourceRowKey === "row:3");
+    if (secondDuplicateRow === undefined) {
+      throw new Error("The second duplicate staging row was not found.");
+    }
+    await database.insert(consultation).values({
+      stagingId: secondDuplicateRow.id,
+      consultationDate: "2026-09-22",
+      studentFirstName: "Ana",
+      studentLastName: "Diaz",
+      studentContact: "ana@example.test",
+      careerId: createdCareer.id,
+      tutorId: createdTutor.id,
+      academicStage: "Second year",
+      modality: "Virtual",
+      rawTopic: "Same consultation from another row",
+      classification: "GENERAL",
+      subjectId: null,
+    });
+    await database
+      .update(consultationDuplicateCandidate)
+      .set({ decision: "NOT_DUPLICATE", decidedBy: admin.id, decidedAt: currentTime })
+      .where(eq(consultationDuplicateCandidate.id, duplicateCandidate.id));
+
+    currentTime = new Date("2026-09-22T12:02:00.000Z");
+    const repeatedImport = await importConsultationRows({ actorId: admin.id }, dependencies);
+    expect(repeatedImport).toMatchObject({
+      outcome: "completed",
+      summary: {
+        newRows: 0,
+        alreadyProcessedRows: 3,
+        reviewRows: 1,
+        duplicateCandidates: 1,
+      },
+    });
+    const repeatedDuplicateRows = (await database
+      .select()
+      .from(consultationStaging)
+      .where(eq(consultationStaging.sourceSpreadsheetId, config.spreadsheetId)))
+      .filter((row) => row.sourceRowKey === "row:2" || row.sourceRowKey === "row:3");
+    expect(repeatedDuplicateRows.map((row) => row.status)).toEqual([
+      "CONSOLIDATED",
+      "CONSOLIDATED",
+    ]);
+    const [repeatedCandidate] = await database
+      .select()
+      .from(consultationDuplicateCandidate)
+      .where(eq(consultationDuplicateCandidate.id, duplicateCandidate.id));
+    expect(repeatedCandidate?.decision).toBe("NOT_DUPLICATE");
+
+    sourceFailure = true;
+    currentTime = new Date("2026-09-22T12:03:00.000Z");
+    const unavailableImport = await importConsultationRows(
+      { actorId: admin.id },
+      dependencies,
+    );
+    expect(unavailableImport).toMatchObject({
+      outcome: "failed",
+      summary: { status: "FAILED", errorCode: "source_unavailable" },
+    });
+    expect(await database.select().from(consultation)).toHaveLength(2);
+    expect(await database.select().from(consultationStaging)).toHaveLength(3);
+
+    const failedAudit = await database
+      .select({ metadata: auditEvent.metadata })
+      .from(auditEvent)
+      .where(eq(auditEvent.entityId, unavailableImport.summary.runId!));
+    expect(JSON.stringify(failedAudit)).not.toContain("Ana");
+    expect(JSON.stringify(failedAudit)).not.toContain("ana@example.test");
+    expect(JSON.stringify(failedAudit)).toContain("source_unavailable");
+
+    const missingConfiguration = await importConsultationRows(
+      { actorId: admin.id },
+      {
+        ...dependencies,
+        sourceConfiguration: { status: "unavailable", code: "source_not_configured" },
+      },
+    );
+    expect(missingConfiguration).toMatchObject({
+      outcome: "failed",
+      summary: { status: "FAILED", errorCode: "source_not_configured" },
+    });
+    expect(sourceReadCount).toBe(4);
+    expect(await database.select().from(consultation)).toHaveLength(2);
+  });
+
+  it("rejects a concurrent source read and recovers an expired import lease", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const config = consultationSourceConfigSchema.parse({
+      spreadsheetId: "synthetic-lease-sheet",
+      range: "Responses!A:I",
+      serviceAccountEmail: "consultations@example.test",
+      privateKey:
+        "-----BEGIN PRIVATE KEY-----\nsynthetic-integration-key\n-----END PRIVATE KEY-----",
+      headerMap: {
+        career: "Career",
+        studentFirstName: "First name",
+        studentLastName: "Last name",
+        consultationDate: "Date",
+        tutor: "Tutor",
+        academicStage: "Stage",
+        modality: "Modality",
+        topic: "Topic",
+      },
+    });
+    const sourceConfiguration = { status: "configured" as const, config };
+    const fixedTime = new Date("2026-09-22T13:00:00.000Z");
+    let signalStarted: (() => void) | undefined;
+    let releaseRead: ((batch: { sourceTab: string; rows: unknown[] }) => void) | undefined;
+    const readStarted = new Promise<void>((resolve) => {
+      signalStarted = resolve;
+    });
+    const blockedRead = new Promise<{ sourceTab: string; rows: unknown[] }>((resolve) => {
+      releaseRead = resolve;
+    });
+    const sourceAdapter: ConsultationSourceAdapter = {
+      readRows: vi.fn(() => {
+        signalStarted?.();
+        return blockedRead;
+      }),
+    };
+    const dependencies = {
+      db: database,
+      sourceConfiguration,
+      sourceAdapter,
+      now: () => new Date(fixedTime),
+    };
+
+    const activeImport = importConsultationRows({ actorId: admin.id }, dependencies);
+    await readStarted;
+    const concurrentImport = await importConsultationRows(
+      { actorId: admin.id },
+      dependencies,
+    );
+    expect(concurrentImport).toMatchObject({
+      outcome: "conflict",
+      summary: { status: "RUNNING", errorCode: null },
+    });
+    expect(sourceAdapter.readRows).toHaveBeenCalledOnce();
+    releaseRead?.({ sourceTab: "Responses", rows: [] });
+    expect(await activeImport).toMatchObject({ outcome: "completed" });
+
+    const [expiredRun] = await database
+      .insert(consultationImportRun)
+      .values({
+        actorId: admin.id,
+        status: "RUNNING",
+        sourceSpreadsheetId: config.spreadsheetId,
+        sourceRange: config.range,
+        startedAt: new Date(fixedTime.getTime() - 31 * 60 * 1000),
+      })
+      .returning({ id: consultationImportRun.id });
+    if (expiredRun === undefined) {
+      throw new Error("The expired import lease fixture was not created.");
+    }
+
+    const recoveredImport = await importConsultationRows(
+      { actorId: admin.id },
+      {
+        ...dependencies,
+        sourceAdapter: { async readRows() { return { sourceTab: "Responses", rows: [] }; } },
+      },
+    );
+    expect(recoveredImport.outcome).toBe("completed");
+    const [recoveredRun] = await database
+      .select()
+      .from(consultationImportRun)
+      .where(eq(consultationImportRun.id, expiredRun.id));
+    expect(recoveredRun).toMatchObject({
+      status: "FAILED",
+      errorCode: "import_lease_expired",
+    });
   });
 
   it("persists hour accounting facts and enforces non-destructive constraints", async () => {
