@@ -570,6 +570,28 @@ Optional:
 
 Do not load vanity totals merely because they exist.
 
+#### Pending attendance definition
+
+An occurrence is pending attention when it belongs to the open cycle, its
+scheduled end instant is at or before the current time in
+`America/Argentina/Buenos_Aires`, and its attendance is `PENDING` or has not yet
+received an `AttendanceRecord`. An occurrence for today is not due until its
+scheduled end time. Future and in-progress occurrences remain in the Today /
+Próximamente list and do not appear in the pending-attendance count.
+
+The count and linked list use the same rule. Recording either `PRESENT` or
+`ABSENT` clears the attendance attention item; a separate absence debit decision
+does not keep attendance pending. Closed-cycle occurrences are historical and
+do not appear as actionable overview items.
+
+The negative-balance count/list uses active Tutors with membership in the open
+cycle and a movement-derived signed balance below zero. Zero and positive
+balances are not negative; reversal movements participate with their recorded
+direction. The consultation-review count is the number of staging records in
+`PENDING_REVIEW`, including rows with pending classification; `READY`,
+`CONSOLIDATED`, and `DUPLICATE` rows are not in this attention count. A source
+outage does not remove locally stored review records.
+
 #### Interactions
 
 Attention item click:
@@ -1547,13 +1569,127 @@ Operational:
 - movements;
 - activities.
 
+#### Period and metric definitions
+
+The period is an inclusive range of date-only values. `fromDate` and `toDate`
+are serialized as `YYYY-MM-DD` query parameters and must be supplied together.
+The maximum range is 366 calendar days, including both endpoints. A reversed,
+partial, or overlong range is invalid; the page keeps the submitted values and
+explains the error rather than silently widening the query.
+
+The default period is the open AdministrativeCycle from its start date through
+the earlier of today and its end date, using the Argentina local date. If today
+precedes the cycle start, the default is the cycle start date only. If
+cycle-to-date is longer than 366 days, use its most recent 366 days. If there is
+no open cycle, the default is the current calendar year from January 1 through
+today. Clearing filters removes the query state and restores this default.
+Custom periods may cross cycle boundaries. Date-based report sections filter by
+their own event date, not by `cycleId`; current-state sections continue to use
+the open cycle independently of the selected period.
+
+Date boundaries use `America/Argentina/Buenos_Aires`; stored date-only values
+are compared as dates and are not converted through the viewer's browser
+timezone. Temporal demand is grouped by calendar month, including partial first
+and last months in the selected range.
+
+Consultation demand uses canonical `Consultation` rows whose consultation date
+falls in the selected period. Every canonical consultation is classified as
+`SUBJECT` or `GENERAL`; `PENDING_CLASSIFICATION` remains in staging/review and
+is excluded from every report total and breakdown until consolidation. Subject
+totals and rankings include only `SUBJECT` rows; `GENERAL` consultations are
+shown separately and are never assigned to a Subject. Career, Tutor, Modality,
+academic-stage, and temporal breakdowns include canonical consultations of
+either classification. Missing Modality and academic stage are grouped as
+`Sin especificar`. Report queries do not call the external source, so a source
+outage does not change counts for already consolidated consultations. No
+student identity, contact, or raw topic is shown in report data. Selecting a
+Subject limits consultation demand to matching `SUBJECT` rows.
+
+Operational measures use these definitions:
+
+- **Tutores activos:** count of Tutor records with active status at query time.
+  This is a current-state count and is not constrained by the selected period.
+  Career filtering uses each Tutor's current primary Career.
+- **Cobertura de materias:** for the open cycle, count active Subjects under
+  active Careers that have at least one active Tutor with a current TutorSubject
+  relationship and membership in that cycle. The denominator is all active
+  Subjects under active Careers. Show covered and total counts; show a
+  percentage only when the denominator is nonzero. This is a current-cycle
+  snapshot, not a historical coverage reconstruction. When no cycle is open,
+  show that coverage is unavailable rather than deriving it from an older
+  cycle.
+- **Guardias programadas:** count effective planned occurrences and sum their
+  scheduled minutes in the selected period, using the effective plan and
+  regular/special precedence defined by Horarios for each date. Separate
+  ordinary and recovery-marked occurrences by kind. This describes scheduled
+  supply; the data model has no required-capacity denominator, so do not label
+  it as a percentage of unmet or fulfilled demand.
+- **Registro de asistencia:** count `PRESENT`, `ABSENT`, and pending due
+  occurrences for the selected period. Attendance status counts and the
+  registration rate include due occurrences only; future and not-yet-ended
+  occurrences appear only in Guardias programadas. The rate numerator is due
+  occurrences marked `PRESENT` or `ABSENT`; the denominator is all due
+  occurrences (`PRESENT`, `ABSENT`, and `PENDING`, including an occurrence with
+  no attendance row). An occurrence is due at or after its scheduled end time
+  in Argentina local time. When the denominator is zero, show counts and omit
+  the rate. This is a recording-completion rate, not a presence or performance
+  rate.
+- **Estado de saldos actual:** count active Tutors with membership in the open
+  cycle by the existing derived states: `owes` for a signed balance below zero
+  and `current` for zero or a positive balance. Balances are derived from all
+  cycle movements, including reversal entries with their recorded direction.
+  This snapshot is independent of the selected period and is unavailable when
+  there is no open cycle.
+- **Movimientos:** group ledger rows by `movementDate`, direction, and category
+  for the selected period, showing row counts and minutes by direction. Net
+  minutes are credits minus debits across all rows. Keep original and reversal
+  rows in the ledger; a reversal offsets the original through its own signed
+  movement and is never silently removed.
+- **Actividades:** count distinct Activity records and sum their recorded
+  duration by `activityDate` and kind in the selected period. Activity duration
+  is not multiplied by the number of linked tutor movements.
+
+#### Filter scope
+
+The URL-backed filters are `fromDate`, `toDate`, `careerId`, `subjectId`,
+`tutorId`, and `modality`. Academic stage is a consultation breakdown in this
+release, not a filter control. The reserved `modality=UNSPECIFIED` value
+selects records without a recorded Modality; other Modality values match the
+stored value.
+
+Each section identifies when it is a current snapshot and which filters affect
+it; unrelated sections are not silently reinterpreted by a filter.
+
+| Report section | Period | Career | Subject | Tutor | Modality | Academic stage |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Consultation demand | Yes | Yes | Yes, `SUBJECT` only | Yes | Yes | Breakdown only |
+| Active tutor count | No | Yes | No | Yes | No | No |
+| Subject coverage snapshot | No | Yes | Yes | Yes | No | No |
+| Planned schedule and attendance | Yes | No | No | Yes | Yes | No |
+| Current balance snapshot | No | Yes | No | Yes | No | No |
+| Movements and activities | Yes | No | No | Yes | No | No |
+
+Career and Subject are not applied retroactively to schedule, attendance,
+movement, or activity history: those records do not preserve historical
+Career/Subject assignments. For the active-tutor and balance snapshots, Career
+uses the Tutor's current primary Career; subject coverage uses the Career linked
+to each Subject. A Tutor filter on Activities selects distinct Activity
+records linked to that Tutor's movement; it does not multiply the activity
+count or duration. Current balance and coverage sections always name the open
+cycle they describe and do not imply that the selected date range changes the
+snapshot. A Modality filter includes only matching recorded modalities;
+records without a modality are grouped under `Sin especificar` and are included
+only when that option is selected.
+
 #### Interaction
 
 Filters:
 
-- apply consistently to related sections;
-- reset is available;
-- URL-backed state is preferred when it improves shareability.
+- apply to the sections listed in Filter scope;
+- reset is available and restores the documented default period;
+- valid state is URL-backed and survives reload or sharing;
+- invalid or incomplete date ranges retain the submitted values and explain
+  the correction needed.
 
 Charts:
 
@@ -1561,6 +1697,7 @@ Charts:
 - accessible value/table equivalent required;
 - use restrained SGTA palette;
 - no rainbow categories.
+- temporal demand uses calendar-month buckets for the selected period.
 
 #### States
 
@@ -1588,6 +1725,13 @@ Degraded:
 #### Acceptance criteria
 
 - [ ] Every metric derives from canonical data.
+- [ ] Period defaults, inclusive date boundaries, supported range, and URL
+  parameters are deterministic.
+- [ ] Pending attendance is due only after the occurrence end time and never
+  includes future or in-progress duties.
+- [ ] Coverage, attendance, balance, movement, and activity values follow the
+  definitions above; no unsupported coverage or presence rate is implied.
+- [ ] Each filter affects only the sections listed in Filter scope.
 - [ ] No persisted manual report result becomes a source of truth.
 - [ ] No causal academic claim is implied.
 - [ ] Charts are justified and accessible.
