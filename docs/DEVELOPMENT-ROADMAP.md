@@ -607,8 +607,8 @@ This is not a visual rescue phase.
 - [x] Critical workflows work by keyboard.
 - [x] Tutor Compact experience is production-ready.
 - [x] Admin core remains usable at supported widths.
-- [ ] No sensitive data leaks through logs/errors/routes.
-- [ ] Authorization regression passes.
+- [x] No sensitive data leaks through logs/errors/routes.
+- [x] Authorization regression passes.
 - [ ] CI remains stable and reproducible.
 
 ### Phase 12 - Migration, production readiness, pilot, and first release

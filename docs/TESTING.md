@@ -53,6 +53,13 @@ Tests live next to the implementation under `src/` and run in the Vitest `jsdom`
 
 The unit/component suite remains independent of PostgreSQL, Docker, and external services. Do not call these tests integration tests merely because they use React Testing Library.
 
+Authorization unit tests cover database-authoritative role and enabled-state
+checks, plus a generic no-store response when the identity service fails. Audit
+validation tests reject credential-bearing keys and request identifiers,
+personal contact keys and values, oversized metadata, and non-IP values in the
+audit address field. API request metadata accepts only bounded opaque request
+IDs and syntactically valid IP addresses before it reaches audit persistence.
+
 ### Integration tests
 
 Integration scenarios live under `tests/integration/` and run through the separate `vitest.integration.config.ts` configuration in the Node.js environment. Each run starts a fresh PostgreSQL container with Testcontainers, applies the committed Drizzle migration twice to prove rerunnability, uses deterministic synthetic fixtures, and tears down the pool and container after the suite. The feature coverage includes Career, Subject, Tutor, TutorSubject, TutorCycleMembership, scholarship-reference lifecycle, duplicate/conflict handling, open/closed cycle rules, derived Materias reconstruction, hour categories, activity origins, immutable movement reversals, safe audit actor attribution, transaction rollback, sensitive-metadata rejection, and Admin-versus-Tutor API/page authorization. Consultation unit and integration coverage verifies GET-only source access, import idempotency and source-change handling, anomaly and duplicate review, SUBJECT/GENERAL invariants, pending-classification exclusion, source-outage preservation, audit safety, transactional rollback, and Admin-only APIs.

@@ -30,6 +30,10 @@ describe("audit input validation", () => {
     { access_token: "not persisted" },
     { providerProfile: { email: "person@example.test" } },
     { headers: { authorization: "Bearer secret" } },
+    { studentContact: "student@example.test" },
+    { emailAddress: "student@example.test" },
+    { tutorName: "Ada Lovelace" },
+    { phoneNumber: "+54 362 412 3456" },
   ];
 
   it.each(secretBearingMetadata)("rejects secret-bearing metadata: %j", (metadata) => {
@@ -49,5 +53,30 @@ describe("audit input validation", () => {
     expect(
       validateSafeAuditMetadata({ value: "x".repeat(8_100) }),
     ).not.toBeNull();
+  });
+
+  it("rejects credential-like request IDs and invalid IP addresses", () => {
+    const base = {
+      actorId: "admin-1",
+      action: "cycle.created",
+      entityType: "AdministrativeCycle",
+      entityId: "cycle-1",
+    };
+
+    expect(() =>
+      parseAuditEventInput({ ...base, requestId: "Bearer.secret-token-value" }),
+    ).toThrow();
+    expect(() =>
+      parseAuditEventInput({ ...base, requestId: "student@example.test" }),
+    ).toThrow();
+    expect(() =>
+      parseAuditEventInput({ ...base, ipAddress: "student@example.test" }),
+    ).toThrow();
+    expect(() => parseAuditEventInput({ ...base, ipAddress: "not-an-ip" })).toThrow();
+  });
+
+  it("rejects personal contact values even when stored under a generic metadata key", () => {
+    expect(validateSafeAuditMetadata({ value: "student@example.test" })).not.toBeNull();
+    expect(validateSafeAuditMetadata({ value: "+54 362 412 3456" })).not.toBeNull();
   });
 });

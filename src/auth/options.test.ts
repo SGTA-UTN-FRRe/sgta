@@ -8,6 +8,7 @@ const auditMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/db/audit-core", () => auditMocks);
+vi.mock("server-only", () => ({}));
 
 import { AUTH_ERROR_CODES } from "./identity";
 import { createAuthOptions } from "./options";

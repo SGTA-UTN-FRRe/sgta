@@ -2,6 +2,8 @@ import "server-only";
 
 import { z } from "zod";
 
+import { getAuditRequestContext } from "@/db/audit-request-context";
+
 import {
   ATTENDANCE_ERROR_CODES,
   AttendanceServiceError,
@@ -178,30 +180,16 @@ export function attendanceErrorResponse(error: unknown) {
   return attendanceJsonResponse({ error: "internal_server_error" }, 500);
 }
 
-function getBoundedHeader(request: Request, name: string, maxLength: number) {
-  const value = request.headers.get(name)?.trim();
-
-  if (value === undefined || value.length === 0 || value.length > maxLength) {
-    return undefined;
-  }
-
-  return value;
-}
-
 export function getAttendanceRequestContext(
   request: Request,
   actorId: string,
 ): AttendanceMutationContext {
-  const forwardedFor = getBoundedHeader(request, "x-forwarded-for", 512);
-  const forwardedAddress = forwardedFor?.split(",", 1)[0]?.trim();
+  const requestContext = getAuditRequestContext(request);
 
   return {
     actorId,
-    requestId: getBoundedHeader(request, "x-request-id", 255),
-    ipAddress:
-      forwardedAddress !== undefined && forwardedAddress.length <= 45
-        ? forwardedAddress
-        : getBoundedHeader(request, "x-real-ip", 45),
+    requestId: requestContext.requestId,
+    ipAddress: requestContext.ipAddress,
   };
 }
 

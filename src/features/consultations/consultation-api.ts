@@ -1,7 +1,8 @@
 import "server-only";
 
-import { isIP } from "node:net";
 import { z } from "zod";
+
+import { getAuditRequestContext } from "@/db/audit-request-context";
 
 import {
   CONSULTATION_ERROR_CODES,
@@ -189,31 +190,15 @@ export function parseConsultationReviewDetailQuery(request: Request) {
     : { success: false as const, error: parsed.error };
 }
 
-function boundedHeader(request: Request, name: string, maxLength: number) {
-  const value = request.headers.get(name)?.trim();
-  if (
-    value === undefined ||
-    value.length === 0 ||
-    value.length > maxLength ||
-    !/^[A-Za-z0-9._:-]+$/.test(value)
-  ) {
-    return undefined;
-  }
-  return value;
-}
-
 export function getConsultationRequestContext(
   request: Request,
   actorId: string,
 ): ConsultationRequestContext {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim();
-  const forwardedIp = forwardedFor !== undefined && isIP(forwardedFor) !== 0
-    ? forwardedFor
-    : undefined;
-  const realIp = boundedHeader(request, "x-real-ip", 45);
+  const requestContext = getAuditRequestContext(request);
+
   return {
     actorId,
-    requestId: boundedHeader(request, "x-request-id", 255),
-    ipAddress: forwardedIp ?? (realIp !== undefined && isIP(realIp) !== 0 ? realIp : undefined),
+    requestId: requestContext.requestId,
+    ipAddress: requestContext.ipAddress,
   };
 }

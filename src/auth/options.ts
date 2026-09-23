@@ -1,3 +1,5 @@
+import "server-only";
+
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";

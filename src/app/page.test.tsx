@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
 
-import { getAuthorizedUser } from "@/auth/authorization";
+import {
+  AuthorizationUnavailableError,
+  getAuthorizedUser,
+} from "@/auth/authorization";
 
 import Home from "./page";
 
@@ -11,9 +14,11 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("@/auth/authorization", () => ({
-  getAuthorizedUser: vi.fn(),
-}));
+vi.mock("server-only", () => ({}));
+vi.mock("@/auth/authorization", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/auth/authorization")>();
+  return { ...actual, getAuthorizedUser: vi.fn() };
+});
 
 describe("Home route", () => {
   it("redirects an unauthenticated request to login", async () => {
@@ -45,5 +50,18 @@ describe("Home route", () => {
 
     await expect(Home()).rejects.toThrow("redirect:/tutor");
     expect(redirect).toHaveBeenCalledWith("/tutor");
+  });
+
+  it("redirects identity lookup failures to a safe login state", async () => {
+    vi.mocked(getAuthorizedUser).mockRejectedValue(
+      new AuthorizationUnavailableError(),
+    );
+
+    await expect(Home()).rejects.toThrow(
+      "redirect:/login?error=authorization_unavailable",
+    );
+    expect(redirect).toHaveBeenCalledWith(
+      "/login?error=authorization_unavailable",
+    );
   });
 });

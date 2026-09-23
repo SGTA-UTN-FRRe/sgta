@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
-import { getAuthorizedUser } from "@/auth/authorization";
+import {
+  AuthorizationUnavailableError,
+  getAuthorizedUser,
+} from "@/auth/authorization";
 import { loginScreenData } from "@/mocks/login.mock";
 
 import { loginStateFromAuthErrorCode } from "./login-auth";
@@ -21,14 +24,24 @@ type LoginPageProps = {
 export default async function LoginPage({
   searchParams,
 }: LoginPageProps = {}) {
-  const user = await getAuthorizedUser({ allowUnconfigured: true });
-
-  if (user !== null) {
-    redirect(user.role === "ADMIN" ? "/admin" : "/tutor");
-  }
-
   const params = await searchParams;
-  const error = Array.isArray(params?.error) ? params.error[0] : params?.error;
+  let error = Array.isArray(params?.error) ? params.error[0] : params?.error;
+
+  if (error !== "authorization_unavailable") {
+    try {
+      const user = await getAuthorizedUser({ allowUnconfigured: true });
+
+      if (user !== null) {
+        redirect(user.role === "ADMIN" ? "/admin" : "/tutor");
+      }
+    } catch (caught) {
+      if (!(caught instanceof AuthorizationUnavailableError)) {
+        throw caught;
+      }
+
+      error = "authorization_unavailable";
+    }
+  }
 
   return (
     <LoginScreen

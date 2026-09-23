@@ -65,6 +65,7 @@ import { requireApiRole, requireRole } from "@/auth/authorization";
 import { createAuthOptions } from "@/auth/options";
 import type { AuthEnvironment } from "@/auth/options";
 import { recordAuditEvent, listAuditEvents } from "@/db/audit-core";
+import type { AuditEventInput } from "@/db/audit-validation";
 import {
   account,
   activity,
@@ -5168,15 +5169,25 @@ describe("PostgreSQL foundation integration", () => {
 
   it("rejects sensitive audit metadata before it reaches PostgreSQL", async () => {
     const database = getIntegrationDatabase();
+    const invalidAuditContexts: Array<
+      Pick<AuditEventInput, "metadata" | "requestId" | "ipAddress">
+    > = [
+      { metadata: { authorization: "Bearer synthetic-token" } },
+      { metadata: { studentContact: "student@example.test" } },
+      { requestId: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.signature" },
+      { ipAddress: "student@example.test" },
+    ];
 
-    await expect(
-      recordAuditEvent(database, {
-        action: "sensitive.integration.test",
-        entityType: "test",
-        entityId: "sensitive-1",
-        metadata: { authorization: "Bearer synthetic-token" },
-      }),
-    ).rejects.toThrow();
+    for (const [index, context] of invalidAuditContexts.entries()) {
+      await expect(
+        recordAuditEvent(database, {
+          action: "sensitive.integration.test",
+          entityType: "test",
+          entityId: `sensitive-${index + 1}`,
+          ...context,
+        }),
+      ).rejects.toThrow();
+    }
 
     await expect(
       database
