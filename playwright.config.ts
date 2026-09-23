@@ -2,6 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // Authenticated journeys share one mutable database, so avoid overlapping writes.
+  workers: 1,
   reporter: [
     ["list"],
     ["html", { outputFolder: "playwright-report", open: "never" }],
