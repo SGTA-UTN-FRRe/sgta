@@ -598,7 +598,7 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("9");
+    expect(migrations[0]?.migration_count).toBe("10");
     expect(enumValues).toEqual([
       { typname: "activity_kind", enumlabel: "MEETING" },
       { typname: "activity_kind", enumlabel: "WORKSHOP" },
@@ -763,6 +763,7 @@ describe("PostgreSQL foundation integration", () => {
       "consultation_staging_career_id_career_id_fk",
       "consultation_staging_tutor_id_tutor_id_fk",
       "consultation_staging_subject_id_subject_id_fk",
+      "consultation_staging_suggested_subject_id_subject_id_fk",
       postgresIdentifier("consultation_staging_reviewed_by_user_id_fk"),
     ].sort());
     expect(checks.map((row) => row.conname)).toEqual([

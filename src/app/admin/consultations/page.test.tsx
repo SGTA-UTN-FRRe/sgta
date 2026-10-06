@@ -65,6 +65,7 @@ describe("AdminConsultationsPage", () => {
     expect(mocks.requireRole).toHaveBeenCalledWith("ADMIN");
     expect(mocks.getConsultationWorkspace).toHaveBeenCalledWith(database, {
       status: "ALL",
+      suggestion: "ALL",
       careerId: consultationCareerId,
       search: "Lucía",
       limit: 50,
@@ -87,6 +88,7 @@ describe("AdminConsultationsPage", () => {
 
     expect(mocks.getConsultationWorkspace).toHaveBeenCalledWith(database, {
       status: "ALL",
+      suggestion: "ALL",
       limit: 50,
       offset: 0,
     });
