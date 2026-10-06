@@ -2,12 +2,15 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 
 import { eq } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
 
 import {
   administrativeCycle,
   auditEvent,
   career,
+  consultation,
   hourMovement,
   subject,
   tutor,
@@ -19,6 +22,7 @@ import {
   executeInitialDataImport,
   loadInitialDataPackage,
 } from "../../scripts/import-initial-data";
+import { verifyInitialData } from "../../scripts/verify-initial-data";
 import { getIntegrationDatabase } from "./setup";
 
 describe("initial data import", () => {
@@ -133,6 +137,50 @@ describe("initial data import", () => {
     }
     expect(secondApply.cycles.unchanged).toBe(2);
     expect(secondApply.hourMovements.unchanged).toBe(1);
+
+    const verification = await verifyInitialData(database, result.data, {
+      "tutors.ACTIVE": 1,
+      "duties.total": 1,
+      "balances.checked": 1,
+      "consultations.imported": 0,
+      [`consultations.career.${importedTutorRows[0]!.primaryCareerId}`]: 0,
+    });
+    expect(verification.verified).toBe(true);
+    expect(verification.metrics["balances.matched"]).toBe(1);
+    expect(Object.keys(verification.checks).filter(key => key.startsWith("reports.cycle."))).toHaveLength(4);
+    const incorrectExpectation = await verifyInitialData(database, result.data, {
+      "consultations.imported": 1,
+    });
+    expect(incorrectExpectation.verified).toBe(false);
+    expect(incorrectExpectation.checks["expected.consultations.imported"]).toBe(false);
+    // The verification itself must preserve audit and movement records.
+    expect(await database.select().from(hourMovement)).toHaveLength(1);
+
+    // Additional legitimate operations must make opening-balance comparison fail.
+    const opening = movements[0]!;
+    const [extraMovement] = await database.insert(hourMovement).values({
+      tutorId: opening.tutorId,
+      cycleId: opening.cycleId,
+      categoryId: opening.categoryId,
+      direction: "CREDIT",
+      durationMinutes: 15,
+      movementDate: opening.movementDate,
+      actorId: admin!.id,
+      note: "Synthetic post-import credit",
+    }).returning({ id: hourMovement.id });
+    const changedBalance = await verifyInitialData(database, result.data);
+    expect(changedBalance.verified).toBe(false);
+    expect(changedBalance.checks["balances.matchOpeningValues"]).toBe(false);
+    expect(await database.select().from(hourMovement)).toHaveLength(2);
+    await database.delete(hourMovement).where(eq(hourMovement.id, extraMovement!.id));
+
+    // Registry drift must be detected without repairing the record.
+    await database.update(tutor).set({ status: "INACTIVE" }).where(eq(tutor.id, importedTutorRows[0]!.id));
+    const changedRegistry = await verifyInitialData(database, result.data);
+    expect(changedRegistry.verified).toBe(false);
+    expect(changedRegistry.checks["registry.tutors"]).toBe(false);
+    expect((await database.select().from(tutor))[0]?.status).toBe("INACTIVE");
+    expect(await database.select().from(consultation)).toHaveLength(0);
 
     const events = await database
       .select()
