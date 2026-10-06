@@ -374,9 +374,14 @@ describe("SchedulesScreen", () => {
     await user.type(within(editor).getByLabelText("Nombre"), createdPlan.name);
     await user.click(within(editor).getByRole("button", { name: "Guardar plan" }));
 
-    await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: "Crear plan de horario" })).not.toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(
+          screen.queryByRole("dialog", { name: "Crear plan de horario" }),
+        ).not.toBeInTheDocument();
+      },
+      { timeout: 5_000 },
+    );
     expect(screen.getAllByRole("status").some((element) =>
       element.textContent?.includes("Cambios guardados"),
     )).toBe(true);

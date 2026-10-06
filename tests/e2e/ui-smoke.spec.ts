@@ -2,7 +2,66 @@ import { expect, test } from "@playwright/test";
 
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 
+const requiredSecurityHeaders = {
+  "x-frame-options": "DENY",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "permissions-policy": "camera=(), microphone=(), geolocation=()",
+} as const;
+
+function expectSecurityHeaders(headers: Record<string, string>) {
+  for (const [name, value] of Object.entries(requiredSecurityHeaders)) {
+    expect(headers[name]).toBe(value);
+  }
+}
+
 test.describe("UI smoke journeys", () => {
+  test("applies security headers to pages and Google sign-in callbacks", async ({
+    request,
+  }) => {
+    const loginResponse = await request.get("/login");
+    expect(loginResponse.status()).toBe(200);
+    expectSecurityHeaders(loginResponse.headers());
+
+    const adminResponse = await request.get("/admin", { maxRedirects: 0 });
+    expect(adminResponse.status()).toBe(307);
+    expectSecurityHeaders(adminResponse.headers());
+
+    const signInResponse = await request.post("/api/auth/sign-in/social", {
+      data: {
+        provider: "google",
+        callbackURL: "/",
+        errorCallbackURL: "/login",
+      },
+    });
+    expect(signInResponse.status()).toBe(200);
+    expectSecurityHeaders(signInResponse.headers());
+
+    const signInResult = (await signInResponse.json()) as {
+      url?: string;
+    };
+    expect(signInResult.url).toBeDefined();
+
+    const authorizationUrl = new URL(signInResult.url!);
+    expect(authorizationUrl.hostname).toBe("accounts.google.com");
+    expect(authorizationUrl.searchParams.get("redirect_uri")).toBe(
+      "http://localhost:3000/api/auth/callback/google",
+    );
+
+    const state = authorizationUrl.searchParams.get("state");
+    expect(state).toBeTruthy();
+
+    const callbackResponse = await request.get(
+      `/api/auth/callback/google?error=access_denied&state=${encodeURIComponent(state!)}`,
+      { maxRedirects: 0 },
+    );
+    expect(callbackResponse.status()).toBe(302);
+    expectSecurityHeaders(callbackResponse.headers());
+    expect(callbackResponse.headers().location).toBe(
+      "/login?error=access_denied",
+    );
+  });
+
   test("redirects the root route to login", async ({ page }) => {
     await page.goto("/");
 
