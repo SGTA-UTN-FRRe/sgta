@@ -520,10 +520,15 @@ describe("SchedulesScreen", () => {
     render(<SchedulesScreen state="no-plan" workspace={emptyWorkspace} />);
     await user.click(screen.getAllByRole("button", { name: "Crear plan" })[0]);
     const editor = screen.getByRole("dialog", { name: "Crear plan de horario" });
+    // Wait for the dialog's scheduled initial focus before pasting into the input.
+    await waitFor(() => {
+      expect(within(editor).getByRole("button", { name: "Cerrar nuevo plan" })).toHaveFocus();
+    });
     // Paste the long name in one input event; typing it key by key re-renders the whole
     // workspace per character and exceeded the test timeout on slow CI runners.
     await user.click(within(editor).getByLabelText("Nombre"));
     await user.paste(createdPlan.name);
+    expect(within(editor).getByLabelText("Nombre")).toHaveValue(createdPlan.name);
     await user.click(within(editor).getByRole("button", { name: "Guardar plan" }));
 
     await waitFor(
