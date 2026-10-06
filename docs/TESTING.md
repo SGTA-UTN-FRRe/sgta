@@ -51,6 +51,12 @@ Runtime versions, package managers, test frameworks, browser engines, and intern
 
 Tests live next to the implementation under `src/` and run in the Vitest `jsdom` environment. They verify shared primitives, route-level rendering, accessibility-oriented component behavior, and other behavior that does not require a running application or external infrastructure.
 
+The operator CLI smoke test under `scripts/` uses the Node.js environment. It
+launches the configured Admin bootstrap command in a subprocess and verifies
+that missing arguments produce usage guidance before database access. This
+covers server-only module resolution outside Next.js without credentials or
+PostgreSQL.
+
 The unit/component suite remains independent of PostgreSQL, Docker, and external services. Do not call these tests integration tests merely because they use React Testing Library.
 
 Authorization unit tests cover database-authoritative role and enabled-state
