@@ -14,6 +14,7 @@
     "test:e2e": "playwright test",
     "auth:bootstrap-admin": "tsx --conditions=react-server scripts/bootstrap-admin.ts",
     "data:import": "tsx scripts/import-initial-data.ts",
+    "data:verify": "tsx --conditions=react-server scripts/verify-initial-data.ts",
     "db:check": "drizzle-kit check",
     "db:query-audit": "tsx scripts/audit-database-queries.ts",
     "db:generate": "drizzle-kit generate",

@@ -233,6 +233,24 @@ public login page does not prove database migrations, OAuth access, or Sheets
 access. Verify the configured consultation copy through the Admin import action
 when carrying out the separate initial-data load and reconciliation.
 
+After generating the private registry package, run `corepack pnpm data:import
+--dry-run`, then `corepack pnpm data:import --apply --yes` against the explicit
+presentation `DATABASE_URL`. Refresh the consultation copy through the existing
+Admin import action and approve its classifications before comparing reports.
+Use `corepack pnpm data:verify --expected=local-docs/execution/initial-data-expectations.json`
+to compare independently prepared counts with the database. The optional JSON
+file maps metric keys to expected nonnegative integers; keep it and verification
+output under `local-docs/`. Run without `--expected` to inspect available keys.
+
+Verification checks registry values, duties by weekday, all imported opening
+balances, and consultation report totals by cycle and calendar year. It reports
+valid dates outside the configured cycles separately and exits nonzero on a
+mismatch. The command uses a read-only transaction, prints aggregate counts
+without tutor names or individual balances, and needs no Google credentials.
+Use it immediately after loading: subsequent attendance or hour movements can
+legitimately change balances from their opening values. Correct source or
+mapping discrepancies and re-import through the established workflow.
+
 ## Verification
 
 ```bash

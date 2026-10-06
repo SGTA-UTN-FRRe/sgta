@@ -72,6 +72,12 @@ Integration scenarios live under `tests/integration/` and run through the separa
 
 The initial-data importer consumes the generated registry package under `local-docs/data/build/m1/`. It is dry-run by default; writes require `DATABASE_URL` plus `--apply --yes`. Its integration scenario uses only synthetic CSVs and verifies a dry-run, transaction rollback, one audit event per apply, nullable tutor surnames, opening-balance idempotency, and re-import counts. The package generator and imported registry data stay in the private `local-docs/` boundary.
 
+The same synthetic integration scenario exercises `corepack pnpm data:verify`'s
+verification function. It checks registry equality, movement-derived opening
+balances, consultation counts, and canonical report totals in a repeatable-read,
+read-only PostgreSQL transaction. Incorrect expected counts fail verification;
+verification preserves movements and audit records.
+
 Docker is a local and CI prerequisite for this boundary. Testcontainers chooses an available host port; no fixed port, local database, production URL, Google credential, or personal data is used. There is no separate Docker check or public Docker gate.
 
 The on-demand PostgreSQL query-plan review runs with `corepack pnpm db:query-audit`. It starts a disposable PostgreSQL 16 container, reapplies the committed migrations, seeds deterministic synthetic rows, and prints `EXPLAIN (ANALYZE, BUFFERS)` output for current high-use query shapes. It is a review tool, not a CI gate or a numeric performance budget.
