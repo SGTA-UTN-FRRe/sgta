@@ -20,6 +20,7 @@ import {
 import { recordAuditEvent } from "@/db/audit-core";
 import { getDatabase } from "@/db/client";
 import type { Database } from "@/db/client-core";
+import { formatInformalTutorNameSql } from "@/db/tutor-name";
 import {
   administrativeCycle,
   career,
@@ -31,6 +32,7 @@ import {
   tutor,
 } from "@/db/schema";
 import { normalizeName } from "@/features/tutors/tutor-validation";
+import { formatTutorName } from "@/shared/tutor-name";
 
 import { importConsultationRows } from "./consultation-import-service";
 import {
@@ -271,7 +273,7 @@ export async function getConsultationWorkspace(
         studentLastName: consultation.studentLastName,
         studentContact: consultation.studentContact,
         career: career.name,
-        tutor: sql<string>`coalesce(${tutor.preferredDisplayName}, ${tutor.firstName} || ' ' || ${tutor.lastName})`,
+        tutor: formatInformalTutorNameSql(tutor.preferredDisplayName, tutor.firstName),
         academicStage: consultation.academicStage,
         modality: consultation.modality,
         rawTopic: consultation.rawTopic,
@@ -318,7 +320,7 @@ export async function getConsultationWorkspace(
             studentFirstName: consultationStaging.rawStudentFirstName,
             studentLastName: consultationStaging.rawStudentLastName,
             career: sql<string | null>`coalesce(${career.name}, ${consultationStaging.rawCareer})`,
-            tutor: sql<string | null>`coalesce(${tutor.preferredDisplayName}, ${tutor.firstName} || ' ' || ${tutor.lastName}, ${consultationStaging.rawTutor})`,
+            tutor: sql<string | null>`coalesce(${formatInformalTutorNameSql(tutor.preferredDisplayName, tutor.firstName)}, ${consultationStaging.rawTutor})`,
             status: consultationStaging.status,
             classification: consultationStaging.classification,
             reviewVersion: consultationStaging.reviewVersion,
@@ -550,7 +552,7 @@ async function canonicalForStaging(
       studentLastName: consultation.studentLastName,
       studentContact: consultation.studentContact,
       career: career.name,
-      tutor: sql<string>`coalesce(${tutor.preferredDisplayName}, ${tutor.firstName} || ' ' || ${tutor.lastName})`,
+      tutor: formatInformalTutorNameSql(tutor.preferredDisplayName, tutor.firstName),
       academicStage: consultation.academicStage,
       modality: consultation.modality,
       rawTopic: consultation.rawTopic,
@@ -621,7 +623,7 @@ export async function getConsultationReview(
       db
         .select({
           id: tutor.id,
-          name: sql<string>`coalesce(${tutor.preferredDisplayName}, ${tutor.firstName} || ' ' || ${tutor.lastName})`,
+          name: formatInformalTutorNameSql(tutor.preferredDisplayName, tutor.firstName),
           status: tutor.status,
         })
         .from(tutor)
@@ -654,7 +656,7 @@ export async function getConsultationReview(
             studentFirstName: consultationStaging.rawStudentFirstName,
             studentLastName: consultationStaging.rawStudentLastName,
             career: sql<string | null>`coalesce(${career.name}, ${consultationStaging.rawCareer})`,
-            tutor: sql<string | null>`coalesce(${tutor.preferredDisplayName}, ${tutor.firstName} || ' ' || ${tutor.lastName}, ${consultationStaging.rawTutor})`,
+            tutor: sql<string | null>`coalesce(${formatInformalTutorNameSql(tutor.preferredDisplayName, tutor.firstName)}, ${consultationStaging.rawTutor})`,
             status: consultationStaging.status,
             hasCanonical: sql<boolean>`${consultation.id} IS NOT NULL`,
           })
@@ -839,8 +841,7 @@ async function recordReviewDecision(
     if (selectedTutor === undefined) {
       throw new ConsultationServiceError(CONSULTATION_ERROR_CODES.notFound);
     }
-    selectedTutorName =
-      selectedTutor.preferredDisplayName ?? `${selectedTutor.firstName} ${selectedTutor.lastName}`;
+    selectedTutorName = formatTutorName(selectedTutor, "informal");
   }
 
   let subjectId = staging.subjectId;

@@ -2961,6 +2961,31 @@ describe("PostgreSQL foundation integration", () => {
     ).rejects.toMatchObject({ code: SCHEDULE_ERROR_CODES.cycleNotOpen });
   });
 
+  it("persists tutors without surnames and still rejects blank surnames", async () => {
+    const database = getIntegrationDatabase();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Computer Science", normalizedName: "computer science" })
+      .returning({ id: career.id });
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Ada",
+        lastName: null,
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id, lastName: tutor.lastName });
+
+    expect(createdTutor).toEqual({ id: expect.any(String), lastName: null });
+    await expect(
+      database.insert(tutor).values({
+        firstName: "Grace",
+        lastName: "   ",
+        primaryCareerId: createdCareer!.id,
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
+  });
+
   it("persists canonical tutor data and enforces relationship and reference constraints", async () => {
     const database = getIntegrationDatabase();
     const [primaryCareer] = await database

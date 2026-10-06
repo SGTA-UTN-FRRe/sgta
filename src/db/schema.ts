@@ -363,7 +363,7 @@ export const tutor = pgTable(
       onDelete: "set null",
     }),
     firstName: text("first_name").notNull(),
-    lastName: text("last_name").notNull(),
+    lastName: text("last_name"),
     preferredDisplayName: text("preferred_display_name"),
     institutionalIdentifier: text("institutional_identifier"),
     normalizedInstitutionalIdentifier: text("normalized_institutional_identifier"),
@@ -380,7 +380,10 @@ export const tutor = pgTable(
   },
   (table) => [
     check("tutor_first_name_not_blank_check", sql`length(trim(${table.firstName})) > 0`),
-    check("tutor_last_name_not_blank_check", sql`length(trim(${table.lastName})) > 0`),
+    check(
+      "tutor_last_name_not_blank_check",
+      sql`${table.lastName} IS NULL OR length(trim(${table.lastName})) > 0`,
+    ),
     check(
       "tutor_preferred_display_name_check",
       sql`${table.preferredDisplayName} IS NULL OR length(trim(${table.preferredDisplayName})) > 0`,

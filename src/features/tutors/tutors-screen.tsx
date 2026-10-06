@@ -367,6 +367,13 @@ function TutorIdentity({
   return (
     <div className="min-w-0">
       <p className="truncate font-semibold text-foreground">{tutor.formalName}</p>
+      {(tutor.lastName === null || tutor.institutionalIdentifier === null) && (
+        <StatusBadge
+          className="mt-1"
+          label="Datos incompletos"
+          variant="warning"
+        />
+      )}
       <p className="mt-1 truncate text-xs text-foreground-muted">{cycleLabel(tutor)}</p>
       {showScholarship && (
         <p className="mt-1 truncate text-xs text-foreground-secondary">
@@ -1333,7 +1340,7 @@ function TutorSheet({
                   <FieldError id={fieldErrorId("first-name")} message={fieldErrors.firstName} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-last-name">Apellido</label>
+                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-last-name">Apellido (opcional)</label>
                   <Input
                     aria-describedby={fieldErrors.lastName === undefined ? undefined : fieldErrorId("last-name")}
                     aria-invalid={fieldErrors.lastName !== undefined}

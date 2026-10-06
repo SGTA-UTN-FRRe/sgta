@@ -71,6 +71,15 @@ describe("TutorsScreen", () => {
     expect(screen.getAllByText(data.rows[0].formalName)).not.toHaveLength(0);
   });
 
+  it("identifies incomplete tutor records and marks the surname field optional", async () => {
+    const user = userEvent.setup();
+    renderScreen();
+
+    expect(screen.getByText("Datos incompletos")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Agregar tutor" }));
+    expect(screen.getByLabelText("Apellido (opcional)")).toBeInTheDocument();
+  });
+
   it("loads server-backed search and status filters", async () => {
     const user = userEvent.setup();
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {

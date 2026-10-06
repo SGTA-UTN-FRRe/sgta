@@ -705,7 +705,7 @@ Tutor:
 
 - id;
 - first name;
-- last name;
+- optional last name;
 - optional preferred display name;
 - optional institutional identifier when available;
 - primary career;
@@ -718,8 +718,11 @@ Tutor:
 
 Formatting:
 
-- use `Apellido, Nombre` in formal table identity;
-- optional preferred name may appear as secondary shorthand;
+- use `Apellido, Nombre` in formal table identity, joining only the parts that exist;
+- use the preferred name for informal display, falling back to the first name;
+- show no placeholder or dangling separator when a surname is absent;
+- show `Datos incompletos` in the tutor list when the surname or institutional
+  identifier is missing; derive it from the null fields;
 - do not fabricate an alias.
 
 #### Interaction: Add/Edit tutor
@@ -748,7 +751,8 @@ Compact:
 
 Validation:
 
-- required names and career;
+- first name and career are required; surname is optional;
+- a blank surname is stored as absent;
 - duplicate institutional identifier prevented when present;
 - subject assignment duplicates prevented.
 

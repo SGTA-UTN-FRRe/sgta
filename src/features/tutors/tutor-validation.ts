@@ -133,7 +133,7 @@ export const tutorListStatusSchema = z.enum(["ALL", "ACTIVE", "INACTIVE"]);
 export const createTutorInputSchema = z
   .object({
     firstName: requiredText(MAX_NAME_LENGTH),
-    lastName: requiredText(MAX_NAME_LENGTH),
+    lastName: optionalNullableText(MAX_NAME_LENGTH),
     preferredDisplayName: optionalNullableText(MAX_NAME_LENGTH),
     institutionalIdentifier: optionalNullableText(MAX_IDENTIFIER_LENGTH),
     applicationEmail: optionalNullableEmail,
@@ -147,7 +147,7 @@ export const createTutorInputSchema = z
 export const updateTutorInputSchema = z
   .object({
     firstName: requiredText(MAX_NAME_LENGTH).optional(),
-    lastName: requiredText(MAX_NAME_LENGTH).optional(),
+    lastName: optionalNullableText(MAX_NAME_LENGTH),
     preferredDisplayName: optionalNullableText(MAX_NAME_LENGTH),
     institutionalIdentifier: optionalNullableText(MAX_IDENTIFIER_LENGTH),
     applicationEmail: optionalNullableEmail,
