@@ -251,6 +251,22 @@ Use it immediately after loading: subsequent attendance or hour movements can
 legitimately change balances from their opening values. Correct source or
 mapping discrepancies and re-import through the established workflow.
 
+### Link Tutor access after loading data
+
+Provisioning an enabled Tutor identity and importing a Tutor record are separate
+operations. Google sign-in does not associate the two automatically. From the
+Admin account, open **Tutores → Editar → Cuenta de acceso** and enter the Google
+email in **Correo de la cuenta habilitada (opcional)**, then save. The account must
+already be enabled with the Tutor role and cannot belong to another Tutor record.
+Leaving that field empty unlinks the current account.
+
+The linked identity reads that Tutor's cycle context, subjects, effective
+schedule, and movement-derived balance. A Tutor identity without a profile link
+receives the account-linking guidance instead of another person's information.
+After linking, verify `/tutor`, `/tutor/schedule`, and `/tutor/hours` with the
+corresponding Google account. Keep personal linkage evidence and deployment
+checks in the private `local-docs/` boundary.
+
 ## Verification
 
 ```bash
