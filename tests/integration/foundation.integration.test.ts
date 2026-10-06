@@ -5494,12 +5494,12 @@ describe("PostgreSQL foundation integration", () => {
     expect(summary.nextDuty).toEqual(defaultSchedule.nextDuty);
     expect(lateEveningSummary).toMatchObject({
       state: "ready",
-      nextDuty: { date: "2027-04-05" },
+      nextDuty: null,
     });
     expect(lateEveningSchedule).toMatchObject({
       state: "ready",
       window: { anchorDate: "2027-04-05" },
-      nextDuty: { date: "2027-04-05" },
+      nextDuty: null,
     });
 
     expect(specialSchedule).toMatchObject({

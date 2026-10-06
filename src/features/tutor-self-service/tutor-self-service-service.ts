@@ -33,7 +33,7 @@ import {
   dateOnlySchema,
   getIsoWeekday,
 } from "@/features/schedules/schedule-validation";
-import { getArgentinaBusinessDate } from "@/shared/argentina-business-time";
+import { getArgentinaDateTime } from "@/shared/argentina-business-time";
 
 import {
   applicationUserIdSchema,
@@ -230,7 +230,7 @@ export type TutorSelfServiceSummary =
 
 type SelectDatabase = Pick<Database, "select">;
 
-type TutorSelfServiceReadOptions = {
+export type TutorSelfServiceReadOptions = {
   today?: string;
   now?: Date;
 };
@@ -399,10 +399,15 @@ function parseApplicationUserId(applicationUserId: string) {
   return parseInput(applicationUserIdSchema, applicationUserId);
 }
 
-function parseToday(options: TutorSelfServiceReadOptions) {
-  return options.today === undefined
-    ? getArgentinaBusinessDate(options.now)
-    : parseInput(dateOnlySchema, options.today);
+export function parseToday(options: TutorSelfServiceReadOptions) {
+  if (options.today !== undefined && options.now === undefined) {
+    return {
+      date: parseInput(dateOnlySchema, options.today),
+      minuteOfDay: null,
+    };
+  }
+
+  return getArgentinaDateTime(options.now ?? new Date());
 }
 
 async function runQuery<T>(operation: () => Promise<T>) {
@@ -484,6 +489,34 @@ export function resolveTutorSelfServiceScheduleWindow(
     startDate,
     endDate,
   };
+}
+
+type TutorNextDutyCandidate = Pick<
+  TutorSelfServiceScheduleAssignment,
+  "date" | "endMinutes" | "id" | "startMinutes"
+>;
+
+export function selectTutorNextDuty<T extends TutorNextDutyCandidate>(
+  assignments: readonly T[],
+  referenceDate: string,
+  minuteOfDay: number | null,
+): T | null {
+  return (
+    [...assignments]
+      .sort(
+        (left, right) =>
+          left.date.localeCompare(right.date) ||
+          left.startMinutes - right.startMinutes ||
+          left.endMinutes - right.endMinutes ||
+          left.id.localeCompare(right.id),
+      )
+      .find(
+        (assignment) =>
+          assignment.date > referenceDate ||
+          (assignment.date === referenceDate &&
+            (minuteOfDay === null || assignment.endMinutes > minuteOfDay)),
+      ) ?? null
+  );
 }
 
 function minDate(left: string, right: string) {
@@ -731,7 +764,7 @@ async function readScheduleForScope(
   db: SelectDatabase,
   scope: OwnerScope,
   input: TutorSelfServiceScheduleQuery,
-  today: string,
+  { date: today, minuteOfDay }: ReturnType<typeof parseToday>,
 ) {
   const window = resolveTutorSelfServiceScheduleWindow(scope.cycle, input, today);
 
@@ -809,9 +842,11 @@ async function readScheduleForScope(
 
   const nextReferenceDate =
     today < scope.cycle.startDate ? scope.cycle.startDate : today;
-  const nextDuty =
-    assignmentsByDate.find((assignment) => assignment.date >= nextReferenceDate) ??
-    null;
+  const nextDuty = selectTutorNextDuty(
+    assignmentsByDate,
+    nextReferenceDate,
+    nextReferenceDate === today ? minuteOfDay : null,
+  );
 
   return {
     state: "ready" as const,
