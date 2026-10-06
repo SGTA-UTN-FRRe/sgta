@@ -9,6 +9,8 @@ import {
   gte,
   ilike,
   inArray,
+  isNotNull,
+  isNull,
   lte,
   or,
   sql,
@@ -34,6 +36,7 @@ import { importConsultationRows } from "./consultation-import-service";
 import {
   consultationFiltersSchema,
   consultationImportOptionsSchema,
+  consultationBulkActionSchema,
   consultationReviewDetailQuerySchema,
   consultationReviewDecisionSchema,
   consultationReviewDetailSchema,
@@ -41,6 +44,7 @@ import {
   type ConsultationFilters,
   type ConsultationImportOptions,
   type ConsultationReviewDecision,
+  type ConsultationBulkAction,
   type ConsultationReviewDetailQuery,
   type ConsultationReviewDetail,
   type ConsultationWorkspace,
@@ -90,7 +94,7 @@ type CanonicalListRow = {
   reviewVersion: number;
   consultationDate: string;
   studentFirstName: string;
-  studentLastName: string;
+  studentLastName: string | null;
   studentContact: string | null;
   career: string;
   tutor: string;
@@ -158,6 +162,11 @@ function canonicalPredicates(filters: ConsultationFilters): SQL[] {
       predicates.push(eq(consultation.classification, filters.classification));
     }
   }
+  if (filters.suggestion === "WITH_SUGGESTION") {
+    predicates.push(isNotNull(consultationStaging.suggestedSubjectId));
+  } else if (filters.suggestion === "WITHOUT_SUGGESTION") {
+    predicates.push(isNull(consultationStaging.suggestedSubjectId));
+  }
   if (filters.search !== undefined) {
     predicates.push(consultationSearch(filters.search));
   }
@@ -193,6 +202,11 @@ function reviewQueuePredicates(filters: ConsultationFilters): SQL[] {
     predicates.push(
       eq(consultationStaging.classification, filters.classification),
     );
+  }
+  if (filters.suggestion === "WITH_SUGGESTION") {
+    predicates.push(isNotNull(consultationStaging.suggestedSubjectId));
+  } else if (filters.suggestion === "WITHOUT_SUGGESTION") {
+    predicates.push(isNull(consultationStaging.suggestedSubjectId));
   }
   if (filters.search !== undefined) {
     const pattern = `%${escapeLike(filters.search)}%`;
@@ -308,6 +322,8 @@ export async function getConsultationWorkspace(
             status: consultationStaging.status,
             classification: consultationStaging.classification,
             reviewVersion: consultationStaging.reviewVersion,
+            suggestedSubjectId: consultationStaging.suggestedSubjectId,
+            suggestedSubject: subject.name,
             anomalyFlags: consultationStaging.anomalyFlags,
             acknowledgedAnomalies: consultationStaging.acknowledgedAnomalies,
             hasCanonical: sql<boolean>`${consultation.id} IS NOT NULL`,
@@ -316,6 +332,10 @@ export async function getConsultationWorkspace(
           .leftJoin(career, eq(career.id, consultationStaging.careerId))
           .leftJoin(tutor, eq(tutor.id, consultationStaging.tutorId))
           .leftJoin(consultation, eq(consultation.stagingId, consultationStaging.id))
+          .leftJoin(
+            subject,
+            eq(subject.id, consultationStaging.suggestedSubjectId),
+          )
           .where(and(...reviewQueuePredicates(filters)))
           .orderBy(asc(consultationStaging.normalizedConsultationDate), asc(consultationStaging.id))
           .limit(filters.limit)
@@ -338,6 +358,180 @@ export async function getConsultationWorkspace(
       throw error;
     }
     throw new ConsultationServiceError(CONSULTATION_ERROR_CODES.queryFailed);
+  }
+}
+
+const nonBlockingBulkAnomalies: AnomalyCode[] = [
+  "MISSING_STUDENT_LAST_NAME",
+  "MISSING_TOPIC",
+  "MISSING_ACADEMIC_STAGE",
+  "MISSING_MODALITY",
+];
+
+const blockingBulkAnomalies = new Set<AnomalyCode>([
+  "MISSING_TUTOR",
+  "UNRESOLVED_TUTOR",
+  "AMBIGUOUS_TUTOR",
+  "MISSING_CAREER",
+  "UNRESOLVED_CAREER",
+  "AMBIGUOUS_CAREER",
+  "INVALID_CONSULTATION_DATE",
+  "MISSING_STUDENT_FIRST_NAME",
+  "MISSING_SOURCE_ROW_KEY",
+]);
+
+const skippableBulkReviewErrors = new Set<ConsultationErrorCode>([
+  CONSULTATION_ERROR_CODES.notFound,
+  CONSULTATION_ERROR_CODES.staleReview,
+  CONSULTATION_ERROR_CODES.canonicalDuplicateConflict,
+  CONSULTATION_ERROR_CODES.validationError,
+]);
+
+export async function getConsultationBulkSelection(
+  db: Database = getDatabase(),
+  rawFilters: unknown = {},
+) {
+  const filters = consultationFiltersSchema.parse(rawFilters);
+
+  try {
+    const where = and(...reviewQueuePredicates(filters));
+    const [matches, totals] = await Promise.all([
+      db
+        .select({ stagingId: consultationStaging.id })
+        .from(consultationStaging)
+        .where(where)
+        .orderBy(
+          asc(consultationStaging.normalizedConsultationDate),
+          asc(consultationStaging.id),
+        )
+        .limit(500),
+      db
+        .select({ total: count() })
+        .from(consultationStaging)
+        .where(where),
+    ]);
+
+    return {
+      stagingIds: matches.map((row) => row.stagingId),
+      matchingCount: totals[0]?.total ?? 0,
+    };
+  } catch (error) {
+    if (error instanceof ConsultationServiceError) {
+      throw error;
+    }
+    throw new ConsultationServiceError(CONSULTATION_ERROR_CODES.queryFailed);
+  }
+}
+
+export async function bulkConsolidateConsultations(
+  db: Database = getDatabase(),
+  rawInput: unknown,
+  context: ConsultationRequestContext,
+) {
+  const input: ConsultationBulkAction = consultationBulkActionSchema.parse(rawInput);
+  const actorId = context.actorId.trim();
+  if (actorId.length === 0 || actorId.length > 255) {
+    throw new ConsultationServiceError(CONSULTATION_ERROR_CODES.validationError);
+  }
+
+  try {
+    return await db.transaction(async (tx) => {
+      let confirmedCount = 0;
+      let skippedCount = 0;
+      const now = new Date();
+
+      for (const stagingId of input.stagingIds) {
+        const [staging] = await tx
+          .select()
+          .from(consultationStaging)
+          .where(eq(consultationStaging.id, stagingId))
+          .for("update")
+          .limit(1);
+        if (
+          staging === undefined ||
+          staging.status !== "PENDING_REVIEW" ||
+          staging.careerId === null ||
+          staging.tutorId === null ||
+          staging.normalizedConsultationDate === null ||
+          cleanText(staging.rawStudentFirstName) === null ||
+          staging.anomalyFlags.some(
+            (anomaly) =>
+              blockingBulkAnomalies.has(anomaly) ||
+              !nonBlockingBulkAnomalies.includes(anomaly),
+          ) ||
+          (input.action === "CONFIRM_SUGGESTED_SUBJECT" &&
+            staging.suggestedSubjectId === null)
+        ) {
+          skippedCount += 1;
+          continue;
+        }
+
+        let status: typeof consultationStaging.$inferSelect.status;
+        try {
+          status = await recordReviewDecision(
+            tx,
+            staging,
+            {
+              expectedVersion: staging.reviewVersion,
+              classification:
+                input.action === "CONFIRM_SUGGESTED_SUBJECT"
+                  ? "SUBJECT"
+                  : "GENERAL",
+              ...(input.action === "CONFIRM_SUGGESTED_SUBJECT"
+                ? { subjectId: staging.suggestedSubjectId! }
+                : {}),
+              acknowledgedAnomalies: staging.anomalyFlags.filter((anomaly) =>
+                nonBlockingBulkAnomalies.includes(anomaly),
+              ),
+            },
+            { ...context, actorId },
+            now,
+            true,
+            true,
+          );
+        } catch (error) {
+          if (
+            error instanceof ConsultationServiceError &&
+            skippableBulkReviewErrors.has(error.code)
+          ) {
+            skippedCount += 1;
+            continue;
+          }
+          throw error;
+        }
+        if (status === "CONSOLIDATED") {
+          confirmedCount += 1;
+        } else {
+          skippedCount += 1;
+        }
+      }
+
+      await recordAuditEvent(tx, {
+        actorId,
+        action: "consultation.bulk_consolidated",
+        entityType: "consultation_staging",
+        entityId: input.stagingIds[0]!,
+        requestId: context.requestId,
+        ipAddress: context.ipAddress,
+        metadata: {
+          action: input.action,
+          confirmedCount,
+          skippedCount,
+          stagingIds: input.stagingIds,
+        },
+      });
+
+      return {
+        action: input.action,
+        confirmedCount,
+        skippedCount,
+      };
+    });
+  } catch (error) {
+    if (error instanceof ConsultationServiceError) {
+      throw error;
+    }
+    throw new ConsultationServiceError(CONSULTATION_ERROR_CODES.transactionFailed);
   }
 }
 
@@ -583,8 +777,11 @@ async function recordReviewDecision(
   input: ConsultationReviewDecision,
   context: ConsultationRequestContext,
   now: Date,
+  suppressAudit = false,
+  skipIfNotConsolidated = false,
 ) {
   if (
+    !skipIfNotConsolidated &&
     staging.reviewedBy !== null &&
     staging.reviewedAt !== null &&
     (input.careerId === undefined || input.careerId === staging.careerId) &&
@@ -758,8 +955,7 @@ async function recordReviewDecision(
     careerId !== null &&
     tutorId !== null &&
     consultationDate !== null &&
-    cleanText(staging.rawStudentFirstName) !== null &&
-    cleanText(staging.rawStudentLastName) !== null;
+    cleanText(staging.rawStudentFirstName) !== null;
 
   if (
     currentIsDuplicate &&
@@ -780,6 +976,10 @@ async function recordReviewDecision(
     nextStatus = "CONSOLIDATED";
   } else {
     nextStatus = "PENDING_REVIEW";
+  }
+
+  if (skipIfNotConsolidated && nextStatus !== "CONSOLIDATED") {
+    return staging.status;
   }
 
   const normalizedCareer = selectedCareerName === null
@@ -828,37 +1028,39 @@ async function recordReviewDecision(
     ...(input.acknowledgedAnomalies === undefined ? [] : ["acknowledgedAnomalies"]),
     ...(duplicateDecisionChanges.length === 0 ? [] : ["duplicateDecisions"]),
   ];
-  await recordAuditEvent(tx, {
-    actorId: context.actorId,
-    action: "consultation_review.decided",
-    entityType: "consultation_staging",
-    entityId: staging.id,
-    requestId: context.requestId,
-    ipAddress: context.ipAddress,
-    metadata: {
-      fromStatus: staging.status,
-      toStatus: nextStatus,
-      reviewVersion: updated.reviewVersion,
-      changedFields,
-    },
-  });
-  for (const candidateId of duplicateDecisionChanges) {
-    const candidate = candidates.find((item) => item.id === candidateId);
-    const requested = requestedDuplicateDecisions.find(
-      (item) => item.candidateId === candidateId,
-    );
-    if (candidate === undefined || requested === undefined) {
-      continue;
-    }
+  if (!suppressAudit) {
     await recordAuditEvent(tx, {
       actorId: context.actorId,
-      action: "consultation_duplicate.decided",
-      entityType: "consultation_duplicate_candidate",
-      entityId: candidateId,
+      action: "consultation_review.decided",
+      entityType: "consultation_staging",
+      entityId: staging.id,
       requestId: context.requestId,
       ipAddress: context.ipAddress,
-      metadata: { decision: requested.decision },
+      metadata: {
+        fromStatus: staging.status,
+        toStatus: nextStatus,
+        reviewVersion: updated.reviewVersion,
+        changedFields,
+      },
     });
+    for (const candidateId of duplicateDecisionChanges) {
+      const candidate = candidates.find((item) => item.id === candidateId);
+      const requested = requestedDuplicateDecisions.find(
+        (item) => item.candidateId === candidateId,
+      );
+      if (candidate === undefined || requested === undefined) {
+        continue;
+      }
+      await recordAuditEvent(tx, {
+        actorId: context.actorId,
+        action: "consultation_duplicate.decided",
+        entityType: "consultation_duplicate_candidate",
+        entityId: candidateId,
+        requestId: context.requestId,
+        ipAddress: context.ipAddress,
+        metadata: { decision: requested.decision },
+      });
+    }
   }
 
   if (nextStatus === "CONSOLIDATED") {
@@ -875,7 +1077,7 @@ async function recordReviewDecision(
       .limit(1);
     const firstName = cleanText(staging.rawStudentFirstName);
     const lastName = cleanText(staging.rawStudentLastName);
-    if (firstName === null || lastName === null) {
+    if (firstName === null) {
       throw new ConsultationServiceError(CONSULTATION_ERROR_CODES.validationError);
     }
     const [canonical] = await tx
@@ -919,15 +1121,17 @@ async function recordReviewDecision(
     if (canonical === undefined) {
       throw new Error("Consultation consolidation did not return a canonical row.");
     }
-    await recordAuditEvent(tx, {
-      actorId: context.actorId,
-      action: "consultation.consolidated",
-      entityType: "consultation",
-      entityId: canonical.id,
-      requestId: context.requestId,
-      ipAddress: context.ipAddress,
-      metadata: { stagingId: staging.id, classification },
-    });
+    if (!suppressAudit) {
+      await recordAuditEvent(tx, {
+        actorId: context.actorId,
+        action: "consultation.consolidated",
+        entityType: "consultation",
+        entityId: canonical.id,
+        requestId: context.requestId,
+        ipAddress: context.ipAddress,
+        metadata: { stagingId: staging.id, classification },
+      });
+    }
   }
 
   return nextStatus;

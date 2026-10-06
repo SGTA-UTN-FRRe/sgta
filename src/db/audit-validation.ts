@@ -9,6 +9,7 @@ export type SafeJsonValue =
 export type SafeAuditMetadata = { [key: string]: SafeJsonValue };
 
 export const MAX_AUDIT_METADATA_BYTES = 8 * 1024;
+export const MAX_BULK_AUDIT_METADATA_BYTES = 32 * 1024;
 export const MAX_AUDIT_METADATA_DEPTH = 4;
 export const MAX_AUDIT_METADATA_KEYS = 64;
 export const MAX_AUDIT_METADATA_STRING_LENGTH = 1_000;
@@ -105,6 +106,20 @@ function validateValue(
 
   try {
     if (Array.isArray(value)) {
+      if (path === "metadata.stagingIds") {
+        if (
+          value.length > 500 ||
+          value.some(
+            (item) =>
+              typeof item !== "string" ||
+              !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(item),
+          )
+        ) {
+          return "metadata.stagingIds must contain at most 500 UUIDs";
+        }
+        return null;
+      }
+
       if (value.length > MAX_AUDIT_METADATA_KEYS) {
         return `${path} contains more than ${MAX_AUDIT_METADATA_KEYS} entries`;
       }
@@ -181,8 +196,12 @@ export function validateSafeAuditMetadata(value: unknown): string | null {
     }
 
     const bytes = new TextEncoder().encode(serialized).byteLength;
-    if (bytes > MAX_AUDIT_METADATA_BYTES) {
-      return `metadata exceeds the maximum size of ${MAX_AUDIT_METADATA_BYTES} bytes`;
+    const maxBytes =
+      Array.isArray((value as Record<string, unknown>).stagingIds)
+        ? MAX_BULK_AUDIT_METADATA_BYTES
+        : MAX_AUDIT_METADATA_BYTES;
+    if (bytes > maxBytes) {
+      return `metadata exceeds the maximum size of ${maxBytes} bytes`;
     }
   } catch {
     return "metadata must be JSON serializable";

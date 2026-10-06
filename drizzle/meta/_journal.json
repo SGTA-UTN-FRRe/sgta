@@ -64,6 +64,13 @@
       "when": 1790158591685,
       "tag": "0008_narrow_thunderbolts",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791277873383,
+      "tag": "0009_premium_jigsaw",
+      "breakpoints": true
     }
   ]
 }
