@@ -475,11 +475,16 @@ describe("SchedulesScreen", () => {
       name: /Benítez, Marina, LUN, 08:00 a 10:00/,
     })[0];
     await user.click(assignmentButton);
-    await user.click(screen.getByRole("button", { name: "Desactivar asignación" }));
+    await user.click(screen.getByRole("button", { name: "Eliminar asignación" }));
 
     await waitFor(() => {
       expect(screen.queryByRole("dialog", { name: "Editar asignación" })).not.toBeInTheDocument();
     });
+    expect(
+      screen.queryByRole("button", {
+        name: /Benítez, Marina, LUN, 08:00 a 10:00/,
+      }),
+    ).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
