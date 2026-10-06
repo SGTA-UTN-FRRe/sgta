@@ -52,6 +52,52 @@ describe("TutorsScreen", () => {
     window.history.replaceState({}, "", "/admin/tutors");
   });
 
+  it.each(["wide", "medium", "compact"])("opens detail from the tutor name in the %s layout and links to scoped hours", async (layout) => {
+    const user = userEvent.setup();
+    const detail = detailFor();
+    fetchMock.mockResolvedValue(Response.json({ tutor: detail }));
+    const { container } = renderScreen();
+    const names = within(container.querySelector(`[data-layout="${layout}"]`) as HTMLElement);
+    const name = names.getByRole("button", { name: detail.formalName });
+    await user.click(name);
+    const dialog = await screen.findByRole("dialog", { name: `Detalle de ${detail.formalName}` });
+    expect(within(dialog).getByRole("link", { name: "Ver horas" })).toHaveAttribute(
+      "href", `/admin/hours/movements?cycleId=${detail.currentCycle!.id}&tutorId=${detail.id}`,
+    );
+    expect(fetchMock).toHaveBeenCalledWith(`/api/admin/tutors/${detail.id}`, expect.anything());
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(name).toHaveFocus());
+  });
+
+  it("omits the hours link when a tutor has no current cycle", async () => {
+    const user = userEvent.setup();
+    const tutor = { ...data.rows[0], currentCycle: null };
+    fetchMock.mockResolvedValue(Response.json({ tutor: detailFor(tutor) }));
+    render(<TutorsScreen catalogOptions={catalogOptions} data={{ ...data, rows: [tutor] }} />);
+    await user.click(screen.getAllByRole("button", { name: tutor.formalName })[0]);
+    expect(within(await screen.findByRole("dialog")).queryByRole("link", { name: "Ver horas" })).not.toBeInTheDocument();
+  });
+
+  it("honors a tutor search link on arrival", async () => {
+    const tutor = data.rows[0];
+    window.history.replaceState({}, "", `/admin/tutors?search=${encodeURIComponent(tutor.formalName)}`);
+    fetchMock.mockResolvedValue(Response.json({ tutors: [tutor] }));
+    renderScreen();
+    expect(screen.getByRole("searchbox", { name: "Buscar tutor" })).toHaveValue(tutor.formalName);
+    await waitFor(() => expect(screen.getAllByRole("button", { name: tutor.formalName })).toHaveLength(3));
+    expect(screen.queryByText(data.rows[3].formalName)).not.toBeInTheDocument();
+    expect(new URL(String(fetchMock.mock.calls[0][0]), "http://localhost").searchParams.get("search")).toBe(tutor.formalName);
+  });
+
+  it("initializes search from the server destination when cached browser state differs", async () => {
+    const tutor = data.rows[3];
+    fetchMock.mockResolvedValue(Response.json({ tutors: [tutor] }));
+    render(<TutorsScreen catalogOptions={catalogOptions} data={data} initialSearch={tutor.formalName} />);
+    expect(screen.getByRole("searchbox", { name: "Buscar tutor" })).toHaveValue(tutor.formalName);
+    await waitFor(() => expect(screen.getAllByRole("button", { name: tutor.formalName })).toHaveLength(3));
+    expect(screen.queryByText(data.rows[0].formalName)).not.toBeInTheDocument();
+  });
+
   it("renders the operational hierarchy and accessible row actions", () => {
     renderScreen();
 

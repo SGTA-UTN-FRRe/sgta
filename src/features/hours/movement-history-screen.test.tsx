@@ -33,6 +33,15 @@ describe("MovementHistoryScreen", () => {
     fetchMock.mockReset();
   });
 
+  it("preserves a tutor deep link when that tutor has no movements", () => {
+    const tutorId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    renderHistory({ initialTutorId: tutorId });
+    expect(screen.getByLabelText("Tutor")).toHaveValue(tutorId);
+    expect(screen.getByRole("option", { name: "Tutor seleccionado" })).toBeInTheDocument();
+    expect(new URL(window.location.href).searchParams.get("tutorId")).toBe(tutorId);
+    expect(screen.queryByRole("list", { name: "Historial de movimientos" })).not.toBeInTheDocument();
+  });
+
   it("renders newest-first movements with origins and visible reversal relationships", () => {
     renderHistory();
 

@@ -40,6 +40,12 @@ describe("HoursScreen", () => {
     expect(screen.getAllByText("+02:30")).not.toHaveLength(0);
     expect(screen.getAllByText("Al día")).not.toHaveLength(0);
     expect(screen.getAllByText("Debe horas")).not.toHaveLength(0);
+    const name = data.balances[0].tutor.formalName;
+    const links = screen.getAllByRole("link", { name: `Ver tutor ${name}` });
+    expect(links).toHaveLength(3);
+    for (const link of links) {
+      expect(link).toHaveAttribute("href", `/admin/tutors?search=${encodeURIComponent(name)}`);
+    }
   });
 
   it("filters live balances by search, status, and category", async () => {

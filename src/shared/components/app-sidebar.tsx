@@ -43,6 +43,7 @@ interface NavItem {
 }
 
 const ADMIN_PRIMARY_NAV: NavItem[] = [
+  { label: "Inicio", href: "/admin", icon: LayoutDashboard },
   { label: "Tutores", href: "/admin/tutors", icon: Users },
   { label: "Horarios", href: "/admin/schedules", icon: Calendar },
   { label: "Horas", href: "/admin/hours", icon: Clock3 },
@@ -251,7 +252,6 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
           href={homeHref}
           onClick={closeMobileNav}
           aria-label="Tutorias UTN FRRe - inicio"
-          aria-current={isLinkActive(homeHref) ? "page" : undefined}
           className="group flex min-w-0 items-center gap-3 rounded-md"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-accent/40 bg-accent-surface text-accent transition-colors group-hover:border-accent">

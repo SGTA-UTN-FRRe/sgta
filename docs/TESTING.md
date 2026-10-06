@@ -119,6 +119,12 @@ Playwright scenarios live under `tests/e2e/` and exercise the application throug
 
 The Admin accessibility journey visits `/admin`, `/admin/tutors`, `/admin/tutors/subjects`, `/admin/schedules`, `/admin/schedules/attendance`, `/admin/hours`, `/admin/hours/movements`, `/admin/consultations`, `/admin/reports`, and `/admin/settings` at 390px, 900px, and 1440px. It checks page-level horizontal overflow, primary-action visibility, and header-action bounds. Its keyboard navigation scenario opens the mobile Admin drawer, follows a route link, and verifies focus moves to the new page heading.
 
+The Admin navigation journey uses the keyboard at those three widths to open
+tutor details from names, return to Inicio, follow balance and report links to
+the filtered tutor list, and follow tutor-detail and attendance links to
+cycle- and tutor-scoped movement history. It checks filtered destinations after
+visiting the tutor list earlier in the same browser session.
+
 The browser suite runs `@axe-core/playwright` against those Admin routes and the three Tutor self-service routes at Compact, Medium, and Wide widths, plus login and representative feedback, dialog, degraded-source, unavailable-source, and empty-report states. Scans use WCAG 2.2 A/AA tags and fail on serious or critical violations without disabling rules.
 
 Missing-page browser coverage verifies the branded 404 state, keyboard-operated

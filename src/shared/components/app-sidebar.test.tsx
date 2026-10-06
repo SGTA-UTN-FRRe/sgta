@@ -26,6 +26,38 @@ beforeEach(() => {
 });
 
 describe("AppSidebar", () => {
+  it.each(["admin", "admin-expanded", "admin-rail", "mobile-drawer"] as const)(
+    "places Inicio first in the %s navigation",
+    async (variant) => {
+      const user = userEvent.setup();
+      render(<AppSidebar variant={variant} />);
+      if (variant === "mobile-drawer") {
+        await user.click(screen.getByRole("button", { name: "Abrir navegación" }));
+      }
+      const scope = variant === "mobile-drawer" ? within(screen.getByRole("dialog")) : screen;
+      const links = within(scope.getByRole("navigation")).getAllByRole("link");
+      expect(links.map((link) => link.textContent?.trim())).toEqual([
+        "Inicio", "Tutores", "Horarios", "Horas", "Consultas", "Reportes", "Configuración",
+      ]);
+      expect(links[0]).toHaveAttribute("href", "/admin");
+    },
+  );
+
+  it.each(["/admin", "/admin/tutors", "/admin/hours/movements"])(
+    "marks Inicio current only on the exact home route when visiting %s",
+    (pathname) => {
+      mocks.pathname = pathname;
+      render(<AppSidebar variant="admin" />);
+      const home = screen.getByRole("link", { name: "Inicio" });
+      if (pathname === "/admin") {
+        expect(home).toHaveAttribute("aria-current", "page");
+      } else {
+        expect(home).not.toHaveAttribute("aria-current");
+      }
+      expect(document.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    },
+  );
+
   it.each([
     ["admin", "/admin/tutors", "/admin/schedules", "Horarios"],
     ["tutor", "/tutor", "/tutor/schedule", "Mi horario"],
@@ -99,6 +131,7 @@ describe("AppSidebar", () => {
   it("renders all administrative links in admin variant", () => {
     render(<AppSidebar variant="admin" />);
 
+    expect(screen.getByText("Inicio")).toBeInTheDocument();
     expect(screen.getByText("Tutores")).toBeInTheDocument();
     expect(screen.getByText("Horarios")).toBeInTheDocument();
     expect(screen.getByText("Horas")).toBeInTheDocument();

@@ -5,6 +5,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { ReportFilterOptions } from "@/features/reports/report-service";
+import { TutorProfileLink } from "@/features/tutors/tutor-profile-link";
 import type {
   ActivityGroup,
   ConsultationDemandReport,
@@ -426,9 +427,11 @@ function SectionHeading({
 function GroupTable<T extends ReportGroup<string | null>>({
   title,
   groups,
+  tutorLinks = false,
 }: {
   title: string;
   groups: LimitedReportGroups<T>;
+  tutorLinks?: boolean;
 }) {
   return (
     <div className="space-y-2">
@@ -438,7 +441,12 @@ function GroupTable<T extends ReportGroup<string | null>>({
         headers={[title, "Consultas"]}
         rows={groups.items.map((group, index) => ({
           key: group.key ?? `${title}-${index}`,
-          cells: [group.label, formatNumber(group.count)],
+          cells: [
+            tutorLinks && group.key !== null
+              ? <TutorProfileLink key="tutor" name={group.label} />
+              : group.label,
+            formatNumber(group.count),
+          ],
         }))}
       />
       {groups.truncated && (
@@ -480,7 +488,7 @@ function DemandSection({
               <GroupTable groups={section.data.bySubject} title="Materia" />
             </ReportCard>
             <ReportCard title="Por tutor">
-              <GroupTable groups={section.data.byTutor} title="Tutor" />
+              <GroupTable groups={section.data.byTutor} title="Tutor" tutorLinks />
             </ReportCard>
             <ReportCard title="Por modalidad">
               <GroupTable groups={section.data.byModality} title="Modalidad" />
@@ -646,7 +654,11 @@ function PlannedSchedulesSection({
             headers={["Tutor", "Ocurrencias", "Duración"]}
             rows={section.data.byTutor.items.map((group) => ({
               key: group.key,
-              cells: [group.label, formatNumber(group.count), formatMinutes(group.minutes)],
+              cells: [
+                <TutorProfileLink key="tutor" name={group.label} />,
+                formatNumber(group.count),
+                formatMinutes(group.minutes),
+              ],
             }))}
           />
           {section.data.byTutor.truncated && (

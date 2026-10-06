@@ -26,6 +26,7 @@ import {
 import { buttonVariants, Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { SafeHourCategory, SafeHourMovement } from "@/features/hours/hour-service";
+import { movementHistoryHref } from "@/features/hours/hour-navigation";
 import type {
   SafeAttendanceDateResult,
   SafeAttendanceMutationResult,
@@ -1004,7 +1005,14 @@ function AttendanceRow({
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold text-foreground">{tutor.formalName}</h3>
+            <h3 className="font-semibold text-foreground">
+              <Link
+                className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+                href={movementHistoryHref(occurrence.cycleId, tutor.id)}
+              >
+                {tutor.formalName}
+              </Link>
+            </h3>
             <StatusBadge
               label={attendanceStatusLabels[attendance.status]}
               variant={attendanceStatusVariant(attendance.status)}

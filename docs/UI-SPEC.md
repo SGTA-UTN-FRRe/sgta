@@ -58,6 +58,7 @@ Target Wide composition:
 | Tutorias             |                                                      |
 | SGTA                 |  Page title                              Primary CTA  |
 |                      |  Current context / supporting text                    |
+| Inicio               |                                                      |
 | Tutores              |                                                      |
 | Horarios             +------------------------------------------------------+
 | Horas                |                                                      |
@@ -73,7 +74,7 @@ Rules:
 
 - The final Admin sidebar is light.
 - The brand area links to `/admin`.
-- Five primary destinations remain stable: Tutores, Horarios, Horas, Consultas, Reportes.
+- Six primary destinations remain stable, in order: Inicio, Tutores, Horarios, Horas, Consultas, Reportes. Inicio links to `/admin` and is active only on that exact route.
 - Configuración and account controls are secondary.
 - Do not add a second persistent top navigation bar.
 - The page header belongs to the content region.
@@ -256,6 +257,11 @@ Spacer
 Secondary navigation
 Account
 ```
+
+**Primary navigation (Admin):** Inicio, Tutores, Horarios, Horas, Consultas,
+Reportes, in that order. Inicio targets `/admin` and uses exact path matching;
+child routes select their own destination. The brand also returns home, while
+`aria-current="page"` belongs to the selected navigation destination.
 
 **Account actions:**
 

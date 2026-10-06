@@ -41,6 +41,7 @@ import type {
   SafeTutorDetail,
   SafeTutorListItem,
 } from "@/features/tutors/tutor-service";
+import { movementHistoryHref } from "@/features/hours/hour-navigation";
 import type {
   TutorStateFixture,
   TutorsCatalogOptions,
@@ -90,6 +91,7 @@ export const tutorsStateFixtures: TutorStateFixture[] = [
 export interface TutorsScreenProps {
   data: TutorsScreenData;
   catalogOptions?: TutorsCatalogOptions;
+  initialSearch?: string;
   requiredAction?: "catalog" | "cycle";
   state?: TutorsScreenState;
 }
@@ -357,16 +359,39 @@ function TutorStatus({ tutor }: { tutor: SafeTutorListItem }) {
   );
 }
 
+function TutorDetailButton({
+  tutor,
+  onOpenSheet,
+  className,
+}: {
+  tutor: SafeTutorListItem;
+  onOpenSheet: (mode: Exclude<SheetMode, "add">, tutor: SafeTutorListItem, trigger: HTMLElement) => void;
+  className?: string;
+}) {
+  return (
+    <button
+      aria-haspopup="dialog"
+      className={cn("block max-w-full truncate rounded-sm text-left font-semibold text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring", className)}
+      onClick={(event) => onOpenSheet("view", tutor, event.currentTarget)}
+      type="button"
+    >
+      {tutor.formalName}
+    </button>
+  );
+}
+
 function TutorIdentity({
   showScholarship,
   tutor,
+  onOpenSheet,
 }: {
   showScholarship?: boolean;
   tutor: SafeTutorListItem;
+  onOpenSheet: (mode: Exclude<SheetMode, "add">, tutor: SafeTutorListItem, trigger: HTMLElement) => void;
 }) {
   return (
     <div className="min-w-0">
-      <p className="truncate font-semibold text-foreground">{tutor.formalName}</p>
+      <TutorDetailButton onOpenSheet={onOpenSheet} tutor={tutor} />
       {(tutor.lastName === null || tutor.institutionalIdentifier === null) && (
         <StatusBadge
           className="mt-1"
@@ -731,7 +756,7 @@ function TutorWideTable({
         <TableBody>
           {rows.map((tutor) => (
             <TableRow key={tutor.id}>
-              <TableCell><TutorIdentity tutor={tutor} /></TableCell>
+              <TableCell><TutorIdentity onOpenSheet={onOpenSheet} tutor={tutor} /></TableCell>
               <TableCell><span className="text-sm text-foreground">{tutor.primaryCareer.name}</span></TableCell>
               <TableCell><span className="text-sm text-foreground-secondary">{scholarshipLabel(tutor)}</span></TableCell>
               <TableCell>
@@ -797,7 +822,7 @@ function TutorMediumTable({
         <TableBody>
           {rows.map((tutor) => (
             <TableRow key={tutor.id}>
-              <TableCell><TutorIdentity showScholarship tutor={tutor} /></TableCell>
+              <TableCell><TutorIdentity onOpenSheet={onOpenSheet} showScholarship tutor={tutor} /></TableCell>
               <TableCell><span className="text-sm text-foreground">{tutor.primaryCareer.name}</span></TableCell>
               <TableCell>
                 <span className="text-sm tabular-nums text-foreground">
@@ -850,7 +875,7 @@ function TutorCompactList({
         <li className="p-4" key={tutor.id}>
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <p className="truncate text-base font-bold text-foreground">{tutor.formalName}</p>
+              <TutorDetailButton className="text-base font-bold" onOpenSheet={onOpenSheet} tutor={tutor} />
               <p className="mt-1 text-sm leading-6 text-foreground-secondary">{tutor.primaryCareer.name}</p>
             </div>
             <TutorActionsMenu
@@ -1529,6 +1554,9 @@ function TutorSheet({
           <div className="border-t border-border bg-surface px-6 py-4">
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <Button onClick={attemptClose} type="button" variant="outline">Cerrar</Button>
+              {isView && record?.currentCycle && (
+                <ActionLink href={movementHistoryHref(record.currentCycle.id, record.id)} label="Ver horas" />
+              )}
               {!isView && (
                 <Button
                   disabled={
@@ -1661,10 +1689,11 @@ function normalizeInitialStatus(value: string): FilterStatus {
 export function TutorsScreen({
   catalogOptions,
   data,
+  initialSearch,
   requiredAction = "cycle",
   state = "default",
 }: TutorsScreenProps) {
-  const [search, setSearch] = useState(() => readInitialFilter("search"));
+  const [search, setSearch] = useState(() => initialSearch ?? readInitialFilter("search"));
   const [careerId, setCareerId] = useState(() => readInitialFilter("careerId"));
   const [status, setStatus] = useState<FilterStatus>(() =>
     normalizeInitialStatus(readInitialFilter("status")),
