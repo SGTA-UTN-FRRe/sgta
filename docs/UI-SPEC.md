@@ -1115,6 +1115,10 @@ Assignment list
 
 Complex week-grid editing is replaced by a day/list editor.
 
+In Wide and Medium grids, concurrent assignments render side by side with their
+scheduled times fully visible. Assignments lasting 60 minutes or less use one line
+for the tutor and time; compact status icons retain screen-reader text.
+
 #### Data requirements
 
 Plan:

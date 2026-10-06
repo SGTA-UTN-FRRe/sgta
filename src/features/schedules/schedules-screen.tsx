@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  AlertTriangle,
   CalendarDays,
   Check,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   Clock3,
   Edit3,
   Plus,
+  RotateCcw,
   Settings2,
   X,
 } from "lucide-react";
@@ -19,6 +21,7 @@ import {
   type RefObject,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -32,6 +35,15 @@ import type {
   SafeScheduleTutor,
   SafeScheduleWorkspace,
 } from "@/features/schedules/schedule-service";
+import {
+  layoutDayAssignments,
+  SCHEDULE_GRID_END_MINUTES,
+  SCHEDULE_GRID_HOUR_HEIGHT_REM,
+  SCHEDULE_GRID_MIN_DAY_WIDTH_REM,
+  SCHEDULE_GRID_MIN_LANE_WIDTH_REM,
+  SCHEDULE_GRID_START_MINUTES,
+  type LaidOutScheduleAssignment,
+} from "@/features/schedules/schedule-layout";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import {
@@ -111,9 +123,6 @@ class ScheduleRequestError extends Error {
   }
 }
 
-const GRID_START_MINUTES = 8 * 60;
-const GRID_END_MINUTES = 20 * 60;
-const GRID_HOUR_HEIGHT_REM = 4;
 const selectClassName =
   "h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 const focusableSelector = [
@@ -600,7 +609,7 @@ function PlanContext({
               <button
                 aria-pressed={isSelected}
                 className={cn(
-                  "flex min-h-12 items-center justify-between gap-2 rounded-sm border px-2 py-2 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring sm:gap-3 sm:px-4 sm:py-3 sm:text-sm",
+                  "flex min-h-12 flex-col items-stretch gap-1 rounded-sm border px-2 py-1 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring sm:gap-2 sm:px-4 sm:py-2 sm:text-sm",
                   isSelected
                     ? "border-primary bg-primary/10 text-foreground"
                     : "border-border bg-surface text-foreground-secondary hover:bg-surface-subtle",
@@ -610,14 +619,16 @@ function PlanContext({
                 onClick={() => onSelectPlan(plan.id)}
                 type="button"
               >
-                <span className="min-w-0">
-                  <span className="block truncate font-semibold">{plan.name}</span>
-                  <span className="mt-1 block text-[10px] leading-4 text-foreground-muted sm:text-xs">
-                    {formatDate(plan.validFrom)} — {formatDate(plan.validTo)}
+                <span className="flex w-full min-w-0 items-center justify-between gap-1">
+                  <span className="block min-w-0 truncate font-semibold" title={plan.name}>
+                    {plan.name}
+                  </span>
+                  <span className="shrink-0 text-xs font-semibold">
+                    {isSelected ? "Seleccionado" : plan.kind === "REGULAR" ? "Regular" : "Especial"}
                   </span>
                 </span>
-                <span className="shrink-0 text-[10px] font-semibold sm:text-xs">
-                  {isSelected ? "Seleccionado" : plan.kind === "REGULAR" ? "Regular" : "Especial"}
+                <span className="block w-full whitespace-nowrap text-xs leading-4 text-foreground-muted">
+                  {formatDate(plan.validFrom)} — {formatDate(plan.validTo)}
                 </span>
               </button>
             );
@@ -631,43 +642,39 @@ function PlanContext({
 function ScheduleBlock({
   assignment,
   conflict,
+  layout,
   onEdit,
   selected,
 }: {
   assignment: AssignmentView;
   conflict: boolean;
+  layout: LaidOutScheduleAssignment<AssignmentView>;
   onEdit: (assignment: AssignmentView, trigger: HTMLElement) => void;
   selected: boolean;
 }) {
-  const start = Math.max(GRID_START_MINUTES, assignment.startMinutes);
-  const end = Math.min(GRID_END_MINUTES, assignment.endMinutes);
   const assignmentDurationMinutes =
     assignment.endMinutes - assignment.startMinutes;
-  const visibleDurationMinutes = end - start;
   const isCompact = assignmentDurationMinutes <= 60;
   const hasRecoveryStatus = assignment.kind === "RECOVERY";
   const hasSelectedStatus = selected && !conflict && !hasRecoveryStatus;
-  const statusCount =
-    Number(hasRecoveryStatus) + Number(conflict) + Number(hasSelectedStatus);
-  const top = ((start - GRID_START_MINUTES) / 60) * GRID_HOUR_HEIGHT_REM;
-  const minimumHeight =
-    isCompact && statusCount > 1 ? 4.75 : isCompact && statusCount > 0 ? 4 : 3.25;
-  const height = Math.max(
-    (visibleDurationMinutes / 60) * GRID_HOUR_HEIGHT_REM,
-    minimumHeight,
-  );
   const accessibleLabel = `${formatAssignmentLabel(assignment)}${
     conflict ? ", conflicto de horario" : ""
   }`;
+  const statusDescriptionId = `schedule-assignment-status-${useId().replaceAll(":", "")}`;
 
   return (
     <button
       aria-label={accessibleLabel}
+      aria-describedby={
+        isCompact && (conflict || hasRecoveryStatus)
+          ? statusDescriptionId
+          : undefined
+      }
       aria-pressed={selected}
       className={cn(
-        "absolute left-2 right-2 z-10 overflow-hidden rounded-sm border text-left shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
+        "absolute z-10 box-border overflow-hidden rounded-sm border text-left shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
         isCompact
-          ? "flex flex-col items-start gap-1 px-1.5 py-1.5"
+          ? "flex items-center px-1 py-0"
           : "flex flex-col items-start p-2",
         conflict
           ? "border-danger bg-danger-surface text-foreground hover:bg-danger-surface/80"
@@ -678,51 +685,61 @@ function ScheduleBlock({
       data-schedule-assignment-id={assignment.id}
       data-duration-layout={isCompact ? "compact" : "full"}
       onClick={(event) => onEdit(assignment, event.currentTarget)}
-      style={{ height: `${height}rem`, top: `${top}rem` }}
+      style={{
+        height: `${layout.height}rem`,
+        left: `calc(${(layout.lane / layout.laneCount) * 100}% + 0.125rem)`,
+        top: `${layout.top}rem`,
+        width: `calc(${100 / layout.laneCount}% - 0.25rem)`,
+      }}
+      title={accessibleLabel}
       type="button"
     >
-      <span className="sr-only">{selected ? "Seleccionada. " : ""}</span>
       {isCompact ? (
-        <span className="flex w-full min-w-0 items-center justify-between gap-1.5">
+        <span className="flex w-full min-w-0 items-center gap-1">
           <span className="min-w-0 flex-1 truncate text-xs font-bold">
             {assignment.tutor}
           </span>
-          <span className="shrink-0 text-[11px] font-semibold font-numeric tabular-nums">
+          <span
+            className="shrink-0 whitespace-nowrap text-xs font-semibold font-numeric tabular-nums"
+            data-schedule-assignment-time
+          >
             {assignment.start}–{assignment.end}
           </span>
+          {(hasRecoveryStatus || conflict) && (
+            <span aria-hidden="true" className="flex shrink-0 items-center gap-0.5">
+              {conflict && <AlertTriangle className="h-3 w-3" />}
+              {hasRecoveryStatus && <RotateCcw className="h-3 w-3" />}
+            </span>
+          )}
+          {(hasRecoveryStatus || conflict) && (
+            <span className="sr-only" id={statusDescriptionId}>
+              {conflict ? "Conflicto. " : ""}
+              {hasRecoveryStatus ? "Recuperación." : ""}
+            </span>
+          )}
         </span>
       ) : (
         <>
           <span className="w-full truncate text-xs font-bold">{assignment.tutor}</span>
           <span className="mt-1 flex items-center gap-1 text-xs font-numeric tabular-nums">
             <Clock3 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-            {assignment.start} — {assignment.end}
+            <span className="shrink-0 whitespace-nowrap" data-schedule-assignment-time>
+              {assignment.start} — {assignment.end}
+            </span>
           </span>
           <span className="mt-1 w-full truncate text-[11px] text-foreground-secondary">
             {assignment.modality ?? "Sin modalidad"}
           </span>
+          <span className="mt-auto flex flex-wrap gap-1">
+            {hasRecoveryStatus && (
+              <StatusBadge label="Recuperación" variant="faro" />
+            )}
+            {conflict && <StatusBadge label="Conflicto" variant="danger" />}
+            {hasSelectedStatus && (
+              <StatusBadge label="Seleccionada" variant="info" />
+            )}
+          </span>
         </>
-      )}
-      {assignment.kind === "RECOVERY" && (
-        <StatusBadge
-          className={isCompact ? "px-1.5 py-0 text-[10px]" : "mt-auto"}
-          label="Recuperación"
-          variant="faro"
-        />
-      )}
-      {conflict && (
-        <StatusBadge
-          className={isCompact ? "px-1.5 py-0 text-[10px]" : "mt-auto"}
-          label="Conflicto"
-          variant="danger"
-        />
-      )}
-      {hasSelectedStatus && (
-        <StatusBadge
-          className={isCompact ? "px-1.5 py-0 text-[10px]" : "mt-auto"}
-          label="Seleccionada"
-          variant="info"
-        />
       )}
     </button>
   );
@@ -730,8 +747,11 @@ function ScheduleBlock({
 
 function TimeRail() {
   const hours = Array.from(
-    { length: (GRID_END_MINUTES - GRID_START_MINUTES) / 60 },
-    (_, index) => index + GRID_START_MINUTES / 60,
+    {
+      length:
+        (SCHEDULE_GRID_END_MINUTES - SCHEDULE_GRID_START_MINUTES) / 60,
+    },
+    (_, index) => index + SCHEDULE_GRID_START_MINUTES / 60,
   );
 
   return (
@@ -743,7 +763,9 @@ function TimeRail() {
         <span
           className="absolute right-2 -translate-y-1/2 text-[11px] font-numeric tabular-nums text-foreground-muted"
           key={hour}
-          style={{ top: `${(hour - GRID_START_MINUTES / 60) * GRID_HOUR_HEIGHT_REM}rem` }}
+          style={{
+            top: `${(hour - SCHEDULE_GRID_START_MINUTES / 60) * SCHEDULE_GRID_HOUR_HEIGHT_REM}rem`,
+          }}
         >
           {String(hour).padStart(2, "0")}:00
         </span>
@@ -753,39 +775,44 @@ function TimeRail() {
 }
 
 function ScheduleDayColumn({
-  assignments,
   conflictIds,
   day,
+  layouts,
   onEdit,
   selectedAssignmentId,
 }: {
-  assignments: AssignmentView[];
   conflictIds: Set<string>;
   day: string;
+  layouts: LaidOutScheduleAssignment<AssignmentView>[];
   onEdit: (assignment: AssignmentView, trigger: HTMLElement) => void;
   selectedAssignmentId: string | null;
 }) {
   const hours = Array.from(
-    { length: (GRID_END_MINUTES - GRID_START_MINUTES) / 60 },
+    {
+      length:
+        (SCHEDULE_GRID_END_MINUTES - SCHEDULE_GRID_START_MINUTES) / 60,
+    },
     (_, index) => index,
   );
 
   return (
-    <div className="relative h-[48rem] border-r border-border-subtle last:border-r-0">
+    <div
+      className="relative h-[48rem] border-r border-border-subtle last:border-r-0"
+      data-schedule-day-column={day}
+    >
       {hours.map((hour) => (
         <span
           className="absolute inset-x-0 border-t border-border-subtle"
           key={hour}
-          style={{ top: `${hour * GRID_HOUR_HEIGHT_REM}rem` }}
+          style={{ top: `${hour * SCHEDULE_GRID_HOUR_HEIGHT_REM}rem` }}
         />
       ))}
-      {assignments
-        .filter((assignment) => assignment.day === day)
-        .map((assignment) => (
+      {layouts.map(({ assignment, ...layout }) => (
           <ScheduleBlock
             assignment={assignment}
             conflict={conflictIds.has(assignment.id)}
             key={assignment.id}
+            layout={{ assignment, ...layout }}
             onEdit={onEdit}
             selected={assignment.id === selectedAssignmentId}
           />
@@ -809,6 +836,26 @@ function ScheduleGrid({
   selectedAssignmentId: string | null;
   title: string;
 }) {
+  const dayLayouts = days.map((day) => {
+    const dayAssignments = assignments.filter(
+      (assignment) => assignment.day === day,
+    );
+    const layouts = layoutDayAssignments(dayAssignments);
+    const laneCount = layouts.reduce(
+      (maximum, layout) => Math.max(maximum, layout.laneCount),
+      1,
+    );
+
+    return {
+      day,
+      layouts,
+      minimumWidthRem: Math.max(
+        SCHEDULE_GRID_MIN_DAY_WIDTH_REM,
+        laneCount * SCHEDULE_GRID_MIN_LANE_WIDTH_REM,
+      ),
+    };
+  });
+
   return (
     <section aria-labelledby={`${title}-title`} className="mt-4" id="schedule-workspace">
       <div className="flex items-center justify-between gap-4">
@@ -829,13 +876,15 @@ function ScheduleGrid({
           className="grid min-w-[40rem]"
           role="group"
           style={{
-            gridTemplateColumns: `4.5rem repeat(${days.length}, minmax(10rem, 1fr))`,
+            gridTemplateColumns: `4.5rem ${dayLayouts
+              .map(({ minimumWidthRem }) => `minmax(${minimumWidthRem}rem, 1fr)`)
+              .join(" ")}`,
           }}
         >
           <div className="border-b border-border bg-surface-subtle/60 p-3 text-xs font-semibold text-foreground-muted">
             Hora
           </div>
-          {days.map((day) => (
+          {dayLayouts.map(({ day }) => (
             <div
               className="border-b border-l border-border bg-surface-subtle/60 p-3 text-center text-xs font-bold tracking-[0.12em] text-foreground-secondary"
               key={day}
@@ -844,11 +893,11 @@ function ScheduleGrid({
             </div>
           ))}
           <TimeRail />
-          {days.map((day) => (
+          {dayLayouts.map(({ day, layouts }) => (
             <ScheduleDayColumn
-              assignments={assignments}
               conflictIds={conflictIds}
               day={day}
+              layouts={layouts}
               key={day}
               onEdit={onEdit}
               selectedAssignmentId={selectedAssignmentId}

@@ -218,8 +218,15 @@ describe("SchedulesScreen", () => {
         expected.durationLayout,
       );
       expect(assignment).toHaveAccessibleName(expected.label);
+      expect(assignment).toHaveAttribute("title", expected.label);
       expect(assignment).toHaveTextContent(expected.start);
       expect(assignment).toHaveTextContent(expected.end);
+      expect(
+        assignment.querySelector("[data-schedule-assignment-time]"),
+      ).toHaveTextContent(expected.start);
+      expect(
+        assignment.querySelector("[data-schedule-assignment-time]"),
+      ).toHaveTextContent(expected.end);
     }
 
     await user.click(
@@ -230,6 +237,63 @@ describe("SchedulesScreen", () => {
     const editor = screen.getByRole("dialog", { name: "Editar asignación" });
     expect(within(editor).getByLabelText("Modalidad")).toHaveValue(
       mondayAssignment.modality,
+    );
+  });
+
+  it("exposes compact recovery and conflict states without badges", async () => {
+    const user = userEvent.setup();
+    const recoveryAssignment: SafeScheduleAssignment = {
+      ...mondayAssignment,
+      endMinutes: 510,
+      id: "99999999-9999-4999-8999-999999999999",
+      kind: "RECOVERY",
+      tutorName: "Rivera, Alex",
+    };
+
+    render(
+      <SchedulesScreen
+        state="default"
+        workspace={
+          createWorkspace({
+            assignments: [recoveryAssignment],
+            conflicts: [
+              {
+                assignmentId: recoveryAssignment.id,
+                conflictingAssignmentIds: [],
+              },
+            ],
+          })
+        }
+      />,
+    );
+
+    const weeklyGrid = within(screen.getByRole("group", { name: "Grilla semanal" }));
+    const accessibleName = "Rivera, Alex, LUN, 08:00 a 08:30, conflicto de horario";
+    const assignment = weeklyGrid.getByRole("button", { name: accessibleName });
+
+    expect(assignment).toHaveAttribute("data-duration-layout", "compact");
+    expect(assignment).toHaveAttribute("aria-pressed", "false");
+    expect(assignment).toHaveAccessibleName(accessibleName);
+    expect(assignment).toHaveAttribute("aria-describedby");
+    expect(
+      within(assignment).getByText("Conflicto. Recuperación.", {
+        selector: ".sr-only",
+      }),
+    ).toBeInTheDocument();
+    expect(assignment.querySelectorAll('[aria-hidden="true"] svg')).toHaveLength(2);
+    const statusIds = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '[id^="schedule-assignment-status-"]',
+      ),
+    ).map((element) => element.id);
+    expect(new Set(statusIds).size).toBe(statusIds.length);
+    expect(assignment).not.toHaveTextContent("Seleccionada");
+
+    await user.click(assignment);
+
+    expect(assignment).toHaveAttribute(
+      "aria-pressed",
+      "true",
     );
   });
 
