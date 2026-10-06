@@ -224,6 +224,7 @@ export const consultationFiltersSchema = z
     fromDate: dateOnlySchema.optional(),
     toDate: dateOnlySchema.optional(),
     classification: z.enum(consultationClassificationEnum.enumValues).optional(),
+    suggestion: z.enum(["ALL", "WITH_SUGGESTION", "WITHOUT_SUGGESTION"]).default("ALL"),
     search: z.string().trim().min(1).max(120).optional(),
     limit: z.coerce.number().int().min(1).max(100).default(50),
     offset: z.coerce.number().int().min(0).max(100_000).default(0),
@@ -239,6 +240,22 @@ export const consultationFiltersSchema = z
         code: "custom",
         path: ["toDate"],
         message: "must be on or after fromDate",
+      });
+    }
+  });
+
+export const consultationBulkActionSchema = z
+  .object({
+    action: z.enum(["CONFIRM_SUGGESTED_SUBJECT", "CONFIRM_GENERAL"]),
+    stagingIds: z.array(uuidSchema).min(1).max(500),
+  })
+  .strict()
+  .superRefine((input, context) => {
+    if (new Set(input.stagingIds).size !== input.stagingIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["stagingIds"],
+        message: "staging IDs must be unique",
       });
     }
   });
@@ -369,7 +386,7 @@ export const consultationListItemSchema = z
     reviewVersion: z.number().int().min(1),
     consultationDate: dateOnlySchema,
     studentFirstName: z.string().trim().min(1).max(200),
-    studentLastName: z.string().trim().min(1).max(200),
+    studentLastName: z.string().trim().min(1).max(200).nullable(),
     studentContact: z.string().max(320).nullable(),
     career: z.string().trim().min(1).max(300),
     tutor: z.string().trim().min(1).max(300),
@@ -490,6 +507,8 @@ export const consultationWorkspaceSchema = z
             status: z.enum(consultationStagingStatusEnum.enumValues),
             classification: z.enum(consultationClassificationEnum.enumValues),
             reviewVersion: z.number().int().min(1),
+            suggestedSubjectId: uuidSchema.nullable().optional(),
+            suggestedSubject: z.string().trim().min(1).max(300).nullable().optional(),
             anomalyFlags: z.array(consultationAnomalyCodeSchema).max(32),
             acknowledgedAnomalies: z
               .array(consultationAnomalyCodeSchema)
@@ -522,6 +541,9 @@ export type ConsultationReviewDetailQuery = z.output<
 >;
 export type ConsultationReviewDecision = z.output<
   typeof consultationReviewDecisionSchema
+>;
+export type ConsultationBulkAction = z.output<
+  typeof consultationBulkActionSchema
 >;
 export type ConsultationImportSummary = z.output<
   typeof consultationImportSummarySchema

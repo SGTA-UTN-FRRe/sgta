@@ -25,6 +25,7 @@ type AdminConsultationsPageProps = {
 
 const defaultFilters: ConsultationFilters = {
   status: "ALL",
+  suggestion: "ALL",
   limit: 50,
   offset: 0,
 };

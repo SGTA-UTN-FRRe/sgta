@@ -1376,9 +1376,10 @@ Related workflow: Consultation intake and curation
 
 1. import status + `Actualizar consultas`;
 2. pending review count;
-3. filters;
-4. consultation list;
-5. review/detail sheet.
+3. filters, including subject suggestion;
+4. pending review queue with row selection and bulk actions;
+5. consultation list;
+6. review/detail sheet.
 
 **Primary action:** `Actualizar consultas`.
 
@@ -1390,6 +1391,7 @@ Consultas                              [Actualizar consultas]
 Pendientes de revisión: ...
 
 [Estado] [Carrera] [Tutor] [Fecha] [Clasificación]
+[Sugerencia de materia]
 
 +--------------------------------------------------------------------+
 | Fecha   Estudiante   Tutor   Tema   Clasificación   Estado           |
@@ -1437,6 +1439,17 @@ Failure:
 
 - existing canonical data remains available;
 - action changes to retry state.
+
+#### Interaction: Bulk consolidation
+
+- Each pending row has a keyboard-accessible selection checkbox.
+- The page checkbox selects or clears the visible pending rows.
+- `Seleccionar todas las filtradas` selects up to 500 matching pending rows in stable date order. If more rows match, the interface reports the selected and remaining counts; the Admin can confirm another batch after the completed rows leave the queue.
+- The suggestion filter offers `Todas`, `Con sugerencia`, and `Sin sugerencia`.
+- `Confirmar materia sugerida` is available for selected rows with a suggested subject; `Confirmar como General / Varias` is available for any selected rows.
+- A confirmation dialog states the selected count and explains that non-blocking observations about surname, topic, academic stage, and modality will be acknowledged.
+- The server revalidates each row in one transaction. Rows with blocking issues, unresolved duplicate decisions, a missing suggestion for the subject action, or an existing final state are omitted and counted in the result.
+- Suggestions guide the Admin; they never consolidate a row automatically.
 
 #### Review sheet
 
@@ -1489,6 +1502,8 @@ Pending rows are excluded from subject-level metrics.
 - review reason is not communicated by color only;
 - student contact fields are labeled;
 - filter controls are keyboard reachable;
+- row checkboxes, page selection, filtered selection, and bulk confirmation are keyboard reachable;
+- bulk confirmation is announced with the selected count and returns focus to the initiating action;
 - sheet has focus containment and return.
 
 #### Microcopy
@@ -1498,6 +1513,11 @@ Pending rows are excluded from subject-level metrics.
 | Page title | Consultas |
 | CTA | Actualizar consultas |
 | Pending label | Pendientes de revisión |
+| Subject suggestion filter | Sugerencia de materia |
+| Suggested subject option | Con sugerencia |
+| Missing subject suggestion option | Sin sugerencia |
+| Bulk subject action | Confirmar materia sugerida |
+| Bulk general action | Confirmar como General / Varias |
 | Source unavailable | No se pudo acceder a la fuente de consultas. |
 | Retry | Reintentar |
 
@@ -1507,6 +1527,8 @@ Pending rows are excluded from subject-level metrics.
 - [ ] Reimport is idempotent.
 - [ ] Existing canonical data survives source outage.
 - [ ] Ambiguity is reviewed, not guessed.
+- [ ] Suggestions do not bypass Admin confirmation.
+- [ ] Bulk actions report confirmed and omitted rows and acknowledge only non-blocking observations.
 - [ ] Pending classification is excluded from subject metrics.
 - [ ] Student contact remains Admin-only.
 

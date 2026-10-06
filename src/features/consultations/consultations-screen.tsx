@@ -45,6 +45,8 @@ type ReviewQueueItem = ConsultationWorkspace["reviewQueue"][number];
 type Classification = ConsultationReviewDetail["classification"];
 type DuplicateChoice = "" | "DUPLICATE" | "NOT_DUPLICATE" | "PEER_DUPLICATE";
 type ConsultationStatus = ConsultationFilters["status"];
+type SuggestionFilter = ConsultationFilters["suggestion"];
+type BulkAction = "CONFIRM_SUGGESTED_SUBJECT" | "CONFIRM_GENERAL";
 
 type ConsultationFilterState = {
   status: ConsultationStatus;
@@ -53,6 +55,7 @@ type ConsultationFilterState = {
   fromDate?: string;
   toDate?: string;
   classification?: "SUBJECT" | "GENERAL" | "PENDING_CLASSIFICATION";
+  suggestion: SuggestionFilter;
   search?: string;
   limit: number;
   offset: number;
@@ -86,6 +89,7 @@ const filterKeys = new Set([
   "fromDate",
   "toDate",
   "classification",
+  "suggestion",
   "search",
   "limit",
   "offset",
@@ -156,6 +160,7 @@ function filtersToSearchParams(filters: ConsultationFilterState) {
   if (filters.fromDate) params.set("fromDate", filters.fromDate);
   if (filters.toDate) params.set("toDate", filters.toDate);
   if (filters.classification) params.set("classification", filters.classification);
+  if (filters.suggestion !== "ALL") params.set("suggestion", filters.suggestion);
   if (filters.search) params.set("search", filters.search);
   if (filters.limit !== 50) params.set("limit", String(filters.limit));
   if (filters.offset > 0) params.set("offset", String(filters.offset));
@@ -179,9 +184,11 @@ function parseURLFilters(search: string): ConsultationFilterState | null {
   }
 
   const status = values.status ?? "ALL";
+  const suggestion = values.suggestion ?? "ALL";
   const allowedStatuses = ["ALL", "PENDING_REVIEW", "READY", "CONSOLIDATED", "DUPLICATE"];
   const classification = values.classification;
   if (!allowedStatuses.includes(status)) return null;
+  if (!["ALL", "WITH_SUGGESTION", "WITHOUT_SUGGESTION"].includes(suggestion)) return null;
   if (
     classification !== undefined &&
     !["SUBJECT", "GENERAL", "PENDING_CLASSIFICATION"].includes(classification)
@@ -201,6 +208,7 @@ function parseURLFilters(search: string): ConsultationFilterState | null {
 
   return {
     status: status as ConsultationStatus,
+    suggestion: suggestion as SuggestionFilter,
     ...(values.careerId ? { careerId: values.careerId } : {}),
     ...(values.tutorId ? { tutorId: values.tutorId } : {}),
     ...(values.fromDate ? { fromDate: values.fromDate } : {}),
@@ -341,8 +349,16 @@ export function ConsultationsScreen({
   const [reviewSaving, setReviewSaving] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewSuccess, setReviewSuccess] = useState<string | null>(null);
+  const [selectedStagingIds, setSelectedStagingIds] = useState<string[]>([]);
+  const [selectionLoading, setSelectionLoading] = useState(false);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkConfirmationAction, setBulkConfirmationAction] =
+    useState<BulkAction | null>(null);
+  const [bulkMessage, setBulkMessage] = useState<string | null>(null);
+  const [bulkError, setBulkError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<string | null>(null);
   const lastTriggerRef = useRef<HTMLElement | null>(null);
+  const bulkDialogTriggerRef = useRef<HTMLElement | null>(null);
   const screenRef = useRef<HTMLDivElement>(null);
   const listRequestRef = useRef<AbortController | null>(null);
   const reviewRequestRef = useRef(0);
@@ -355,6 +371,7 @@ export function ConsultationsScreen({
       filters.fromDate ||
       filters.toDate ||
       filters.classification ||
+      filters.suggestion !== "ALL" ||
       filters.search ||
       filters.status !== "ALL",
   );
@@ -466,7 +483,10 @@ export function ConsultationsScreen({
   useEffect(() => {
     const parsed = parseURLFilters(window.location.search);
     if (parsed === null) {
-      writeURLFilters({ status: "ALL", limit: 50, offset: 0 }, true);
+      writeURLFilters(
+        { status: "ALL", suggestion: "ALL", limit: 50, offset: 0 },
+        true,
+      );
       return;
     }
     writeURLFilters(parsed, true);
@@ -476,7 +496,7 @@ export function ConsultationsScreen({
     function handlePopState() {
       const parsed = parseURLFilters(window.location.search);
       if (parsed === null) {
-        const defaults: ConsultationFilterState = { status: "ALL", limit: 50, offset: 0 };
+        const defaults: ConsultationFilterState = { status: "ALL", suggestion: "ALL", limit: 50, offset: 0 };
         writeURLFilters(defaults, true);
         setFilterError(true);
         currentFiltersRef.current = defaults;
@@ -495,7 +515,7 @@ export function ConsultationsScreen({
 
   useEffect(() => {
     if (!filterError) return;
-    const defaults: ConsultationFilterState = { status: "ALL", limit: 50, offset: 0 };
+    const defaults: ConsultationFilterState = { status: "ALL", suggestion: "ALL", limit: 50, offset: 0 };
     writeURLFilters(defaults, true);
   }, [filterError]);
 
@@ -509,6 +529,9 @@ export function ConsultationsScreen({
       else delete (next as Record<string, unknown>)[key];
 
       setFilterError(false);
+      setSelectedStagingIds([]);
+      setBulkMessage(null);
+      setBulkError(null);
       currentFiltersRef.current = next;
       setFilters(next);
       writeURLFilters(next, replace);
@@ -517,8 +540,11 @@ export function ConsultationsScreen({
   );
 
   const clearFilters = useCallback(() => {
-    const defaults: ConsultationFilterState = { status: "ALL", limit: 50, offset: 0 };
+    const defaults: ConsultationFilterState = { status: "ALL", suggestion: "ALL", limit: 50, offset: 0 };
     setFilterError(false);
+    setSelectedStagingIds([]);
+    setBulkMessage(null);
+    setBulkError(null);
     currentFiltersRef.current = defaults;
     setFilters(defaults);
     writeURLFilters(defaults);
@@ -661,6 +687,132 @@ export function ConsultationsScreen({
     }
   }, [emptyWorkspace, importing, refreshWorkspace]);
 
+  const selectAllFiltered = useCallback(async () => {
+    setSelectionLoading(true);
+    setBulkError(null);
+    setBulkMessage(null);
+
+    try {
+      const params = filtersToSearchParams({ ...filters, offset: 0 }).toString();
+      const response = await fetch(
+        `/api/admin/consultations/bulk${params ? `?${params}` : ""}`,
+        { cache: "no-store" },
+      );
+      const selection = await responseJSON<{
+        stagingIds?: string[];
+        matchingCount?: number;
+        error?: string;
+      }>(response);
+      if (
+        !response.ok ||
+        selection.stagingIds === undefined ||
+        selection.matchingCount === undefined
+      ) {
+        throw new Error(selection.error ?? "selection_unavailable");
+      }
+
+      setSelectedStagingIds(selection.stagingIds);
+      const message =
+        selection.matchingCount === 0
+          ? "No hay consultas pendientes con estos filtros."
+          : selection.matchingCount > selection.stagingIds.length
+            ? `Se seleccionaron ${selection.stagingIds.length} de ${selection.matchingCount} pendientes; quedan ${selection.matchingCount - selection.stagingIds.length} para otra tanda. Confirme el lote y seleccione la siguiente tanda para continuar.`
+            : `Se seleccionaron ${selection.stagingIds.length} consultas pendientes.`;
+      setBulkMessage(message);
+      setAnnouncement(message);
+    } catch {
+      setBulkError("No se pudieron seleccionar las consultas filtradas. Intente nuevamente.");
+    } finally {
+      setSelectionLoading(false);
+    }
+  }, [filters]);
+
+  const toggleStagingSelection = useCallback(
+    (stagingId: string) => {
+      if (selectedStagingIds.includes(stagingId)) {
+        setSelectedStagingIds(
+          selectedStagingIds.filter((id) => id !== stagingId),
+        );
+      } else if (selectedStagingIds.length >= 500) {
+        setBulkMessage("El máximo es 500 consultas por acción.");
+      } else {
+        setSelectedStagingIds([...selectedStagingIds, stagingId]);
+      }
+      setBulkError(null);
+    },
+    [selectedStagingIds],
+  );
+
+  const openBulkConfirmation = useCallback(
+    (action: BulkAction, trigger: HTMLElement) => {
+      bulkDialogTriggerRef.current = trigger;
+      setBulkError(null);
+      setBulkConfirmationAction(action);
+    },
+    [],
+  );
+
+  const closeBulkConfirmation = useCallback(() => {
+    setBulkConfirmationAction(null);
+    setBulkError(null);
+    const trigger = bulkDialogTriggerRef.current;
+    bulkDialogTriggerRef.current = null;
+    if (trigger?.isConnected) {
+      queueMicrotask(() => trigger.focus());
+    }
+  }, []);
+
+  const confirmBulkAction = useCallback(async () => {
+    if (bulkConfirmationAction === null || selectedStagingIds.length === 0) {
+      return;
+    }
+
+    setBulkSubmitting(true);
+    setBulkError(null);
+    try {
+      const response = await fetch("/api/admin/consultations/bulk", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: bulkConfirmationAction,
+          stagingIds: selectedStagingIds,
+        }),
+      });
+      const result = await responseJSON<{
+        confirmedCount?: number;
+        skippedCount?: number;
+        error?: string;
+      }>(response);
+      if (
+        !response.ok ||
+        result.confirmedCount === undefined ||
+        result.skippedCount === undefined
+      ) {
+        throw new Error(result.error ?? "bulk_action_failed");
+      }
+
+      const message = `${result.confirmedCount} confirmadas, ${result.skippedCount} omitidas.`;
+      setBulkMessage(message);
+      setAnnouncement(message);
+      setSelectedStagingIds([]);
+      setBulkConfirmationAction(null);
+      const trigger = bulkDialogTriggerRef.current;
+      bulkDialogTriggerRef.current = null;
+      if (trigger?.isConnected) {
+        queueMicrotask(() => trigger.focus());
+      }
+      await refreshWorkspace(currentFiltersRef.current);
+    } catch {
+      setBulkError("No se pudo completar la consolidación masiva. Intente nuevamente.");
+    } finally {
+      setBulkSubmitting(false);
+    }
+  }, [
+    bulkConfirmationAction,
+    refreshWorkspace,
+    selectedStagingIds,
+  ]);
+
   const saveReview = useCallback(
     async (form: ReviewForm, choices: Record<string, DuplicateChoice>) => {
       if (selectedStagingId === null || reviewDetail === null) return;
@@ -754,11 +906,35 @@ export function ConsultationsScreen({
   const canGoForward = nextOffset < currentWorkspace.totalRows;
   const visibleQueue = currentWorkspace.reviewQueue;
   const visibleRows = currentWorkspace.rows;
+  const visibleQueueIds = visibleQueue.map((item) => item.stagingId);
+  const selectedVisibleCount = visibleQueueIds.filter((id) =>
+    selectedStagingIds.includes(id),
+  ).length;
+  const allVisibleSelected =
+    visibleQueueIds.length > 0 &&
+    selectedVisibleCount === visibleQueueIds.length;
+  const someVisibleSelected =
+    selectedVisibleCount > 0 && !allVisibleSelected;
+  const toggleVisibleQueue = () => {
+    if (allVisibleSelected) {
+      setSelectedStagingIds((current) =>
+        current.filter((id) => !visibleQueueIds.includes(id)),
+      );
+      return;
+    }
+    setSelectedStagingIds((current) =>
+      [...new Set([...current, ...visibleQueueIds])].slice(0, 500),
+    );
+  };
 
   return (
     <>
       <div
-        aria-hidden={selectedStagingId !== null ? true : undefined}
+        aria-hidden={
+          selectedStagingId !== null || bulkConfirmationAction !== null
+            ? true
+            : undefined
+        }
         data-slot="consultations-screen"
         data-state={screenState}
         ref={screenRef}
@@ -889,6 +1065,14 @@ export function ConsultationsScreen({
                 <option value="PENDING_CLASSIFICATION">Pendiente de clasificación</option>
               </select>
             </label>
+            <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary">
+              Sugerencia de materia
+              <select className={selectClassName()} value={filters.suggestion} onChange={(event) => updateFilter("suggestion", event.target.value)}>
+                <option value="ALL">Todas</option>
+                <option value="WITH_SUGGESTION">Con sugerencia</option>
+                <option value="WITHOUT_SUGGESTION">Sin sugerencia</option>
+              </select>
+            </label>
             <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary sm:col-span-2 xl:col-span-4">
               Buscar
               <Input
@@ -937,10 +1121,79 @@ export function ConsultationsScreen({
                 <h2 className="text-lg font-semibold text-foreground" id="pending-reviews-heading">Pendientes de revisión</h2>
                 <span className="text-sm text-foreground-secondary">{currentWorkspace.pendingReviewCount} en total</span>
               </div>
+              <div className="mb-3 grid gap-3 rounded-md border border-border bg-surface p-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="flex min-h-10 items-center gap-2 text-sm font-medium text-foreground">
+                    <input
+                      aria-label="Seleccionar las consultas pendientes de esta página"
+                      aria-checked={someVisibleSelected ? "mixed" : allVisibleSelected}
+                      checked={allVisibleSelected}
+                      disabled={visibleQueueIds.length === 0 || selectionLoading || bulkSubmitting}
+                      onChange={toggleVisibleQueue}
+                      ref={(input) => {
+                        if (input !== null) input.indeterminate = someVisibleSelected;
+                      }}
+                      type="checkbox"
+                    />
+                    Seleccionar página
+                  </label>
+                  <Button
+                    disabled={selectionLoading || bulkSubmitting}
+                    onClick={() => void selectAllFiltered()}
+                    type="button"
+                    variant="outline"
+                  >
+                    {selectionLoading ? "Seleccionando…" : "Seleccionar todas las filtradas"}
+                  </Button>
+                  <span className="text-sm text-foreground-secondary">
+                    {selectedStagingIds.length} seleccionadas · máximo 500
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    disabled={selectedStagingIds.length === 0 || selectionLoading || bulkSubmitting}
+                    onClick={(event) =>
+                      openBulkConfirmation(
+                        "CONFIRM_SUGGESTED_SUBJECT",
+                        event.currentTarget,
+                      )
+                    }
+                    type="button"
+                  >
+                    Confirmar materia sugerida
+                  </Button>
+                  <Button
+                    disabled={selectedStagingIds.length === 0 || selectionLoading || bulkSubmitting}
+                    onClick={(event) =>
+                      openBulkConfirmation("CONFIRM_GENERAL", event.currentTarget)
+                    }
+                    type="button"
+                    variant="outline"
+                  >
+                    Confirmar como General / Varias
+                  </Button>
+                </div>
+              </div>
+              {bulkMessage && (
+                <p className="mb-3 rounded-md border border-success/30 bg-success-surface/50 p-3 text-sm text-foreground" role="status">
+                  {bulkMessage}
+                </p>
+              )}
+              {bulkError && bulkConfirmationAction === null && (
+                <p className="mb-3 rounded-md border border-danger/30 bg-danger-surface/50 p-3 text-sm text-foreground" role="alert">
+                  {bulkError}
+                </p>
+              )}
               {visibleQueue.length > 0 ? (
                 <div className="grid gap-3">
                   {visibleQueue.map((item) => (
-                    <ReviewQueueCard key={item.stagingId} item={item} onOpen={openReview} />
+                    <ReviewQueueCard
+                      key={item.stagingId}
+                      item={item}
+                      onOpen={openReview}
+                      onToggleSelection={toggleStagingSelection}
+                      selected={selectedStagingIds.includes(item.stagingId)}
+                    />
                   ))}
                 </div>
               ) : (
@@ -996,6 +1249,17 @@ export function ConsultationsScreen({
         )}
       </div>
 
+      {bulkConfirmationAction !== null && (
+        <BulkConfirmationDialog
+          action={bulkConfirmationAction}
+          count={selectedStagingIds.length}
+          error={bulkError}
+          submitting={bulkSubmitting}
+          onClose={closeBulkConfirmation}
+          onConfirm={() => void confirmBulkAction()}
+        />
+      )}
+
       {selectedStagingId !== null && (
         <ReviewSheet
           detail={reviewDetail}
@@ -1017,6 +1281,113 @@ export function ConsultationsScreen({
   );
 }
 
+function BulkConfirmationDialog({
+  action,
+  count,
+  error,
+  submitting,
+  onClose,
+  onConfirm,
+}: {
+  action: BulkAction;
+  count: number;
+  error: string | null;
+  submitting: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const title =
+    action === "CONFIRM_SUGGESTED_SUBJECT"
+      ? "Confirmar materia sugerida"
+      : "Confirmar como General / Varias";
+
+  useEffect(() => {
+    panelRef.current
+      ?.querySelector<HTMLButtonElement>("[data-bulk-cancel]")
+      ?.focus();
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-foreground/35 sm:items-center sm:p-6">
+      <div
+        aria-describedby="consultation-bulk-description"
+        aria-labelledby="consultation-bulk-title"
+        aria-modal="true"
+        className="w-full max-w-xl rounded-t-md border border-border bg-surface p-5 shadow-dialog sm:rounded-md sm:p-6"
+        ref={panelRef}
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && !submitting) {
+            event.preventDefault();
+            onClose();
+            return;
+          }
+          if (event.key !== "Tab") return;
+          const cancelButton = event.currentTarget.querySelector<HTMLButtonElement>(
+            "[data-bulk-cancel]",
+          );
+          const confirmButton = event.currentTarget.querySelector<HTMLButtonElement>(
+            "[data-bulk-confirm]",
+          );
+          if (event.shiftKey && document.activeElement === cancelButton) {
+            event.preventDefault();
+            confirmButton?.focus();
+          } else if (
+            !event.shiftKey &&
+            document.activeElement === confirmButton
+          ) {
+            event.preventDefault();
+            cancelButton?.focus();
+          }
+        }}
+        role="alertdialog"
+        tabIndex={-1}
+      >
+        <h2 className="text-lg font-semibold text-foreground" id="consultation-bulk-title">
+          {title}
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-foreground-secondary" id="consultation-bulk-description">
+          {action === "CONFIRM_SUGGESTED_SUBJECT"
+            ? `Se intentará consolidar ${count} consultas con la materia sugerida.`
+            : `Se intentará consolidar ${count} consultas como General / Varias.`}
+        </p>
+        <p className="mt-3 text-sm leading-6 text-foreground-secondary">
+          Se reconocerán las observaciones no bloqueantes de apellido, tema, tramo académico y modalidad. El servidor volverá a validar cada fila e informará cuántas se confirmaron y cuántas se omitieron.
+        </p>
+        {error && (
+          <p className="mt-3 rounded-md border border-danger/30 bg-danger-surface/50 p-3 text-sm text-foreground" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button
+            disabled={submitting}
+            onClick={onClose}
+            data-bulk-cancel=""
+            type="button"
+            variant="outline"
+          >
+            Cancelar
+          </Button>
+          <Button
+            disabled={submitting || count === 0}
+            onClick={onConfirm}
+            data-bulk-confirm=""
+            type="button"
+          >
+            {submitting ? (
+              <LoaderCircle aria-hidden="true" className="animate-spin" />
+            ) : (
+              <CheckCircle2 aria-hidden="true" />
+            )}
+            {submitting ? "Confirmando…" : title}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LoadingWorkspace() {
   return (
     <div aria-label="Cargando consultas" className="mt-5 grid gap-3" role="status">
@@ -1028,7 +1399,17 @@ function LoadingWorkspace() {
   );
 }
 
-function ReviewQueueCard({ item, onOpen }: { item: ReviewQueueItem; onOpen: (id: string, trigger: HTMLElement) => void }) {
+function ReviewQueueCard({
+  item,
+  onOpen,
+  onToggleSelection,
+  selected,
+}: {
+  item: ReviewQueueItem;
+  onOpen: (id: string, trigger: HTMLElement) => void;
+  onToggleSelection: (id: string) => void;
+  selected: boolean;
+}) {
   const name = fullName(item.studentFirstName, item.studentLastName);
   const unresolved = item.anomalyFlags.filter((flag) => !item.acknowledgedAnomalies.includes(flag));
 
@@ -1036,6 +1417,12 @@ function ReviewQueueCard({ item, onOpen }: { item: ReviewQueueItem; onOpen: (id:
     <article className="grid gap-4 rounded-md border border-warning/30 bg-warning-surface/30 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
+          <input
+            aria-label={`Seleccionar consulta de ${name}`}
+            checked={selected}
+            onChange={() => onToggleSelection(item.stagingId)}
+            type="checkbox"
+          />
           <h3 className="font-semibold text-foreground">{name}</h3>
           <StatusBadge label={statusLabels[item.status] ?? "Pendiente"} variant="warning" />
         </div>
@@ -1049,6 +1436,11 @@ function ReviewQueueCard({ item, onOpen }: { item: ReviewQueueItem; onOpen: (id:
           </p>
         )}
         <p className="mt-1 text-xs text-foreground-secondary">Clasificación: {classificationLabel(item.classification)}</p>
+        <p className="mt-1 text-xs text-foreground-secondary">
+          {item.suggestedSubject
+            ? `Materia sugerida: ${item.suggestedSubject}`
+            : "Sin sugerencia de materia"}
+        </p>
       </div>
       <Button
         className="w-full sm:w-auto"

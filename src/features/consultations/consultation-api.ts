@@ -11,6 +11,7 @@ import {
 } from "./consultation-service";
 import {
   consultationFiltersSchema,
+  consultationBulkActionSchema,
   consultationIdSchema,
   consultationImportOptionsSchema,
   consultationReviewDetailQuerySchema,
@@ -20,6 +21,7 @@ import {
 const noStoreHeaders = { "Cache-Control": "no-store" };
 const maxReviewBodyBytes = 16 * 1024;
 const maxImportBodyBytes = 4 * 1024;
+const maxBulkActionBodyBytes = 32 * 1024;
 
 export function consultationJsonResponse(
   body: Record<string, unknown>,
@@ -140,6 +142,14 @@ export function parseConsultationImportBody(request: Request) {
   return parseBoundedJson(request, consultationImportOptionsSchema, maxImportBodyBytes);
 }
 
+export function parseConsultationBulkBody(request: Request) {
+  return parseBoundedJson(
+    request,
+    consultationBulkActionSchema,
+    maxBulkActionBodyBytes,
+  );
+}
+
 const consultationQueryKeys = new Set([
   "status",
   "careerId",
@@ -147,6 +157,7 @@ const consultationQueryKeys = new Set([
   "fromDate",
   "toDate",
   "classification",
+  "suggestion",
   "search",
   "limit",
   "offset",

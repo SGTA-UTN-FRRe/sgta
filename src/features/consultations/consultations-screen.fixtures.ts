@@ -12,6 +12,7 @@ export const consultationStagingId = "44444444-4444-4444-8444-444444444444";
 
 export const consultationFilters: ConsultationFilters = {
   status: "ALL",
+  suggestion: "ALL",
   limit: 50,
   offset: 0,
 };
