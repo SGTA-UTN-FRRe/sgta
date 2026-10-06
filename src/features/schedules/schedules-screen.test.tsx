@@ -150,6 +150,153 @@ describe("SchedulesScreen", () => {
     ).not.toHaveLength(0);
   });
 
+  it("keeps short assignment labels compact and full assignment details available", async () => {
+    const user = userEvent.setup();
+    const assignments: SafeScheduleAssignment[] = [
+      {
+        ...mondayAssignment,
+        endMinutes: 510,
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        tutorName: "Rivera, Alex",
+      },
+      {
+        ...mondayAssignment,
+        endMinutes: 600,
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        startMinutes: 540,
+        tutorName: "Morgan, Jamie",
+        weekday: 2,
+      },
+      {
+        ...mondayAssignment,
+        endMinutes: 720,
+        id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        startMinutes: 600,
+        tutorName: "Taylor, Casey",
+        weekday: 3,
+      },
+    ];
+
+    render(
+      <SchedulesScreen
+        state="default"
+        workspace={createWorkspace({ assignments })}
+      />,
+    );
+
+    const weeklyGrid = within(
+      screen.getByRole("group", { name: "Grilla semanal" }),
+    );
+    const expectedAssignments = [
+      {
+        durationLayout: "compact",
+        label: "Rivera, Alex, LUN, 08:00 a 08:30",
+        start: "08:00",
+        end: "08:30",
+      },
+      {
+        durationLayout: "compact",
+        label: "Morgan, Jamie, MAR, 09:00 a 10:00",
+        start: "09:00",
+        end: "10:00",
+      },
+      {
+        durationLayout: "full",
+        label: "Taylor, Casey, MIÉ, 10:00 a 12:00",
+        start: "10:00",
+        end: "12:00",
+      },
+    ];
+
+    for (const expected of expectedAssignments) {
+      const assignment = weeklyGrid.getByRole("button", {
+        name: expected.label,
+      });
+
+      expect(assignment).toHaveAttribute(
+        "data-duration-layout",
+        expected.durationLayout,
+      );
+      expect(assignment).toHaveAccessibleName(expected.label);
+      expect(assignment).toHaveAttribute("title", expected.label);
+      expect(assignment).toHaveTextContent(expected.start);
+      expect(assignment).toHaveTextContent(expected.end);
+      expect(
+        assignment.querySelector("[data-schedule-assignment-time]"),
+      ).toHaveTextContent(expected.start);
+      expect(
+        assignment.querySelector("[data-schedule-assignment-time]"),
+      ).toHaveTextContent(expected.end);
+    }
+
+    await user.click(
+      weeklyGrid.getByRole("button", {
+        name: "Rivera, Alex, LUN, 08:00 a 08:30",
+      }),
+    );
+    const editor = screen.getByRole("dialog", { name: "Editar asignación" });
+    expect(within(editor).getByLabelText("Modalidad")).toHaveValue(
+      mondayAssignment.modality,
+    );
+  });
+
+  it("exposes compact recovery and conflict states without badges", async () => {
+    const user = userEvent.setup();
+    const recoveryAssignment: SafeScheduleAssignment = {
+      ...mondayAssignment,
+      endMinutes: 510,
+      id: "99999999-9999-4999-8999-999999999999",
+      kind: "RECOVERY",
+      tutorName: "Rivera, Alex",
+    };
+
+    render(
+      <SchedulesScreen
+        state="default"
+        workspace={
+          createWorkspace({
+            assignments: [recoveryAssignment],
+            conflicts: [
+              {
+                assignmentId: recoveryAssignment.id,
+                conflictingAssignmentIds: [],
+              },
+            ],
+          })
+        }
+      />,
+    );
+
+    const weeklyGrid = within(screen.getByRole("group", { name: "Grilla semanal" }));
+    const accessibleName = "Rivera, Alex, LUN, 08:00 a 08:30, conflicto de horario";
+    const assignment = weeklyGrid.getByRole("button", { name: accessibleName });
+
+    expect(assignment).toHaveAttribute("data-duration-layout", "compact");
+    expect(assignment).toHaveAttribute("aria-pressed", "false");
+    expect(assignment).toHaveAccessibleName(accessibleName);
+    expect(assignment).toHaveAttribute("aria-describedby");
+    expect(
+      within(assignment).getByText("Conflicto. Recuperación.", {
+        selector: ".sr-only",
+      }),
+    ).toBeInTheDocument();
+    expect(assignment.querySelectorAll('[aria-hidden="true"] svg')).toHaveLength(2);
+    const statusIds = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '[id^="schedule-assignment-status-"]',
+      ),
+    ).map((element) => element.id);
+    expect(new Set(statusIds).size).toBe(statusIds.length);
+    expect(assignment).not.toHaveTextContent("Seleccionada");
+
+    await user.click(assignment);
+
+    expect(assignment).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
   it("switches plans through the workspace API and keeps the selected plan live", async () => {
     const user = userEvent.setup();
     const specialWorkspace = createWorkspace({

@@ -5435,6 +5435,18 @@ describe("PostgreSQL foundation integration", () => {
       {},
       { today: "2027-04-05" },
     );
+    const lateEveningInstant = new Date("2027-04-06T01:30:00.000Z");
+    const lateEveningSummary = await getTutorSelfServiceSummary(
+      database,
+      firstIdentity.id,
+      { now: lateEveningInstant },
+    );
+    const lateEveningSchedule = await getTutorSelfServiceSchedule(
+      database,
+      firstIdentity.id,
+      {},
+      { now: lateEveningInstant },
+    );
     const specialSchedule = await getTutorSelfServiceSchedule(
       database,
       firstIdentity.id,
@@ -5480,6 +5492,15 @@ describe("PostgreSQL foundation integration", () => {
       throw new Error("Expected the linked Tutor read models to be ready.");
     }
     expect(summary.nextDuty).toEqual(defaultSchedule.nextDuty);
+    expect(lateEveningSummary).toMatchObject({
+      state: "ready",
+      nextDuty: null,
+    });
+    expect(lateEveningSchedule).toMatchObject({
+      state: "ready",
+      window: { anchorDate: "2027-04-05" },
+      nextDuty: null,
+    });
 
     expect(specialSchedule).toMatchObject({
       state: "ready",

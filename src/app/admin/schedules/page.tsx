@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 
 import { requireRole } from "@/auth/authorization";
 import { getDatabase } from "@/db/client";
+import { listAdministrativeCycles } from "@/features/cycles/cycle-service";
 import {
   getScheduleWorkspace,
   SCHEDULE_ERROR_CODES,
   ScheduleServiceError,
   type SafeScheduleWorkspace,
 } from "@/features/schedules/schedule-service";
+import { resolveDefaultOperationalDate } from "@/features/schedules/schedule-date";
 import {
   SchedulesScreen,
   type SchedulesScreenState,
@@ -59,12 +61,28 @@ export default async function AdminSchedulesPage({
   let initialErrorMessage: string | undefined;
 
   try {
+    const database = getDatabase();
+    const cycleId = firstSearchParam(query.cycleId);
+    let date = firstSearchParam(query.date);
+
+    if (date === undefined) {
+      const cycles = await listAdministrativeCycles(database);
+      const cycle =
+        (cycleId === undefined
+          ? cycles.find((item) => item.status === "OPEN")
+          : cycles.find((item) => item.id === cycleId)) ?? null;
+
+      if (cycle !== null) {
+        date = resolveDefaultOperationalDate(cycle);
+      }
+    }
+
     workspace = await getScheduleWorkspace(
-      getDatabase(),
+      database,
       {
-        cycleId: firstSearchParam(query.cycleId),
+        cycleId,
         planId: firstSearchParam(query.planId),
-        date: firstSearchParam(query.date),
+        date,
       },
       { actorId: user.id },
     );

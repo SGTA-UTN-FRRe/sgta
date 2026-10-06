@@ -30,10 +30,13 @@ import {
   getCurrentAdministrativeCycle,
   type SafeAdministrativeCycle,
 } from "@/features/cycles/cycle-service";
+import {
+  getArgentinaBusinessDate,
+  getArgentinaDateTime,
+} from "@/shared/argentina-business-time";
 
 import type { DutyView } from "./admin-overview-types";
 
-const businessTimeZone = "America/Argentina/Buenos_Aires";
 const upcomingDays = 7;
 
 type ReadyResult<T> = { status: "ready"; value: T } | { status: "error" };
@@ -82,27 +85,8 @@ type AssignmentRow = {
   modality: string | null;
 };
 
-function getZonedParts(now: Date) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: businessTimeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(now);
-  const value = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value ?? "00";
-
-  return {
-    date: `${value("year")}-${value("month")}-${value("day")}`,
-    minuteOfDay: Number(value("hour")) * 60 + Number(value("minute")),
-  };
-}
-
 export function getAdminOverviewCurrentDate(now = new Date()) {
-  return getZonedParts(now).date;
+  return getArgentinaBusinessDate(now);
 }
 
 function dateAfter(date: string, days: number) {
@@ -127,7 +111,7 @@ async function getPendingAttendanceSummary(
   cycle: SafeAdministrativeCycle,
   now: Date,
 ): Promise<PendingAttendanceSummary> {
-  const { date: currentDate, minuteOfDay } = getZonedParts(now);
+  const { date: currentDate, minuteOfDay } = getArgentinaDateTime(now);
   const throughDate = currentDate < cycle.endDate ? currentDate : cycle.endDate;
 
   if (cycle.startDate > throughDate) {

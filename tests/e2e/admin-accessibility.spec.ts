@@ -76,6 +76,88 @@ test.describe("Admin accessibility and responsive layouts", () => {
           await expect(action.first()).toBeVisible();
         }
 
+        if (route.title === "Horarios" && viewport.name === "compact") {
+          await expect(
+            page.getByRole("heading", { level: 2, name: "Editor por día" }),
+          ).toBeVisible();
+          const daySelector = page.getByRole("group", { name: "Días del plan" });
+          await expect(daySelector).toBeVisible();
+          const daySelectorBounds = await daySelector.boundingBox();
+          expect(daySelectorBounds).not.toBeNull();
+          expect(daySelectorBounds!.y + daySelectorBounds!.height).toBeLessThanOrEqual(
+            viewport.height,
+          );
+        }
+
+        if (route.title === "Horarios" && viewport.name === "wide") {
+          const layout = await page
+            .getByRole("group", { name: "Grilla semanal" })
+            .evaluate((grid) => {
+              const clippedTimes: string[] = [];
+              const intersectingBlocks: string[] = [];
+              let assignmentCount = 0;
+
+              for (const column of grid.querySelectorAll<HTMLElement>(
+                "[data-schedule-day-column]",
+              )) {
+                const blocks = Array.from(
+                  column.querySelectorAll<HTMLElement>(
+                    "[data-schedule-assignment-id]",
+                  ),
+                ).filter((block) => block.getClientRects().length > 0);
+                assignmentCount += blocks.length;
+
+                for (const block of blocks) {
+                  const time = block.querySelector<HTMLElement>(
+                    "[data-schedule-assignment-time]",
+                  );
+
+                  if (
+                    time === null ||
+                    time.scrollWidth > time.clientWidth ||
+                    time.getBoundingClientRect().left <
+                      block.getBoundingClientRect().left - 0.5 ||
+                    time.getBoundingClientRect().right >
+                      block.getBoundingClientRect().right + 0.5
+                  ) {
+                    clippedTimes.push(block.dataset.scheduleAssignmentId ?? "unknown");
+                  }
+                }
+
+                for (let leftIndex = 0; leftIndex < blocks.length; leftIndex += 1) {
+                  const left = blocks[leftIndex]!;
+                  const leftBounds = left.getBoundingClientRect();
+
+                  for (
+                    let rightIndex = leftIndex + 1;
+                    rightIndex < blocks.length;
+                    rightIndex += 1
+                  ) {
+                    const right = blocks[rightIndex]!;
+                    const rightBounds = right.getBoundingClientRect();
+                    const intersects =
+                      leftBounds.left < rightBounds.right &&
+                      rightBounds.left < leftBounds.right &&
+                      leftBounds.top < rightBounds.bottom &&
+                      rightBounds.top < leftBounds.bottom;
+
+                    if (intersects) {
+                      intersectingBlocks.push(
+                        `${left.dataset.scheduleAssignmentId}:${right.dataset.scheduleAssignmentId}`,
+                      );
+                    }
+                  }
+                }
+              }
+
+              return { assignmentCount, clippedTimes, intersectingBlocks };
+            });
+
+          expect(layout.assignmentCount).toBeGreaterThan(0);
+          expect(layout.clippedTimes).toEqual([]);
+          expect(layout.intersectingBlocks).toEqual([]);
+        }
+
         const layoutWidth = await page.evaluate(() => ({
           documentWidth: document.documentElement.scrollWidth,
           viewportWidth: window.innerWidth,

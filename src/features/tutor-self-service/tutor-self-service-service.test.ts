@@ -4,7 +4,9 @@ vi.mock("server-only", () => ({}));
 
 import {
   calculateTutorSelfServiceBalance,
+  parseToday,
   resolveTutorSelfServiceScheduleWindow,
+  selectTutorNextDuty,
   selectTutorSelfServiceAssignmentsForDate,
   selectTutorSelfServiceEffectivePlan,
   toSafeTutorMovement,
@@ -15,6 +17,7 @@ import {
   tutorSelfServiceHoursQuerySchema,
   tutorSelfServiceScheduleQuerySchema,
 } from "./tutor-self-service-validation";
+import { getArgentinaBusinessDate } from "@/shared/argentina-business-time";
 
 const cycle = {
   startDate: "2027-01-01",
@@ -47,6 +50,57 @@ function makePlan(
 }
 
 describe("Tutor self-service read models", () => {
+  it("selects the next duty using Argentina-local end times", () => {
+    const morningDuty = {
+      date: "2027-04-05",
+      endMinutes: 600,
+      id: "morning-duty",
+      startMinutes: 480,
+    };
+    const nextDayDuty = {
+      date: "2027-04-06",
+      endMinutes: 600,
+      id: "next-day-duty",
+      startMinutes: 480,
+    };
+    const assignments = [nextDayDuty, morningDuty];
+
+    expect(selectTutorNextDuty(assignments, "2027-04-05", 7 * 60 + 59)).toBe(
+      morningDuty,
+    );
+    expect(selectTutorNextDuty(assignments, "2027-04-05", 9 * 60)).toBe(
+      morningDuty,
+    );
+    expect(selectTutorNextDuty(assignments, "2027-04-05", 10 * 60)).toBe(
+      nextDayDuty,
+    );
+    expect(selectTutorNextDuty(assignments, "2027-04-05", 22 * 60 + 30)).toBe(
+      nextDayDuty,
+    );
+  });
+
+  it("leaves the time cutoff unset when today is supplied without now", () => {
+    const today = parseToday({ today: "2027-04-05" });
+    const morningDuty = {
+      date: today.date,
+      endMinutes: 600,
+      id: "morning-duty",
+      startMinutes: 480,
+    };
+
+    expect(today).toEqual({ date: "2027-04-05", minuteOfDay: null });
+    expect(selectTutorNextDuty([morningDuty], today.date, today.minuteOfDay)).toBe(
+      morningDuty,
+    );
+  });
+
+  it("derives both date and minute from the supplied instant", () => {
+    expect(parseToday({ now: new Date("2027-04-06T01:30:00.000Z") })).toEqual({
+      date: "2027-04-05",
+      minuteOfDay: 22 * 60 + 30,
+    });
+  });
+
   it("keeps schedule filters strict and validates complete week windows", () => {
     expect(() =>
       tutorSelfServiceScheduleQuerySchema.parse({ tutorId: "other-tutor" }),
@@ -116,6 +170,20 @@ describe("Tutor self-service read models", () => {
         code: TUTOR_SELF_SERVICE_ERROR_CODES.dateOutsideCycle,
       }),
     );
+  });
+
+  it("anchors the default Tutor schedule to the Argentina business date", () => {
+    const today = getArgentinaBusinessDate(
+      new Date("2027-04-06T01:30:00.000Z"),
+    );
+
+    expect(today).toBe("2027-04-05");
+    expect(resolveTutorSelfServiceScheduleWindow(cycle, {}, today)).toEqual({
+      mode: "current",
+      anchorDate: "2027-04-05",
+      startDate: "2027-04-05",
+      endDate: "2027-04-11",
+    });
   });
 
   it("applies special-plan precedence and regular fallback", () => {
