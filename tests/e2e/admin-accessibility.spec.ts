@@ -76,6 +76,19 @@ test.describe("Admin accessibility and responsive layouts", () => {
           await expect(action.first()).toBeVisible();
         }
 
+        if (route.title === "Horarios" && viewport.name === "compact") {
+          await expect(
+            page.getByRole("heading", { level: 2, name: "Editor por día" }),
+          ).toBeVisible();
+          const daySelector = page.getByRole("group", { name: "Días del plan" });
+          await expect(daySelector).toBeVisible();
+          const daySelectorBounds = await daySelector.boundingBox();
+          expect(daySelectorBounds).not.toBeNull();
+          expect(daySelectorBounds!.y + daySelectorBounds!.height).toBeLessThanOrEqual(
+            viewport.height,
+          );
+        }
+
         const layoutWidth = await page.evaluate(() => ({
           documentWidth: document.documentElement.scrollWidth,
           viewportWidth: window.innerWidth,

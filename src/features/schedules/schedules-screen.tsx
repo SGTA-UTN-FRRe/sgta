@@ -527,16 +527,16 @@ function PlanContext({
   return (
     <section
       aria-labelledby="schedule-plan-context-title"
-      className="mt-6 rounded-md border border-border bg-surface p-4 sm:p-5"
+      className="mt-4 rounded-md border border-border bg-surface p-3 sm:mt-6 sm:p-5"
     >
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between xl:gap-5">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
             Contexto del plan
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <h2
-              className="text-lg font-bold tracking-tight text-foreground"
+              className="text-base font-bold tracking-tight text-foreground sm:text-lg"
               id="schedule-plan-context-title"
             >
               {selectedPlan.name}
@@ -550,24 +550,20 @@ function PlanContext({
               variant="info"
             />
           </div>
-          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <div>
+          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs sm:mt-4 sm:gap-3 sm:text-sm lg:grid-cols-3">
+            <div className="min-w-0">
               <dt className="text-xs font-medium text-foreground-muted">Ciclo vigente</dt>
-              <dd className="mt-1 font-semibold text-foreground">{workspace.currentCycle.name}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">Tipo de plan</dt>
-              <dd className="mt-1 font-semibold text-foreground">
-                {selectedPlan.kind === "REGULAR" ? "Regular" : "Especial"}
+              <dd className="mt-1 break-words font-semibold text-foreground">
+                {workspace.currentCycle.name}
               </dd>
             </div>
-            <div>
+            <div className="min-w-0">
               <dt className="text-xs font-medium text-foreground-muted">Vigencia</dt>
               <dd className="mt-1 font-semibold text-foreground">
                 {formatDate(selectedPlan.validFrom)} — {formatDate(selectedPlan.validTo)}
               </dd>
             </div>
-            <div>
+            <div className="min-w-0">
               <dt className="text-xs font-medium text-foreground-muted">Fecha efectiva consultada</dt>
               <dd className="mt-1 font-semibold text-foreground">
                 {formatDate(workspace.effective.date)}
@@ -587,11 +583,14 @@ function PlanContext({
         </div>
       </div>
 
-      <div className="mt-5 border-t border-border-subtle pt-4">
+      <div className="mt-3 border-t border-border-subtle pt-3 sm:mt-5 sm:pt-4">
         <p className="text-xs font-semibold text-foreground-secondary">Seleccionar plan</p>
         <div
           aria-label="Planes de horario"
-          className="mt-3 grid gap-2 md:grid-cols-2"
+          className={cn(
+            "mt-2 grid gap-2 sm:mt-3",
+            plans.length > 1 ? "grid-cols-2" : "grid-cols-1",
+          )}
           role="group"
         >
           {plans.map((plan) => {
@@ -601,7 +600,7 @@ function PlanContext({
               <button
                 aria-pressed={isSelected}
                 className={cn(
-                  "flex min-h-12 items-center justify-between gap-3 rounded-sm border px-4 py-3 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
+                  "flex min-h-12 items-center justify-between gap-2 rounded-sm border px-2 py-2 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring sm:gap-3 sm:px-4 sm:py-3 sm:text-sm",
                   isSelected
                     ? "border-primary bg-primary/10 text-foreground"
                     : "border-border bg-surface text-foreground-secondary hover:bg-surface-subtle",
@@ -613,11 +612,11 @@ function PlanContext({
               >
                 <span className="min-w-0">
                   <span className="block truncate font-semibold">{plan.name}</span>
-                  <span className="mt-1 block text-xs text-foreground-muted">
+                  <span className="mt-1 block text-[10px] leading-4 text-foreground-muted sm:text-xs">
                     {formatDate(plan.validFrom)} — {formatDate(plan.validTo)}
                   </span>
                 </span>
-                <span className="shrink-0 text-xs font-semibold">
+                <span className="shrink-0 text-[10px] font-semibold sm:text-xs">
                   {isSelected ? "Seleccionado" : plan.kind === "REGULAR" ? "Regular" : "Especial"}
                 </span>
               </button>
@@ -642,8 +641,21 @@ function ScheduleBlock({
 }) {
   const start = Math.max(GRID_START_MINUTES, assignment.startMinutes);
   const end = Math.min(GRID_END_MINUTES, assignment.endMinutes);
+  const assignmentDurationMinutes =
+    assignment.endMinutes - assignment.startMinutes;
+  const visibleDurationMinutes = end - start;
+  const isCompact = assignmentDurationMinutes <= 60;
+  const hasRecoveryStatus = assignment.kind === "RECOVERY";
+  const hasSelectedStatus = selected && !conflict && !hasRecoveryStatus;
+  const statusCount =
+    Number(hasRecoveryStatus) + Number(conflict) + Number(hasSelectedStatus);
   const top = ((start - GRID_START_MINUTES) / 60) * GRID_HOUR_HEIGHT_REM;
-  const height = Math.max(((end - start) / 60) * GRID_HOUR_HEIGHT_REM, 3.25);
+  const minimumHeight =
+    isCompact && statusCount > 1 ? 4.75 : isCompact && statusCount > 0 ? 4 : 3.25;
+  const height = Math.max(
+    (visibleDurationMinutes / 60) * GRID_HOUR_HEIGHT_REM,
+    minimumHeight,
+  );
   const accessibleLabel = `${formatAssignmentLabel(assignment)}${
     conflict ? ", conflicto de horario" : ""
   }`;
@@ -653,7 +665,10 @@ function ScheduleBlock({
       aria-label={accessibleLabel}
       aria-pressed={selected}
       className={cn(
-        "absolute left-2 right-2 z-10 flex flex-col items-start overflow-hidden rounded-sm border p-2 text-left shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
+        "absolute left-2 right-2 z-10 overflow-hidden rounded-sm border text-left shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
+        isCompact
+          ? "flex flex-col items-start gap-1 px-1.5 py-1.5"
+          : "flex flex-col items-start p-2",
         conflict
           ? "border-danger bg-danger-surface text-foreground hover:bg-danger-surface/80"
           : selected
@@ -661,25 +676,53 @@ function ScheduleBlock({
             : "border-info/30 bg-info-surface text-foreground hover:bg-info-surface/80",
       )}
       data-schedule-assignment-id={assignment.id}
+      data-duration-layout={isCompact ? "compact" : "full"}
       onClick={(event) => onEdit(assignment, event.currentTarget)}
       style={{ height: `${height}rem`, top: `${top}rem` }}
       type="button"
     >
       <span className="sr-only">{selected ? "Seleccionada. " : ""}</span>
-      <span className="w-full truncate text-xs font-bold">{assignment.tutor}</span>
-      <span className="mt-1 flex items-center gap-1 text-xs font-numeric tabular-nums">
-        <Clock3 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-        {assignment.start} — {assignment.end}
-      </span>
-      <span className="mt-1 w-full truncate text-[11px] text-foreground-secondary">
-        {assignment.modality ?? "Sin modalidad"}
-      </span>
-      {assignment.kind === "RECOVERY" && (
-        <StatusBadge className="mt-auto" label="Recuperación" variant="faro" />
+      {isCompact ? (
+        <span className="flex w-full min-w-0 items-center justify-between gap-1.5">
+          <span className="min-w-0 flex-1 truncate text-xs font-bold">
+            {assignment.tutor}
+          </span>
+          <span className="shrink-0 text-[11px] font-semibold font-numeric tabular-nums">
+            {assignment.start}–{assignment.end}
+          </span>
+        </span>
+      ) : (
+        <>
+          <span className="w-full truncate text-xs font-bold">{assignment.tutor}</span>
+          <span className="mt-1 flex items-center gap-1 text-xs font-numeric tabular-nums">
+            <Clock3 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+            {assignment.start} — {assignment.end}
+          </span>
+          <span className="mt-1 w-full truncate text-[11px] text-foreground-secondary">
+            {assignment.modality ?? "Sin modalidad"}
+          </span>
+        </>
       )}
-      {conflict && <StatusBadge className="mt-auto" label="Conflicto" variant="danger" />}
-      {selected && !conflict && assignment.kind !== "RECOVERY" && (
-        <StatusBadge className="mt-auto" label="Seleccionada" variant="info" />
+      {assignment.kind === "RECOVERY" && (
+        <StatusBadge
+          className={isCompact ? "px-1.5 py-0 text-[10px]" : "mt-auto"}
+          label="Recuperación"
+          variant="faro"
+        />
+      )}
+      {conflict && (
+        <StatusBadge
+          className={isCompact ? "px-1.5 py-0 text-[10px]" : "mt-auto"}
+          label="Conflicto"
+          variant="danger"
+        />
+      )}
+      {hasSelectedStatus && (
+        <StatusBadge
+          className={isCompact ? "px-1.5 py-0 text-[10px]" : "mt-auto"}
+          label="Seleccionada"
+          variant="info"
+        />
       )}
     </button>
   );
@@ -839,7 +882,7 @@ function CompactSchedule({
   const dayAssignments = assignments.filter((assignment) => assignment.day === selectedDay);
 
   return (
-    <section aria-labelledby="compact-schedule-title" className="mt-4 md:hidden">
+    <section aria-labelledby="compact-schedule-title" className="mt-3 md:hidden sm:mt-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-bold text-foreground" id="compact-schedule-title">
@@ -857,7 +900,7 @@ function CompactSchedule({
 
       <div
         aria-label="Días del plan"
-        className="mt-4 grid grid-cols-5 gap-1 rounded-md border border-border bg-surface p-1"
+        className="mt-3 grid grid-cols-5 gap-1 rounded-md border border-border bg-surface p-1 sm:mt-4"
         role="group"
       >
         {days.map((day) => (
@@ -890,7 +933,7 @@ function CompactSchedule({
           </Button>
         </div>
       ) : (
-        <div className="mt-4 divide-y divide-border-subtle overflow-hidden rounded-md border border-border bg-surface">
+        <div className="mt-3 divide-y divide-border-subtle overflow-hidden rounded-md border border-border bg-surface sm:mt-4">
           {dayAssignments.map((assignment) => {
             const isSelected = assignment.id === selectedAssignmentId;
             const hasConflict = conflictIds.has(assignment.id);
