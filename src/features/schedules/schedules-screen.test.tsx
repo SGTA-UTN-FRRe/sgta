@@ -137,6 +137,8 @@ describe("SchedulesScreen", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Horarios" })).toBeInTheDocument();
     expect(screen.getByText(cycle.name)).toBeInTheDocument();
+    expect(screen.getByText("Fecha de referencia")).toBeInTheDocument();
+    expect(screen.getAllByText("Seleccionar una guardia para editarla.")).toHaveLength(2);
     expect(screen.getAllByText(regularPlan.name)).not.toHaveLength(0);
     expect(screen.getByRole("button", { name: "Nuevo plan" })).toBeInTheDocument();
     expect(

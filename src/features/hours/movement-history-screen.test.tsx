@@ -39,6 +39,8 @@ describe("MovementHistoryScreen", () => {
     const list = screen.getByRole("list", { name: "Historial de movimientos" });
     const rows = within(list).getAllByRole("listitem");
 
+    expect(screen.getAllByText("Duración")).not.toHaveLength(0);
+    expect(screen.queryByText("Duración firmada")).not.toBeInTheDocument();
     expect(rows[0]).toHaveAttribute(
       "data-movement-id",
       "cccccccc-cccc-4ccc-8ccc-cccccccccccc",

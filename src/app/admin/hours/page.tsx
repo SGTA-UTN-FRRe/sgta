@@ -16,7 +16,7 @@ import type {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const pageDescription = "Consultar saldos y registrar movimientos trazables.";
+const pageDescription = "Consultar saldos y registrar movimientos de horas.";
 
 export const metadata: Metadata = {
   title: "Horas | SGTA",

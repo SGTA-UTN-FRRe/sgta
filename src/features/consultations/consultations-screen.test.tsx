@@ -186,6 +186,28 @@ describe("ConsultationsScreen", () => {
     expect(screen.getByRole("columnheader", { name: "Carrera" })).toHaveClass("hidden", "xl:table-cell");
   });
 
+  it("explains unmatched and ambiguous tutor or career values in plain language", () => {
+    const workspace = createQueueWorkspace({
+      reviewQueue: [
+        {
+          ...createQueueWorkspace().reviewQueue[0]!,
+          anomalyFlags: [
+            "UNRESOLVED_CAREER",
+            "AMBIGUOUS_CAREER",
+            "UNRESOLVED_TUTOR",
+            "AMBIGUOUS_TUTOR",
+          ],
+        },
+      ],
+    });
+    renderScreen(workspace);
+
+    expect(screen.getByText(/No se encontró la carrera en la lista disponible\./)).toBeInTheDocument();
+    expect(screen.getByText(/La carrera coincide con más de una opción disponible\./)).toBeInTheDocument();
+    expect(screen.getByText(/No se encontró el tutor en la lista disponible\./)).toBeInTheDocument();
+    expect(screen.getByText(/El tutor coincide con más de una opción disponible\./)).toBeInTheDocument();
+  });
+
   it("keeps strict filter state in the URL and preserves it during import refresh", async () => {
     const user = userEvent.setup();
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {

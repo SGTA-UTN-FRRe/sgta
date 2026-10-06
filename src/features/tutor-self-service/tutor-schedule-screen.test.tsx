@@ -18,6 +18,8 @@ describe("TutorScheduleScreen", () => {
     );
 
     expect(screen.getByRole("heading", { level: 1, name: "Mi horario" })).toBeInTheDocument();
+    expect(screen.getByText("Consultar las guardias asignadas del ciclo vigente.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Contexto del horario")).toBeInTheDocument();
     expect(screen.getByLabelText("Fecha de referencia")).toHaveValue("2026-09-21");
     expect(screen.getByText("Plan Regular")).toBeInTheDocument();
     expect(screen.getByText("16:00 a 18:00")).toBeInTheDocument();

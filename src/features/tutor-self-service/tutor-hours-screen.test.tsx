@@ -13,6 +13,8 @@ describe("TutorHoursScreen", () => {
     render(<TutorHoursScreen data={tutorSelfServiceHoursReady} />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Mis horas" })).toBeInTheDocument();
+    expect(screen.getByText("Saldo del ciclo")).toBeInTheDocument();
+    expect(screen.getByText("Saldo de horas y movimientos del ciclo.")).toBeInTheDocument();
     expect(screen.getAllByText("+01:00")).not.toHaveLength(0);
     expect(screen.getByText("Al día")).toBeInTheDocument();
     expect(screen.getByText("Reunión de equipo")).toBeInTheDocument();

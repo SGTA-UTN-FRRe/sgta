@@ -573,7 +573,7 @@ function PlanContext({
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-xs font-medium text-foreground-muted">Fecha efectiva consultada</dt>
+              <dt className="text-xs font-medium text-foreground-muted">Fecha de referencia</dt>
               <dd className="mt-1 font-semibold text-foreground">
                 {formatDate(workspace.effective.date)}
               </dd>
@@ -864,7 +864,7 @@ function ScheduleGrid({
             {title}
           </h2>
           <p className="mt-1 text-xs text-foreground-muted">
-            Seleccionar un bloque para editarlo y guardarlo en el sistema.
+            Seleccionar una guardia para editarla.
           </p>
         </div>
         <span className="text-xs text-foreground-muted">{formatTutorCount(assignments.length)}</span>
@@ -1364,7 +1364,7 @@ function AssignmentEditor({
         <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-5">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-              {mode === "add" ? "Nueva asignación" : "Asignación persistida"}
+              {mode === "add" ? "Nueva asignación" : "Asignación guardada"}
             </p>
             <h2 className="mt-2 text-xl font-bold tracking-tight text-foreground" id="assignment-editor-title">
               {mode === "add" ? "Agregar asignación" : "Editar asignación"}

@@ -222,7 +222,7 @@ function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { sta
                 Materias
               </h2>
               <p className="mt-1 text-sm text-foreground-secondary">
-                Materias asignadas en el catálogo académico.
+                Materias asignadas.
               </p>
             </div>
           </div>

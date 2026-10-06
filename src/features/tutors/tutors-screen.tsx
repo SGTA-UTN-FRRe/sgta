@@ -182,9 +182,9 @@ const tutorErrorMessages: Record<string, string> = {
   duplicate_institutional_identifier:
     "El identificador institucional ya está asociado a otro tutor.",
   application_account_not_found:
-    "No se encontró una cuenta de Tutor provisionada con ese correo.",
+    "No se encontró una cuenta de Tutor habilitada con ese correo.",
   application_account_not_tutor:
-    "La cuenta seleccionada no está provisionada como Tutor.",
+    "La cuenta seleccionada no está habilitada como Tutor.",
   application_account_disabled: "La cuenta de Tutor está deshabilitada.",
   application_account_already_linked:
     "La cuenta de Tutor ya está vinculada a otro tutor.",
@@ -1374,10 +1374,10 @@ function TutorSheet({
             <section aria-labelledby="tutor-account-heading">
               <h3 className="text-sm font-bold text-foreground" id="tutor-account-heading">Cuenta de acceso</h3>
               <p className="mt-2 text-sm leading-6 text-foreground-secondary">
-                Vincular una cuenta de Tutor provisionada. Dejar vacío para desvincular la cuenta actual.
+                Vincular una cuenta de Tutor habilitada. Dejar vacío para desvincular la cuenta actual.
               </p>
               <div className="mt-4 space-y-1.5">
-                <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-application-email">Correo de la cuenta provisionada (opcional)</label>
+                <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-application-email">Correo de la cuenta habilitada (opcional)</label>
                 <Input
                   aria-describedby={fieldErrors.applicationEmail === undefined ? undefined : fieldErrorId("application-email")}
                   aria-invalid={fieldErrors.applicationEmail !== undefined}
@@ -1418,7 +1418,7 @@ function TutorSheet({
             <section aria-labelledby="tutor-subjects-heading">
               <h3 className="text-sm font-bold text-foreground" id="tutor-subjects-heading">Materias</h3>
               <p className="mt-2 text-sm leading-6 text-foreground-secondary">
-                Seleccionar materias del catálogo que correspondan a la carrera del tutor.
+                Seleccionar las materias asociadas a la carrera del tutor.
               </p>
               <FieldError id={fieldErrorId("subjects")} message={fieldErrors.subjectIds} />
               <div className="mt-4 space-y-2 rounded-md border border-border-subtle bg-surface-subtle/60 p-4">

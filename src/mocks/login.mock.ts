@@ -25,7 +25,7 @@ export const loginScreenData = {
   recoveryText: "Contactar a la administración de Tutorías para solicitar acceso.",
   states: {
     loadingLabel: "Conectando…",
-    errorTitle: "No pudimos iniciar sesión",
+    errorTitle: "No se pudo iniciar sesión",
     errorDescription: "Reintentar en unos instantes. Si el problema continúa, contactar a la administración.",
     permissionDeniedTitle: "Esta cuenta no está habilitada en SGTA",
     permissionDeniedDescription: "Contactar a la administración de Tutorías para solicitar acceso.",
@@ -40,7 +40,7 @@ export const loginStateFixtures = [
   },
   {
     state: "error",
-    title: "No pudimos iniciar sesión",
+    title: "No se pudo iniciar sesión",
     description: "Reintentar en unos instantes para volver a intentar.",
     actionLabel: "Reintentar",
   },

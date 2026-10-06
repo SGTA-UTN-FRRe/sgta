@@ -487,6 +487,7 @@ No product data is loaded before authorization succeeds.
 | Title | Sistema de Gestión de Tutorías |
 | Supporting text | Acceso para usuarios habilitados de Tutorias UTN FRRe. |
 | CTA | Continuar con Google |
+| Error title | No se pudo iniciar sesión |
 | Permission title | Esta cuenta no está habilitada en SGTA |
 | Recovery | Contactar a la administración de Tutorías para solicitar acceso. |
 
@@ -998,7 +999,7 @@ Confirmation explains:
 | Element | Copy |
 |---|---|
 | Page title | Horas |
-| Description | Consultar saldos y registrar movimientos trazables. |
+| Description | Consultar saldos y registrar movimientos de horas. |
 | CTA | Registrar movimiento |
 | Owes label | Debe horas |
 | Current label | Al día |

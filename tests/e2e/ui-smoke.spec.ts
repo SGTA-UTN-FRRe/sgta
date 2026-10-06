@@ -91,7 +91,7 @@ test.describe("UI smoke journeys", () => {
       await page.goto("/login?error=internal_server_error");
 
       await expect(page.getByRole("main").getByRole("alert")).toContainText(
-        "No pudimos iniciar sesión",
+        "No se pudo iniciar sesión",
       );
       await page.keyboard.press("Tab");
       const retry = page.getByRole("button", { name: "Reintentar" });
