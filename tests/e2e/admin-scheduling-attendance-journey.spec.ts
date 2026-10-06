@@ -16,6 +16,7 @@ import {
   activateWithKeyboard,
   selectWithKeyboard,
 } from "./keyboard-helpers";
+import { addE2ESessionCookie } from "./session-cookie";
 
 const attendanceDate = "2027-01-18";
 const attendanceUrl = `/admin/schedules/attendance?cycleId=${E2E_CYCLE_ID}&date=${attendanceDate}`;
@@ -26,13 +27,7 @@ async function signInAdmin(context: BrowserContext) {
     E2E_AUTH_SECRET,
   )}`;
 
-  await context.addCookies([
-    {
-      name: "better-auth.session_token",
-      value: signedSessionToken,
-      url: "http://localhost:3000",
-    },
-  ]);
+  await addE2ESessionCookie(context, signedSessionToken);
 }
 
 test.describe("authenticated Admin scheduling and attendance", () => {

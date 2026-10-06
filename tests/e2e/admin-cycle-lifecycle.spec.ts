@@ -8,6 +8,7 @@ import {
   E2E_PRIMARY_TUTOR_ID,
 } from "./e2e-test-data";
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
+import { addE2ESessionCookie } from "./session-cookie";
 import { activateWithKeyboard, expectReducedMotion } from "./keyboard-helpers";
 
 test("closes a cycle and opens a successor without transferring balance", async ({
@@ -22,13 +23,7 @@ test("closes a cycle and opens a successor without transferring balance", async 
     E2E_AUTH_SECRET,
   )}`;
 
-  await context.addCookies([
-    {
-      name: "better-auth.session_token",
-      value: signedSessionToken,
-      url: "http://localhost:3000",
-    },
-  ]);
+  await addE2ESessionCookie(context, signedSessionToken);
 
   const initialWorkspaceResponse = await page.request.get("/api/admin/hours");
   expect(initialWorkspaceResponse.status()).toBe(200);

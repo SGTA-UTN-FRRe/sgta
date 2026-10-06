@@ -7,6 +7,7 @@ import {
   E2E_TUTOR_SESSION_TOKEN,
 } from "./e2e-test-data";
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
+import { addE2ESessionCookie } from "./session-cookie";
 
 const viewports = [
   { height: 844, name: "Compact", width: 390 },
@@ -32,13 +33,7 @@ async function signInTutor(context: BrowserContext) {
     E2E_AUTH_SECRET,
   )}`;
 
-  await context.addCookies([
-    {
-      name: "better-auth.session_token",
-      value: signedSessionToken,
-      url: "http://localhost:3000",
-    },
-  ]);
+  await addE2ESessionCookie(context, signedSessionToken);
 }
 
 test.describe("authenticated Tutor self-service", () => {

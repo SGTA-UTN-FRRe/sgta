@@ -9,6 +9,7 @@ import {
   E2E_PRIMARY_TUTOR_ID,
 } from "./e2e-test-data";
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
+import { addE2ESessionCookie } from "./session-cookie";
 import {
   activateWithKeyboard,
   selectWithKeyboard,
@@ -26,13 +27,7 @@ test.describe("authenticated Admin hour operations", () => {
       E2E_AUTH_SECRET,
     )}`;
 
-    await context.addCookies([
-      {
-        name: "better-auth.session_token",
-        value: signedSessionToken,
-        url: "http://localhost:3000",
-      },
-    ]);
+    await addE2ESessionCookie(context, signedSessionToken);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/admin/hours");

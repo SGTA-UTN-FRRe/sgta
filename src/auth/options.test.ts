@@ -151,4 +151,27 @@ describe("Better Auth options", () => {
 
     expect(result).toBe(false);
   });
+
+  it("keeps secure cookies outside the local production E2E server", () => {
+    const { db } = createSelectMock([]);
+    const localE2EOptions = createAuthOptions(
+      {
+        ...environment,
+        NODE_ENV: "production",
+        SGTA_E2E_MODE: "true",
+      },
+      db,
+    );
+    const publicProductionOptions = createAuthOptions(
+      {
+        ...environment,
+        NODE_ENV: "production",
+        BETTER_AUTH_URL: "https://sgta.example.test",
+      },
+      db,
+    );
+
+    expect(localE2EOptions.advanced?.useSecureCookies).toBe(false);
+    expect(publicProductionOptions.advanced?.useSecureCookies).toBe(true);
+  });
 });

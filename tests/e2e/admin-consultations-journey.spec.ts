@@ -10,6 +10,7 @@ import {
   E2E_TUTOR_SESSION_TOKEN,
 } from "./e2e-test-data";
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
+import { addE2ESessionCookie } from "./session-cookie";
 import {
   activateWithKeyboard,
   expectReducedMotion,
@@ -40,13 +41,7 @@ test.describe("authenticated Admin consultation workflow", () => {
       E2E_ADMIN_SESSION_TOKEN,
       E2E_AUTH_SECRET,
     )}`;
-    await context.addCookies([
-      {
-        name: "better-auth.session_token",
-        value: signedAdminToken,
-        url: "http://localhost:3000",
-      },
-    ]);
+    await addE2ESessionCookie(context, signedAdminToken);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ reducedMotion: "reduce" });
@@ -375,13 +370,7 @@ test.describe("authenticated Admin consultation workflow", () => {
       E2E_AUTH_SECRET,
     )}`;
     await context.clearCookies();
-    await context.addCookies([
-      {
-        name: "better-auth.session_token",
-        value: signedTutorToken,
-        url: "http://localhost:3000",
-      },
-    ]);
+    await addE2ESessionCookie(context, signedTutorToken);
 
     const tutorConsultationList = await page.request.get(
       "/api/admin/consultations",
