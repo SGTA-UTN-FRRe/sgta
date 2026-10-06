@@ -122,4 +122,52 @@ describe("schedule validation", () => {
       ),
     ).toBe(true);
   });
+
+  it("keeps date-only weekday validation stable across host time zones", () => {
+    const previousTimeZone = process.env.TZ;
+    const weekdayAssignment = {
+      pattern: "WEEKDAY" as const,
+      weekday: 5,
+      assignmentDate: null,
+      startMinutes: 600,
+      endMinutes: 660,
+    };
+    const dateAssignment = {
+      pattern: "DATE" as const,
+      weekday: null,
+      assignmentDate: "2027-01-08",
+      startMinutes: 630,
+      endMinutes: 690,
+    };
+
+    try {
+      process.env.TZ = "America/Los_Angeles";
+      const losAngelesWeekday = getIsoWeekday("2027-01-08");
+      const losAngelesOverlap = assignmentWindowsOverlap(
+        weekdayAssignment,
+        dateAssignment,
+        "2027-01-01",
+        "2027-01-10",
+      );
+
+      process.env.TZ = "Pacific/Kiritimati";
+      expect(getIsoWeekday("2027-01-08")).toBe(losAngelesWeekday);
+      expect(
+        assignmentWindowsOverlap(
+          weekdayAssignment,
+          dateAssignment,
+          "2027-01-01",
+          "2027-01-10",
+        ),
+      ).toBe(losAngelesOverlap);
+      expect(losAngelesWeekday).toBe(5);
+      expect(losAngelesOverlap).toBe(true);
+    } finally {
+      if (previousTimeZone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = previousTimeZone;
+      }
+    }
+  });
 });

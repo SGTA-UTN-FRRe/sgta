@@ -33,6 +33,7 @@ import {
   dateOnlySchema,
   getIsoWeekday,
 } from "@/features/schedules/schedule-validation";
+import { getArgentinaBusinessDate } from "@/shared/argentina-business-time";
 
 import {
   applicationUserIdSchema,
@@ -231,6 +232,7 @@ type SelectDatabase = Pick<Database, "select">;
 
 type TutorSelfServiceReadOptions = {
   today?: string;
+  now?: Date;
 };
 
 type CycleRow = TutorSelfServiceCycle;
@@ -399,7 +401,7 @@ function parseApplicationUserId(applicationUserId: string) {
 
 function parseToday(options: TutorSelfServiceReadOptions) {
   return options.today === undefined
-    ? new Date().toISOString().slice(0, 10)
+    ? getArgentinaBusinessDate(options.now)
     : parseInput(dateOnlySchema, options.today);
 }
 

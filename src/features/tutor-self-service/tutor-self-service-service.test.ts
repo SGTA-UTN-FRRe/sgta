@@ -15,6 +15,7 @@ import {
   tutorSelfServiceHoursQuerySchema,
   tutorSelfServiceScheduleQuerySchema,
 } from "./tutor-self-service-validation";
+import { getArgentinaBusinessDate } from "@/shared/argentina-business-time";
 
 const cycle = {
   startDate: "2027-01-01",
@@ -116,6 +117,20 @@ describe("Tutor self-service read models", () => {
         code: TUTOR_SELF_SERVICE_ERROR_CODES.dateOutsideCycle,
       }),
     );
+  });
+
+  it("anchors the default Tutor schedule to the Argentina business date", () => {
+    const today = getArgentinaBusinessDate(
+      new Date("2027-04-06T01:30:00.000Z"),
+    );
+
+    expect(today).toBe("2027-04-05");
+    expect(resolveTutorSelfServiceScheduleWindow(cycle, {}, today)).toEqual({
+      mode: "current",
+      anchorDate: "2027-04-05",
+      startDate: "2027-04-05",
+      endDate: "2027-04-11",
+    });
   });
 
   it("applies special-plan precedence and regular fallback", () => {
