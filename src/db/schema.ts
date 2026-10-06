@@ -285,6 +285,10 @@ export const subject = pgTable(
       .references(() => career.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     normalizedName: text("normalized_name").notNull(),
+    aliases: text("aliases")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     status: recordStatusEnum("status").notNull().default("ACTIVE"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -908,6 +912,10 @@ export const consultationStaging = pgTable(
     subjectId: uuid("subject_id").references(() => subject.id, {
       onDelete: "restrict",
     }),
+    suggestedSubjectId: uuid("suggested_subject_id").references(
+      () => subject.id,
+      { onDelete: "set null" },
+    ),
     reviewedBy: text("reviewed_by").references(() => user.id, {
       onDelete: "restrict",
     }),
@@ -977,6 +985,9 @@ export const consultationStaging = pgTable(
     index("consultation_staging_source_run_idx").on(
       table.lastSeenRunId,
     ),
+    index("consultation_staging_suggested_subject_idx").on(
+      table.suggestedSubjectId,
+    ),
     index("consultation_staging_career_idx")
       .on(table.careerId)
       .where(sql`${table.careerId} IS NOT NULL`),
@@ -1012,7 +1023,7 @@ export const consultation = pgTable(
     }),
     consultationDate: date("consultation_date", { mode: "string" }).notNull(),
     studentFirstName: text("student_first_name").notNull(),
-    studentLastName: text("student_last_name").notNull(),
+    studentLastName: text("student_last_name"),
     studentContact: text("student_contact"),
     careerId: uuid("career_id")
       .notNull()
@@ -1041,7 +1052,7 @@ export const consultation = pgTable(
     ),
     check(
       "consultation_student_name_bounds_check",
-      sql`length(trim(${table.studentFirstName})) BETWEEN 1 AND 200 AND length(trim(${table.studentLastName})) BETWEEN 1 AND 200 AND (${table.studentContact} IS NULL OR length(${table.studentContact}) <= 320) AND (${table.academicStage} IS NULL OR length(${table.academicStage}) <= 200) AND (${table.modality} IS NULL OR length(${table.modality}) <= 100) AND (${table.rawTopic} IS NULL OR length(${table.rawTopic}) <= 4000)`,
+      sql`length(trim(${table.studentFirstName})) BETWEEN 1 AND 200 AND (${table.studentLastName} IS NULL OR length(trim(${table.studentLastName})) BETWEEN 1 AND 200) AND (${table.studentContact} IS NULL OR length(${table.studentContact}) <= 320) AND (${table.academicStage} IS NULL OR length(${table.academicStage}) <= 200) AND (${table.modality} IS NULL OR length(${table.modality}) <= 100) AND (${table.rawTopic} IS NULL OR length(${table.rawTopic}) <= 4000)`,
     ),
     uniqueIndex("consultation_staging_unique").on(table.stagingId),
     index("consultation_date_idx").on(table.consultationDate, table.id),

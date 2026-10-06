@@ -23,6 +23,7 @@ import {
   consultationDuplicateCandidate,
   consultationImportRun,
   consultationStaging,
+  subject,
   tutor,
 } from "@/db/schema";
 import { normalizeName } from "@/features/tutors/tutor-validation";
@@ -86,6 +87,10 @@ type TutorReference = Pick<
   typeof tutor.$inferSelect,
   "id" | "firstName" | "lastName" | "preferredDisplayName"
 >;
+type SubjectReference = Pick<
+  typeof subject.$inferSelect,
+  "id" | "careerId" | "name" | "aliases"
+>;
 
 type ReferenceMatch = { id: string | null; count: number };
 type AliasIndex = Map<string, Set<string>>;
@@ -93,6 +98,7 @@ type AliasIndex = Map<string, Set<string>>;
 export type ConsultationReferenceResolver = {
   resolveCareer(value: string): ReferenceMatch;
   resolveTutor(value: string): ReferenceMatch;
+  suggestSubject(careerId: string | null, topic: string | null): string | null;
 };
 
 export type NormalizedConsultationSourceRow = {
@@ -118,6 +124,7 @@ export type NormalizedConsultationSourceRow = {
   normalizedModality: string | null;
   normalizedTopic: string | null;
   normalizedContact: string | null;
+  suggestedSubjectId: string | null;
   anomalyFlags: (typeof consultationStaging.$inferSelect.anomalyFlags)[number][];
 };
 
@@ -171,6 +178,7 @@ function resolveAlias(index: AliasIndex, value: string): ReferenceMatch {
 export function createConsultationReferenceResolver(
   careers: CareerReference[],
   tutors: TutorReference[],
+  subjects: SubjectReference[] = [],
 ): ConsultationReferenceResolver {
   const careerIndex = buildAliasIndex(
     careers.map((entry) => ({
@@ -188,10 +196,50 @@ export function createConsultationReferenceResolver(
       ],
     })),
   );
+  const subjectsByCareer = new Map<string, SubjectReference[]>();
+  for (const entry of subjects) {
+    const careerSubjects = subjectsByCareer.get(entry.careerId) ?? [];
+    careerSubjects.push(entry);
+    subjectsByCareer.set(entry.careerId, careerSubjects);
+  }
 
   return {
     resolveCareer: (value) => resolveAlias(careerIndex, value),
     resolveTutor: (value) => resolveAlias(tutorIndex, value),
+    suggestSubject: (careerId, topic) => {
+      if (careerId === null || topic === null) {
+        return null;
+      }
+
+      const normalizedTopic = normalizeName(topic);
+      const candidates = (subjectsByCareer.get(careerId) ?? []).map((entry) => ({
+        id: entry.id,
+        aliases: [entry.name, ...entry.aliases]
+          .map(normalizeName)
+          .filter((alias) => alias.length > 0),
+      }));
+      const exactMatches = new Set(
+        candidates
+          .filter((candidate) => candidate.aliases.includes(normalizedTopic))
+          .map((candidate) => candidate.id),
+      );
+      if (exactMatches.size > 0) {
+        return exactMatches.size === 1 ? [...exactMatches][0] ?? null : null;
+      }
+
+      const containedMatches = new Set(
+        candidates
+          .filter((candidate) =>
+            candidate.aliases.some(
+              (alias) => alias.length >= 4 && normalizedTopic.includes(alias),
+            ),
+          )
+          .map((candidate) => candidate.id),
+      );
+      return containedMatches.size === 1
+        ? [...containedMatches][0] ?? null
+        : null;
+    },
   };
 }
 
@@ -350,6 +398,10 @@ export function normalizeConsultationSourceRow(
     normalizedModality: normalizeIndexedText(normalizedModality),
     normalizedTopic: normalizeIndexedText(normalizedTopic),
     normalizedContact: normalizeIndexedText(normalizedContact),
+    suggestedSubjectId: resolver.suggestSubject(
+      careerMatch.id,
+      normalizedTopic,
+    ),
     anomalyFlags: [...anomalies],
   };
 }
@@ -718,6 +770,7 @@ function sourceFields(row: NormalizedConsultationSourceRow) {
     normalizedModality: row.normalizedModality,
     normalizedTopic: row.normalizedTopic,
     normalizedContact: row.normalizedContact,
+    suggestedSubjectId: row.suggestedSubjectId,
     anomalyFlags: row.anomalyFlags,
   };
 }
@@ -749,7 +802,7 @@ async function persistSourceBatch(
       throw new ConsultationImportFailure("import_lease_expired");
     }
 
-    const [careers, tutors] = await Promise.all([
+    const [careers, tutors, subjects] = await Promise.all([
       tx.select({ id: career.id, name: career.name, normalizedName: career.normalizedName }).from(career),
       tx
         .select({
@@ -759,8 +812,20 @@ async function persistSourceBatch(
           preferredDisplayName: tutor.preferredDisplayName,
         })
         .from(tutor),
+      tx
+        .select({
+          id: subject.id,
+          careerId: subject.careerId,
+          name: subject.name,
+          aliases: subject.aliases,
+        })
+        .from(subject),
     ]);
-    const resolver = createConsultationReferenceResolver(careers, tutors);
+    const resolver = createConsultationReferenceResolver(
+      careers,
+      tutors,
+      subjects,
+    );
     const normalizedRows: NormalizedConsultationSourceRow[] = [];
     let rowErrors = 0;
     const seenRowKeys = new Set<string>();
@@ -1028,6 +1093,33 @@ async function persistSourceBatch(
     const importedRowKeys = new Set(normalizedRows.map((row) => row.sourceRowKey));
     const importedStaging = stagedRows.filter((row) => importedRowKeys.has(row.sourceRowKey));
     const importedIds = importedStaging.map((row) => row.id);
+    const suggestionByRowKey = new Map(
+      normalizedRows.map((row) => [row.sourceRowKey, row.suggestedSubjectId]),
+    );
+    for (let offset = 0; offset < importedStaging.length; offset += stagingQueryBatchSize) {
+      const chunk = importedStaging.slice(offset, offset + stagingQueryBatchSize);
+      const cases = sql.join(
+        chunk.map(
+          (row) =>
+            sql`WHEN ${row.id}::uuid THEN ${suggestionByRowKey.get(row.sourceRowKey) ?? null}::uuid`,
+        ),
+        sql` `,
+      );
+      await tx
+        .update(consultationStaging)
+        .set({
+          suggestedSubjectId: sql`CASE ${consultationStaging.id} ${cases} ELSE ${consultationStaging.suggestedSubjectId} END`,
+        })
+        .where(
+          and(
+            inArray(
+              consultationStaging.id,
+              chunk.map((row) => row.id),
+            ),
+            eq(consultationStaging.status, "PENDING_REVIEW"),
+          ),
+        );
+    }
     const finalImported = importedIds.length === 0
       ? []
       : await tx

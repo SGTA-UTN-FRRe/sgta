@@ -1,0 +1,7 @@
+ALTER TABLE "consultation" DROP CONSTRAINT "consultation_student_name_bounds_check";--> statement-breakpoint
+ALTER TABLE "consultation" ALTER COLUMN "student_last_name" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "consultation_staging" ADD COLUMN "suggested_subject_id" uuid;--> statement-breakpoint
+ALTER TABLE "subject" ADD COLUMN "aliases" text[] DEFAULT ARRAY[]::text[] NOT NULL;--> statement-breakpoint
+ALTER TABLE "consultation_staging" ADD CONSTRAINT "consultation_staging_suggested_subject_id_subject_id_fk" FOREIGN KEY ("suggested_subject_id") REFERENCES "public"."subject"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "consultation_staging_suggested_subject_idx" ON "consultation_staging" USING btree ("suggested_subject_id");--> statement-breakpoint
+ALTER TABLE "consultation" ADD CONSTRAINT "consultation_student_name_bounds_check" CHECK (length(trim("consultation"."student_first_name")) BETWEEN 1 AND 200 AND ("consultation"."student_last_name" IS NULL OR length(trim("consultation"."student_last_name")) BETWEEN 1 AND 200) AND ("consultation"."student_contact" IS NULL OR length("consultation"."student_contact") <= 320) AND ("consultation"."academic_stage" IS NULL OR length("consultation"."academic_stage") <= 200) AND ("consultation"."modality" IS NULL OR length("consultation"."modality") <= 100) AND ("consultation"."raw_topic" IS NULL OR length("consultation"."raw_topic") <= 4000));

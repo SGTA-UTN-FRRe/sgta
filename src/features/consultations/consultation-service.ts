@@ -90,7 +90,7 @@ type CanonicalListRow = {
   reviewVersion: number;
   consultationDate: string;
   studentFirstName: string;
-  studentLastName: string;
+  studentLastName: string | null;
   studentContact: string | null;
   career: string;
   tutor: string;
