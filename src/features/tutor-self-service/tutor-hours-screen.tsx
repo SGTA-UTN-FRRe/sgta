@@ -145,7 +145,7 @@ function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: 
             </p>
           </div>
           <div className="sm:text-right">
-            <p className="text-sm font-semibold text-foreground-secondary">Saldo firmado</p>
+            <p className="text-sm font-semibold text-foreground-secondary">Saldo del ciclo</p>
             <p className="mt-1 font-numeric text-4xl font-extrabold tabular-nums text-foreground">
               {formatSignedMinutes(data.balance.signedBalanceMinutes)}
             </p>
@@ -272,7 +272,7 @@ export function TutorHoursScreen({
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
-        description="Consultar el balance firmado y su historial personal."
+        description="Saldo de horas y movimientos del ciclo."
         titleId="tutor-page-title"
         title="Mis horas"
       />

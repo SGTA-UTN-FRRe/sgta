@@ -553,7 +553,7 @@ export function SubjectCoverageScreen({
       <PageHeader
         action={headerAction}
         breadcrumbs={[{ href: "/admin/tutors", label: "Tutores" }, { label: "Materias" }]}
-        description="Consultar la cobertura derivada del catálogo académico."
+        description="Tutores disponibles por materia."
         title="Materias"
       />
 

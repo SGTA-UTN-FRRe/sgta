@@ -574,7 +574,6 @@ function BalanceValue({ balance }: { balance: SafeHourBalance }) {
       >
         {formatSignedDuration(balance.signedBalanceMinutes)}
       </p>
-      <p className="mt-1 text-xs text-foreground-muted">Saldo firmado del ciclo</p>
     </div>
   );
 }
@@ -860,7 +859,7 @@ function MovementHistorySheet({
               className="mt-2 text-sm leading-6 text-foreground-secondary"
               id="hours-history-description"
             >
-              Movimientos del {balance.cycle.name}. El saldo firmado se calcula a partir de los movimientos confirmados.
+              Movimientos del {balance.cycle.name}. El saldo se calcula a partir de los movimientos confirmados.
             </p>
           </div>
           <button
@@ -879,7 +878,7 @@ function MovementHistorySheet({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground-muted">
-                  Saldo firmado
+                  Saldo
                 </p>
                 <p className="mt-2 font-numeric text-3xl font-bold tabular-nums text-foreground">
                   {formatSignedDuration(balance.signedBalanceMinutes)}
@@ -983,7 +982,7 @@ function MovementHistorySheet({
 
         <div className="border-t border-border bg-surface px-6 py-4">
           <p className="text-xs leading-5 text-foreground-muted">
-            Este historial se consulta desde los movimientos persistidos y no modifica saldos directamente.
+            El saldo se calcula a partir de los movimientos registrados y no se puede modificar directamente.
           </p>
           <Link
             className={cn(buttonVariants({ size: "sm", variant: "outline" }), "mt-3")}

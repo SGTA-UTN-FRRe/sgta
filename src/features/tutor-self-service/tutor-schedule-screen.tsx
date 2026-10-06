@@ -222,19 +222,19 @@ function ScheduleContent({
       </div>
 
       <section
-        aria-label="Contexto del plan efectivo"
+        aria-label="Contexto del horario"
         className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-accent/30 bg-accent-surface/60 px-4 py-3"
       >
         <StatusBadge
           label={
             data.effectivePlan === null
-              ? "Sin plan efectivo"
+              ? "Sin horario asignado"
               : `Plan ${getPlanKindLabel(data.effectivePlan.kind)}`
           }
           variant={data.effectivePlan?.kind === "SPECIAL" ? "faro" : "info"}
         />
         <span className="text-sm text-foreground-secondary">
-          {data.effectivePlan?.name ?? "No hay un plan activo para la fecha de referencia."}
+          {data.effectivePlan?.name ?? "No hay guardias asignadas para la fecha de referencia."}
         </span>
       </section>
 
@@ -350,7 +350,7 @@ export function TutorScheduleScreen({
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
-        description="Consultar las guardias efectivas del ciclo vigente."
+        description="Consultar las guardias asignadas del ciclo vigente."
         titleId="tutor-page-title"
         title="Mi horario"
       />

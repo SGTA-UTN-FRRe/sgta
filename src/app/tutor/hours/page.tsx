@@ -14,7 +14,7 @@ import {
 
 export const metadata: Metadata = {
   title: "Mis horas | SGTA",
-  description: "Balance e historial personal del ciclo vigente.",
+  description: "Saldo y movimientos personales del ciclo vigente.",
 };
 
 export const runtime = "nodejs";

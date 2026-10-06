@@ -98,11 +98,11 @@ const defaultStateDetails: Partial<
     actionHref: "/admin/hours/movements",
     actionLabel: "Reintentar",
     description:
-      "Reintentar para volver a consultar el historial persistido del ciclo.",
+      "Reintentar para volver a consultar el historial del ciclo.",
     title: "No se pudo cargar el historial",
   },
   loading: {
-    description: "Estamos preparando el historial persistido.",
+    description: "Consultando los movimientos del ciclo…",
     title: "Cargando movimientos",
   },
   "search-empty": {
@@ -658,7 +658,7 @@ function MovementHistoryRow({
           <dd className="mt-1 text-xs text-foreground-muted">{movement.tutor.careerName}</dd>
         </dl>
         <dl>
-          <dt className="text-xs font-medium text-foreground-muted">Duración firmada</dt>
+          <dt className="text-xs font-medium text-foreground-muted">Duración</dt>
           <dd className="mt-1 font-numeric text-xl font-bold tabular-nums text-foreground">
             {formatSignedDuration(movement.signedDurationMinutes)}
           </dd>
@@ -908,7 +908,7 @@ function ReversalDialog({
           </dl>
 
           <p className="text-sm leading-6 text-foreground-secondary">
-            El balance se recalculará a partir del movimiento original y su reversión. Esta acción no edita ni elimina el registro confirmado.
+            El saldo de horas se actualizará con la reversión. El movimiento original seguirá en el historial.
           </p>
         </div>
 
@@ -1306,7 +1306,7 @@ export function MovementHistoryScreen({
 
             <p aria-live="polite" className="mt-4 text-sm text-foreground-secondary">
               {isLoading
-                ? "Consultando movimientos persistidos…"
+                ? "Consultando movimientos…"
                 : filteredMovements.length === 0 && hasActiveFilters
                   ? "No hay resultados para los filtros actuales."
                   : `Mostrando ${formatMovementCount(filteredMovements.length)}`}

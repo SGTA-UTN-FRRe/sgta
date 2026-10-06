@@ -143,7 +143,7 @@ const movementLuciaExtraordinary = {
 };
 
 export const hoursScreenData = {
-  description: "Consultar saldos y registrar movimientos trazables.",
+  description: "Consultar saldos y registrar movimientos de horas.",
   searchPlaceholder: "Buscar tutor",
   statusFilterLabel: "Estado",
   categoryFilterLabel: "Categoría",

@@ -13,7 +13,7 @@ import { tutorSelfServiceScheduleQuerySchema } from "@/features/tutor-self-servi
 
 export const metadata: Metadata = {
   title: "Mi horario | SGTA",
-  description: "Guardias efectivas y próximas asignaciones personales.",
+  description: "Consultar las guardias asignadas para el ciclo vigente.",
 };
 
 export const runtime = "nodejs";

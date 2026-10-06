@@ -21,7 +21,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const pageDescription =
-  "Consultar movimientos persistidos y corregirlos mediante reversiones trazables.";
+  "Consultar movimientos de horas y revertir movimientos confirmados.";
 
 export const metadata: Metadata = {
   title: "Movimientos | SGTA",
@@ -40,7 +40,7 @@ const errorState: HoursStateDetail = {
   actionHref: "/admin/hours/movements",
   actionLabel: "Reintentar",
   description:
-    "Reintentar para volver a consultar el historial persistido del ciclo.",
+    "Reintentar para volver a consultar el historial del ciclo.",
   title: "No se pudo cargar el historial",
 };
 

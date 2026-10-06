@@ -13,7 +13,7 @@ import { resolveDefaultOperationalDate } from "@/features/schedules/schedule-dat
 
 export const metadata: Metadata = {
   title: "Asistencia | SGTA",
-  description: "Consultar las ocurrencias efectivas y su estado de asistencia.",
+  description: "Consultar las guardias de la fecha y su estado de asistencia.",
 };
 
 export const runtime = "nodejs";

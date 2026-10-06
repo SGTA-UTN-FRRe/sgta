@@ -180,6 +180,7 @@ describe("ReportsScreen", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Demanda" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Cobertura y asistencia" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Horas y actividades" })).toBeInTheDocument();
+    expect(screen.getByText("La cobertura y los saldos muestran el estado actual del ciclo abierto; la programación y la asistencia corresponden al período seleccionado.")).toBeInTheDocument();
     expect(screen.getAllByText("21/09/2026")).not.toHaveLength(0);
     expect(screen.getByText("5 · 21 h 39 min")).toBeInTheDocument();
 

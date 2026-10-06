@@ -17,6 +17,7 @@ describe("TutorSummaryScreen", () => {
     expect(screen.getByText("Debe horas")).toBeInTheDocument();
     expect(screen.getByText(/Estado actual de Marina Benítez/)).toBeInTheDocument();
     expect(screen.getByText("Arquitectura de Computadoras")).toBeInTheDocument();
+    expect(screen.getByText("Materias asignadas.")).toBeInTheDocument();
     expect(screen.getByText("Beca de acompañamiento")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /administr/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /registrar|editar|revertir/i })).not.toBeInTheDocument();

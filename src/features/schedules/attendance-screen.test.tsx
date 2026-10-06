@@ -129,6 +129,7 @@ describe("AttendanceScreen", () => {
     expect(screen.getByText(cycle.name)).toBeInTheDocument();
     expect(screen.getByText(plan.name)).toBeInTheDocument();
     expect(screen.getByLabelText("Fecha")).toHaveValue("2026-09-14");
+    expect(screen.getByText(/Fecha de referencia:/)).toBeInTheDocument();
     expect(screen.getByText(tutor.formalName)).toBeInTheDocument();
     expect(screen.getByText(/08:00 a 10:00/)).toBeInTheDocument();
     expect(
@@ -388,6 +389,7 @@ describe("AttendanceScreen", () => {
 
     rerender(<AttendanceScreen data={createData([])} state="empty" />);
     expect(screen.getByText("No hay guardias para esta fecha")).toBeInTheDocument();
+    expect(screen.getByText("No hay guardias para registrar en la fecha seleccionada.")).toBeInTheDocument();
 
     rerender(<AttendanceScreen data={null} state="required-action" />);
     expect(screen.getByText("Abrir un ciclo para gestionar asistencia")).toBeInTheDocument();

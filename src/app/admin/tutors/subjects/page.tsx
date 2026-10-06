@@ -7,7 +7,7 @@ import { listSubjectCoverage } from "@/features/tutors/tutor-service";
 
 export const metadata: Metadata = {
   title: "Materias | SGTA",
-  description: "Consultar la cobertura derivada del catálogo académico.",
+  description: "Tutores disponibles por materia.",
 };
 
 export const runtime = "nodejs";

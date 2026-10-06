@@ -670,7 +670,7 @@ function CoverageAndAttendance({
   return (
     <section aria-labelledby="coverage-heading" className="space-y-4">
       <SectionHeading
-        description="La cobertura y los saldos son snapshots del ciclo abierto; la programación y la asistencia corresponden al período."
+        description="La cobertura y los saldos muestran el estado actual del ciclo abierto; la programación y la asistencia corresponden al período seleccionado."
         id="coverage-heading"
         title="Cobertura y asistencia"
       />
@@ -701,7 +701,7 @@ function CurrentBalancesSection({
   return (
     <ReportCard
       title="Estado de saldos actual"
-      description={`Estado actual por ciclo${cycleName ? ` · ${cycleName}` : ""} · filtros de carrera y tutor.`}
+      description={`Estado actual del ciclo${cycleName ? ` · ${cycleName}` : ""}; los filtros de carrera y tutor se aplican a estos saldos.`}
     >
       {section.status === "ready" ? (
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -1004,7 +1004,7 @@ export function ReportsScreen({
                 value={report.consultationDemand.status === "ready" ? formatNumber(report.consultationDemand.data.generalTotal) : "—"}
               />
               <MetricCard
-                detail="Estado actual; filtros de carrera y tutor"
+                detail="Cantidad actual según los filtros de carrera y tutor"
                 label="Tutores activos"
                 value={report.activeTutors.status === "ready" ? formatNumber(report.activeTutors.data.count) : "—"}
               />

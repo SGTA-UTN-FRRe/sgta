@@ -210,6 +210,9 @@ describe("TutorsScreen", () => {
     renderScreen();
 
     await user.click(screen.getByRole("button", { name: "Agregar tutor" }));
+    expect(screen.getByText("Vincular una cuenta de Tutor habilitada. Dejar vacío para desvincular la cuenta actual.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Correo de la cuenta habilitada (opcional)")).toBeInTheDocument();
+    expect(screen.getByText("Seleccionar las materias asociadas a la carrera del tutor.")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Nombre"), "Ana");
     await user.type(screen.getByLabelText("Apellido"), "Gómez");
     const sheet = screen.getByRole("dialog", { name: "Agregar tutor" });

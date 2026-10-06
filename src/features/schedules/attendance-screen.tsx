@@ -126,7 +126,7 @@ const attendanceErrorMessages: Record<string, string> = {
   cycle_not_open: "El ciclo seleccionado ya no está abierto para registrar asistencia.",
   date_outside_cycle: "La fecha debe pertenecer al ciclo administrativo vigente.",
   debit_already_confirmed:
-    "El débito ya fue confirmado. Corregir la asistencia para revertirlo de forma trazable.",
+    "El débito ya fue confirmado. Al corregir la asistencia, se actualizará el saldo de horas.",
   debit_minutes_invalid:
     "Los minutos deben ser positivos y no superar la duración de la ocurrencia.",
   forbidden: "No tienes permisos para registrar asistencia.",
@@ -749,7 +749,7 @@ function AttendanceCorrectionDialog({
       closeButtonRef={closeButtonRef}
       description={
         entry.attendance.debitStatus === "CONFIRMED"
-          ? "El movimiento vinculado se conservará visible y se revertirá mediante la ruta contable trazable."
+          ? "El movimiento vinculado seguirá visible en el historial; al corregir la asistencia, se actualizará el saldo de horas."
           : "La corrección modifica el hecho de asistencia; cualquier débito posterior requiere una confirmación explícita."
       }
       onClose={onClose}
@@ -882,7 +882,7 @@ function RecoveryDialog({
   return (
     <DialogShell
       closeButtonRef={closeButtonRef}
-      description={`Reconocer explícitamente la recuperación de ${entry.tutor.formalName} por ${formatDuration(occurrenceDuration(entry))}. Esta acción crea un crédito trazable.`}
+      description={`Registrar la recuperación de ${entry.tutor.formalName} por ${formatDuration(occurrenceDuration(entry))}. Las horas se acreditarán al guardar.`}
       onClose={onClose}
       panelRef={panelRef}
       title="Reconocer recuperación"
@@ -1618,10 +1618,10 @@ export function AttendanceScreen({
                       {workspace.cycle.name}
                     </h2>
                     <StatusBadge label={workspace.cycle.status === "OPEN" ? "Ciclo abierto" : "Ciclo cerrado"} variant={workspace.cycle.status === "OPEN" ? "success" : "neutral"} />
-                    <StatusBadge label={workspace.plan?.name ?? "Sin plan efectivo"} variant="info" />
+                    <StatusBadge label={workspace.plan?.name ?? "Sin horario para la fecha"} variant="info" />
                   </div>
                   <p className="mt-2 text-sm leading-6 text-foreground-secondary">
-                    Fecha efectiva: {formatDate(workspace.date)}. Las decisiones de horas requieren una acción administrativa explícita.
+                    Fecha de referencia: {formatDate(workspace.date)}. Las decisiones de horas requieren una acción administrativa explícita.
                   </p>
                 </div>
                 <div className="w-full sm:max-w-xs">
@@ -1649,13 +1649,13 @@ export function AttendanceScreen({
               <EmptyState
                 description={
                   workspace.plan === null
-                    ? "La fecha seleccionada no tiene un plan efectivo ni ocurrencias para registrar."
-                    : "La fecha seleccionada no tiene ocurrencias efectivas."
+                    ? "No hay un horario definido para la fecha seleccionada."
+                    : "No hay guardias para registrar en la fecha seleccionada."
                 }
-                title={workspace.plan === null ? "No hay un horario efectivo para esta fecha" : "No hay guardias para esta fecha"}
+                title={workspace.plan === null ? "No hay un horario para esta fecha" : "No hay guardias para esta fecha"}
               />
             ) : (
-              <div aria-label="Ocurrencias de asistencia" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" role="list">
+              <div aria-label="Guardias para registrar" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" role="list">
                 {workspace.occurrences.map((entry) => (
                   <AttendanceRow
                     busy={busyOccurrenceId !== null}

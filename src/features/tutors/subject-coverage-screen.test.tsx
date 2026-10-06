@@ -68,6 +68,7 @@ describe("SubjectCoverageScreen", () => {
       "default",
     );
     expect(screen.getByRole("heading", { name: "Materias" })).toBeInTheDocument();
+    expect(screen.getByText("Tutores disponibles por materia.")).toBeInTheDocument();
     expect(screen.getAllByRole("table")).toHaveLength(2);
     expect(screen.getAllByText("Álgebra")).toHaveLength(3);
     expect(screen.getAllByRole("link", { name: "Ver tutor Benítez, Marina" })).toHaveLength(3);

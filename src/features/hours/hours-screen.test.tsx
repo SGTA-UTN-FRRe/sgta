@@ -281,6 +281,8 @@ describe("HoursScreen", () => {
     await waitFor(() => {
       expect(within(history).getByText("Revertido")).toBeInTheDocument();
       expect(within(history).getByText(/Origen registrado: Reunión/)).toBeInTheDocument();
+      expect(within(history).getByText("Saldo", { selector: "p" })).toBeInTheDocument();
+      expect(within(history).getByText(/El saldo se calcula a partir de los movimientos confirmados/)).toBeInTheDocument();
     });
 
     await user.keyboard("{Escape}");
