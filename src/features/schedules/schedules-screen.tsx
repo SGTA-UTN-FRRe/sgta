@@ -365,7 +365,11 @@ function deriveWorkspaceState(
     return "no-plan";
   }
 
-  if (workspace.assignments.length === 0) {
+  if (
+    workspace.assignments.filter(
+      (assignment) => assignment.status === "ACTIVE",
+    ).length === 0
+  ) {
     return "empty-plan";
   }
 
@@ -746,12 +750,13 @@ function ScheduleBlock({
 }
 
 function TimeRail() {
+  const startHour = SCHEDULE_GRID_START_MINUTES / 60;
   const hours = Array.from(
     {
       length:
-        (SCHEDULE_GRID_END_MINUTES - SCHEDULE_GRID_START_MINUTES) / 60,
+        (SCHEDULE_GRID_END_MINUTES - SCHEDULE_GRID_START_MINUTES) / 60 + 1,
     },
-    (_, index) => index + SCHEDULE_GRID_START_MINUTES / 60,
+    (_, index) => index + startHour,
   );
 
   return (
@@ -759,17 +764,29 @@ function TimeRail() {
       aria-hidden="true"
       className="relative h-[48rem] border-r border-border-subtle bg-surface-subtle/30"
     >
-      {hours.map((hour) => (
-        <span
-          className="absolute right-2 -translate-y-1/2 text-[11px] font-numeric tabular-nums text-foreground-muted"
-          key={hour}
-          style={{
-            top: `${(hour - SCHEDULE_GRID_START_MINUTES / 60) * SCHEDULE_GRID_HOUR_HEIGHT_REM}rem`,
-          }}
-        >
-          {String(hour).padStart(2, "0")}:00
-        </span>
-      ))}
+      {hours.map((hour, index) => {
+        const isFirst = index === 0;
+        const isLast = index === hours.length - 1;
+
+        return (
+          <span
+            className={cn(
+              "absolute right-2 text-[11px] font-numeric tabular-nums text-foreground-muted select-none",
+              isFirst
+                ? "translate-y-1"
+                : isLast
+                  ? "-translate-y-[calc(100%+4px)]"
+                  : "-translate-y-1/2",
+            )}
+            key={hour}
+            style={{
+              top: `${(hour - startHour) * SCHEDULE_GRID_HOUR_HEIGHT_REM}rem`,
+            }}
+          >
+            {String(hour).padStart(2, "0")}:00
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -1537,12 +1554,13 @@ function AssignmentEditor({
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               {assignment ? (
                 <Button
+                  className="border border-danger/30 bg-danger-surface text-danger hover:bg-danger-surface/80 hover:text-danger"
                   disabled={saving || changingStatus}
                   onClick={handleStatusChange}
                   type="button"
                   variant="ghost"
                 >
-                  {assignment.status === "ACTIVE" ? "Desactivar asignación" : "Activar asignación"}
+                  Eliminar asignación
                 </Button>
               ) : (
                 <span />
@@ -1618,7 +1636,7 @@ export function SchedulesScreen({
     () =>
       workspace && selectedPlan
         ? workspace.assignments
-            .filter((assignment) => assignment.planId === selectedPlan.id)
+            .filter((assignment) => assignment.planId === selectedPlan.id && assignment.status === "ACTIVE")
             .map((assignment) => toAssignmentView(assignment, selectedPlan))
         : [],
     [selectedPlan, workspace],
@@ -1855,7 +1873,7 @@ export function SchedulesScreen({
         );
         await refreshWorkspace(selectedPlan?.id);
         setViewState("success");
-        setAnnouncement("El estado de la asignación se actualizó correctamente.");
+        setAnnouncement("La asignación se eliminó correctamente.");
         closeEditor();
       } catch (error) {
         setErrorMessage(getScheduleErrorMessage(error));
