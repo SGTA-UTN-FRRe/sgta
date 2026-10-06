@@ -9,6 +9,7 @@ import {
 } from "@/features/schedules/attendance-service";
 import { AttendanceScreen } from "@/features/schedules/attendance-screen";
 import { listAdministrativeCycles } from "@/features/cycles/cycle-service";
+import { resolveDefaultOperationalDate } from "@/features/schedules/schedule-date";
 
 export const metadata: Metadata = {
   title: "Asistencia | SGTA",
@@ -52,7 +53,9 @@ export default async function AdminAttendancePage({
         database,
         {
           cycleId: cycle.id,
-          date: firstSearchParam(query.date) ?? cycle.startDate,
+          date:
+            firstSearchParam(query.date) ??
+            resolveDefaultOperationalDate(cycle),
         },
         { actorId: user.id },
       );

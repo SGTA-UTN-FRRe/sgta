@@ -1119,6 +1119,8 @@ In Wide and Medium grids, concurrent assignments render side by side with their
 scheduled times fully visible. Assignments lasting 60 minutes or less use one line
 for the tutor and time; compact status icons retain screen-reader text.
 
+The default date is today in Argentina, clamped to the open cycle.
+
 #### Data requirements
 
 Plan:
@@ -1240,6 +1242,8 @@ Priority: P0
 Primary user: Admin
 Related workflow: Attendance and absence debit
 ```
+
+The default date is today in Argentina, clamped to the open cycle.
 
 **Purpose:** Record what happened for scheduled duty occurrences quickly.
 
