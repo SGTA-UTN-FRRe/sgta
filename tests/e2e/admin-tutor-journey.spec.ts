@@ -6,6 +6,7 @@ import {
   E2E_AUTH_SECRET,
 } from "./e2e-test-data";
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
+import { addE2ESessionCookie } from "./session-cookie";
 import {
   activateWithKeyboard,
   expectReducedMotion,
@@ -24,13 +25,7 @@ test.describe("authenticated Admin tutor operations", () => {
       E2E_AUTH_SECRET,
     )}`;
 
-    await context.addCookies([
-      {
-        name: "better-auth.session_token",
-        value: signedSessionToken,
-        url: "http://localhost:3000",
-      },
-    ]);
+    await addE2ESessionCookie(context, signedSessionToken);
 
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/admin/tutors");

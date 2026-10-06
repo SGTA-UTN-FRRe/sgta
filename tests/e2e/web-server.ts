@@ -546,10 +546,11 @@ async function main() {
     process.cwd(),
     "node_modules/next/dist/bin/next",
   );
-  serverProcess = spawn(process.execPath, [nextBin, "dev"], {
+  serverProcess = spawn(process.execPath, [nextBin, "start"], {
     env: {
       ...process.env,
-      NODE_ENV: "test",
+      NODE_ENV: "production",
+      SGTA_E2E_MODE: "true",
       DATABASE_URL: container.getConnectionUri(),
       BETTER_AUTH_URL: "http://localhost:3000",
       BETTER_AUTH_SECRET: E2E_AUTH_SECRET,

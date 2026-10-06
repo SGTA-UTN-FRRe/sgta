@@ -55,6 +55,23 @@ export function requireAuthEnvironment(env: ServerEnv): AuthEnvironment {
   return env as AuthEnvironment;
 }
 
+function shouldUseSecureCookies(env: AuthEnvironment) {
+  if (env.NODE_ENV !== "production") {
+    return false;
+  }
+
+  if (env.SGTA_E2E_MODE !== "true") {
+    return true;
+  }
+
+  const authUrl = new URL(env.BETTER_AUTH_URL);
+  const isLoopbackHost = ["localhost", "127.0.0.1", "[::1]"].includes(
+    authUrl.hostname,
+  );
+
+  return !(authUrl.protocol === "http:" && isLoopbackHost);
+}
+
 function hasServerOwnedUserField(data: Record<string, unknown>) {
   return "role" in data || "enabled" in data;
 }
@@ -215,7 +232,7 @@ export function createAuthOptions(env: AuthEnvironment, db: Database) {
       cookieCache: { enabled: false },
     },
     advanced: {
-      useSecureCookies: env.NODE_ENV === "production",
+      useSecureCookies: shouldUseSecureCookies(env),
       database: { validateSchema: true },
     },
     plugins: [nextCookies()],

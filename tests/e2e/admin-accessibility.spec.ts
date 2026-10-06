@@ -9,6 +9,7 @@ import {
   E2E_PRIMARY_TUTOR_ID,
 } from "./e2e-test-data";
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
+import { addE2ESessionCookie } from "./session-cookie";
 import {
   activateWithKeyboard,
   expectReducedMotion,
@@ -53,13 +54,7 @@ test.describe("Admin accessibility and responsive layouts", () => {
       E2E_ADMIN_SESSION_TOKEN,
       E2E_AUTH_SECRET,
     )}`;
-    await context.addCookies([
-      {
-        name: "better-auth.session_token",
-        value: signedSessionToken,
-        url: "http://localhost:3000",
-      },
-    ]);
+    await addE2ESessionCookie(context, signedSessionToken);
 
     const captureLayouts = process.env.CAPTURE_ADMIN_LAYOUTS === "1";
     if (captureLayouts) {
@@ -142,13 +137,7 @@ test.describe("Admin accessibility and responsive layouts", () => {
       E2E_ADMIN_SESSION_TOKEN,
       E2E_AUTH_SECRET,
     )}`;
-    await context.addCookies([
-      {
-        name: "better-auth.session_token",
-        value: signedSessionToken,
-        url: "http://localhost:3000",
-      },
-    ]);
+    await addE2ESessionCookie(context, signedSessionToken);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ reducedMotion: "reduce" });

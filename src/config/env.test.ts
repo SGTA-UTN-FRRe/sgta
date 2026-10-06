@@ -101,7 +101,7 @@ describe("server environment configuration", () => {
     expect(() => getDatabaseUrl("application", env)).toThrow("DATABASE_URL");
   });
 
-  it("accepts only an explicit loopback consultation source in test mode", () => {
+  it("accepts a loopback consultation source only in test or E2E mode", () => {
     const sourceUrl = "http://127.0.0.1:43127";
 
     expect(
@@ -115,7 +115,19 @@ describe("server environment configuration", () => {
         NODE_ENV: "development",
         SGTA_E2E_CONSULTATION_SOURCE_URL: sourceUrl,
       }),
-    ).toThrow("is available only when NODE_ENV is test");
+    ).toThrow("requires NODE_ENV=test or SGTA_E2E_MODE=true");
+    expect(
+      parseServerEnv({
+        NODE_ENV: "production",
+        DATABASE_URL: "postgresql://db.example.test:5432/sgta",
+        BETTER_AUTH_URL: "https://sgta.example.test",
+        BETTER_AUTH_SECRET: "a".repeat(32),
+        GOOGLE_CLIENT_ID: "client-id",
+        GOOGLE_CLIENT_SECRET: "client-secret",
+        SGTA_E2E_MODE: "true",
+        SGTA_E2E_CONSULTATION_SOURCE_URL: sourceUrl,
+      }).SGTA_E2E_MODE,
+    ).toBe("true");
     expect(() =>
       parseServerEnv({
         NODE_ENV: "test",

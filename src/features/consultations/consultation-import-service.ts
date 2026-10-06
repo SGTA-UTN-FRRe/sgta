@@ -385,7 +385,10 @@ function createDefaultSourceAdapter(
 ): ConsultationSourceAdapter {
   const environment = getServerEnv();
 
-  if (environment.NODE_ENV !== "test") {
+  if (
+    environment.NODE_ENV !== "test" &&
+    environment.SGTA_E2E_MODE !== "true"
+  ) {
     return createGoogleSheetsConsultationSourceAdapter(config);
   }
 
