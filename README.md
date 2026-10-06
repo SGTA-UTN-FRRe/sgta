@@ -12,6 +12,7 @@ The current runtime provides:
 
 - a public `/login` route, with `/` routing enabled Admins to `/admin`, enabled Tutors to `/tutor`, and other requests to `/login`;
 - server-side Admin and Tutor page guards, with `/forbidden` recovery and `401`/`403` API responses;
+- session sign-out from the Admin and Tutor navigation and `/forbidden`, with pending/error feedback and a return to `/login`;
 - Admin route surfaces for the overview, live tutor and Materias workflows, schedules, hours, consultations, reports, and configuration;
 - a live `/admin` overview with current-cycle context, actionable attendance, balance, and consultation attention, today's and upcoming duties, and deliberate consultation-source degradation;
 - read-only `/admin/reports` with shareable period and dimension filters, canonical consultation demand, current-cycle coverage and balances, planned attendance, movements, and activities;
@@ -71,7 +72,7 @@ Server session and role boundary
    └──► Drizzle / PostgreSQL (src/db/)
 ```
 
-The `src/auth/` and `src/db/` directories are active server-only boundaries. `src/features/` contains the implemented Admin overview and reporting, cycle/settings, Tutor self-service and academic, scheduling/attendance, hour-accounting, and consultation-intake slices plus reserved locations for later domain verticals. Client components receive safe display data and do not own authentication or role decisions.
+The `src/auth/` directory owns server-side authentication and authorization plus a client-only Better Auth client for sign-in and sign-out. `src/db/` is an active server-only persistence boundary. `src/features/` contains the implemented Admin overview and reporting, cycle/settings, Tutor self-service and academic, scheduling/attendance, hour-accounting, and consultation-intake slices plus reserved locations for later domain verticals. Client components receive safe display data and do not own authorization or role decisions.
 
 ## Current routes
 

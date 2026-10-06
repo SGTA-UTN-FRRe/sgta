@@ -241,6 +241,20 @@ Secondary navigation
 Account
 ```
 
+**Account actions:**
+
+- show the authenticated display name and role, followed by an always-visible
+  `Cerrar sesión` button with a minimum 44px target;
+- Wide shows the icon and label; the Medium rail shows the `LogOut` icon with
+  `aria-label="Cerrar sesión"` and a matching title;
+- the Compact drawer shows the icon and label as its last focusable element;
+- while the request is pending, disable the action and use `Cerrando sesión…`;
+- on failure, announce `No se pudo cerrar la sesión. Intentar nuevamente.` in an
+  inline alert and enable retry without navigating; the Medium rail places the
+  alert beside the action so the full message remains readable;
+- successful sign-out ends the session and returns to `/login`;
+- `/forbidden` offers the same action with outline styling beside `Volver al inicio`.
+
 **Active state:**
 
 - selected surface;

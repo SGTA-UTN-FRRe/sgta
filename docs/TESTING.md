@@ -156,6 +156,15 @@ coverage checks keyboard focus, announced technical and access-denied states,
 and page-level overflow at those same widths; component coverage exercises the
 loading-to-permission-denied sign-in transition.
 
+The Admin tutor and Tutor keyboard journeys end with sign-out, verify the return
+to `/login`, and assert that protected pages and APIs deny subsequent requests.
+They also replay the original signed cookie to prove server-side session
+revocation. A separate Tutor scenario exercises sign-out from `/forbidden`.
+These journeys use dedicated synthetic sessions so revocation does not affect
+other tests. Responsive checks cover the labeled Wide action, icon-only Medium
+rail, and Compact drawer action; the Tutor keyboard journey verifies that the
+drawer focus trap includes sign-out.
+
 The cycle lifecycle browser project runs after the shared-database journeys
 because it closes the seeded active cycle. It confirms the cycle explicitly,
 reloads Settings to verify that the closed cycle remains visible, creates a

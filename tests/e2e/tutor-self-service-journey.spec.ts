@@ -5,6 +5,8 @@ import {
   E2E_AUTH_SECRET,
   E2E_SECONDARY_TUTOR_ID,
   E2E_TUTOR_SESSION_TOKEN,
+  E2E_TUTOR_SIGN_OUT_SESSION_TOKEN,
+  E2E_FORBIDDEN_SIGN_OUT_SESSION_TOKEN,
 } from "./e2e-test-data";
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 import { addE2ESessionCookie } from "./session-cookie";
@@ -27,9 +29,9 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(pageWidth.scroll).toBeLessThanOrEqual(pageWidth.document);
 }
 
-async function signInTutor(context: BrowserContext) {
-  const signedSessionToken = `${E2E_TUTOR_SESSION_TOKEN}.${await makeSignature(
-    E2E_TUTOR_SESSION_TOKEN,
+async function signInTutor(context: BrowserContext, token = E2E_TUTOR_SESSION_TOKEN) {
+  const signedSessionToken = `${token}.${await makeSignature(
+    token,
     E2E_AUTH_SECRET,
   )}`;
 
@@ -130,6 +132,18 @@ test.describe("authenticated Tutor self-service", () => {
       await expect(page.getByText(/\+\d{2}:\d{2}/).first()).toBeVisible();
       await expect(page.getByRole("link", { name: "Tutores", exact: true })).toHaveCount(0);
       await expect(page.getByRole("link", { name: "Configuración", exact: true })).toHaveCount(0);
+      if (viewport.name === "Compact") {
+        await page.getByRole("button", { name: "Abrir navegación" }).click();
+        await expect(page.getByRole("dialog").getByRole("button", { name: "Cerrar sesión" })).toBeVisible();
+        await page.keyboard.press("Escape");
+      } else {
+        const signOut = page.getByRole("button", { name: "Cerrar sesión" });
+        await expect(signOut).toBeVisible();
+        await expect(signOut).toHaveAttribute("title", "Cerrar sesión");
+        if (viewport.name === "Medium") {
+          await expect(signOut.locator("span")).toBeHidden();
+        }
+      }
       await expect(
         page.getByRole("button", { name: /registrar|editar|revertir|asistencia/i }),
       ).toHaveCount(0);
@@ -198,7 +212,7 @@ test.describe("authenticated Tutor self-service", () => {
     context,
     page,
   }) => {
-    await signInTutor(context);
+    await signInTutor(context, E2E_TUTOR_SIGN_OUT_SESSION_TOKEN);
     await page.setViewportSize({ height: 844, width: 390 });
     await page.goto("/tutor");
 
@@ -288,5 +302,35 @@ test.describe("authenticated Tutor self-service", () => {
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
     await expect(trigger).toBeFocused();
+
+    await page.keyboard.press("Enter");
+    const signOut = dialog.getByRole("button", { name: "Cerrar sesión" });
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Shift+Tab");
+    await expect(signOut).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(dialog.getByRole("link", { name: "Tutorias UTN FRRe - inicio" })).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(signOut).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/login$/);
+    await page.goto("/tutor");
+    await expect(page).toHaveURL(/\/login$/);
+    expect((await page.request.get("/api/tutor/summary")).status()).toBe(401);
+
+    await signInTutor(context, E2E_TUTOR_SIGN_OUT_SESSION_TOKEN);
+    await page.goto("/tutor/hours");
+    await expect(page).toHaveURL(/\/login$/);
+  });
+
+  test("signs out from restricted access and revokes the Tutor session", async ({ context, page }) => {
+    await signInTutor(context, E2E_FORBIDDEN_SIGN_OUT_SESSION_TOKEN);
+    await page.goto("/admin");
+    await expect(page).toHaveURL(/\/forbidden$/);
+    await page.getByRole("button", { name: "Cerrar sesión" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    await page.goto("/tutor");
+    await expect(page).toHaveURL(/\/login$/);
+    expect((await page.request.get("/api/tutor/summary")).status()).toBe(401);
   });
 });

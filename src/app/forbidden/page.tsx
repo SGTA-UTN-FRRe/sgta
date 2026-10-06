@@ -4,6 +4,7 @@ import { ShieldAlert } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { FaroIcon } from "@/shared/components/faro-icon";
+import { SignOutButton } from "@/shared/components/sign-out-button";
 import { cn } from "@/shared/utils";
 
 export const metadata: Metadata = {
@@ -35,13 +36,14 @@ export default function ForbiddenPage() {
           Tu cuenta está habilitada en SGTA, pero necesita otro nivel de acceso
           para continuar aquí.
         </p>
-        <div className="mt-7">
+        <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             href="/"
             className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
           >
             Volver al inicio
           </Link>
+          <SignOutButton variant="outline" className="w-full sm:w-auto" />
         </div>
       </section>
     </main>

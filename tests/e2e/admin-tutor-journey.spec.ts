@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { makeSignature } from "better-auth/crypto";
 
 import {
-  E2E_ADMIN_SESSION_TOKEN,
+  E2E_ADMIN_SIGN_OUT_SESSION_TOKEN,
   E2E_AUTH_SECRET,
 } from "./e2e-test-data";
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
@@ -20,8 +20,8 @@ test.describe("authenticated Admin tutor operations", () => {
     page,
   }) => {
     const accessibilityViolations: string[] = [];
-    const signedSessionToken = `${E2E_ADMIN_SESSION_TOKEN}.${await makeSignature(
-      E2E_ADMIN_SESSION_TOKEN,
+    const signedSessionToken = `${E2E_ADMIN_SIGN_OUT_SESSION_TOKEN}.${await makeSignature(
+      E2E_ADMIN_SIGN_OUT_SESSION_TOKEN,
       E2E_AUTH_SECRET,
     )}`;
 
@@ -94,6 +94,19 @@ test.describe("authenticated Admin tutor operations", () => {
     ]) {
       await page.setViewportSize(viewport);
       await expect(page.locator(`[data-layout="${viewport.layout}"]`)).toBeVisible();
+
+      if (viewport.layout === "compact") {
+        await activateWithKeyboard(page, page.getByRole("button", { name: "Abrir navegación" }));
+        await expect(page.getByRole("dialog").getByRole("button", { name: "Cerrar sesión" })).toBeVisible();
+        await page.keyboard.press("Escape");
+      } else {
+        const signOut = page.getByRole("button", { name: "Cerrar sesión" });
+        await expect(signOut).toBeVisible();
+        await expect(signOut).toHaveAttribute("title", "Cerrar sesión");
+        if (viewport.layout === "medium") {
+          await expect(signOut.locator("span")).toBeHidden();
+        }
+      }
     }
 
     await page.goto("/admin/tutors/subjects");
@@ -119,5 +132,20 @@ test.describe("authenticated Admin tutor operations", () => {
       await expect(page.locator(`[data-layout="${viewport.layout}"]`)).toBeVisible();
     }
     expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
+
+    const signOutResponse = page.waitForResponse((response) =>
+      response.url().endsWith("/api/auth/sign-out") && response.request().method() === "POST",
+    );
+    await activateWithKeyboard(page, page.getByRole("button", { name: "Cerrar sesión" }));
+    expect((await signOutResponse).status()).toBe(200);
+    await expect(page).toHaveURL(/\/login$/);
+    await page.goto("/admin/tutors");
+    await expect(page).toHaveURL(/\/login$/);
+    expect((await page.request.get("/api/admin/tutors")).status()).toBe(401);
+
+    // Replaying the original cookie also fails after the server revokes the session.
+    await addE2ESessionCookie(context, signedSessionToken);
+    await page.goto("/admin");
+    await expect(page).toHaveURL(/\/login$/);
   });
 });

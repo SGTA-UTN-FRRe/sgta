@@ -19,6 +19,7 @@ import {
 
 import { cn } from "@/shared/utils";
 import { FaroIcon } from "@/shared/components/faro-icon";
+import { SignOutButton } from "@/shared/components/sign-out-button";
 
 export type AppSidebarVariant =
   | "admin"
@@ -268,6 +269,11 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
             </span>
           )}
         </div>
+        <SignOutButton
+          className="mt-1 w-full justify-start gap-3 rounded-md px-3 text-nav-muted hover:bg-nav-hover hover:text-nav-foreground [&_svg]:size-5"
+          labelClassName={isMobile ? undefined : "md:hidden lg:inline"}
+          errorClassName={isMobile ? undefined : "md:absolute md:bottom-0 md:left-full md:ml-2 md:w-60 md:rounded-md md:border md:border-danger/20 md:bg-danger-surface md:p-3 md:shadow-sm lg:static lg:ml-0 lg:w-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"}
+        />
       </div>
     </div>
   );
