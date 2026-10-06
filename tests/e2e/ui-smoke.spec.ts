@@ -82,6 +82,34 @@ test.describe("UI smoke journeys", () => {
     expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 
+  test("renders an accessible missing-page state at supported widths and returns to login", async ({ page }) => {
+    const accessibilityViolations: string[] = [];
+    for (const width of [390, 900, 1440]) {
+      await page.setViewportSize({ height: 900, width });
+      const response = await page.goto("/missing-page");
+      expect(response?.status()).toBe(404);
+      await expect(page.getByRole("heading", { level: 1, name: "No encontramos esa página" })).toBeVisible();
+
+      const home = page.getByRole("link", { name: "Volver al inicio" });
+      await page.keyboard.press("Tab");
+      await expect(home).toBeFocused();
+      await expect
+        .poll(() => home.evaluate((element) => getComputedStyle(element).boxShadow))
+        .not.toBe("none");
+      const pageWidths = await page.evaluate(() => ({
+        client: document.documentElement.clientWidth,
+        scroll: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
+      }));
+      expect(pageWidths.scroll).toBeLessThanOrEqual(pageWidths.client);
+      accessibilityViolations.push(
+        ...(await collectSeriousAccessibilityViolations(page, `Missing page at ${width}px`)),
+      );
+      await page.keyboard.press("Enter");
+      await expect(page).toHaveURL(/\/login$/);
+    }
+    expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
+  });
+
   test("announces login errors and permission denial at supported widths", async ({
     page,
   }) => {

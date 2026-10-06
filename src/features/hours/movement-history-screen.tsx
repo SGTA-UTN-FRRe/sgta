@@ -434,6 +434,9 @@ function HistoryFilters({
           value={tutorId}
         >
           <option value="">Todos los tutores</option>
+          {tutorId !== "" && !tutors.some((tutor) => tutor.id === tutorId) && (
+            <option value={tutorId}>Tutor seleccionado</option>
+          )}
           {tutors.map((tutor) => (
             <option key={tutor.id} value={tutor.id}>
               {tutor.formalName}

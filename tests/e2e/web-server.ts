@@ -32,6 +32,9 @@ import {
 import {
   E2E_ADMIN_SESSION_TOKEN,
   E2E_ADMIN_USER_ID,
+  E2E_ADMIN_SIGN_OUT_SESSION_TOKEN,
+  E2E_TUTOR_SIGN_OUT_SESSION_TOKEN,
+  E2E_FORBIDDEN_SIGN_OUT_SESSION_TOKEN,
   E2E_ABSENCE_ASSIGNMENT_ID,
   E2E_ABSENCE_DEBIT_CATEGORY_ID,
   E2E_ABSENCE_OCCURRENCE_ID,
@@ -141,6 +144,28 @@ async function seedDatabase() {
     ipAddress: "127.0.0.1",
     userAgent: "Playwright E2E Tutor",
   });
+
+  // Sign-out journeys revoke dedicated sessions without affecting other tests.
+  await database.insert(session).values([
+    {
+      id: "e2e-admin-sign-out-session",
+      token: E2E_ADMIN_SIGN_OUT_SESSION_TOKEN,
+      userId: E2E_ADMIN_USER_ID,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1_000),
+    },
+    {
+      id: "e2e-tutor-sign-out-session",
+      token: E2E_TUTOR_SIGN_OUT_SESSION_TOKEN,
+      userId: E2E_TUTOR_USER_ID,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1_000),
+    },
+    {
+      id: "e2e-forbidden-sign-out-session",
+      token: E2E_FORBIDDEN_SIGN_OUT_SESSION_TOKEN,
+      userId: E2E_TUTOR_USER_ID,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1_000),
+    },
+  ]);
 
   await database.insert(administrativeCycle).values({
     id: E2E_CYCLE_ID,

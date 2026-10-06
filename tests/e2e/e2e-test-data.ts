@@ -1,6 +1,9 @@
 export const E2E_ADMIN_SESSION_TOKEN = "e2e-admin-session-token";
 
 export const E2E_ADMIN_USER_ID = "e2e-admin-user";
+export const E2E_ADMIN_SIGN_OUT_SESSION_TOKEN = "e2e-admin-sign-out-session-token";
+export const E2E_TUTOR_SIGN_OUT_SESSION_TOKEN = "e2e-tutor-sign-out-session-token";
+export const E2E_FORBIDDEN_SIGN_OUT_SESSION_TOKEN = "e2e-forbidden-sign-out-session-token";
 
 export const E2E_TUTOR_SESSION_TOKEN = "e2e-tutor-session-token";
 

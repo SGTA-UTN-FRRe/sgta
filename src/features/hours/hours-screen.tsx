@@ -35,6 +35,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { movementHistoryHref } from "@/features/hours/hour-navigation";
+import { TutorProfileLink } from "@/features/tutors/tutor-profile-link";
 import type {
   SafeHourBalance,
   SafeHourCategory,
@@ -546,21 +548,12 @@ function HistoryButton({
 function BalanceIdentity({ balance }: { balance: SafeHourBalance }) {
   return (
     <div className="min-w-0">
-      <p className="truncate font-semibold text-foreground">{balance.tutor.formalName}</p>
+      <TutorProfileLink className="block truncate font-semibold text-foreground" name={balance.tutor.formalName} />
       <p className="mt-1 truncate text-xs text-foreground-muted">
         {balance.tutor.careerName} · {balance.cycle.name}
       </p>
     </div>
   );
-}
-
-function movementHistoryHref(balance: SafeHourBalance) {
-  const params = new URLSearchParams({
-    cycleId: balance.cycle.id,
-    tutorId: balance.tutor.id,
-  });
-
-  return `/admin/hours/movements?${params.toString()}`;
 }
 
 function BalanceValue({ balance }: { balance: SafeHourBalance }) {
@@ -986,7 +979,7 @@ function MovementHistorySheet({
           </p>
           <Link
             className={cn(buttonVariants({ size: "sm", variant: "outline" }), "mt-3")}
-            href={movementHistoryHref(balance)}
+            href={movementHistoryHref(balance.cycle.id, balance.tutor.id)}
           >
             Ver historial completo
           </Link>

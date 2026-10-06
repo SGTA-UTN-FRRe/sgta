@@ -1,6 +1,5 @@
 "use client";
 
-import { createAuthClient } from "better-auth/react";
 import {
   ArrowRight,
   CircleAlert,
@@ -11,6 +10,7 @@ import {
 import { useState } from "react";
 
 import type { LoginScreenData } from "@/mocks/login.mock";
+import { authClient } from "@/auth/auth-client";
 import { Button } from "@/components/ui/button";
 import { FaroIcon } from "@/shared/components/faro-icon";
 
@@ -18,8 +18,6 @@ import {
   loginStateFromAuthError,
   type LoginAuthState,
 } from "./login-auth";
-
-const authClient = createAuthClient();
 
 export type LoginPreviewState = LoginAuthState;
 

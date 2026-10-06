@@ -59,6 +59,12 @@ PostgreSQL.
 
 The unit/component suite remains independent of PostgreSQL, Docker, and external services. Do not call these tests integration tests merely because they use React Testing Library.
 
+Route-state component tests cover Admin and Tutor loading announcements, safe
+segment-error copy without error messages or digests, the `retry` callback,
+role-specific home links, and the missing-page recovery link.
+Sidebar tests also verify deferred heading focus after mobile navigation,
+including a hidden cached page while the next section loads.
+
 Authorization unit tests cover database-authoritative role and enabled-state
 checks, plus a generic no-store response when the identity service fails. Audit
 validation tests reject credential-bearing keys and request identifiers,
@@ -79,6 +85,10 @@ read-only PostgreSQL transaction. Incorrect expected counts fail verification;
 verification preserves movements and audit records.
 
 Docker is a local and CI prerequisite for this boundary. Testcontainers chooses an available host port; no fixed port, local database, production URL, Google credential, or personal data is used. There is no separate Docker check or public Docker gate.
+
+Admin layout authorization checks run the real server guard with a substituted
+sidebar component, keeping browser-only authentication out of the Node test
+environment. Component and E2E suites exercise sidebar rendering and sign-out.
 
 The on-demand PostgreSQL query-plan review runs with `corepack pnpm db:query-audit`. It starts a disposable PostgreSQL 16 container, reapplies the committed migrations, seeds deterministic synthetic rows, and prints `EXPLAIN (ANALYZE, BUFFERS)` output for current high-use query shapes. It is a review tool, not a CI gate or a numeric performance budget.
 
@@ -113,7 +123,17 @@ Playwright scenarios live under `tests/e2e/` and exercise the application throug
 
 The Admin accessibility journey visits `/admin`, `/admin/tutors`, `/admin/tutors/subjects`, `/admin/schedules`, `/admin/schedules/attendance`, `/admin/hours`, `/admin/hours/movements`, `/admin/consultations`, `/admin/reports`, and `/admin/settings` at 390px, 900px, and 1440px. It checks page-level horizontal overflow, primary-action visibility, and header-action bounds. Its keyboard navigation scenario opens the mobile Admin drawer, follows a route link, and verifies focus moves to the new page heading.
 
+The Admin navigation journey uses the keyboard at those three widths to open
+tutor details from names, return to Inicio, follow balance and report links to
+the filtered tutor list, and follow tutor-detail and attendance links to
+cycle- and tutor-scoped movement history. It checks filtered destinations after
+visiting the tutor list earlier in the same browser session.
+
 The browser suite runs `@axe-core/playwright` against those Admin routes and the three Tutor self-service routes at Compact, Medium, and Wide widths, plus login and representative feedback, dialog, degraded-source, unavailable-source, and empty-report states. Scans use WCAG 2.2 A/AA tags and fail on serious or critical violations without disabling rules.
+
+Missing-page browser coverage verifies the branded 404 state, keyboard-operated
+return to login through `/`, visible focus, absence of page-level overflow, and
+WCAG 2.2 A/AA scans at Compact, Medium, and Wide widths.
 
 E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Docker is required locally because the authenticated web server owns an isolated PostgreSQL container. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
 
@@ -155,6 +175,15 @@ and visible focus, and verifies reduced-motion navigation styles. Login browser
 coverage checks keyboard focus, announced technical and access-denied states,
 and page-level overflow at those same widths; component coverage exercises the
 loading-to-permission-denied sign-in transition.
+
+The Admin tutor and Tutor keyboard journeys end with sign-out, verify the return
+to `/login`, and assert that protected pages and APIs deny subsequent requests.
+They also replay the original signed cookie to prove server-side session
+revocation. A separate Tutor scenario exercises sign-out from `/forbidden`.
+These journeys use dedicated synthetic sessions so revocation does not affect
+other tests. Responsive checks cover the labeled Wide action, icon-only Medium
+rail, and Compact drawer action; the Tutor keyboard journey verifies that the
+drawer focus trap includes sign-out.
 
 The cycle lifecycle browser project runs after the shared-database journeys
 because it closes the seeded active cycle. It confirms the cycle explicitly,

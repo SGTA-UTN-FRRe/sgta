@@ -10,8 +10,8 @@ const authMocks = vi.hoisted(() => ({
   signInSocial: vi.fn(),
 }));
 
-vi.mock("better-auth/react", () => ({
-  createAuthClient: () => ({ signIn: { social: authMocks.signInSocial } }),
+vi.mock("@/auth/auth-client", () => ({
+  authClient: { signIn: { social: authMocks.signInSocial } },
 }));
 
 const data = loginScreenData;

@@ -58,6 +58,7 @@ Target Wide composition:
 | Tutorias             |                                                      |
 | SGTA                 |  Page title                              Primary CTA  |
 |                      |  Current context / supporting text                    |
+| Inicio               |                                                      |
 | Tutores              |                                                      |
 | Horarios             +------------------------------------------------------+
 | Horas                |                                                      |
@@ -73,7 +74,7 @@ Rules:
 
 - The final Admin sidebar is light.
 - The brand area links to `/admin`.
-- Five primary destinations remain stable: Tutores, Horarios, Horas, Consultas, Reportes.
+- Six primary destinations remain stable, in order: Inicio, Tutores, Horarios, Horas, Consultas, Reportes. Inicio links to `/admin` and is active only on that exact route.
 - Configuración and account controls are secondary.
 - Do not add a second persistent top navigation bar.
 - The page header belongs to the content region.
@@ -180,6 +181,22 @@ Reachable product states:
 - Unavailable
 - Degraded data
 
+Route-level feedback:
+
+- Admin and Tutor navigation uses structural skeletons with a page-header
+  placeholder and content blocks, announced as `Cargando sección` with
+  `role="status"` and `aria-busy="true"`; Reportes retains its specific skeleton.
+  Each route has a loading boundary so nested navigation also shows feedback.
+  Mobile navigation moves focus to the new page heading after loading finishes.
+- unexpected segment failures keep the role navigation visible and announce
+  `No se pudo cargar esta sección` with `Intentar nuevamente. Si el problema
+  continúa, avisar a la administración.`;
+- `Reintentar` re-fetches and re-renders the affected segment; the secondary
+  `Volver al inicio` link returns to the current role's home;
+- error messages and diagnostic identifiers are never rendered in these states;
+- unmatched URLs show `No encontramos esa página` and a `Volver al inicio` link
+  to `/`, preserving role-aware home routing.
+
 Offline-first behavior is not part of the first release.
 
 ## 2. Route inventory
@@ -240,6 +257,25 @@ Spacer
 Secondary navigation
 Account
 ```
+
+**Primary navigation (Admin):** Inicio, Tutores, Horarios, Horas, Consultas,
+Reportes, in that order. Inicio targets `/admin` and uses exact path matching;
+child routes select their own destination. The brand also returns home, while
+`aria-current="page"` belongs to the selected navigation destination.
+
+**Account actions:**
+
+- show the authenticated display name and role, followed by an always-visible
+  `Cerrar sesión` button with a minimum 44px target;
+- Wide shows the icon and label; the Medium rail shows the `LogOut` icon with
+  `aria-label="Cerrar sesión"` and a matching title;
+- the Compact drawer shows the icon and label as its last focusable element;
+- while the request is pending, disable the action and use `Cerrando sesión…`;
+- on failure, announce `No se pudo cerrar la sesión. Intentar nuevamente.` in an
+  inline alert and enable retry without navigating; the Medium rail places the
+  alert beside the action so the full message remains readable;
+- successful sign-out ends the session and returns to `/login`;
+- `/forbidden` offers the same action with outline styling beside `Volver al inicio`.
 
 **Active state:**
 

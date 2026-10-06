@@ -153,6 +153,21 @@ function createEmptyReport(): OperationalReport {
 }
 
 describe("ReportsScreen", () => {
+  it("links tutor identities from consultation and schedule tables to the filtered tutor list", () => {
+    const report = createReport();
+    report.plannedSchedules = ready({
+      totalOccurrences: 1, totalMinutes: 60, byKind: [],
+      byTutor: { items: [{ key: "tutor-1", label: "Owens, Iris", count: 1, minutes: 60 }], truncated: false },
+    });
+    render(<ReportsScreen filterOptions={filterOptions} query={{}} report={report} />);
+    const links = screen.getAllByRole("link", { name: "Ver tutor Owens, Iris" });
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link).toHaveAttribute("href", "/admin/tutors?search=Owens%2C%20Iris");
+    }
+    expect(screen.queryByRole("link", { name: "Ver tutor Applied Science" })).not.toBeInTheDocument();
+  });
+
   it("initializes shareable filters and presents the complete table-based report", () => {
     render(
       <ReportsScreen

@@ -32,7 +32,11 @@ function toScreenData(
   };
 }
 
-export default async function AdminTutorsPage() {
+export default async function AdminTutorsPage({ searchParams }: {
+  searchParams?: Promise<{ search?: string | string[] }>;
+}) {
+  const query = (await searchParams) ?? {};
+  const initialSearch = (Array.isArray(query.search) ? query.search[0] : query.search) ?? "";
   const database = getDatabase();
   const [tutors, catalogOptions] = await Promise.all([
     listTutors(database),
@@ -47,8 +51,10 @@ export default async function AdminTutorsPage() {
 
   return (
     <TutorsScreen
+      key={initialSearch}
       catalogOptions={catalogOptions}
       data={toScreenData(tutors)}
+      initialSearch={initialSearch}
       requiredAction={requiredAction}
       state={requiredAction === undefined ? "default" : "required-action"}
     />

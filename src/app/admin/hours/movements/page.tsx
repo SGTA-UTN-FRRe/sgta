@@ -115,6 +115,7 @@ export default async function AdminHourMovementsPage({
 
   return (
     <MovementHistoryScreen
+      key={`${selectedCycleId}:${initialTutorId ?? ""}:${initialCategoryId ?? ""}`}
       cycles={cycles}
       dataDescription={pageDescription}
       initialCategoryId={initialCategoryId}

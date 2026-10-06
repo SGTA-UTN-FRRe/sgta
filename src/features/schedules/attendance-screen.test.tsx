@@ -131,6 +131,9 @@ describe("AttendanceScreen", () => {
     expect(screen.getByLabelText("Fecha")).toHaveValue("2026-09-14");
     expect(screen.getByText(/Fecha de referencia:/)).toBeInTheDocument();
     expect(screen.getByText(tutor.formalName)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: tutor.formalName })).toHaveAttribute(
+      "href", `/admin/hours/movements?cycleId=${cycle.id}&tutorId=${tutor.id}`,
+    );
     expect(screen.getByText(/08:00 a 10:00/)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: `Presente para ${tutor.formalName}` }),

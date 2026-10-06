@@ -19,6 +19,7 @@ import {
 
 import { cn } from "@/shared/utils";
 import { FaroIcon } from "@/shared/components/faro-icon";
+import { SignOutButton } from "@/shared/components/sign-out-button";
 
 export type AppSidebarVariant =
   | "admin"
@@ -42,6 +43,7 @@ interface NavItem {
 }
 
 const ADMIN_PRIMARY_NAV: NavItem[] = [
+  { label: "Inicio", href: "/admin", icon: LayoutDashboard },
   { label: "Tutores", href: "/admin/tutors", icon: Users },
   { label: "Horarios", href: "/admin/schedules", icon: Calendar },
   { label: "Horas", href: "/admin/hours", icon: Clock3 },
@@ -112,8 +114,44 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
       return;
     }
 
-    mobileNavigationPending.current = false;
-    document.querySelector<HTMLElement>('main [data-slot="page-header"] h1')?.focus();
+    const main = document.querySelector("main");
+    if (main === null) return;
+
+    const focusPageHeading = () => {
+      const headings = Array.from(
+        main.querySelectorAll<HTMLElement>('[data-slot="page-header"] h1'),
+      );
+      const heading = headings.find((candidate) => {
+        // Next.js preserves previous pages in hidden React Activity boundaries.
+        for (
+          let element: HTMLElement | null = candidate;
+          element !== null;
+          element = element.parentElement
+        ) {
+          if (element.hidden || element.style.display === "none") return false;
+        }
+        return true;
+      });
+
+      if (heading === undefined) return false;
+
+      heading.focus();
+      mobileNavigationPending.current = false;
+      return true;
+    };
+
+    if (focusPageHeading()) return;
+
+    const observer = new MutationObserver(() => {
+      if (focusPageHeading()) observer.disconnect();
+    });
+    observer.observe(main, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["hidden", "style"],
+    });
+    return () => observer.disconnect();
   }, [pathname]);
 
   useEffect(() => {
@@ -214,7 +252,6 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
           href={homeHref}
           onClick={closeMobileNav}
           aria-label="Tutorias UTN FRRe - inicio"
-          aria-current={isLinkActive(homeHref) ? "page" : undefined}
           className="group flex min-w-0 items-center gap-3 rounded-md"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-accent/40 bg-accent-surface text-accent transition-colors group-hover:border-accent">
@@ -268,6 +305,11 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
             </span>
           )}
         </div>
+        <SignOutButton
+          className="mt-1 w-full justify-start gap-3 rounded-md px-3 text-nav-muted hover:bg-nav-hover hover:text-nav-foreground [&_svg]:size-5"
+          labelClassName={isMobile ? undefined : "md:hidden lg:inline"}
+          errorClassName={isMobile ? undefined : "md:absolute md:bottom-0 md:left-full md:ml-2 md:w-60 md:rounded-md md:border md:border-danger/20 md:bg-danger-surface md:p-3 md:shadow-sm lg:static lg:ml-0 lg:w-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"}
+        />
       </div>
     </div>
   );
