@@ -16,6 +16,8 @@ vi.mock("next/headers", () => ({ headers: authMocks.headers }));
 vi.mock("next/navigation", () => ({ redirect: authMocks.redirect }));
 vi.mock("@/auth/index", () => ({ getAuth: authMocks.getAuth }));
 vi.mock("@/db/client", () => ({ getDatabase: authMocks.getDatabase }));
+// Node layout checks exercise server authorization; browser rendering has separate coverage.
+vi.mock("@/shared/components/app-sidebar", () => ({ AppSidebar: () => null }));
 
 import { GET as getAdminCycles } from "@/app/api/admin/cycles/route";
 import { GET as getAdminHours } from "@/app/api/admin/hours/route";

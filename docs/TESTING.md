@@ -86,6 +86,10 @@ verification preserves movements and audit records.
 
 Docker is a local and CI prerequisite for this boundary. Testcontainers chooses an available host port; no fixed port, local database, production URL, Google credential, or personal data is used. There is no separate Docker check or public Docker gate.
 
+Admin layout authorization checks run the real server guard with a substituted
+sidebar component, keeping browser-only authentication out of the Node test
+environment. Component and E2E suites exercise sidebar rendering and sign-out.
+
 The on-demand PostgreSQL query-plan review runs with `corepack pnpm db:query-audit`. It starts a disposable PostgreSQL 16 container, reapplies the committed migrations, seeds deterministic synthetic rows, and prints `EXPLAIN (ANALYZE, BUFFERS)` output for current high-use query shapes. It is a review tool, not a CI gate or a numeric performance budget.
 
 Tutor self-service integration scenarios prove owner resolution for linked Tutor
