@@ -143,7 +143,95 @@ corepack pnpm dev
 
 Set the server-only values in `.env.local` before applying migrations or using protected/authenticated flows. The public shell and production build can be inspected without production credentials, but real Google sign-in requires the configured OAuth values. Open [http://localhost:3000](http://localhost:3000). Keep local secrets in `.env.local`; do not commit them.
 
-The bootstrap command creates or updates the first enabled Admin using `DATABASE_URL`; it is an operator path, not public signup. The integration suite and authenticated E2E server each create an isolated temporary PostgreSQL container and do not use `TEST_DATABASE_URL` or production Google credentials.
+The bootstrap command creates or updates the first enabled Admin using `DATABASE_URL`; it is an operator path, not public signup. Its Node.js `react-server` condition allows the CLI to load the server-only provisioning boundary. The integration suite and authenticated E2E server each create an isolated temporary PostgreSQL container and do not use `TEST_DATABASE_URL` or production Google credentials.
+
+## Presentation deployment
+
+The repository's [vercel.json](vercel.json) configures the Next.js preset,
+locked Corepack/pnpm installation, production build, and the São Paulo (`gru1`)
+function region. Migrations and account provisioning are separate operator
+commands; the deployment build does not perform them. See the
+[Vercel configuration reference](https://vercel.com/docs/project-configuration/vercel-json).
+
+Use team-owned Neon, Google Cloud, Google Drive, and Vercel resources. Configure
+the Vercel project `sgta-tutorias` with `main` as its Production branch and Node.js
+22.x. Its stable URL is `https://sgta-tutorias.vercel.app`; if the project name
+changes, use the corresponding stable URL consistently in OAuth and Better Auth.
+
+### Connections and environment isolation
+
+Use the `staging` branch of the Neon `sgta` project in São Paulo (`sa-east-1`).
+The provisioned presentation database uses PostgreSQL 18; isolated integration
+tests use PostgreSQL 16. The Vercel **Production** environment serves the
+presentation from this branch. Keep Neon's `main` branch unused until the
+production cutover.
+Use the pooled connection for the app and the direct connection for operator
+commands; both must address the same branch and database. See
+[Neon's connection guide](https://neon.com/docs/get-started-with-neon/connect-neon).
+
+Set these server-only variables in Vercel **Production** only:
+
+| Variable | Presentation value |
+| --- | --- |
+| `DATABASE_URL` | Neon staging pooled connection, with TLS enabled. |
+| `BETTER_AUTH_URL` | Stable HTTPS URL, without a path. |
+| `BETTER_AUTH_SECRET` | Team-managed random secret of at least 32 characters. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Team-owned web OAuth client pair. |
+| `GOOGLE_SHEETS_SPREADSHEET_ID` | ID of the presentation consultation copy. |
+| `GOOGLE_SHEETS_RANGE` | `Respuestas!A:I`, including the header row. |
+| `GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL` | Reader service account email. |
+| `GOOGLE_SHEETS_PRIVATE_KEY` | Reader private key, with real line breaks or escaped `\n`. |
+| `GOOGLE_SHEETS_HEADER_MAP` | Generated JSON mapping for the presentation copy's exact headers. |
+
+Keep Preview and Development free of database, OAuth, and Sheets credentials,
+including shared variables and integration-injected connections. PR previews can
+build the public shell; protected workflows need the configured presentation
+environment. Leave `GOOGLE_HOSTED_DOMAIN` unset to allow personal Google accounts.
+Keep `SGTA_E2E_MODE`, `SGTA_E2E_CONSULTATION_SOURCE_URL`, and `TEST_DATABASE_URL`
+unset in deployed environments. Keep secrets in the team's password manager and
+Vercel settings, never in Git or `NEXT_PUBLIC_*` variables.
+
+### Google access
+
+Keep the OAuth consent screen in **Testing**, with the presenter and demo Google
+accounts as test users. Configure the web client's JavaScript origin as the
+stable URL and its redirect URI as
+`https://sgta-tutorias.vercel.app/api/auth/callback/google`. Request only OpenID,
+email, and profile access.
+
+Enable the Google Sheets API. Create the presentation consultation copy in the
+team's Drive, with a `Respuestas` tab, from the prepared CSV that retains student
+names, removes contact data, and normalizes tutor and career labels. Share it with
+the reader service account as **Viewer**, without project-wide IAM roles. Connect
+this copy rather than the live Form response sheet. Do not sort, delete, or move
+source rows: consultation identity includes the source row number.
+
+### Migrate, provision, and deploy
+
+1. From the reviewed application revision, load the Neon staging **direct** URL
+   into the operator process's `DATABASE_URL` from the team's secret store.
+   Keep local secret files ignored. Verify the selected branch before writing.
+2. Run `corepack pnpm db:check`, then `corepack pnpm db:migrate`. Stop if either
+   command fails; do not deploy against an unapplied schema.
+3. Run `corepack pnpm auth:bootstrap-admin -- --email=admin@example.com --name="SGTA Admin"`,
+   substituting the presenter's Google email and name. Remove the shell's
+   `DATABASE_URL` override afterwards. This command creates or updates an enabled
+   Admin; use only the intended presenter identity.
+4. Deploy the reviewed revision through the existing Vercel project after
+   migrations succeed, or redeploy `main` once the PR is merged. Redeploy after
+   changing runtime variables. Confirm the deployment is Ready on the stable URL.
+5. Sign in as Admin and provision the demo account from that authenticated browser
+   session with `POST /api/admin/users` and a JSON body containing
+   `{ "email": "demo@example.com", "name": "Demo Tutor", "role": "TUTOR", "enabled": true }`.
+   Substitute the demo Google identity. When its Tutor record is available, link
+   the same email in the tutor form's `Correo de la cuenta habilitada (opcional)`
+   field. Provisioning a user alone does not create a Tutor record.
+
+Check `/login`, anonymous redirects from `/admin` and `/tutor`, real Google sign-in
+for both provisioned roles, and the Tutor account link. A successful build or
+public login page does not prove database migrations, OAuth access, or Sheets
+access. Verify the configured consultation copy through the Admin import action
+when carrying out the separate initial-data load and reconciliation.
 
 ## Verification
 
