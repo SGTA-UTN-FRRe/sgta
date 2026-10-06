@@ -59,6 +59,12 @@ PostgreSQL.
 
 The unit/component suite remains independent of PostgreSQL, Docker, and external services. Do not call these tests integration tests merely because they use React Testing Library.
 
+Route-state component tests cover Admin and Tutor loading announcements, safe
+segment-error copy without error messages or digests, the `retry` callback,
+role-specific home links, and the missing-page recovery link.
+Sidebar tests also verify deferred heading focus after mobile navigation,
+including a hidden cached page while the next section loads.
+
 Authorization unit tests cover database-authoritative role and enabled-state
 checks, plus a generic no-store response when the identity service fails. Audit
 validation tests reject credential-bearing keys and request identifiers,
@@ -114,6 +120,10 @@ Playwright scenarios live under `tests/e2e/` and exercise the application throug
 The Admin accessibility journey visits `/admin`, `/admin/tutors`, `/admin/tutors/subjects`, `/admin/schedules`, `/admin/schedules/attendance`, `/admin/hours`, `/admin/hours/movements`, `/admin/consultations`, `/admin/reports`, and `/admin/settings` at 390px, 900px, and 1440px. It checks page-level horizontal overflow, primary-action visibility, and header-action bounds. Its keyboard navigation scenario opens the mobile Admin drawer, follows a route link, and verifies focus moves to the new page heading.
 
 The browser suite runs `@axe-core/playwright` against those Admin routes and the three Tutor self-service routes at Compact, Medium, and Wide widths, plus login and representative feedback, dialog, degraded-source, unavailable-source, and empty-report states. Scans use WCAG 2.2 A/AA tags and fail on serious or critical violations without disabling rules.
+
+Missing-page browser coverage verifies the branded 404 state, keyboard-operated
+return to login through `/`, visible focus, absence of page-level overflow, and
+WCAG 2.2 A/AA scans at Compact, Medium, and Wide widths.
 
 E2E tests must use synthetic, deterministic data and must not require production credentials or external production services. Docker is required locally because the authenticated web server owns an isolated PostgreSQL container. Playwright writes a closed HTML report to `playwright-report/` and retains traces for failed tests under `test-results/`; CI uploads both locations only when the E2E job fails.
 

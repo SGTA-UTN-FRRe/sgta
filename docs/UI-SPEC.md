@@ -180,6 +180,22 @@ Reachable product states:
 - Unavailable
 - Degraded data
 
+Route-level feedback:
+
+- Admin and Tutor navigation uses structural skeletons with a page-header
+  placeholder and content blocks, announced as `Cargando sección` with
+  `role="status"` and `aria-busy="true"`; Reportes retains its specific skeleton.
+  Each route has a loading boundary so nested navigation also shows feedback.
+  Mobile navigation moves focus to the new page heading after loading finishes.
+- unexpected segment failures keep the role navigation visible and announce
+  `No se pudo cargar esta sección` with `Intentar nuevamente. Si el problema
+  continúa, avisar a la administración.`;
+- `Reintentar` re-fetches and re-renders the affected segment; the secondary
+  `Volver al inicio` link returns to the current role's home;
+- error messages and diagnostic identifiers are never rendered in these states;
+- unmatched URLs show `No encontramos esa página` and a `Volver al inicio` link
+  to `/`, preserving role-aware home routing.
+
 Offline-first behavior is not part of the first release.
 
 ## 2. Route inventory

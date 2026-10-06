@@ -113,8 +113,44 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
       return;
     }
 
-    mobileNavigationPending.current = false;
-    document.querySelector<HTMLElement>('main [data-slot="page-header"] h1')?.focus();
+    const main = document.querySelector("main");
+    if (main === null) return;
+
+    const focusPageHeading = () => {
+      const headings = Array.from(
+        main.querySelectorAll<HTMLElement>('[data-slot="page-header"] h1'),
+      );
+      const heading = headings.find((candidate) => {
+        // Next.js preserves previous pages in hidden React Activity boundaries.
+        for (
+          let element: HTMLElement | null = candidate;
+          element !== null;
+          element = element.parentElement
+        ) {
+          if (element.hidden || element.style.display === "none") return false;
+        }
+        return true;
+      });
+
+      if (heading === undefined) return false;
+
+      heading.focus();
+      mobileNavigationPending.current = false;
+      return true;
+    };
+
+    if (focusPageHeading()) return;
+
+    const observer = new MutationObserver(() => {
+      if (focusPageHeading()) observer.disconnect();
+    });
+    observer.observe(main, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["hidden", "style"],
+    });
+    return () => observer.disconnect();
   }, [pathname]);
 
   useEffect(() => {

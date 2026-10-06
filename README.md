@@ -13,6 +13,7 @@ The current runtime provides:
 - a public `/login` route, with `/` routing enabled Admins to `/admin`, enabled Tutors to `/tutor`, and other requests to `/login`;
 - server-side Admin and Tutor page guards, with `/forbidden` recovery and `401`/`403` API responses;
 - session sign-out from the Admin and Tutor navigation and `/forbidden`, with pending/error feedback and a return to `/login`;
+- structural Admin and Tutor route-loading skeletons, safe segment-error recovery that preserves navigation, and a branded missing-page state;
 - Admin route surfaces for the overview, live tutor and Materias workflows, schedules, hours, consultations, reports, and configuration;
 - a live `/admin` overview with current-cycle context, actionable attendance, balance, and consultation attention, today's and upcoming duties, and deliberate consultation-source degradation;
 - read-only `/admin/reports` with shareable period and dimension filters, canonical consultation demand, current-cycle coverage and balances, planned attendance, movements, and activities;

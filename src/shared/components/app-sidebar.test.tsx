@@ -1,9 +1,12 @@
-﻿import { act, fireEvent, render, screen, within } from "@testing-library/react";
+﻿import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { AppSidebar } from "./app-sidebar";
+import { PageHeader } from "./page-header";
+import { RouteLoadingState } from "./route-loading-state";
 
 const mocks = vi.hoisted(() => ({
+  pathname: "/admin/tutors",
   signOut: vi.fn(),
   replace: vi.fn(),
   refresh: vi.fn(),
@@ -13,15 +16,51 @@ vi.mock("@/auth/auth-client", () => ({
   authClient: { signOut: mocks.signOut },
 }));
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/admin/tutors",
+  usePathname: () => mocks.pathname,
   useRouter: () => ({ replace: mocks.replace, refresh: mocks.refresh }),
 }));
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.pathname = "/admin/tutors";
 });
 
 describe("AppSidebar", () => {
+  it.each([
+    ["admin", "/admin/tutors", "/admin/schedules", "Horarios"],
+    ["tutor", "/tutor", "/tutor/schedule", "Mi horario"],
+  ] as const)("waits for the visible %s page heading after mobile navigation suspends", async (variant, initialPath, nextPath, title) => {
+    const user = userEvent.setup();
+    mocks.pathname = initialPath;
+    const view = (state: "previous" | "loading" | "ready") => (
+      <>
+        <AppSidebar variant={variant} />
+        <main>
+          <div style={{ display: state === "previous" ? undefined : "none" }}>
+            <PageHeader title="Previous section" />
+          </div>
+          {state === "loading" && <RouteLoadingState />}
+          {state === "ready" && <PageHeader title={title} />}
+        </main>
+      </>
+    );
+    const { rerender } = render(view("previous"));
+    const trigger = screen.getByRole("button", { name: "Abrir navegación" });
+    await user.click(trigger);
+    const link = within(screen.getByRole("dialog")).getByRole("link", { name: title });
+    // Route changes are driven explicitly because jsdom cannot navigate.
+    link.addEventListener("click", (event) => event.preventDefault(), { once: true });
+    await user.click(link);
+
+    mocks.pathname = nextPath;
+    rerender(view("loading"));
+    expect(trigger).toHaveFocus();
+    expect(screen.getByRole("status", { name: "Cargando sección" })).toBeInTheDocument();
+
+    rerender(view("ready"));
+    await waitFor(() => expect(screen.getByRole("heading", { name: title })).toHaveFocus());
+  });
+
   it.each(["admin", "tutor"] as const)("offers sign-out without user data in the %s shell", async (variant) => {
     const user = userEvent.setup();
     mocks.signOut.mockResolvedValue({ error: null });
