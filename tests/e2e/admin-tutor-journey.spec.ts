@@ -75,7 +75,7 @@ test.describe("authenticated Admin tutor operations", () => {
       )),
     );
     await dialog.getByRole("textbox", { name: "Nombre", exact: true }).fill("Katherine");
-    await dialog.getByRole("textbox", { name: "Apellido", exact: true }).fill("Johnson");
+    await dialog.getByRole("textbox", { name: "Apellido (opcional)", exact: true }).fill("Johnson");
     await selectWithKeyboard(page, dialog.getByLabel("Carrera"), { label: "Computer Science" });
     await setCheckboxWithKeyboard(page, dialog.getByRole("checkbox", { name: "Algorithms" }), true);
     await selectWithKeyboard(page, dialog.getByLabel("Ciclo abierto"), { label: "2027" });
