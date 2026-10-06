@@ -18,6 +18,7 @@ import { z } from "zod";
 
 import { recordAuditEvent } from "@/db/audit-core";
 import type { Database } from "@/db/client-core";
+import { formatFormalTutorNameSql } from "@/db/tutor-name";
 import {
   administrativeCycle,
   career,
@@ -33,6 +34,7 @@ import {
   type ScheduleAssignmentPattern,
   type SchedulePlanKind,
 } from "@/db/schema";
+import { formatTutorName } from "@/shared/tutor-name";
 
 import {
   assignmentWindowsOverlap,
@@ -294,7 +296,7 @@ const assignmentSelection = {
   id: scheduleAssignment.id,
   planId: scheduleAssignment.planId,
   tutorId: scheduleAssignment.tutorId,
-  tutorName: sql<string>`concat(${tutor.lastName}, ', ', ${tutor.firstName})`,
+  tutorName: formatFormalTutorNameSql(tutor.lastName, tutor.firstName),
   pattern: scheduleAssignment.pattern,
   weekday: scheduleAssignment.weekday,
   assignmentDate: scheduleAssignment.assignmentDate,
@@ -1170,7 +1172,7 @@ async function listEligibleScheduleTutors(
 
   return rows.map((row) => ({
     id: row.id,
-    formalName: `${row.lastName}, ${row.firstName}`,
+    formalName: formatTutorName(row),
     careerName: row.careerName,
     status: row.status,
   }));

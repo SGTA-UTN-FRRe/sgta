@@ -17,6 +17,7 @@ import {
 } from "drizzle-orm";
 
 import type { Database } from "@/db/client-core";
+import { formatFormalTutorNameSql } from "@/db/tutor-name";
 import {
   activity,
   administrativeCycle,
@@ -285,7 +286,7 @@ async function getConsultationDemand(
       db
         .select({
           key: tutor.id,
-          label: sql<string>`concat(${tutor.lastName}, ', ', ${tutor.firstName})`,
+          label: formatFormalTutorNameSql(tutor.lastName, tutor.firstName),
           count: totalCount,
         })
         .from(consultation)
@@ -664,7 +665,7 @@ async function getPlannedScheduleReport(
     .select({
       planId: scheduleAssignment.planId,
       tutorId: scheduleAssignment.tutorId,
-      tutorName: sql<string>`concat(${tutor.lastName}, ', ', ${tutor.firstName})`,
+      tutorName: formatFormalTutorNameSql(tutor.lastName, tutor.firstName),
       pattern: scheduleAssignment.pattern,
       weekday: scheduleAssignment.weekday,
       assignmentDate: scheduleAssignment.assignmentDate,
@@ -1006,7 +1007,7 @@ export async function getReportFilterOptions(
       db
         .select({
           id: tutor.id,
-          label: sql<string>`concat(${tutor.lastName}, ', ', ${tutor.firstName})`,
+          label: formatFormalTutorNameSql(tutor.lastName, tutor.firstName),
         })
         .from(tutor)
         .orderBy(asc(sql`lower(${tutor.lastName})`), asc(sql`lower(${tutor.firstName})`), asc(tutor.id)),

@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm";
 
 import type { Database } from "@/db/client-core";
+import { formatFormalTutorNameSql } from "@/db/tutor-name";
 import {
   attendanceRecord,
   consultationImportRun,
@@ -319,7 +320,7 @@ async function getUpcomingDuties(
     .select({
       id: scheduleAssignment.id,
       planId: scheduleAssignment.planId,
-      tutorName: sql<string>`concat(${tutor.lastName}, ', ', ${tutor.firstName})`,
+      tutorName: formatFormalTutorNameSql(tutor.lastName, tutor.firstName),
       pattern: scheduleAssignment.pattern,
       weekday: scheduleAssignment.weekday,
       assignmentDate: scheduleAssignment.assignmentDate,

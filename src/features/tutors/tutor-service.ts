@@ -16,6 +16,7 @@ import { z } from "zod";
 
 import { recordAuditEvent } from "@/db/audit-core";
 import type { Database } from "@/db/client-core";
+import { formatFormalTutorNameSql } from "@/db/tutor-name";
 import {
   administrativeCycle,
   career,
@@ -27,6 +28,7 @@ import {
   user,
   type RecordStatus,
 } from "@/db/schema";
+import { formatTutorName } from "@/shared/tutor-name";
 
 import {
   normalizeInstitutionalIdentifier,
@@ -161,7 +163,7 @@ export type SafeTutorListItem = {
   id: string;
   formalName: string;
   firstName: string;
-  lastName: string;
+  lastName: string | null;
   preferredDisplayName: string | null;
   institutionalIdentifier: string | null;
   primaryCareer: SafeCareer;
@@ -201,7 +203,7 @@ export type SafeSubjectCoverageTutor = {
   id: string;
   formalName: string;
   firstName: string;
-  lastName: string;
+  lastName: string | null;
   preferredDisplayName: string | null;
   institutionalIdentifier: string | null;
   status: RecordStatus;
@@ -346,7 +348,7 @@ function toSafeTutorListItem(
   row: {
     id: string;
     firstName: string;
-    lastName: string;
+    lastName: string | null;
     preferredDisplayName: string | null;
     institutionalIdentifier: string | null;
     careerId: string;
@@ -372,7 +374,7 @@ function toSafeTutorListItem(
 
   return {
     id: row.id,
-    formalName: `${row.lastName}, ${row.firstName}`,
+    formalName: formatTutorName(row),
     firstName: row.firstName,
     lastName: row.lastName,
     preferredDisplayName: row.preferredDisplayName,
@@ -836,7 +838,7 @@ export async function listTutors(
           ilike(tutor.institutionalIdentifier, pattern),
           ilike(career.name, pattern),
           ilike(
-            sql`${tutor.lastName} || ', ' || ${tutor.firstName}`,
+            formatFormalTutorNameSql(tutor.lastName, tutor.firstName),
             pattern,
           ),
         )!,
@@ -1091,7 +1093,10 @@ export async function listSubjectCoverage(
       const existing = grouped.get(row.subjectId);
       const coverageTutor: SafeSubjectCoverageTutor = {
         id: row.tutorId,
-        formalName: `${row.tutorLastName}, ${row.tutorFirstName}`,
+        formalName: formatTutorName({
+          firstName: row.tutorFirstName,
+          lastName: row.tutorLastName,
+        }),
         firstName: row.tutorFirstName,
         lastName: row.tutorLastName,
         preferredDisplayName: row.tutorPreferredDisplayName,
@@ -1531,7 +1536,10 @@ export async function createTutor(
       .values({
         applicationUserId: applicationAccount?.id ?? null,
         firstName: cleanDisplayText(parsed.firstName),
-        lastName: cleanDisplayText(parsed.lastName),
+        lastName:
+          parsed.lastName === null || parsed.lastName === undefined
+            ? null
+            : cleanDisplayText(parsed.lastName),
         preferredDisplayName:
           parsed.preferredDisplayName === null ||
           parsed.preferredDisplayName === undefined
@@ -1694,7 +1702,8 @@ export async function updateTutor(
     }
 
     if (parsed.lastName !== undefined) {
-      values.lastName = cleanDisplayText(parsed.lastName);
+      values.lastName =
+        parsed.lastName === null ? null : cleanDisplayText(parsed.lastName);
       changedFields.push("lastName");
     }
 

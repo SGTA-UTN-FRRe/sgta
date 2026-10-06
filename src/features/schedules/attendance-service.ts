@@ -10,6 +10,7 @@ import { z } from "zod";
 
 import { recordAuditEvent } from "@/db/audit-core";
 import type { Database } from "@/db/client-core";
+import { formatTutorName } from "@/shared/tutor-name";
 import {
   activity,
   administrativeCycle,
@@ -193,7 +194,7 @@ type OccurrenceRow = {
   kind: "DUTY" | "RECOVERY";
   modality: string | null;
   tutorFirstName: string;
-  tutorLastName: string;
+  tutorLastName: string | null;
   tutorCareerName: string;
   tutorStatus: RecordStatus;
   createdAt: Date;
@@ -274,7 +275,10 @@ function toSafeAttendanceOccurrence(
 function toSafeAttendanceTutor(row: OccurrenceRow): SafeAttendanceTutor {
   return {
     id: row.tutorId,
-    formalName: `${row.tutorLastName}, ${row.tutorFirstName}`,
+    formalName: formatTutorName({
+      firstName: row.tutorFirstName,
+      lastName: row.tutorLastName,
+    }),
     careerName: row.tutorCareerName,
     status: row.tutorStatus,
   };

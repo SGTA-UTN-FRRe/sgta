@@ -44,6 +44,18 @@ describe("tutor validation boundary", () => {
     ).toThrow();
   });
 
+  it("accepts a missing surname and normalizes blank values to null", () => {
+    const baseInput = {
+      firstName: "Ada",
+      primaryCareerId: "11111111-1111-4111-8111-111111111111",
+      cycleId: "22222222-2222-4222-8222-222222222222",
+    };
+
+    expect(parseCreateTutorInput({ ...baseInput, lastName: "   " }).lastName).toBeNull();
+    expect(parseCreateTutorInput(baseInput).lastName).toBeUndefined();
+    expect(parseUpdateTutorInput({ lastName: "" })).toEqual({ lastName: null });
+  });
+
   it("rejects duplicate subject IDs and membership changes without an explicit cycle", () => {
     expect(() =>
       parseCreateTutorInput({

@@ -520,7 +520,10 @@ describe("SchedulesScreen", () => {
     render(<SchedulesScreen state="no-plan" workspace={emptyWorkspace} />);
     await user.click(screen.getAllByRole("button", { name: "Crear plan" })[0]);
     const editor = screen.getByRole("dialog", { name: "Crear plan de horario" });
-    await user.type(within(editor).getByLabelText("Nombre"), createdPlan.name);
+    // Paste the long name in one input event; typing it key by key re-renders the whole
+    // workspace per character and exceeded the test timeout on slow CI runners.
+    await user.click(within(editor).getByLabelText("Nombre"));
+    await user.paste(createdPlan.name);
     await user.click(within(editor).getByRole("button", { name: "Guardar plan" }));
 
     await waitFor(
@@ -529,14 +532,14 @@ describe("SchedulesScreen", () => {
           screen.queryByRole("dialog", { name: "Crear plan de horario" }),
         ).not.toBeInTheDocument();
       },
-      { timeout: 5_000 },
+      { timeout: 3_000 },
     );
     expect(screen.getAllByRole("status").some((element) =>
       element.textContent?.includes("Cambios guardados"),
     )).toBe(true);
     expect(screen.getAllByText(createdPlan.name)).not.toHaveLength(0);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-  });
+  }, 10_000);
 
   it("marks live conflicts and opens the conflicting assignment for recovery", async () => {
     const user = userEvent.setup();

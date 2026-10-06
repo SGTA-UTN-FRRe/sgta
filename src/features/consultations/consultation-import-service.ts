@@ -18,6 +18,7 @@ import { getServerEnv } from "@/config/env";
 import { recordAuditEvent } from "@/db/audit-core";
 import { getDatabase } from "@/db/client";
 import type { Database } from "@/db/client-core";
+import { getTutorNameAliases } from "@/shared/tutor-name";
 import {
   career,
   consultationDuplicateCandidate,
@@ -189,11 +190,7 @@ export function createConsultationReferenceResolver(
   const tutorIndex = buildAliasIndex(
     tutors.map((entry) => ({
       id: entry.id,
-      aliases: [
-        entry.preferredDisplayName,
-        `${entry.firstName} ${entry.lastName}`,
-        `${entry.lastName}, ${entry.firstName}`,
-      ],
+      aliases: getTutorNameAliases(entry),
     })),
   );
   const subjectsByCareer = new Map<string, SubjectReference[]>();

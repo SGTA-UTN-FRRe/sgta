@@ -1,3 +1,4 @@
+import { formatTutorName } from "@/shared/tutor-name";
 import type { TutorsCatalogOptions, TutorsScreenData } from "./tutor-screen-types";
 
 const cycle = {
@@ -30,7 +31,8 @@ function createTutor(
   input: {
     id: string;
     firstName: string;
-    lastName: string;
+    lastName: string | null;
+    institutionalIdentifier: string | null;
     career: {
       id: string;
       name: string;
@@ -44,11 +46,11 @@ function createTutor(
 ) {
   return {
     id: input.id,
-    formalName: `${input.lastName}, ${input.firstName}`,
+    formalName: formatTutorName(input),
     firstName: input.firstName,
     lastName: input.lastName,
     preferredDisplayName: null,
-    institutionalIdentifier: null,
+    institutionalIdentifier: input.institutionalIdentifier,
     primaryCareer: input.career,
     currentCycle: input.cycleLabel === null ? null : cycle,
     currentCycleLabel: input.cycleLabel === undefined ? cycle.name : input.cycleLabel,
@@ -79,6 +81,7 @@ export const tutorsScreenData = {
       id: "11111111-1111-4111-8111-111111111111",
       firstName: "Marina",
       lastName: "Benítez",
+      institutionalIdentifier: "LEG-001",
       career: systemsCareer,
       status: "ACTIVE",
       subjectCount: 4,
@@ -88,6 +91,7 @@ export const tutorsScreenData = {
       id: "88888888-8888-4888-8888-888888888888",
       firstName: "Tomás",
       lastName: "Acosta",
+      institutionalIdentifier: "LEG-002",
       career: mechanicsCareer,
       status: "ACTIVE",
       subjectCount: 3,
@@ -97,6 +101,7 @@ export const tutorsScreenData = {
       id: "99999999-9999-4999-8999-999999999999",
       firstName: "Lucía",
       lastName: "Funes",
+      institutionalIdentifier: "LEG-003",
       career: chemistryCareer,
       status: "ACTIVE",
       subjectCount: 2,
@@ -105,7 +110,8 @@ export const tutorsScreenData = {
     createTutor({
       id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       firstName: "Diego",
-      lastName: "Sosa",
+      lastName: null,
+      institutionalIdentifier: null,
       career: systemsCareer,
       status: "INACTIVE",
       subjectCount: 0,

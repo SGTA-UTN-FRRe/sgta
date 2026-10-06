@@ -4,6 +4,7 @@ import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database } from "@/db/client-core";
+import { formatTutorName } from "@/shared/tutor-name";
 import {
   administrativeCycle,
   career,
@@ -712,9 +713,7 @@ async function resolveOwnerScope(
     tutorId: tutorRow.id,
     cycle: toSafeCycle(cycleRow),
     tutor: {
-      displayName:
-        tutorRow.preferredDisplayName ??
-        `${tutorRow.lastName}, ${tutorRow.firstName}`,
+      displayName: formatTutorName(tutorRow, "informal"),
       career: {
         id: tutorRow.careerId,
         name: tutorRow.careerName,

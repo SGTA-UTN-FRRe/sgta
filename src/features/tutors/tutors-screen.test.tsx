@@ -71,6 +71,15 @@ describe("TutorsScreen", () => {
     expect(screen.getAllByText(data.rows[0].formalName)).not.toHaveLength(0);
   });
 
+  it("identifies incomplete tutor records and marks the surname field optional", async () => {
+    const user = userEvent.setup();
+    renderScreen();
+
+    expect(screen.getAllByText("Datos incompletos")).toHaveLength(2);
+    await user.click(screen.getByRole("button", { name: "Agregar tutor" }));
+    expect(screen.getByLabelText("Apellido (opcional)")).toBeInTheDocument();
+  });
+
   it("loads server-backed search and status filters", async () => {
     const user = userEvent.setup();
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
@@ -214,7 +223,7 @@ describe("TutorsScreen", () => {
     expect(screen.getByLabelText("Correo de la cuenta habilitada (opcional)")).toBeInTheDocument();
     expect(screen.getByText("Seleccionar las materias asociadas a la carrera del tutor.")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Nombre"), "Ana");
-    await user.type(screen.getByLabelText("Apellido"), "Gómez");
+    await user.type(screen.getByLabelText("Apellido (opcional)"), "Gómez");
     const sheet = screen.getByRole("dialog", { name: "Agregar tutor" });
     await user.selectOptions(
       within(sheet).getByLabelText("Carrera"),
@@ -263,7 +272,7 @@ describe("TutorsScreen", () => {
 
     await user.click(screen.getByRole("button", { name: "Agregar tutor" }));
     await user.type(screen.getByLabelText("Nombre"), "Marina");
-    await user.type(screen.getByLabelText("Apellido"), "Benítez");
+    await user.type(screen.getByLabelText("Apellido (opcional)"), "Benítez");
     const sheet = screen.getByRole("dialog", { name: "Agregar tutor" });
     await user.selectOptions(
       within(sheet).getByLabelText("Carrera"),
@@ -294,9 +303,9 @@ describe("TutorsScreen", () => {
       name: `Acciones para ${data.rows[0].formalName}`,
     })[0]);
     await user.click(screen.getByRole("menuitem", { name: "Editar" }));
-    await waitFor(() => expect(screen.getByLabelText("Apellido")).toHaveValue(data.rows[0].lastName));
-    await user.clear(screen.getByLabelText("Apellido"));
-    await user.type(screen.getByLabelText("Apellido"), "Pérez");
+    await waitFor(() => expect(screen.getByLabelText("Apellido (opcional)")).toHaveValue(data.rows[0].lastName));
+    await user.clear(screen.getByLabelText("Apellido (opcional)"));
+    await user.type(screen.getByLabelText("Apellido (opcional)"), "Pérez");
     await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
