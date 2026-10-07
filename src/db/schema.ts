@@ -56,19 +56,6 @@ export const scheduleAssignmentKindEnum = pgEnum("schedule_assignment_kind", [
   "RECOVERY",
 ]);
 
-export const attendanceStatusEnum = pgEnum("attendance_status", [
-  "PENDING",
-  "PRESENT",
-  "ABSENT",
-]);
-
-export const attendanceDebitStatusEnum = pgEnum("attendance_debit_status", [
-  "NOT_PROPOSED",
-  "PROPOSED",
-  "CANCELLED",
-  "CONFIRMED",
-]);
-
 export const consultationSourceProviderEnum = pgEnum(
   "consultation_source_provider",
   ["GOOGLE_SHEETS"],
@@ -570,92 +557,6 @@ export const scheduleAssignment = pgTable(
   ],
 );
 
-export const dutyOccurrence = pgTable(
-  "duty_occurrence",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    cycleId: uuid("cycle_id")
-      .notNull()
-      .references(() => administrativeCycle.id, { onDelete: "restrict" }),
-    planId: uuid("plan_id")
-      .notNull()
-      .references(() => schedulePlan.id, { onDelete: "restrict" }),
-    assignmentId: uuid("assignment_id")
-      .notNull()
-      .references(() => scheduleAssignment.id, { onDelete: "restrict" }),
-    tutorId: uuid("tutor_id")
-      .notNull()
-      .references(() => tutor.id, { onDelete: "restrict" }),
-    occurrenceDate: date("occurrence_date", { mode: "string" }).notNull(),
-    startMinutes: integer("start_minutes").notNull(),
-    endMinutes: integer("end_minutes").notNull(),
-    kind: scheduleAssignmentKindEnum("kind").notNull(),
-    modality: text("modality"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    check(
-      "duty_occurrence_time_range_check",
-      sql`${table.startMinutes} >= 0 AND ${table.startMinutes} < 1440 AND ${table.endMinutes} > 0 AND ${table.endMinutes} <= 1440 AND ${table.startMinutes} < ${table.endMinutes}`,
-    ),
-    check(
-      "duty_occurrence_modality_not_blank_check",
-      sql`${table.modality} IS NULL OR length(trim(${table.modality})) > 0`,
-    ),
-    uniqueIndex("duty_occurrence_assignment_date_unique").on(
-      table.assignmentId,
-      table.occurrenceDate,
-    ),
-    index("duty_occurrence_cycle_date_idx").on(
-      table.cycleId,
-      table.occurrenceDate,
-    ),
-    index("duty_occurrence_tutor_date_idx").on(
-      table.tutorId,
-      table.occurrenceDate,
-    ),
-  ],
-);
-
-export const attendanceRecord = pgTable(
-  "attendance_record",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    occurrenceId: uuid("occurrence_id")
-      .notNull()
-      .references(() => dutyOccurrence.id, { onDelete: "restrict" }),
-    status: attendanceStatusEnum("status").notNull().default("PENDING"),
-    debitStatus: attendanceDebitStatusEnum("debit_status")
-      .notNull()
-      .default("NOT_PROPOSED"),
-    proposedDebitMinutes: integer("proposed_debit_minutes"),
-    recognizedDebitMinutes: integer("recognized_debit_minutes"),
-    actorId: text("actor_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "restrict" }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    check(
-      "attendance_record_proposed_debit_minutes_check",
-      sql`${table.proposedDebitMinutes} IS NULL OR ${table.proposedDebitMinutes} >= 0`,
-    ),
-    check(
-      "attendance_record_recognized_debit_minutes_check",
-      sql`${table.recognizedDebitMinutes} IS NULL OR ${table.recognizedDebitMinutes} >= 0`,
-    ),
-    uniqueIndex("attendance_record_occurrence_unique").on(table.occurrenceId),
-    index("attendance_record_status_idx").on(table.status, table.debitStatus),
-  ],
-);
-
 export const hourCategory = pgTable(
   "hour_category",
   {
@@ -702,10 +603,6 @@ export const activity = pgTable(
     activityDate: date("activity_date", { mode: "string" }).notNull(),
     durationMinutes: integer("duration_minutes").notNull(),
     note: text("note"),
-    dutyOccurrenceId: uuid("duty_occurrence_id").references(
-      () => dutyOccurrence.id,
-      { onDelete: "restrict" },
-    ),
     actorId: text("actor_id")
       .notNull()
       .references(() => user.id, { onDelete: "restrict" }),
@@ -724,7 +621,6 @@ export const activity = pgTable(
     ),
     index("activity_cycle_date_idx").on(table.cycleId, table.activityDate),
     index("activity_kind_idx").on(table.kind),
-    index("activity_duty_occurrence_idx").on(table.dutyOccurrenceId),
   ],
 );
 
@@ -748,10 +644,6 @@ export const hourMovement = pgTable(
     activityId: uuid("activity_id").references(() => activity.id, {
       onDelete: "restrict",
     }),
-    attendanceRecordId: uuid("attendance_record_id").references(
-      () => attendanceRecord.id,
-      { onDelete: "restrict" },
-    ),
     reversalOfMovementId: uuid("reversal_of_movement_id").references(
       (): AnyPgColumn => hourMovement.id,
       { onDelete: "restrict" },
@@ -784,7 +676,6 @@ export const hourMovement = pgTable(
     index("hour_movement_movement_date_idx").on(table.movementDate),
     index("hour_movement_category_idx").on(table.categoryId),
     index("hour_movement_activity_idx").on(table.activityId),
-    index("hour_movement_attendance_idx").on(table.attendanceRecordId),
     uniqueIndex("hour_movement_reversal_unique")
       .on(table.reversalOfMovementId)
       .where(sql`${table.reversalOfMovementId} IS NOT NULL`),
@@ -1186,8 +1077,6 @@ export const databaseSchema = {
   tutorCycleMembership,
   schedulePlan,
   scheduleAssignment,
-  dutyOccurrence,
-  attendanceRecord,
   hourCategory,
   activity,
   hourMovement,
@@ -1227,9 +1116,6 @@ export type ScheduleAssignmentPattern =
   (typeof scheduleAssignmentPatternEnum.enumValues)[number];
 export type ScheduleAssignmentKind =
   (typeof scheduleAssignmentKindEnum.enumValues)[number];
-export type AttendanceStatus = (typeof attendanceStatusEnum.enumValues)[number];
-export type AttendanceDebitStatus =
-  (typeof attendanceDebitStatusEnum.enumValues)[number];
 export type ConsultationSourceProvider =
   (typeof consultationSourceProviderEnum.enumValues)[number];
 export type ConsultationClassification =
@@ -1246,10 +1132,6 @@ export type SchedulePlan = typeof schedulePlan.$inferSelect;
 export type NewSchedulePlan = typeof schedulePlan.$inferInsert;
 export type ScheduleAssignment = typeof scheduleAssignment.$inferSelect;
 export type NewScheduleAssignment = typeof scheduleAssignment.$inferInsert;
-export type DutyOccurrence = typeof dutyOccurrence.$inferSelect;
-export type NewDutyOccurrence = typeof dutyOccurrence.$inferInsert;
-export type AttendanceRecord = typeof attendanceRecord.$inferSelect;
-export type NewAttendanceRecord = typeof attendanceRecord.$inferInsert;
 export type HourMovementDirection =
   (typeof hourMovementDirectionEnum.enumValues)[number];
 export type ActivityKind = (typeof activityKindEnum.enumValues)[number];

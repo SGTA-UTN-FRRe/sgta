@@ -80,53 +80,6 @@ async function main() {
       (DATE '2021-01-01' + ((n - 1) % 1826)::integer + TIME '12:00') AT TIME ZONE 'UTC'
     FROM generate_series(1, 150000) AS n;
 
-    INSERT INTO schedule_plan (id, cycle_id, name, kind, valid_from, valid_to)
-    SELECT md5('query-audit-plan-' || EXTRACT(YEAR FROM cycle.start_date)::integer)::uuid,
-      cycle.id,
-      'Synthetic regular plan',
-      'REGULAR',
-      cycle.start_date,
-      cycle.end_date
-    FROM administrative_cycle AS cycle;
-
-    INSERT INTO schedule_assignment (
-      id, plan_id, tutor_id, pattern, weekday, start_minutes, end_minutes, kind, status
-    )
-    SELECT
-      md5('query-audit-assignment-' || EXTRACT(YEAR FROM cycle.start_date)::integer || '-' || tutor.id)::uuid,
-      md5('query-audit-plan-' || EXTRACT(YEAR FROM cycle.start_date)::integer)::uuid,
-      tutor.id,
-      'WEEKDAY',
-      1,
-      480 + (row_number() OVER (PARTITION BY cycle.id ORDER BY tutor.id) % 600)::integer,
-      540 + (row_number() OVER (PARTITION BY cycle.id ORDER BY tutor.id) % 600)::integer,
-      'DUTY',
-      tutor.status
-    FROM administrative_cycle AS cycle
-    CROSS JOIN tutor;
-
-    INSERT INTO duty_occurrence (
-      id, cycle_id, plan_id, assignment_id, tutor_id, occurrence_date,
-      start_minutes, end_minutes, kind
-    )
-    SELECT
-      md5('query-audit-occurrence-' || assignment.id || '-' || occurrence_date)::uuid,
-      plan.cycle_id,
-      plan.id,
-      assignment.id,
-      assignment.tutor_id,
-      occurrence_date,
-      assignment.start_minutes,
-      assignment.end_minutes,
-      assignment.kind
-    FROM schedule_assignment AS assignment
-    INNER JOIN schedule_plan AS plan ON plan.id = assignment.plan_id
-    CROSS JOIN LATERAL generate_series(0, 19) AS week_number
-    CROSS JOIN LATERAL (
-      SELECT date_trunc('week', make_date(EXTRACT(YEAR FROM plan.valid_from)::integer, 1, 1)::timestamp)::date
-        + (week_number * 7)::integer AS occurrence_date
-    ) AS dates;
-
     INSERT INTO consultation_import_run (
       id, actor_id, status, source_spreadsheet_id, source_range, completed_at
     )
@@ -197,7 +150,7 @@ async function main() {
   const tableSizes = await pool.query(`
     SELECT relname, n_live_tup
     FROM pg_stat_user_tables
-    WHERE relname IN ('tutor', 'consultation', 'consultation_staging', 'duty_occurrence', 'hour_movement')
+    WHERE relname IN ('tutor', 'consultation', 'consultation_staging', 'hour_movement')
     ORDER BY relname;
   `);
   console.log("Synthetic table rows:");
@@ -228,14 +181,6 @@ async function main() {
         FROM consultation
         WHERE consultation_date BETWEEN DATE '2025-07-01' AND DATE '2025-07-31'
         GROUP BY career_id`,
-    },
-    {
-      title: "Attendance date read (cycle and day, ordered by start time)",
-      query: `SELECT id, start_minutes, end_minutes
-        FROM duty_occurrence
-        WHERE cycle_id = md5('query-audit-cycle-2025')::uuid
-          AND occurrence_date = DATE '2025-03-03'
-        ORDER BY start_minutes, id`,
     },
     {
       title: "Tutor movement history (cycle and owner, newest first, limit 100)",

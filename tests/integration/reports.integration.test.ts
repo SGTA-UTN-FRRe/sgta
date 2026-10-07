@@ -42,8 +42,6 @@ async function resetDatabase() {
       "consultation_import_run",
       "hour_movement",
       "activity",
-      "attendance_record",
-      "duty_occurrence",
       "schedule_assignment",
       "schedule_plan",
       "hour_category",
