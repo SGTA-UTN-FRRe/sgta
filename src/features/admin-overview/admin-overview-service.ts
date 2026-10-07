@@ -7,20 +7,15 @@ import {
   eq,
   gte,
   inArray,
-  isNull,
-  lt,
   lte,
-  or,
   sql,
 } from "drizzle-orm";
 
 import type { Database } from "@/db/client-core";
 import { formatFormalTutorNameSql } from "@/db/tutor-name";
 import {
-  attendanceRecord,
   consultationImportRun,
   consultationStaging,
-  dutyOccurrence,
   hourMovement,
   scheduleAssignment,
   schedulePlan,
@@ -31,21 +26,13 @@ import {
   getCurrentAdministrativeCycle,
   type SafeAdministrativeCycle,
 } from "@/features/cycles/cycle-service";
-import {
-  getArgentinaBusinessDate,
-  getArgentinaDateTime,
-} from "@/shared/argentina-business-time";
+import { getArgentinaBusinessDate } from "@/shared/argentina-business-time";
 
 import type { DutyView } from "./admin-overview-types";
 
 const upcomingDays = 7;
 
 type ReadyResult<T> = { status: "ready"; value: T } | { status: "error" };
-
-type PendingAttendanceSummary = {
-  count: number;
-  firstDate: string | null;
-};
 
 type ConsultationSourceHealth = {
   degraded: boolean;
@@ -59,7 +46,6 @@ export type AdminOverviewReadModel =
   | {
       currentDate: string;
       cycle: SafeAdministrativeCycle;
-      pendingAttendance: ReadyResult<PendingAttendanceSummary>;
       negativeBalances: ReadyResult<number>;
       consultationReviews: ReadyResult<number>;
       consultationSource: ReadyResult<ConsultationSourceHealth>;
@@ -105,53 +91,6 @@ function settle<T>(result: PromiseSettledResult<T>): ReadyResult<T> {
   return result.status === "fulfilled"
     ? { status: "ready", value: result.value }
     : { status: "error" };
-}
-
-async function getPendingAttendanceSummary(
-  db: Database,
-  cycle: SafeAdministrativeCycle,
-  now: Date,
-): Promise<PendingAttendanceSummary> {
-  const { date: currentDate, minuteOfDay } = getArgentinaDateTime(now);
-  const throughDate = currentDate < cycle.endDate ? currentDate : cycle.endDate;
-
-  if (cycle.startDate > throughDate) {
-    return { count: 0, firstDate: null };
-  }
-
-  const [summary] = await db
-    .select({
-      count: count(),
-      firstDate: sql<string | null>`min(${dutyOccurrence.occurrenceDate})`,
-    })
-    .from(dutyOccurrence)
-    .leftJoin(
-      attendanceRecord,
-      eq(attendanceRecord.occurrenceId, dutyOccurrence.id),
-    )
-    .where(
-      and(
-        eq(dutyOccurrence.cycleId, cycle.id),
-        gte(dutyOccurrence.occurrenceDate, cycle.startDate),
-        lte(dutyOccurrence.occurrenceDate, throughDate),
-        or(
-          lt(dutyOccurrence.occurrenceDate, currentDate),
-          and(
-            eq(dutyOccurrence.occurrenceDate, currentDate),
-            lte(dutyOccurrence.endMinutes, minuteOfDay),
-          ),
-        ),
-        or(
-          isNull(attendanceRecord.id),
-          eq(attendanceRecord.status, "PENDING"),
-        ),
-      ),
-    );
-
-  return {
-    count: summary?.count ?? 0,
-    firstDate: summary?.firstDate ?? null,
-  };
 }
 
 async function getNegativeBalanceCount(
@@ -393,7 +332,6 @@ export async function getAdminOverviewReadModel(
   }
 
   const results = await Promise.allSettled([
-    getPendingAttendanceSummary(db, cycle, now),
     getNegativeBalanceCount(db, cycle.id),
     getConsultationReviewCount(db),
     getConsultationSourceHealth(db),
@@ -403,10 +341,9 @@ export async function getAdminOverviewReadModel(
   return {
     currentDate,
     cycle,
-    pendingAttendance: settle(results[0]),
-    negativeBalances: settle(results[1]),
-    consultationReviews: settle(results[2]),
-    consultationSource: settle(results[3]),
-    upcomingDuties: settle(results[4]),
+    negativeBalances: settle(results[0]),
+    consultationReviews: settle(results[1]),
+    consultationSource: settle(results[2]),
+    upcomingDuties: settle(results[3]),
   };
 }

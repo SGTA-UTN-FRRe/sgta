@@ -12,7 +12,7 @@ import type { ReportFilterOptions } from "@/features/reports/report-service";
 
 export const metadata: Metadata = {
   title: "Reportes | SGTA",
-  description: "Consultar demanda, cobertura, asistencia y horas operativas.",
+  description: "Consultar demanda, cobertura y horas operativas.",
 };
 
 export const runtime = "nodejs";

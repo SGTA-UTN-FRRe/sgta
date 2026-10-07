@@ -37,7 +37,7 @@ describe("screen mock data", () => {
   });
 
   it("contains useful synthetic content for each data-driven screen", () => {
-    expect(screenData.adminOverview.attention).toHaveLength(3);
+    expect(screenData.adminOverview.attention).toHaveLength(2);
     expect(screenData.adminOverview.upcomingDuties).toHaveLength(3);
     expect(screenData.tutors.rows).toHaveLength(4);
     expect(screenData.hours.balances).toHaveLength(3);

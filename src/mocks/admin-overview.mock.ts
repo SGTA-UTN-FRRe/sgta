@@ -19,14 +19,6 @@ export const adminOverviewScreenData = {
   currentDate: "2026-09-16",
   attention: [
     {
-      id: "pending-attendance",
-      label: "Asistencia pendiente",
-      count: 3,
-      description: "Guardias de los últimos dos días esperan registro.",
-      href: "/admin/schedules/attendance?date=2026-09-16",
-      tone: "warning",
-    },
-    {
       id: "negative-balances",
       label: "Saldo negativo",
       count: 2,

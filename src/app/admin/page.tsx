@@ -70,31 +70,6 @@ export default async function AdminOverviewPage() {
       const attention: AttentionItem[] = [];
       const attentionFailures: OverviewFailure[] = [];
 
-      if (model.pendingAttendance.status === "ready") {
-        const pending = model.pendingAttendance.value;
-        if (pending.count > 0) {
-          const date = pending.firstDate ?? model.currentDate;
-          attention.push({
-            id: "pending-attendance",
-            label: "Asistencia pendiente",
-            count: pending.count,
-            description: "Guardias vencidas que esperan registro de asistencia.",
-            href: `/admin/schedules/attendance?cycleId=${encodeURIComponent(cycle.id)}&date=${date}`,
-            tone: "warning",
-          });
-        }
-      } else {
-        attentionFailures.push(
-          failure(
-            "attendance-read-failed",
-            "No se pudo cargar la asistencia pendiente",
-            "Abrir Asistencia para volver a consultar las guardias del ciclo.",
-            `/admin/schedules/attendance?cycleId=${encodeURIComponent(cycle.id)}&date=${model.currentDate}`,
-            "Abrir asistencia",
-          ),
-        );
-      }
-
       if (model.negativeBalances.status === "ready") {
         if (model.negativeBalances.value > 0) {
           attention.push({
