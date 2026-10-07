@@ -40,7 +40,6 @@ const conflictCodes: ScheduleServiceErrorCode[] = [
   SCHEDULE_ERROR_CODES.dateOutsideCycle,
   SCHEDULE_ERROR_CODES.inactiveTutor,
   SCHEDULE_ERROR_CODES.openCycleRequired,
-  SCHEDULE_ERROR_CODES.planHasOccurrences,
   SCHEDULE_ERROR_CODES.planValidityOutsideCycle,
   SCHEDULE_ERROR_CODES.regularPlanConflict,
   SCHEDULE_ERROR_CODES.specialPlanOverlap,
@@ -89,8 +88,7 @@ export function scheduleErrorResponse(error: unknown) {
   if (error instanceof ScheduleServiceError) {
     if (
       error.code === SCHEDULE_ERROR_CODES.queryFailed ||
-      error.code === SCHEDULE_ERROR_CODES.transactionFailed ||
-      error.code === SCHEDULE_ERROR_CODES.occurrenceCreationFailed
+      error.code === SCHEDULE_ERROR_CODES.transactionFailed
     ) {
       return scheduleJsonResponse({ error: "internal_server_error" }, 500);
     }

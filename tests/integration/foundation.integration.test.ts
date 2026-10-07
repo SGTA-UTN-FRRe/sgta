@@ -123,10 +123,10 @@ import {
 import {
   createScheduleAssignment,
   createSchedulePlan,
+  getScheduleWorkspace,
   listScheduleAssignments,
   listSchedulePlans,
   resolveEffectivePlan,
-  resolveEffectiveSchedule,
   SCHEDULE_ERROR_CODES,
   transitionSchedulePlanStatus,
   updateScheduleAssignment,
@@ -2076,7 +2076,7 @@ describe("PostgreSQL foundation integration", () => {
     ).rejects.toMatchObject({ cause: { code: "23503" } });
   });
 
-  it("resolves effective plans, preserves plan history, and materializes stable occurrences", async () => {
+  it("resolves effective plans and reads the schedule workspace without writes", async () => {
     const database = getIntegrationDatabase();
     const { admin } = await seedIdentities();
     const [createdCareer] = await database
@@ -2171,43 +2171,28 @@ describe("PostgreSQL foundation integration", () => {
       }),
     ).resolves.toMatchObject({ id: special.id, kind: "SPECIAL" });
 
-    const regularSchedule = await resolveEffectiveSchedule(
-      database,
-      { cycleId: createdCycle!.id, date: "2027-03-01" },
-      context,
-    );
-    const regularOccurrence = regularSchedule.occurrences[0];
-    expect(regularOccurrence).toMatchObject({
-      assignmentId: regularAssignment.id,
-      planId: regular.id,
-      startMinutes: 480,
-    });
-
-    const specialSchedule = await resolveEffectiveSchedule(
+    const occurrencesBefore = await database
+      .select({ id: dutyOccurrence.id })
+      .from(dutyOccurrence);
+    const auditEventsBeforeWorkspace = await database
+      .select({ id: auditEvent.id })
+      .from(auditEvent);
+    const specialWorkspace = await getScheduleWorkspace(
       database,
       { cycleId: createdCycle!.id, date: "2027-03-08" },
       context,
     );
-    expect(specialSchedule).toMatchObject({
-      plan: { id: special.id, kind: "SPECIAL" },
-    });
-    expect(specialSchedule.occurrences[0]).toMatchObject({
-      assignmentId: specialAssignment.id,
-      kind: "RECOVERY",
-      recovery: {
-        markedForRecovery: true,
-        recognition: "EXPLICIT_ACTION_REQUIRED",
-      },
-    });
-
-    const repeatedSpecialSchedule = await resolveEffectiveSchedule(
-      database,
-      { cycleId: createdCycle!.id, date: "2027-03-08" },
-      context,
+    expect(specialWorkspace.effective).toEqual({ date: "2027-03-08" });
+    expect(specialWorkspace.selectedPlan).toMatchObject({ id: special.id, kind: "SPECIAL" });
+    expect(specialWorkspace.assignments).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: specialAssignment.id })]),
     );
-    expect(repeatedSpecialSchedule.occurrences[0]?.id).toBe(
-      specialSchedule.occurrences[0]?.id,
-    );
+    await expect(
+      database.select({ id: dutyOccurrence.id }).from(dutyOccurrence),
+    ).resolves.toEqual(occurrencesBefore);
+    await expect(
+      database.select({ id: auditEvent.id }).from(auditEvent),
+    ).resolves.toEqual(auditEventsBeforeWorkspace);
 
     await transitionSchedulePlanStatus(
       database,
@@ -2215,12 +2200,12 @@ describe("PostgreSQL foundation integration", () => {
       { status: "INACTIVE" },
       context,
     );
-    const fallbackSchedule = await resolveEffectiveSchedule(
+    const fallbackWorkspace = await getScheduleWorkspace(
       database,
       { cycleId: createdCycle!.id, date: "2027-03-08" },
       context,
     );
-    expect(fallbackSchedule.plan).toMatchObject({
+    expect(fallbackWorkspace.selectedPlan).toMatchObject({
       id: regular.id,
       kind: "REGULAR",
     });
@@ -2238,17 +2223,16 @@ describe("PostgreSQL foundation integration", () => {
       },
       context,
     );
-    const preservedHistory = await resolveEffectiveSchedule(
+    const updatedWorkspace = await getScheduleWorkspace(
       database,
       { cycleId: createdCycle!.id, date: "2027-03-01" },
       context,
     );
-    expect(preservedHistory.occurrences[0]).toMatchObject({
-      id: regularOccurrence?.id,
-      assignmentId: regularAssignment.id,
-      startMinutes: 480,
-      endMinutes: 600,
-    });
+    expect(updatedWorkspace.assignments).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: regularAssignment.id, startMinutes: 540, endMinutes: 660 }),
+      ]),
+    );
 
     await expect(
       listSchedulePlans(database, { cycleId: createdCycle!.id }),
@@ -2270,12 +2254,11 @@ describe("PostgreSQL foundation integration", () => {
       await database.execute(sql`
         SELECT action
         FROM "audit_event"
-        WHERE entity_type IN ('schedule_plan', 'schedule_assignment', 'duty_occurrence')
+        WHERE entity_type IN ('schedule_plan', 'schedule_assignment')
       `),
     );
     expect(auditRows.some((row) => row.action === "schedule_plan.created")).toBe(true);
     expect(auditRows.some((row) => row.action === "schedule_assignment.created")).toBe(true);
-    expect(auditRows.some((row) => row.action === "schedule_occurrence.created")).toBe(true);
   });
 
   it("serializes special-plan overlap and enforces assignment eligibility and conflicts", async () => {
