@@ -3,12 +3,14 @@
 import Link from "next/link";
 import {
   AlertTriangle,
+  Archive,
   CalendarDays,
   Check,
   CheckCircle2,
   CircleAlert,
   Clock3,
   Edit3,
+  History,
   Plus,
   RotateCcw,
   Settings2,
@@ -361,7 +363,9 @@ function deriveWorkspaceState(
     return "conflict";
   }
 
-  if (workspace.plans.length === 0) {
+  const activePlans = workspace.plans.filter((plan) => plan.status === "ACTIVE");
+
+  if (activePlans.length === 0) {
     return "no-plan";
   }
 
@@ -520,18 +524,20 @@ function LoadingScheduleWorkspace() {
 
 function PlanContext({
   isMutating,
+  onArchivePlan,
   onNewPlan,
+  onOpenArchive,
   onSelectPlan,
-  onTogglePlanStatus,
   plans,
   selectedPlan,
   selectedPlanId,
   workspace,
 }: {
   isMutating: boolean;
+  onArchivePlan: () => void;
   onNewPlan: (event: MouseEvent<HTMLButtonElement>) => void;
+  onOpenArchive: () => void;
   onSelectPlan: (planId: string) => void;
-  onTogglePlanStatus: () => Promise<void>;
   plans: SafeSchedulePlan[];
   selectedPlan: SafeSchedulePlan;
   selectedPlanId: string;
@@ -586,8 +592,13 @@ function PlanContext({
         </div>
 
         <div className="flex flex-wrap gap-2 self-start sm:self-center">
-          <Button disabled={isMutating} onClick={onTogglePlanStatus} type="button" variant="outline">
-            {selectedPlan.status === "ACTIVE" ? "Desactivar plan" : "Activar plan"}
+          <Button disabled={isMutating} onClick={onArchivePlan} type="button" variant="outline">
+            <Archive aria-hidden="true" />
+            Archivar plan
+          </Button>
+          <Button disabled={isMutating} onClick={onOpenArchive} type="button" variant="outline">
+            <History aria-hidden="true" />
+            Archivo de planes
           </Button>
           <Button disabled={isMutating} onClick={onNewPlan} type="button" variant="outline">
             <Plus aria-hidden="true" />
@@ -648,12 +659,14 @@ function ScheduleBlock({
   conflict,
   layout,
   onEdit,
+  readOnly = false,
   selected,
 }: {
   assignment: AssignmentView;
   conflict: boolean;
   layout: LaidOutScheduleAssignment<AssignmentView>;
   onEdit: (assignment: AssignmentView, trigger: HTMLElement) => void;
+  readOnly?: boolean;
   selected: boolean;
 }) {
   const assignmentDurationMinutes =
@@ -676,19 +689,20 @@ function ScheduleBlock({
       }
       aria-pressed={selected}
       className={cn(
-        "absolute z-10 box-border overflow-hidden rounded-sm border text-left shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
-        isCompact
-          ? "flex items-center px-1 py-0"
-          : "flex flex-col items-start p-2",
+        "absolute z-10 box-border overflow-hidden rounded-sm border text-left shadow-xs transition-colors",
+        !readOnly && "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
+        readOnly && "cursor-default opacity-85",
         conflict
-          ? "border-danger bg-danger-surface text-foreground hover:bg-danger-surface/80"
+          ? "border-danger bg-danger-surface text-foreground"
           : selected
             ? "border-primary bg-primary/10 text-foreground ring-2 ring-primary/30"
-            : "border-info/30 bg-info-surface text-foreground hover:bg-info-surface/80",
+            : "border-info/30 bg-info-surface text-foreground",
+        !readOnly && (conflict ? "hover:bg-danger-surface/80" : "hover:bg-info-surface/80"),
       )}
       data-schedule-assignment-id={assignment.id}
       data-duration-layout={isCompact ? "compact" : "full"}
-      onClick={(event) => onEdit(assignment, event.currentTarget)}
+      disabled={readOnly}
+      onClick={readOnly ? undefined : (event) => onEdit(assignment, event.currentTarget)}
       style={{
         height: `${layout.height}rem`,
         left: `calc(${(layout.lane / layout.laneCount) * 100}% + 0.125rem)`,
@@ -796,12 +810,14 @@ function ScheduleDayColumn({
   day,
   layouts,
   onEdit,
+  readOnly = false,
   selectedAssignmentId,
 }: {
   conflictIds: Set<string>;
   day: string;
   layouts: LaidOutScheduleAssignment<AssignmentView>[];
   onEdit: (assignment: AssignmentView, trigger: HTMLElement) => void;
+  readOnly?: boolean;
   selectedAssignmentId: string | null;
 }) {
   const hours = Array.from(
@@ -825,15 +841,16 @@ function ScheduleDayColumn({
         />
       ))}
       {layouts.map(({ assignment, ...layout }) => (
-          <ScheduleBlock
-            assignment={assignment}
-            conflict={conflictIds.has(assignment.id)}
-            key={assignment.id}
-            layout={{ assignment, ...layout }}
-            onEdit={onEdit}
-            selected={assignment.id === selectedAssignmentId}
-          />
-        ))}
+        <ScheduleBlock
+          assignment={assignment}
+          conflict={conflictIds.has(assignment.id)}
+          key={assignment.id}
+          layout={{ assignment, ...layout }}
+          onEdit={onEdit}
+          readOnly={readOnly}
+          selected={assignment.id === selectedAssignmentId}
+        />
+      ))}
     </div>
   );
 }
@@ -843,6 +860,7 @@ function ScheduleGrid({
   conflictIds,
   days,
   onEdit,
+  readOnly = false,
   selectedAssignmentId,
   title,
 }: {
@@ -850,6 +868,7 @@ function ScheduleGrid({
   conflictIds: Set<string>;
   days: string[];
   onEdit: (assignment: AssignmentView, trigger: HTMLElement) => void;
+  readOnly?: boolean;
   selectedAssignmentId: string | null;
   title: string;
 }) {
@@ -881,7 +900,9 @@ function ScheduleGrid({
             {title}
           </h2>
           <p className="mt-1 text-xs text-foreground-muted">
-            Seleccionar una guardia para editarla.
+            {readOnly
+              ? "Modo solo lectura para el plan archivado."
+              : "Seleccionar una guardia para editarla."}
           </p>
         </div>
         <span className="text-xs text-foreground-muted">{formatTutorCount(assignments.length)}</span>
@@ -917,6 +938,7 @@ function ScheduleGrid({
               layouts={layouts}
               key={day}
               onEdit={onEdit}
+              readOnly={readOnly}
               selectedAssignmentId={selectedAssignmentId}
             />
           ))}
@@ -1582,6 +1604,350 @@ function AssignmentEditor({
   );
 }
 
+function ArchivePlanConfirmationDialog({
+  isMutating,
+  onCancel,
+  onConfirm,
+  open,
+  plan,
+}: {
+  isMutating: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  open: boolean;
+  plan: SafeSchedulePlan;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+
+  useOverlayFocus({
+    initialFocusRef: cancelButtonRef,
+    onClose: onCancel,
+    open,
+    panelRef,
+  });
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div
+      aria-label="Cerrar confirmación de archivar plan"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-brand-navy/30 sm:items-center sm:p-6"
+      onClick={(event) => {
+        if (event.target === event.currentTarget && !isMutating) {
+          onCancel();
+        }
+      }}
+    >
+      <div
+        aria-describedby="archive-plan-dialog-description"
+        aria-labelledby="archive-plan-dialog-title"
+        aria-modal="true"
+        className="flex w-full flex-col border-border bg-surface p-6 shadow-2xl sm:max-w-md sm:rounded-md sm:border"
+        ref={panelRef}
+        role="alertdialog"
+        tabIndex={-1}
+      >
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600">
+            <Archive aria-hidden="true" className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-bold text-foreground" id="archive-plan-dialog-title">
+              ¿Archivar este plan?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-foreground-secondary" id="archive-plan-dialog-description">
+              El plan <strong className="text-foreground">{plan.name}</strong> se moverá al archivo de planes y dejará de estar disponible en la grilla operativa principal. Podrás reactivarlo en cualquier momento desde el Archivo de planes.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-border-subtle pt-4">
+          <button
+            className={cn(buttonVariants({ variant: "outline" }))}
+            disabled={isMutating}
+            onClick={onCancel}
+            ref={cancelButtonRef}
+            type="button"
+          >
+            Cancelar
+          </button>
+          <Button
+            disabled={isMutating}
+            onClick={onConfirm}
+            type="button"
+            variant="outline"
+          >
+            {isMutating ? "Archivando..." : "Archivar plan"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlansArchiveDialog({
+  archivedPlans,
+  cycle,
+  isMutating,
+  onClose,
+  onReactivatePlan,
+  open,
+  workspaceAssignments,
+}: {
+  archivedPlans: SafeSchedulePlan[];
+  cycle: { id: string; name: string };
+  isMutating: boolean;
+  onClose: () => void;
+  onReactivatePlan: (plan: SafeSchedulePlan) => Promise<void>;
+  open: boolean;
+  workspaceAssignments: SafeScheduleAssignment[];
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const [selectedArchivedPlanId, setSelectedArchivedPlanId] = useState<string | null>(null);
+  const [remoteAssignments, setRemoteAssignments] = useState<
+    Record<string, SafeScheduleAssignment[]>
+  >({});
+
+  useOverlayFocus({
+    initialFocusRef: closeButtonRef,
+    onClose,
+    open,
+    panelRef,
+  });
+
+  const selectedArchivedPlan =
+    (selectedArchivedPlanId
+      ? archivedPlans.find((plan) => plan.id === selectedArchivedPlanId)
+      : null) ??
+    archivedPlans[0] ??
+    null;
+
+  useEffect(() => {
+    if (!selectedArchivedPlan || !open) {
+      return;
+    }
+
+    const planId = selectedArchivedPlan.id;
+    const hasLocal = workspaceAssignments.some(
+      (assignment) => assignment.planId === planId,
+    );
+    if (hasLocal || remoteAssignments[planId] !== undefined) {
+      return;
+    }
+
+    let active = true;
+
+    requestJson<SafeScheduleWorkspace>(
+      `/api/admin/schedules?cycleId=${cycle.id}&planId=${planId}`,
+    )
+      .then((data) => {
+        if (active) {
+          setRemoteAssignments((previous) => ({
+            ...previous,
+            [planId]: data.assignments ?? [],
+          }));
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setRemoteAssignments((previous) => ({
+            ...previous,
+            [planId]: [],
+          }));
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [cycle.id, open, remoteAssignments, selectedArchivedPlan, workspaceAssignments]);
+
+  const previewAssignments = useMemo(() => {
+    if (!selectedArchivedPlan) {
+      return [];
+    }
+    const local = workspaceAssignments.filter(
+      (assignment) => assignment.planId === selectedArchivedPlan.id,
+    );
+    const source =
+      local.length > 0
+        ? local
+        : (remoteAssignments[selectedArchivedPlan.id] ?? []);
+    return source
+      .filter((assignment) => assignment.status === "ACTIVE")
+      .map((assignment) => toAssignmentView(assignment, selectedArchivedPlan));
+  }, [remoteAssignments, selectedArchivedPlan, workspaceAssignments]);
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div
+      aria-label="Cerrar archivo de planes"
+      className="fixed inset-0 z-[75] flex items-end justify-center bg-brand-navy/30 sm:items-center sm:p-6"
+      onClick={(event) => {
+        if (event.target === event.currentTarget && !isMutating) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        aria-describedby="plans-archive-dialog-description"
+        aria-labelledby="plans-archive-dialog-title"
+        aria-modal="true"
+        className="flex h-full max-h-[100svh] w-full flex-col border-border bg-surface shadow-2xl sm:h-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-4xl sm:rounded-md sm:border"
+        ref={panelRef}
+        role="dialog"
+        tabIndex={-1}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-5">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+              Histórico
+            </p>
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-foreground" id="plans-archive-dialog-title">
+              Archivo de planes
+            </h2>
+            <p className="mt-1.5 text-sm leading-6 text-foreground-secondary" id="plans-archive-dialog-description">
+              Planes inactivados en el ciclo. Podés consultar sus asignaciones en modo solo lectura o reactivarlos.
+            </p>
+          </div>
+          <button
+            aria-label="Cerrar archivo de planes"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-foreground-secondary transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            disabled={isMutating}
+            onClick={onClose}
+            ref={closeButtonRef}
+            type="button"
+          >
+            <X aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+          {archivedPlans.length === 0 ? (
+            <EmptyState
+              description="Los planes que archives aparecerán aquí para su consulta histórica o reactivación."
+              illustration={<Archive className="h-10 w-10 text-foreground-muted" />}
+              title="No hay planes archivados"
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+              <div className="space-y-3 lg:col-span-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground-muted">
+                  Planes archivados ({archivedPlans.length})
+                </p>
+                <div
+                  aria-label="Listado de planes archivados"
+                  className="space-y-2"
+                  role="listbox"
+                >
+                  {archivedPlans.map((plan) => {
+                    const isSelected = plan.id === selectedArchivedPlan?.id;
+
+                    return (
+                      <div
+                        className={cn(
+                          "flex flex-col gap-2 rounded-md border p-3 transition-colors",
+                          isSelected
+                            ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                            : "border-border bg-surface hover:bg-surface-subtle",
+                        )}
+                        key={plan.id}
+                      >
+                        <button
+                          aria-pressed={isSelected}
+                          className="w-full text-left focus-visible:outline-none"
+                          onClick={() => setSelectedArchivedPlanId(plan.id)}
+                          type="button"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate text-sm font-semibold text-foreground" title={plan.name}>
+                              {plan.name}
+                            </span>
+                            <StatusBadge label="Archivado" variant="neutral" />
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground-secondary">
+                            <span>{plan.kind === "REGULAR" ? "Regular" : "Especial"}</span>
+                            <span>·</span>
+                            <span>{formatDate(plan.validFrom)} — {formatDate(plan.validTo)}</span>
+                          </div>
+                        </button>
+                        <div className="flex items-center justify-between border-t border-border-subtle pt-2">
+                          <span className="text-[11px] text-foreground-muted">
+                            {cycle.name}
+                          </span>
+                          <Button
+                            disabled={isMutating}
+                            onClick={() => void onReactivatePlan(plan)}
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                          >
+                            <RotateCcw aria-hidden="true" />
+                            Reactivar plan
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="min-w-0 lg:col-span-7">
+                {selectedArchivedPlan && (
+                  <div className="flex flex-col gap-4">
+                    <div className="rounded-md border border-border bg-surface-subtle/50 p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-base font-bold text-foreground">
+                              {selectedArchivedPlan.name}
+                            </h3>
+                            <StatusBadge label="Solo lectura" variant="info" />
+                          </div>
+                          <p className="mt-1 text-xs text-foreground-secondary">
+                            {selectedArchivedPlan.kind === "REGULAR" ? "Plan Regular" : "Plan Especial"} · Vigencia: {formatDate(selectedArchivedPlan.validFrom)} — {formatDate(selectedArchivedPlan.validTo)}
+                          </p>
+                        </div>
+                        <Button
+                          disabled={isMutating}
+                          onClick={() => void onReactivatePlan(selectedArchivedPlan)}
+                          type="button"
+                        >
+                          <RotateCcw aria-hidden="true" />
+                          Reactivar plan
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="min-h-0 flex-1">
+                      <ScheduleGrid
+                        assignments={previewAssignments}
+                        conflictIds={new Set()}
+                        days={["LUN", "MAR", "MIÉ", "JUE", "VIE"]}
+                        onEdit={() => {}}
+                        readOnly={true}
+                        selectedAssignmentId={null}
+                        title={`Asignaciones de ${selectedArchivedPlan.name}`}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PreviewActionLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
@@ -1600,8 +1966,23 @@ export function SchedulesScreen({
 }: SchedulesScreenProps) {
   const [workspace, setWorkspace] = useState(initialWorkspace);
   const [viewState, setViewState] = useState<SchedulesScreenState>(state);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [isArchiveConfirmationOpen, setIsArchiveConfirmationOpen] = useState(false);
+
+  const activePlans = useMemo(
+    () => (workspace?.plans ?? []).filter((plan) => plan.status === "ACTIVE"),
+    [workspace?.plans],
+  );
+  const archivedPlans = useMemo(
+    () => (workspace?.plans ?? []).filter((plan) => plan.status === "INACTIVE"),
+    [workspace?.plans],
+  );
+
   const [selectedPlanId, setSelectedPlanId] = useState(
-    () => initialWorkspace?.selectedPlan?.id ?? initialWorkspace?.plans.find((plan) => plan.status === "ACTIVE")?.id ?? "",
+    () =>
+      initialWorkspace?.selectedPlan?.status === "ACTIVE"
+        ? initialWorkspace.selectedPlan.id
+        : initialWorkspace?.plans.find((plan) => plan.status === "ACTIVE")?.id ?? "",
   );
   const [selectedDay, setSelectedDay] = useState("LUN");
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
@@ -1619,19 +2000,22 @@ export function SchedulesScreen({
     setViewState(state);
     setErrorMessage(initialErrorMessage ?? "");
     setSelectedPlanId(
-      initialWorkspace?.selectedPlan?.id ??
-        initialWorkspace?.plans.find((plan) => plan.status === "ACTIVE")?.id ??
-        "",
+      initialWorkspace?.selectedPlan?.status === "ACTIVE"
+        ? initialWorkspace.selectedPlan.id
+        : initialWorkspace?.plans.find((plan) => plan.status === "ACTIVE")?.id ?? "",
     );
     setSelectedAssignmentId(null);
     setEditor(null);
   }, [initialErrorMessage, initialWorkspace, state]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const selectedPlan = useMemo(
-    () => workspace?.plans.find((plan) => plan.id === selectedPlanId) ?? workspace?.selectedPlan ?? null,
-    [selectedPlanId, workspace],
-  );
+  const selectedPlan = useMemo(() => {
+    if (activePlans.length === 0) {
+      return null;
+    }
+    const matched = activePlans.find((plan) => plan.id === selectedPlanId);
+    return matched ?? activePlans[0] ?? null;
+  }, [activePlans, selectedPlanId]);
   const planAssignments = useMemo(
     () =>
       workspace && selectedPlan
@@ -1885,7 +2269,50 @@ export function SchedulesScreen({
     [closeEditor, refreshWorkspace, selectedPlan],
   );
 
-  const togglePlanStatus = useCallback(async () => {
+  const reactivatePlan = useCallback(
+    async (plan: SafeSchedulePlan) => {
+      setIsMutating(true);
+      setErrorMessage("");
+
+      try {
+        await requestJson<{ plan: SafeSchedulePlan }>(
+          `/api/admin/schedules/plans/${plan.id}/status`,
+          {
+            body: JSON.stringify({ status: "ACTIVE" }),
+            method: "PATCH",
+          },
+        );
+        setIsArchiveOpen(false);
+        try {
+          const nextWorkspace = await refreshWorkspace(plan.id);
+          setSelectedPlanId(plan.id);
+          setViewState(deriveWorkspaceState(nextWorkspace));
+        } catch {
+          setWorkspace((current) => {
+            if (!current) return current;
+            return {
+              ...current,
+              plans: current.plans.map((p) =>
+                p.id === plan.id ? { ...p, status: "ACTIVE" as const } : p,
+              ),
+              selectedPlan: { ...plan, status: "ACTIVE" as const },
+            };
+          });
+          setSelectedPlanId(plan.id);
+        }
+        setViewState("success");
+        setAnnouncement("El plan fue reactivado correctamente.");
+      } catch (error) {
+        setErrorMessage(getScheduleErrorMessage(error));
+        setViewState("error");
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [refreshWorkspace],
+  );
+
+  const archivePlan = useCallback(async () => {
     if (!selectedPlan) {
       return;
     }
@@ -1897,13 +2324,30 @@ export function SchedulesScreen({
       await requestJson<{ plan: SafeSchedulePlan }>(
         `/api/admin/schedules/plans/${selectedPlan.id}/status`,
         {
-          body: JSON.stringify({ status: selectedPlan.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" }),
+          body: JSON.stringify({ status: "INACTIVE" }),
           method: "PATCH",
         },
       );
-      await refreshWorkspace(selectedPlan.id);
+      setIsArchiveConfirmationOpen(false);
+      try {
+        const nextWorkspace = await refreshWorkspace();
+        setViewState(deriveWorkspaceState(nextWorkspace));
+      } catch {
+        setWorkspace((current) => {
+          if (!current) return current;
+          const updatedPlans = current.plans.map((p) =>
+            p.id === selectedPlan.id ? { ...p, status: "INACTIVE" as const } : p,
+          );
+          const remainingActive = updatedPlans.filter((p) => p.status === "ACTIVE");
+          return {
+            ...current,
+            plans: updatedPlans,
+            selectedPlan: remainingActive[0] ?? null,
+          };
+        });
+      }
       setViewState("success");
-      setAnnouncement("El estado del plan se actualizó correctamente.");
+      setAnnouncement("El plan fue archivado correctamente.");
     } catch (error) {
       setErrorMessage(getScheduleErrorMessage(error));
       setViewState("error");
@@ -1915,10 +2359,27 @@ export function SchedulesScreen({
   const headerAction =
     currentState === "no-plan" ? (
       workspace ? (
-        <Button disabled={isMutating} onClick={(event) => openPlanEditor(event.currentTarget)} type="button">
-          <Plus aria-hidden="true" />
-          Crear plan
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {archivedPlans.length > 0 && (
+            <Button
+              disabled={isMutating}
+              onClick={() => setIsArchiveOpen(true)}
+              type="button"
+              variant="outline"
+            >
+              <History aria-hidden="true" />
+              Archivo de planes
+            </Button>
+          )}
+          <Button
+            disabled={isMutating}
+            onClick={(event) => openPlanEditor(event.currentTarget)}
+            type="button"
+          >
+            <Plus aria-hidden="true" />
+            Crear plan
+          </Button>
+        </div>
       ) : (
         <PreviewActionLink href="/admin/settings" label="Configurar ciclo" />
       )
@@ -1986,14 +2447,36 @@ export function SchedulesScreen({
           <InlineStateNotice
             action={
               currentState === "no-plan" && workspace ? (
-                <Button onClick={(event) => openPlanEditor(event.currentTarget)} size="sm" type="button" variant="outline">
-                  {stateDetail.actionLabel ?? "Crear plan"}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={(event) => openPlanEditor(event.currentTarget)}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {stateDetail.actionLabel ?? "Crear plan"}
+                  </Button>
+                  {archivedPlans.length > 0 && (
+                    <Button
+                      onClick={() => setIsArchiveOpen(true)}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <History aria-hidden="true" />
+                      Archivo de planes
+                    </Button>
+                  )}
+                </div>
               ) : (
                 <PreviewActionLink href="/admin/settings" label={stateDetail.actionLabel ?? "Configurar ciclo"} />
               )
             }
-            description={stateDetail.description}
+            description={
+              archivedPlans.length > 0
+                ? "No hay planes activos en este ciclo. Podés crear uno nuevo o reactivar un plan desde el archivo de planes."
+                : stateDetail.description
+            }
             icon={<Settings2 aria-hidden="true" className="h-5 w-5" />}
             title={stateDetail.title}
             tone="warning"
@@ -2006,10 +2489,11 @@ export function SchedulesScreen({
           <>
             <PlanContext
               isMutating={isMutating}
+              onArchivePlan={() => setIsArchiveConfirmationOpen(true)}
               onNewPlan={(event) => openPlanEditor(event.currentTarget)}
+              onOpenArchive={() => setIsArchiveOpen(true)}
               onSelectPlan={(planId) => void selectPlan(planId)}
-              onTogglePlanStatus={togglePlanStatus}
-              plans={workspace.plans}
+              plans={activePlans}
               selectedPlan={selectedPlan}
               selectedPlanId={selectedPlan.id}
               workspace={workspace}
@@ -2096,6 +2580,28 @@ export function SchedulesScreen({
           </>
         )}
       </div>
+
+      {workspace && (
+        <PlansArchiveDialog
+          archivedPlans={archivedPlans}
+          cycle={workspace.currentCycle}
+          isMutating={isMutating}
+          onClose={() => setIsArchiveOpen(false)}
+          onReactivatePlan={reactivatePlan}
+          open={isArchiveOpen}
+          workspaceAssignments={workspace.assignments}
+        />
+      )}
+
+      {workspace && selectedPlan && (
+        <ArchivePlanConfirmationDialog
+          isMutating={isMutating}
+          onCancel={() => setIsArchiveConfirmationOpen(false)}
+          onConfirm={() => void archivePlan()}
+          open={isArchiveConfirmationOpen}
+          plan={selectedPlan}
+        />
+      )}
 
       {workspace && editor?.kind === "plan" && (
         <PlanEditor
