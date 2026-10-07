@@ -208,11 +208,6 @@ export type HourMutationDatabase = Pick<
 >;
 type MutationDatabase = HourMutationDatabase;
 
-export type HourMovementOriginContext = {
-  attendanceRecordId?: string | null;
-  dutyOccurrenceId?: string | null;
-};
-
 type HourCycleRow = {
   id: string;
   name: string;
@@ -1127,7 +1122,6 @@ async function recordMovementAudit(
     durationMinutes: number;
     movementDate: string;
     activityId: string | null;
-    attendanceRecordId: string | null;
     reversalOfMovementId: string | null;
   },
 ) {
@@ -1144,7 +1138,6 @@ async function recordMovementAudit(
       durationMinutes: input.durationMinutes,
       movementDate: input.movementDate,
       activityId: input.activityId,
-      attendanceRecordId: input.attendanceRecordId,
       reversalOfMovementId: input.reversalOfMovementId,
     },
     requestId: input.requestId ?? null,
@@ -1418,7 +1411,6 @@ export async function recordHourMovementInTransaction(
   parsed: ParsedRecordBulkHourMovementInput,
   context: HourMutationContext,
   requiredActivityKind?: ActivityKind,
-  originContext: HourMovementOriginContext = {},
 ): Promise<SafeHourBulkMovementResult> {
   const actorId = context.actorId?.trim();
 
@@ -1473,7 +1465,6 @@ export async function recordHourMovementInTransaction(
         activityDate: parsed.movementDate,
         durationMinutes: parsed.duration,
         note: parsed.note,
-        dutyOccurrenceId: originContext.dutyOccurrenceId ?? null,
         actorId: actor.id,
       })
       .returning({ id: activity.id });
@@ -1498,7 +1489,6 @@ export async function recordHourMovementInTransaction(
         activityDate: parsed.movementDate,
         durationMinutes: parsed.duration,
         movementCount: parsed.tutorIds.length,
-        dutyOccurrenceId: originContext.dutyOccurrenceId ?? null,
       },
       requestId: context.requestId ?? null,
       ipAddress: context.ipAddress ?? null,
@@ -1517,7 +1507,6 @@ export async function recordHourMovementInTransaction(
         movementDate: parsed.movementDate,
         note: parsed.note,
         activityId,
-        attendanceRecordId: originContext.attendanceRecordId ?? null,
         reversalOfMovementId: null,
         actorId: actor.id,
       })),
@@ -1543,7 +1532,6 @@ export async function recordHourMovementInTransaction(
       durationMinutes: parsed.duration,
       movementDate: parsed.movementDate,
       activityId,
-      attendanceRecordId: originContext.attendanceRecordId ?? null,
       reversalOfMovementId: null,
     });
   }
@@ -1574,7 +1562,6 @@ async function recordBulkHourMovementInternal(
   parsed: ParsedRecordBulkHourMovementInput,
   context: HourMutationContext,
   requiredActivityKind?: ActivityKind,
-  originContext: HourMovementOriginContext = {},
 ): Promise<SafeHourBulkMovementResult> {
   const actorId = context.actorId?.trim();
 
@@ -1591,7 +1578,6 @@ async function recordBulkHourMovementInternal(
       parsed,
       context,
       requiredActivityKind,
-      originContext,
     ),
   );
 }
@@ -1640,7 +1626,6 @@ export async function reverseHourMovementInTransaction(
       movementDate: hourMovement.movementDate,
       note: hourMovement.note,
       activityId: hourMovement.activityId,
-      attendanceRecordId: hourMovement.attendanceRecordId,
       reversalOfMovementId: hourMovement.reversalOfMovementId,
     })
     .from(hourMovement)
@@ -1698,7 +1683,6 @@ export async function reverseHourMovementInTransaction(
       movementDate: original.movementDate,
       note: original.note,
       activityId: original.activityId,
-      attendanceRecordId: original.attendanceRecordId,
       reversalOfMovementId: original.id,
       actorId: actor.id,
     })
@@ -1723,7 +1707,6 @@ export async function reverseHourMovementInTransaction(
       categoryId: original.categoryId,
       direction: oppositeDirection,
       durationMinutes: original.durationMinutes,
-      attendanceRecordId: original.attendanceRecordId,
     },
     requestId: context.requestId ?? null,
     ipAddress: context.ipAddress ?? null,
