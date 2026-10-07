@@ -27,8 +27,8 @@ The current repository uses these conceptual gates:
 | --- | --- | --- |
 | `Quality` | `corepack pnpm lint` and `corepack pnpm typecheck` | ESLint and strict TypeScript validation. |
 | `Tests` | `corepack pnpm test` | Co-located Vitest and Testing Library unit/component tests. |
-| `Integration` | `corepack pnpm test:integration` | PostgreSQL-backed foundation, registry import, Tutor self-service, tutor/academic, scheduling/attendance, Admin hour accounting, consultation import/review, live overview, and canonical reporting coverage against an isolated Testcontainers database. |
-| `E2E` | `corepack pnpm build` followed by `corepack pnpm test:e2e` | Critical browser smoke plus authenticated Tutor self-service and Admin overview/reporting, tutor, scheduling/attendance, hour-accounting, and consultation workflow coverage through the built application served by `next start`. |
+| `Integration` | `corepack pnpm test:integration` | PostgreSQL-backed foundation, registry import, Tutor self-service, tutor/academic, schedule planning, Admin hour accounting, consultation import/review, live overview, and canonical reporting coverage against an isolated Testcontainers database. |
+| `E2E` | `corepack pnpm build` followed by `corepack pnpm test:e2e` | Critical browser smoke plus authenticated Tutor self-service and Admin overview/reporting, tutor, schedule planning, hour-accounting, and consultation workflow coverage through the built application served by `next start`. |
 | `Production` | `corepack pnpm build` | Verification that the deployable Next.js build can be produced. |
 | `CI Gate` | aggregate workflow job | Stable final result for branch protection and pull-request merge readiness. |
 
@@ -100,18 +100,15 @@ Hour-accounting integration scenarios also prove meeting, workshop, extraordinar
 and recovery recognition; inactive-category history; closed-cycle reads and
 rejected writes; atomic bulk rollback; and actor-attributed bounded audit metadata.
 Scheduling integration scenarios prove regular and special plan precedence and
-fallback, stable occurrence materialization, assignment eligibility and overlap
-constraints, historical reads, cycle write gates, audit attribution, and the
-attendance path from Present/no movement through absence proposal, cancellation,
-adjusted debit confirmation, correction/reversal linkage, recovery recognition,
-rollback, and duplicate protection. Protected schedule and attendance route
-handlers are exercised against the real database with Admin-versus-unauthorized
-coverage and safe DTO assertions.
+fallback, read-only workspace loading, assignment eligibility and overlap
+constraints, historical reads, cycle write gates, audit attribution, and
+protected schedule handlers with Admin-versus-unauthorized coverage and safe
+DTO assertions.
 
 Reporting PostgreSQL scenarios prove canonical SUBJECT/GENERAL demand grouping,
 pending-classification exclusion, inclusive date boundaries, filter scope,
 current-cycle coverage and movement-derived balances with reversals, planned
-schedule and due-attendance measures, distinct activity grouping, safe report
+schedule measures, distinct activity grouping, safe report
 DTOs, empty/unavailable sections, and no report writes. A persisted failed
 consultation import leaves consolidated consultation demand available. The
 same fixture proves the Admin overview's open-cycle context, pending attention,
@@ -119,15 +116,15 @@ upcoming duties, negative balances, review count, and degraded-source state.
 
 ### End-to-end tests
 
-Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus authenticated Admin journeys for live tutor/Materias, scheduling/attendance, hour-accounting, consultation operations, and cycle lifecycle. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the built Next.js application with `next start`; the consultation journey uses a local HTTP fixture for the Sheets values-read contract, not Google or an external endpoint. The suite uses one worker because its authenticated journeys share a database and some workflows write to it.
+Playwright scenarios live under `tests/e2e/` and exercise the application through its configured web server. The suite contains the `ui-smoke.spec.ts` browser smoke suite for login and protected-route redirects, plus authenticated Admin journeys for live tutor/Materias, schedule planning, hour-accounting, consultation operations, and cycle lifecycle. The authenticated server wrapper starts an isolated Testcontainers PostgreSQL database, applies migrations, seeds deterministic synthetic rows and a Better Auth session, and launches the built Next.js application with `next start`; the consultation journey uses a local HTTP fixture for the Sheets values-read contract, not Google or an external endpoint. The suite uses one worker because its authenticated journeys share a database and some workflows write to it.
 
-The Admin accessibility journey visits `/admin`, `/admin/tutors`, `/admin/tutors/subjects`, `/admin/schedules`, `/admin/schedules/attendance`, `/admin/hours`, `/admin/hours/movements`, `/admin/consultations`, `/admin/reports`, and `/admin/settings` at 390px, 900px, and 1440px. It checks page-level horizontal overflow, primary-action visibility, and header-action bounds. Its keyboard navigation scenario opens the mobile Admin drawer, follows a route link, and verifies focus moves to the new page heading.
+The Admin accessibility journey visits `/admin`, `/admin/tutors`, `/admin/tutors/subjects`, `/admin/schedules`, `/admin/hours`, `/admin/hours/movements`, `/admin/consultations`, `/admin/reports`, and `/admin/settings` at 390px, 900px, and 1440px. It checks page-level horizontal overflow, primary-action visibility, and header-action bounds. Its keyboard navigation scenario opens the mobile Admin drawer, follows a route link, and verifies focus moves to the new page heading.
 
 The Admin navigation journey uses the keyboard at those three widths to open
-tutor details from names, return to Inicio, follow balance and report links to
-the filtered tutor list, and follow tutor-detail and attendance links to
-cycle- and tutor-scoped movement history. It checks filtered destinations after
-visiting the tutor list earlier in the same browser session.
+tutor details from names, return to Inicio, and follow balance and report links
+to the filtered tutor list and cycle- and tutor-scoped movement history. It
+checks filtered destinations after visiting the tutor list earlier in the same
+browser session.
 
 The browser suite runs `@axe-core/playwright` against those Admin routes and the three Tutor self-service routes at Compact, Medium, and Wide widths, plus login and representative feedback, dialog, degraded-source, unavailable-source, and empty-report states. Scans use WCAG 2.2 A/AA tags and fail on serious or critical violations without disabling rules.
 
@@ -147,15 +144,12 @@ ranked tables, and Compact/Medium/Wide layouts without page-level overflow.
 
 The authenticated server wrapper also seeds linked and unlinked Tutor identities,
 deterministic Tutor subjects, regular and special schedules, and owner-specific
-movement history in addition to the deterministic hour-accounting and
-scheduling rows, including active and inactive tutors and categories, regular
-and special plans, persisted occurrences, pending attendance, an activity
-origin, and movement history. The authenticated Admin journey covers the live
-schedule plan switch and assignment edit, then the Compact attendance flow:
-Present without a balance change, Falta with cancellation and reload
-persistence, adjusted debit confirmation, linked movement history, and explicit
-recovery recognition. These actions are activated with keyboard input, and the
-schedule plan controls expose selected state through button semantics. The
+movement history in addition to deterministic hour-accounting and scheduling
+rows, including active and inactive tutors and categories, regular and special
+plans, an activity origin, and movement history. The authenticated Admin
+schedule journey covers plan switching and assignment editing. These actions
+are activated with keyboard input, and the schedule plan controls expose
+selected state through button semantics. The
 existing Admin hours journey continues to cover the Compact, Medium, and Wide
 workflow through keyboard-operated bulk meeting credit, balance/history refresh,
 movement-history navigation, and non-destructive reversal. The tutor journey
@@ -194,7 +188,7 @@ no transfer movements.
 
 ### Integration and contract checks
 
-There is currently no `Contract` gate. The `Integration` gate covers the real database-backed behavior, migrations, tutor/academic operations, scheduling/attendance, hour accounting, and consultation intake/review workflows introduced by the current runtime. A separate `Contract` gate remains deferred until an independent contract boundary needs it.
+There is currently no `Contract` gate. The `Integration` gate covers the real database-backed behavior, migrations, tutor/academic operations, schedule planning, hour accounting, and consultation intake/review workflows introduced by the current runtime. A separate `Contract` gate remains deferred until an independent contract boundary needs it.
 
 Docker is an execution prerequisite for `Integration`, not a separate public gate.
 

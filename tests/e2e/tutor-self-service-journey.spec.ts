@@ -69,7 +69,7 @@ test.describe("authenticated Tutor self-service", () => {
     expect(scheduleResponse.status()).toBe(200);
     const schedule = await scheduleResponse.json();
     expect(schedule).toMatchObject({
-      effectivePlan: { kind: "SPECIAL", name: "Attendance special 2027" },
+      effectivePlan: { kind: "SPECIAL", name: "Special week 2027" },
       state: "ready",
     });
     expect(schedule.days).toEqual(
@@ -145,7 +145,7 @@ test.describe("authenticated Tutor self-service", () => {
         }
       }
       await expect(
-        page.getByRole("button", { name: /registrar|editar|revertir|asistencia/i }),
+        page.getByRole("button", { name: /registrar|editar|revertir/i }),
       ).toHaveCount(0);
       await expect(page.locator("body")).not.toContainText("Grace");
       await expect(page.locator("body")).not.toContainText("Data Structures");
@@ -171,7 +171,7 @@ test.describe("authenticated Tutor self-service", () => {
         page.locator('[data-layout="schedule-day-list-week"]'),
       ).toBeVisible();
       await expect(
-        page.getByRole("button", { name: /editar|eliminar|asistencia|revertir/i }),
+        page.getByRole("button", { name: /editar|eliminar|revertir/i }),
       ).toHaveCount(0);
       await expectNoHorizontalOverflow(page);
       accessibilityViolations.push(

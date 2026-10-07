@@ -21,7 +21,6 @@ describe("AdminOverviewScreen", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: "Necesita atención" }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Asistencia pendiente/i })).not.toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /Consultas por revisar/i }),
     ).toHaveAttribute("href", data.attention[1].href);

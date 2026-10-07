@@ -3,7 +3,6 @@ import { makeSignature } from "better-auth/crypto";
 
 import {
   E2E_ADMIN_SESSION_TOKEN,
-  E2E_ATTENDANCE_TUTOR_ID,
   E2E_AUTH_SECRET,
   E2E_CYCLE_ID,
   E2E_PRIMARY_TUTOR_ID,
@@ -74,11 +73,5 @@ for (const viewport of [
     await expect(page.getByRole("searchbox", { name: "Buscar tutor" })).toHaveValue("Curie, Marie");
     await expect(page.getByRole("button", { name: "Lovelace, Ada", exact: true })).toHaveCount(0);
 
-    await page.goto(`/admin/schedules/attendance?cycleId=${E2E_CYCLE_ID}&date=2027-01-18`);
-    await activateWithKeyboard(page, page.getByRole("link", { name: "Curie, Marie", exact: true }).first());
-    await expect(page.getByRole("combobox", { name: "Tutor", exact: true })).toHaveValue(E2E_ATTENDANCE_TUTOR_ID);
-    await expect(page.getByRole("combobox", { name: "Ciclo", exact: true })).toHaveValue(E2E_CYCLE_ID);
-    await expect(page).toHaveURL(new RegExp(`tutorId=${E2E_ATTENDANCE_TUTOR_ID}$`));
-    await expect(page.getByRole("heading", { name: "No encontramos movimientos" })).toBeVisible();
   });
 }
