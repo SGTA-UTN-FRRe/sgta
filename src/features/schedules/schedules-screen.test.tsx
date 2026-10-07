@@ -301,20 +301,28 @@ describe("SchedulesScreen", () => {
 
   it("switches plans through the workspace API and keeps the selected plan live", async () => {
     const user = userEvent.setup();
+    const activeSpecialPlan: SafeSchedulePlan = {
+      ...specialPlan,
+      status: "ACTIVE",
+    };
+    const multiPlanWorkspace = createWorkspace({
+      plans: [regularPlan, activeSpecialPlan],
+    });
     const specialWorkspace = createWorkspace({
       assignments: [],
-      effective: { date: "2026-09-21", occurrences: [], plan: specialPlan },
+      effective: { date: "2026-09-21", occurrences: [], plan: activeSpecialPlan },
+      plans: [regularPlan, activeSpecialPlan],
       requestedDate: "2026-09-21",
-      selectedPlan: specialPlan,
+      selectedPlan: activeSpecialPlan,
     });
     const fetchMock = installFetch(async (input) => {
       const url = new URL(String(input), "http://localhost");
       expect(url.searchParams.get("cycleId")).toBe(cycle.id);
-      expect(url.searchParams.get("planId")).toBe(specialPlan.id);
+      expect(url.searchParams.get("planId")).toBe(activeSpecialPlan.id);
       return jsonResponse(specialWorkspace);
     });
 
-    render(<SchedulesScreen state="default" workspace={workspace} />);
+    render(<SchedulesScreen state="default" workspace={multiPlanWorkspace} />);
     const planSelector = screen.getByRole("group", { name: "Planes de horario" });
     const specialPlanButton = within(planSelector).getAllByRole("button")[1];
     if (specialPlanButton === undefined) {
@@ -433,12 +441,12 @@ describe("SchedulesScreen", () => {
     const user = userEvent.setup();
     const inactivePlan = { ...regularPlan, status: "INACTIVE" as const };
     const inactiveAssignment = { ...mondayAssignment, status: "INACTIVE" as const };
-    const planLifecycleWorkspace = createWorkspace({
-      assignments: [mondayAssignment, tuesdayAssignment],
-      plans: [inactivePlan, specialPlan],
-      selectedPlan: inactivePlan,
-    });
     const assignmentLifecycleWorkspace = createWorkspace({
+      assignments: [inactiveAssignment, tuesdayAssignment],
+      plans: [regularPlan, specialPlan],
+      selectedPlan: regularPlan,
+    });
+    const planLifecycleWorkspace = createWorkspace({
       assignments: [inactiveAssignment, tuesdayAssignment],
       plans: [inactivePlan, specialPlan],
       selectedPlan: inactivePlan,
@@ -461,15 +469,11 @@ describe("SchedulesScreen", () => {
 
       refreshCount += 1;
       return jsonResponse(
-        refreshCount === 1 ? planLifecycleWorkspace : assignmentLifecycleWorkspace,
+        refreshCount === 1 ? assignmentLifecycleWorkspace : planLifecycleWorkspace,
       );
     });
 
     render(<SchedulesScreen state="default" workspace={workspace} />);
-    await user.click(screen.getByRole("button", { name: "Desactivar plan" }));
-    await waitFor(() => {
-      expect(screen.getByRole("status")).toHaveTextContent("Cambios guardados");
-    });
 
     const assignmentButton = screen.getAllByRole("button", {
       name: /Benítez, Marina, LUN, 08:00 a 10:00/,
@@ -485,6 +489,13 @@ describe("SchedulesScreen", () => {
         name: /Benítez, Marina, LUN, 08:00 a 10:00/,
       }),
     ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Archivar plan" }));
+    const confirmDialog = screen.getByRole("alertdialog", { name: /¿Archivar este plan\?/ });
+    await user.click(within(confirmDialog).getByRole("button", { name: "Archivar plan" }));
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent("Cambios guardados");
+    });
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
@@ -619,5 +630,82 @@ describe("SchedulesScreen", () => {
       "href",
       "/admin/settings",
     );
+  });
+
+  it("only lists active plans on the main operational view and excludes archived plans", () => {
+    render(<SchedulesScreen state="default" workspace={workspace} />);
+
+    const planSelector = screen.getByRole("group", { name: "Planes de horario" });
+    expect(within(planSelector).getByRole("button", { name: /Regular/ })).toBeInTheDocument();
+    expect(within(planSelector).queryByRole("button", { name: /Especial/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Archivar plan" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Archivo de planes" })).toBeInTheDocument();
+  });
+
+  it("opens the plans archive dialog, lists inactive plans with metadata, and reactivates a plan", async () => {
+    const user = userEvent.setup();
+    const reactivatedPlan: SafeSchedulePlan = {
+      ...specialPlan,
+      status: "ACTIVE",
+    };
+    const reactivatedWorkspace = createWorkspace({
+      plans: [regularPlan, reactivatedPlan],
+      selectedPlan: reactivatedPlan,
+    });
+    const fetchMock = installFetch(async (input, init) => {
+      const path = String(input);
+      if (init?.method === "PATCH" && path === `/api/admin/schedules/plans/${specialPlan.id}/status`) {
+        expect(JSON.parse(String(init.body))).toEqual({ status: "ACTIVE" });
+        return jsonResponse({ plan: reactivatedPlan });
+      }
+      return jsonResponse(reactivatedWorkspace);
+    });
+
+    render(<SchedulesScreen state="default" workspace={workspace} />);
+
+    await user.click(screen.getByRole("button", { name: "Archivo de planes" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Archivo de planes" });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getAllByText(specialPlan.name).length).toBeGreaterThan(0);
+    expect(within(dialog).getByText(cycle.name)).toBeInTheDocument();
+    expect(within(dialog).getByText("Archivado")).toBeInTheDocument();
+    expect(within(dialog).getByText("Especial")).toBeInTheDocument();
+
+    const reactivateButton = within(dialog).getAllByRole("button", { name: "Reactivar plan" })[0];
+    await user.click(reactivateButton);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Archivo de planes" })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText(/El plan fue reactivado correctamente/)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it("renders read-only preview of archived plan assignments in the archive modal", async () => {
+    const user = userEvent.setup();
+    const archivedAssignment: SafeScheduleAssignment = {
+      ...mondayAssignment,
+      id: "archive-assignment-1",
+      planId: specialPlan.id,
+      tutorName: "Acevedo, Mario",
+    };
+    const workspaceWithArchived = createWorkspace({
+      assignments: [mondayAssignment, tuesdayAssignment, archivedAssignment],
+    });
+
+    render(<SchedulesScreen state="default" workspace={workspaceWithArchived} />);
+
+    await user.click(screen.getByRole("button", { name: "Archivo de planes" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Archivo de planes" });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText("Solo lectura")).toBeInTheDocument();
+    expect(within(dialog).getByText("Modo solo lectura para el plan archivado.")).toBeInTheDocument();
+
+    const assignmentBlock = within(dialog).getByRole("button", {
+      name: /Acevedo, Mario, LUN, 08:00 a 10:00/,
+    });
+    expect(assignmentBlock).toBeDisabled();
   });
 });
