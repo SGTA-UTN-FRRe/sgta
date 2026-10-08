@@ -1,15 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import {
-  adminOverviewScreenData,
-  adminOverviewStateFixtures,
-} from "@/mocks/admin-overview.mock";
+import { adminOverviewScreenData } from "@/mocks/admin-overview.mock";
 
+import { adminOverviewStateCopy } from "./admin-overview-copy";
 import { AdminOverviewScreen } from "./admin-overview-screen";
 
 const data = adminOverviewScreenData;
-const adminStates = adminOverviewStateFixtures;
+const adminStates = adminOverviewStateCopy;
 
 describe("AdminOverviewScreen", () => {
   it("connects the cycle context, attention destinations, and upcoming duties", () => {

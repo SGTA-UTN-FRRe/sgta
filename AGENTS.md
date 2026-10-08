@@ -123,7 +123,7 @@ src/features/tutor-self-service/ Owner-scoped Tutor views
 src/features/tutors/              Tutor registry, academic catalogs, and coverage
 src/shared/                      Small cross-feature product components and utilities
 src/components/ui/               Low-level reusable UI primitives
-src/mocks/                       Fixtures; still imported by login and Admin overview
+src/mocks/                       Synthetic test fixtures; production code must not import them
 src/config/                      Validated environment configuration
 src/auth/                        Authentication, sessions, provisioning, and authorization
 src/db/                          PostgreSQL client, schema, and audit boundary

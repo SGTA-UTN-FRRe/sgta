@@ -10,27 +10,18 @@ import {
 import type { ReactNode } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
-import {
-  adminOverviewStateFixtures,
-} from "@/mocks/admin-overview.mock";
+import { adminOverviewStateCopy } from "./admin-overview-copy";
 import type {
+  AdminOverviewState,
+  AdminOverviewStateCopy,
   AdminOverviewScreenData,
   AttentionItem,
   AttentionTone,
 } from "@/features/admin-overview/admin-overview-types";
-import type { ScreenStateFixture } from "@/mocks/screen-state";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import { StatusBadge, type StatusBadgeVariant } from "@/shared/components/status-badge";
 import { cn } from "@/shared/utils";
-
-export type AdminOverviewState =
-  | "default"
-  | "loading"
-  | "empty"
-  | "error"
-  | "degraded"
-  | "required-action";
 
 export interface AdminOverviewScreenProps {
   data: AdminOverviewScreenData;
@@ -74,12 +65,14 @@ const noticeStyles = {
 
 type NoticeTone = keyof typeof noticeStyles;
 
-function getStateData(state: AdminOverviewState): ScreenStateFixture | undefined {
+function getStateData(
+  state: AdminOverviewState,
+): AdminOverviewStateCopy | undefined {
   if (state === "default") {
     return undefined;
   }
 
-  return adminOverviewStateFixtures.find(
+  return adminOverviewStateCopy.find(
     (stateData) => stateData.state === state,
   );
 }
