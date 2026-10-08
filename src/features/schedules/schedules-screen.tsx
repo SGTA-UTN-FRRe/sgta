@@ -748,7 +748,7 @@ function ScheduleBlock({
           </span>
           <span className="mt-auto flex flex-wrap gap-1">
             {hasRecoveryStatus && (
-              <StatusBadge label="Recuperación" variant="faro" />
+              <StatusBadge label="Recuperación" variant="neutral" icon={RotateCcw} />
             )}
             {conflict && <StatusBadge label="Conflicto" variant="danger" />}
             {hasSelectedStatus && (
@@ -1056,7 +1056,7 @@ function CompactSchedule({
                 <span className="flex shrink-0 flex-col items-end gap-2">
                   {hasConflict && <StatusBadge label="Conflicto" variant="danger" />}
                   {assignment.kind === "RECOVERY" && (
-                    <StatusBadge label="Recuperación" variant="faro" />
+                    <StatusBadge label="Recuperación" variant="neutral" icon={RotateCcw} />
                   )}
                   {isSelected && !hasConflict && (
                     <span className="text-xs font-semibold text-info">Seleccionada</span>
