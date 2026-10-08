@@ -10,6 +10,13 @@ If the form is unavailable, contact an organization maintainer through an
 existing private channel. Do not share vulnerability details in public issues,
 discussions, or pull requests.
 
+### What to include
+
+- Affected component and version.
+- Impact assessment.
+- Steps to reproduce or a minimal proof of concept.
+- Known mitigations, if any.
+
 ## Response expectations
 
 Reports are reviewed on a best-effort basis. No response or remediation deadline
