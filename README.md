@@ -1,297 +1,110 @@
-# SGTA — Sistema de Gestión de Tutorías
+# SGTA - Sistema de Gestión de Tutorías
 
 [![CI](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml/badge.svg)](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml)
 
-> Current repository status: an executable Next.js application with a live Admin overview and reports, tutor self-service, academic, hour-accounting, schedule-planning, and consultation-intake workflows, the SGTA UI, and a secure platform foundation.
+> An operational workspace for the Tutorias area at UTN FRRe.
 
-SGTA is the operational workspace for the Tutorias area at UTN FRRe. The repository currently contains the application shell, protected role-based navigation, PostgreSQL persistence, provisioned Google-only authentication, AdministrativeCycle lifecycle controls, the live Admin overview and canonical operational reports, Tutor self-service, Admin tutor and academic catalog workflows, hour accounting, schedule planning, consultation intake, safe audit events, and shared UI components. Production workflows remain deferred.
+SGTA supports Admin workflows for tutors, academic relationships, cycles,
+schedules, hour movements, consultation curation, and reporting. Tutors get a
+protected, read-only view of their own current-cycle summary, schedule, and
+hours. Formal scholarship certification and full production operations are not
+part of the current runtime.
 
-## Current state
+## Key capabilities
 
-The current runtime provides:
+- **Admin operations:** manage Tutors and academic relationships, schedule plans, cycle settings, and hour movements.
+- **Tutor self-service:** view owner-scoped schedule, balance, and movement history.
+- **Consultation curation:** import from a read-only Google Sheets source, review staging rows, and report from canonical records.
+- **Operational visibility:** review current-cycle context, schedule coverage, hour balances, movements, activities, and consultation demand.
 
-- a public `/login` route, with `/` routing enabled Admins to `/admin`, enabled Tutors to `/tutor`, and other requests to `/login`;
-- server-side Admin and Tutor page guards, with `/forbidden` recovery and `401`/`403` API responses;
-- session sign-out from the Admin and Tutor navigation and `/forbidden`, with pending/error feedback and a return to `/login`;
-- structural Admin and Tutor route-loading skeletons, safe segment-error recovery that preserves navigation, and a branded missing-page state;
-- Admin route surfaces for the overview, live tutor and Materias workflows, schedules, hours, consultations, reports, and configuration;
-- a live `/admin` overview with current-cycle context, actionable balance and consultation attention, today's and upcoming duties, and deliberate consultation-source degradation;
-- read-only `/admin/reports` with shareable period and dimension filters, canonical consultation demand, current-cycle coverage and balances, planned schedules, movements, and activities;
-- live Admin tutor management at `/admin/tutors`, including search/filter, create/edit, academic relationships, current-cycle membership, and non-destructive inactivation/reactivation;
-- derived current-cycle Materias coverage at `/admin/tutors/subjects`, reconstructed from canonical Subject, TutorSubject, Tutor, and TutorCycleMembership rows;
-- low-frequency Career, Subject, and scholarship-reference maintenance from `/admin/settings`, with active/inactive lifecycle controls and no hard deletion;
-- live Admin hour accounting at `/admin/hours`, including derived balances, individual and atomic bulk movements, activity/recovery origins, and immutable reversal workflows;
-- Admin movement history at `/admin/hours/movements` plus hour-category maintenance under `/admin/settings`;
-- live Admin schedule planning and assignment editing at `/admin/schedules`, with regular/special plans, cycle-aware history, and protected plan and assignment APIs;
-- live Admin consultation intake at `/admin/consultations`, with read-only Google Sheets import, idempotent staging, explicit anomaly and duplicate review, canonical classification, and preserved records when the source is unavailable;
-- Tutor self-service at `/tutor`, `/tutor/schedule`, and `/tutor/hours`, with owner-scoped subjects, cycle and scholarship context, effective schedule, signed balance, and movement history;
-- responsive Admin and Tutor navigation shells;
-- a PostgreSQL/Drizzle schema and committed migrations for Better Auth identities/sessions, application roles, AdministrativeCycle, AuditEvent, consultation staging, canonical consultations, import runs, and duplicate review;
-- Google-only Better Auth configuration with public signup disabled, explicit Admin/Tutor provisioning, and a bootstrap command for the first Admin;
-- cycle administration at `/admin/settings`, including current-cycle context, explicit close confirmation, preserved history, and recovery states;
-- append-only audit recording for provisioning, session creation, cycle creation/close, and consultation import/review with bounded non-sensitive metadata;
-- shared components for navigation, page headers, empty states, status badges, Faro branding, buttons, cards, inputs, and tables;
-- unit/component tests, protected route coverage, isolated PostgreSQL/Testcontainers integration tests, and Playwright coverage for unauthenticated protection plus authenticated Tutor self-service and Admin overview/reporting, tutor/Materias, schedule planning, hour-accounting, and consultation journeys across supported viewports.
+## Engineering highlights
 
-The Admin overview and reports read current canonical operational data on the server. Reports use URL-backed filters and do not persist results or query the consultation source; a source outage leaves consolidated consultation reporting available. Consultation Sheets access remains a server-only, read-only boundary; Admin curation controls staging and canonical records, while source failures leave canonical history available. The Admin schedule page supports protected regular/special plan creation, switching, assignment editing, lifecycle changes, conflict feedback, and responsive live refreshes. Tutor self-service pages are live read-only views backed by server-side owner resolution for the current cycle, scholarship reference, effective schedule, signed balance, and movement history. Protected Tutor, Materias, Settings, consultation, and API surfaces require the server-side identity and role boundary when authentication is configured.
+- **Server-side access control:** Better Auth identities are explicitly provisioned; protected routes and APIs enforce roles on the server.
+- **Movement-derived balances:** hour totals derive from the signed movement ledger, and corrections remain traceable as reversal rows.
+- **Reviewable imports:** Sheets is an input boundary, while staging and canonical records remain in PostgreSQL and reporting does not require a live source request.
+- **Read-only schedule workspace:** effective schedule entries are resolved from regular and special plans without mutating schedule data during reads.
+- **Isolated data checks:** PostgreSQL integration and authenticated browser suites use disposable Testcontainers databases and deterministic fixtures.
 
-## Not implemented in the current runtime
-
-The following remain future work described by the shared decision documents:
-
-- formal scholarship certification;
-- production deployment, backups, and operational data migration.
-
-The configured Google path still requires deployment credentials and provider setup; no real account or production data is included in the repository. Do not treat target-state statements in `docs/` as evidence that deferred capabilities already run in the application.
-
-## Current technology
-
-- **Runtime:** Node.js 22 LTS (`>=22.0.0 <25`).
-- **Framework:** Next.js 16 App Router and React 19.
-- **Language:** TypeScript 5 with strict checking.
-- **Styling:** Tailwind CSS 4 and local UI primitives.
-- **Data:** PostgreSQL with Drizzle ORM and committed migrations.
-- **Authentication:** Better Auth with Google OAuth configuration and provisioned application identities.
-- **Testing:** Vitest 3, React Testing Library, Testcontainers PostgreSQL integration tests, and Playwright.
-- **Package manager:** pnpm 11 through Corepack.
-
-Production authentication requires `DATABASE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, and the Google client pair. Admin consultation imports additionally use optional server-only `GOOGLE_SHEETS_*` settings; without a configured source, stored canonical consultations remain readable. See `.env.example` for the validated variable contract.
-
-## Current architecture
+## Architecture
 
 ```text
 Browser
-   │
-   ▼
-Next.js App Router (src/app/)
-   │
-   ▼
-Server session and role boundary
-   │
-   ├──► Feature routes and services (src/features/)
-   ├──► Shared product components (src/shared/)
-   └──► Drizzle / PostgreSQL (src/db/)
+  -> Next.js App Router and server authorization
+       -> feature screens and services
+            -> Drizzle / PostgreSQL
+       <- read-only Google Sheets consultation import
 ```
 
-The `src/auth/` directory owns server-side authentication and authorization plus a client-only Better Auth client for sign-in and sign-out. `src/db/` is an active server-only persistence boundary. `src/features/` contains the implemented Admin overview and reporting, cycle/settings, Tutor self-service and academic, scheduling, hour-accounting, and consultation-intake slices plus reserved locations for later domain verticals. Client components receive safe display data and do not own authorization or role decisions.
+Routes compose feature-owned behavior. Authentication and persistence stay on
+the server; see [Architecture](docs/ARCHITECTURE.md) for component and data
+boundaries.
 
-## Current routes
+## Technology stack
 
-| Route | Current purpose |
-| --- | --- |
-| `/` | Routes an enabled Admin to `/admin`, an enabled Tutor to `/tutor`, and other requests to `/login`. |
-| `/login` | Restricted Google sign-in screen for enabled provisioned identities. |
-| `/admin` | Admin-protected live operational overview with attention links, cycle context, and today/upcoming duties. |
-| `/admin/tutors` | Admin-protected live tutor management and academic relationship workflow. |
-| `/admin/tutors/subjects` | Admin-protected derived Materias coverage for the open cycle. |
-| `/admin/schedules` | Admin-protected live schedule planning and editing for cycle plans and assignments. |
-| `/admin/hours` | Admin-protected live hour balances and movement registration. |
-| `/admin/hours/movements` | Admin-protected movement history and reversal workflow. |
-| `/admin/consultations` | Admin-protected consultation import, review, classification, filtering, and canonical history. |
-| `/admin/reports` | Admin-protected read-only operational reports with URL-backed period and dimension filters. |
-| `/admin/settings` | Admin-protected AdministrativeCycle lifecycle, low-frequency reference-data, and hour-category controls. |
-| `/tutor` | Tutor-protected owner-scoped current-cycle summary. |
-| `/tutor/schedule` | Tutor-protected effective schedule with regular/special plan resolution. |
-| `/tutor/hours` | Tutor-protected signed current-cycle balance and movement history. |
-| `/api/auth/[...all]` | Better Auth Google-only handler. |
-| `/api/admin/users` | Admin-protected explicit user provisioning handler. |
-| `/api/admin/cycles` | Admin-protected cycle listing and creation handler. |
-| `/api/admin/cycles/current` | Admin-protected current open-cycle handler. |
-| `/api/admin/cycles/[cycleId]/close` | Admin-protected explicit cycle close handler. |
-| `/api/admin/tutors` and `/api/admin/tutors/...` | Admin-protected tutor CRUD, status, and current-cycle academic relationship handlers. |
-| `/api/admin/tutors/subjects` | Admin-protected derived Materias coverage handler. |
-| `/api/admin/hours` and `/api/admin/hours/...` | Admin-protected hour balances, movement registration, movement history, and reversal handlers. |
-| `/api/admin/schedules` and `/api/admin/schedules/...` | Admin-protected schedule workspace, plan, and assignment handlers. |
-| `/api/admin/consultations` | Admin-protected consultation workspace and canonical records. |
-| `/api/admin/consultations/import` | Admin-protected on-demand read-only source import and staging summary. |
-| `/api/admin/consultations/review/[stagingId]` | Admin-protected consultation staging review and consolidation. |
-| `/api/admin/settings/...` | Admin-protected Career, Subject, scholarship-reference, and hour-category handlers. |
-| `/api/tutor/summary` | Tutor-protected owner-scoped summary read handler. |
-| `/api/tutor/schedule` | Tutor-protected owner-scoped effective schedule read handler. |
-| `/api/tutor/hours` | Tutor-protected owner-scoped balance and movement-history read handler. |
+- **Runtime:** Node.js 22 LTS (`>=22.0.0 <25`), Corepack, and pnpm 11.24.0.
+- **Application:** Next.js 16 App Router, React 19, and TypeScript 5.
+- **Interface:** Tailwind CSS 4 and local UI primitives.
+- **Persistence and identity:** PostgreSQL, Drizzle ORM, and Better Auth with Google OAuth.
+- **Verification:** Vitest, Testing Library, Testcontainers, and Playwright.
 
 ## Repository structure
 
-| Path | Responsibility today |
+| Path | Responsibility |
 | --- | --- |
-| `src/app/` | App Router pages, layouts, metadata, and global styles. |
-| `src/components/ui/` | Local low-level UI primitives used by the application. |
-| `src/mocks/` | Synthetic development data used by the current screen implementations. |
-| `src/shared/` | Shared navigation, branding, page, state, and utility components. |
-| `src/features/` | Cycle/settings, Tutor self-service and academic, scheduling, hour-accounting, and consultation-intake implementations, plus future vertical slices. |
-| `src/auth/` | Better Auth configuration, identity policy, provisioning, and server authorization. |
-| `src/db/` | Drizzle schema, audit validation/recording, PostgreSQL client, and migrations boundary. |
-| `drizzle/` | Committed Drizzle migration artifacts. |
-| `src/test/` | Vitest and Testing Library setup. |
-| `tests/e2e/` | Playwright end-to-end tests. |
-| `tests/integration/` | Isolated PostgreSQL/Testcontainers integration tests. |
-| `vitest.integration.config.ts` | Node-only integration test configuration. |
-| `scripts/bootstrap-admin.ts` | Operator command for the first Admin identity. |
-| `docs/` | Shared target-state design, UI, and development decisions. |
+| `src/app/` | App Router routes, layouts, loading, and error boundaries. |
+| `src/features/` | Admin, Tutor, scheduling, hours, consultations, and reporting workflows. |
+| `src/auth/` and `src/db/` | Server-side identity, authorization, persistence, schema, and audit boundaries. |
+| `tests/` | Unit/component, PostgreSQL integration, and Playwright browser scenarios. |
+| `docs/` | Current product, architecture, development, deployment, and testing evidence. |
+| `design/` | Approved visual direction and interface behavior specifications. |
 
 ## Local development
 
-Prerequisites: Node.js 22 LTS and pnpm 11 through Corepack. PostgreSQL is required for persisted application/auth flows, and Docker is required for the isolated integration suite.
+Prerequisites: Node.js 22 LTS and pnpm 11 through Corepack. A PostgreSQL
+connection is needed for persisted application flows; Docker is needed for the
+integration and authenticated E2E suites.
 
 ```bash
-corepack enable
 corepack pnpm install --frozen-lockfile
 cp .env.example .env.local
+```
+
+Configure local server values in `.env.local`, then create the schema and first
+Admin and start the application:
+
+```bash
 corepack pnpm db:migrate
 corepack pnpm auth:bootstrap-admin -- --email=admin@example.com --name="SGTA Admin"
 corepack pnpm dev
 ```
 
-Set the server-only values in `.env.local` before applying migrations or using protected/authenticated flows. The public shell and production build can be inspected without production credentials, but real Google sign-in requires the configured OAuth values. Open [http://localhost:3000](http://localhost:3000). Keep local secrets in `.env.local`; do not commit them.
+Open [http://localhost:3000](http://localhost:3000). See
+[Development](docs/DEVELOPMENT.md) for environment and database details.
 
-The bootstrap command creates or updates the first enabled Admin using `DATABASE_URL`; it is an operator path, not public signup. Its Node.js `react-server` condition allows the CLI to load the server-only provisioning boundary. The integration suite and authenticated E2E server each create an isolated temporary PostgreSQL container and do not use `TEST_DATABASE_URL` or production Google credentials.
-
-## Presentation deployment
-
-The repository's [vercel.json](vercel.json) configures the Next.js preset,
-locked Corepack/pnpm installation, production build, and the São Paulo (`gru1`)
-function region. Migrations and account provisioning are separate operator
-commands; the deployment build does not perform them. See the
-[Vercel configuration reference](https://vercel.com/docs/project-configuration/vercel-json).
-
-Use team-owned Neon, Google Cloud, Google Drive, and Vercel resources. Configure
-the Vercel project `sgta-tutorias` with `main` as its Production branch and Node.js
-22.x. Its stable URL is `https://sgta-tutorias.vercel.app`; if the project name
-changes, use the corresponding stable URL consistently in OAuth and Better Auth.
-
-### Connections and environment isolation
-
-Use the `staging` branch of the Neon `sgta` project in São Paulo (`sa-east-1`).
-The provisioned presentation database uses PostgreSQL 18; isolated integration
-tests use PostgreSQL 16. The Vercel **Production** environment serves the
-presentation from this branch. Keep Neon's `main` branch unused until the
-production cutover.
-Use the pooled connection for the app and the direct connection for operator
-commands; both must address the same branch and database. See
-[Neon's connection guide](https://neon.com/docs/get-started-with-neon/connect-neon).
-
-Set these server-only variables in Vercel **Production** only:
-
-| Variable | Presentation value |
-| --- | --- |
-| `DATABASE_URL` | Neon staging pooled connection, with TLS enabled. |
-| `BETTER_AUTH_URL` | Stable HTTPS URL, without a path. |
-| `BETTER_AUTH_SECRET` | Team-managed random secret of at least 32 characters. |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Team-owned web OAuth client pair. |
-| `GOOGLE_SHEETS_SPREADSHEET_ID` | ID of the presentation consultation copy. |
-| `GOOGLE_SHEETS_RANGE` | `Respuestas!A:I`, including the header row. |
-| `GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL` | Reader service account email. |
-| `GOOGLE_SHEETS_PRIVATE_KEY` | Reader private key, with real line breaks or escaped `\n`. |
-| `GOOGLE_SHEETS_HEADER_MAP` | Generated JSON mapping for the presentation copy's exact headers. |
-
-Keep Preview and Development free of database, OAuth, and Sheets credentials,
-including shared variables and integration-injected connections. PR previews can
-build the public shell; protected workflows need the configured presentation
-environment. Leave `GOOGLE_HOSTED_DOMAIN` unset to allow personal Google accounts.
-Keep `SGTA_E2E_MODE`, `SGTA_E2E_CONSULTATION_SOURCE_URL`, and `TEST_DATABASE_URL`
-unset in deployed environments. Keep secrets in the team's password manager and
-Vercel settings, never in Git or `NEXT_PUBLIC_*` variables.
-
-### Google access
-
-Keep the OAuth consent screen in **Testing**, with the presenter and demo Google
-accounts as test users. Configure the web client's JavaScript origin as the
-stable URL and its redirect URI as
-`https://sgta-tutorias.vercel.app/api/auth/callback/google`. Request only OpenID,
-email, and profile access.
-
-Enable the Google Sheets API. Create the presentation consultation copy in the
-team's Drive, with a `Respuestas` tab, from the prepared CSV that retains student
-names, removes contact data, and normalizes tutor and career labels. Share it with
-the reader service account as **Viewer**, without project-wide IAM roles. Connect
-this copy rather than the live Form response sheet. Do not sort, delete, or move
-source rows: consultation identity includes the source row number.
-
-### Migrate, provision, and deploy
-
-1. From the reviewed application revision, load the Neon staging **direct** URL
-   into the operator process's `DATABASE_URL` from the team's secret store.
-   Keep local secret files ignored. Verify the selected branch before writing.
-2. Run `corepack pnpm db:check`, then `corepack pnpm db:migrate`. Stop if either
-   command fails; do not deploy against an unapplied schema.
-3. Run `corepack pnpm auth:bootstrap-admin -- --email=admin@example.com --name="SGTA Admin"`,
-   substituting the presenter's Google email and name. Remove the shell's
-   `DATABASE_URL` override afterwards. This command creates or updates an enabled
-   Admin; use only the intended presenter identity.
-4. Deploy the reviewed revision through the existing Vercel project after
-   migrations succeed, or redeploy `main` once the PR is merged. Redeploy after
-   changing runtime variables. Confirm the deployment is Ready on the stable URL.
-5. Sign in as Admin and provision the demo account from that authenticated browser
-   session with `POST /api/admin/users` and a JSON body containing
-   `{ "email": "demo@example.com", "name": "Demo Tutor", "role": "TUTOR", "enabled": true }`.
-   Substitute the demo Google identity. When its Tutor record is available, link
-   the same email in the tutor form's `Correo de la cuenta habilitada (opcional)`
-   field. Provisioning a user alone does not create a Tutor record.
-
-Check `/login`, anonymous redirects from `/admin` and `/tutor`, real Google sign-in
-for both provisioned roles, and the Tutor account link. A successful build or
-public login page does not prove database migrations, OAuth access, or Sheets
-access. Verify the configured consultation copy through the Admin import action
-when carrying out the separate initial-data load and reconciliation.
-
-After generating the private registry package, run `corepack pnpm data:import
---dry-run`, then `corepack pnpm data:import --apply --yes` against the explicit
-presentation `DATABASE_URL`. Refresh the consultation copy through the existing
-Admin import action and approve its classifications before comparing reports.
-Use `corepack pnpm data:verify --expected=local-docs/execution/initial-data-expectations.json`
-to compare independently prepared counts with the database. The optional JSON
-file maps metric keys to expected nonnegative integers; keep it and verification
-output under `local-docs/`. Run without `--expected` to inspect available keys.
-
-Verification checks registry values, duties by weekday, all imported opening
-balances, and consultation report totals by cycle and calendar year. It reports
-valid dates outside the configured cycles separately and exits nonzero on a
-mismatch. The command uses a read-only transaction, prints aggregate counts
-without tutor names or individual balances, and needs no Google credentials.
-Use it immediately after loading: subsequent hour movements can
-legitimately change balances from their opening values. Correct source or
-mapping discrepancies and re-import through the established workflow.
-
-### Link Tutor access after loading data
-
-Provisioning an enabled Tutor identity and importing a Tutor record are separate
-operations. Google sign-in does not associate the two automatically. From the
-Admin account, open **Tutores → Editar → Cuenta de acceso** and enter the Google
-email in **Correo de la cuenta habilitada (opcional)**, then save. The account must
-already be enabled with the Tutor role and cannot belong to another Tutor record.
-Leaving that field empty unlinks the current account.
-
-The linked identity reads that Tutor's cycle context, subjects, effective
-schedule, and movement-derived balance. A Tutor identity without a profile link
-receives the account-linking guidance instead of another person's information.
-After linking, verify `/tutor`, `/tutor/schedule`, and `/tutor/hours` with the
-corresponding Google account. Keep personal linkage evidence and deployment
-checks in the private `local-docs/` boundary.
-
-## Verification
+## Quality
 
 ```bash
-corepack pnpm install --frozen-lockfile
-corepack pnpm db:check      # Validate the committed migration state
-corepack pnpm lint        # Run ESLint checks
-corepack pnpm typecheck   # Validate TypeScript without emitting files
-corepack pnpm test        # Run Vitest unit/component tests
-corepack pnpm test:integration  # Run isolated PostgreSQL/Testcontainers tests
-corepack pnpm exec playwright install chromium  # First-time local browser setup
-corepack pnpm test:e2e    # Run the configured Playwright test
-corepack pnpm build       # Run the production build
+corepack pnpm lint && corepack pnpm typecheck
 ```
 
-The CI workflow exposes the conceptual checks `Quality`, `Tests`, `Integration`, `E2E`, `Production`, and the stable aggregate `CI Gate`. It installs from the lockfile, uses the project's Node.js/pnpm versions, and runs the integration suite against an isolated Testcontainers PostgreSQL database. `CI Gate` is the only stable aggregate check; `Contract` and `Docker` remain absent as separate public gates.
+The CI workflow also runs unit/component tests, isolated PostgreSQL integration
+tests, E2E, and a production build. `CI Gate` aggregates those jobs. See
+[Testing](docs/TESTING.md) for commands and boundaries.
 
 ## Documentation
 
-- [docs/DEVELOPMENT-ROADMAP.md](docs/DEVELOPMENT-ROADMAP.md) — shared planning roadmap and exit criteria.
-- [AGENTS.md](AGENTS.md) — repository instructions for coding agents and contributors.
-- [.agents/skills/](.agents/skills/) — repository skills for planning, implementation, and Git delivery.
-- [docs/PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) — approved product visual direction and design tokens.
-- [docs/UI-SPEC.md](docs/UI-SPEC.md) — approved route, state, interaction, responsive, and accessibility contracts.
-- [docs/TESTING.md](docs/TESTING.md) — current project testing boundaries, CI gates, and reproducible verification.
-- [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) — required PR description structure.
+- [Project scope and business rules](docs/PROJECT.md)
+- [Architecture and data boundaries](docs/ARCHITECTURE.md)
+- [Local setup and database workflow](docs/DEVELOPMENT.md)
+- [Presentation deployment](docs/DEPLOYMENT.md)
+- [Testing and CI](docs/TESTING.md)
+- [Approved design direction](design/PROJECT-DESIGN.md)
+- [Approved UI specification](design/UI-SPEC.md)
+- [Development roadmap](docs/DEVELOPMENT-ROADMAP.md)
+- [Agent instructions](AGENTS.md)
+- [Repository skills](.agents/skills/)
+- [Pull request template](.github/PULL_REQUEST_TEMPLATE.md)
 
-The source code, package manifest, runtime configuration, tests, and `docs/TESTING.md` are the authority for current behavior. `PROJECT-DESIGN.md`, `UI-SPEC.md`, and `DEVELOPMENT-ROADMAP.md` describe approved project decisions and planning direction; repository skills own repeated planning, implementation, and Git delivery procedures.
+## License
+
+[MIT](LICENSE)
