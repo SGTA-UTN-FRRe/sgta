@@ -10,8 +10,7 @@ journeys through the built application. Each layer uses deterministic test data;
 no suite uses production credentials or writes to production services.
 Coverage is diagnostic and has no enforced percentage threshold in
 [`vitest.config.ts`](../vitest.config.ts); use it to find
-unexamined behavior rather than as a release target. Flaky tests are defects:
-fix their causes instead of hiding failures with routine retries.
+unexamined behavior rather than as a release target.
 
 ## Test layers
 
@@ -92,10 +91,44 @@ The E2E server creates its own PostgreSQL container, Better Auth sessions, and
 synthetic records. It does not use `TEST_DATABASE_URL`, production Google
 credentials, or a live consultation source.
 
+### Reliability
+
+Browser specs import `test` from [`tests/e2e/fixtures.ts`](../tests/e2e/fixtures.ts).
+The fixture waits for `html[data-hydrated="true"]` after `page.goto` and
+`page.reload` return an HTML response. The root layout's
+[`HydrationMarker`](../src/shared/hydration-marker.tsx) sets this attribute in a
+client effect. After a click or keyboard action triggers a full-document
+navigation, assert the destination URL or heading and call `waitForHydration`
+before interacting with the new document.
+
+Timeouts are shared budgets rather than per-test or per-wait overrides:
+
+| Configuration | Budget |
+| --- | --- |
+| `playwright.config.ts` | Test: 60 s; assertion: 15 s; action: 10 s; navigation: 30 s; web-server startup: 120 s. |
+| `vitest.config.ts` | Unit/component test: 15 s. |
+| `src/test/setup.ts` | Testing Library async utilities: 5 s. |
+
+Playwright retries a failed test once in CI and does not retry locally. Vitest
+does not retry tests. CI rejects focused browser tests and retains traces from
+failed attempts. A browser test that passes only on retry is reported as flaky:
+the workflow adds a warning annotation and a job-summary entry without failing
+the job. Treat that warning as a defect and fix its cause with `$write-tests`.
+
+ESLint requires the hydration fixture's `test` import in browser tests and blocks
+fixed-duration waits, browser timeout overrides, and focused `test.only` or
+`describe.only` calls. Component and script tests cannot set a third timeout
+argument on `it` or `test`, or override `waitFor` and
+`waitForElementToBeRemoved` timeouts. Fix the cause when a test reaches its
+budget; do not raise a local timeout to hide the failure.
+
 ## CI and quality gates
 
-`.github/workflows/ci.yml` runs for pull requests targeting `main` and pushes to
-`main`.
+`.github/workflows/ci.yml` runs for pull requests targeting `main` and on manual
+dispatch. It does not rerun after merge because the `Protect main` ruleset
+requires branches to be up to date with `main` before their required `CI Gate`
+check can permit a merge. Only pull-request runs cancel an earlier run for the
+same concurrency group.
 
 | Gate | Checks |
 | --- | --- |
@@ -109,8 +142,9 @@ credentials, or a live consultation source.
 The workflow has no separate `Contract` or `Docker` gate. Docker is an execution
 prerequisite for database-backed suites. The repository's final aggregate check
 is `CI Gate`. The [workflow](../.github/workflows/ci.yml) uploads
-`playwright-report/` and `test-results/` only when the E2E job fails, with seven-day
-retention; Playwright retains traces on failure.
+`playwright-report/` and `test-results/` as `e2e-artifacts` on any non-cancelled
+E2E run, with seven-day retention. Its JSON report supplies flaky-test warning
+annotations and job-summary entries; Playwright retains traces on failure.
 
 ## Related documentation
 
