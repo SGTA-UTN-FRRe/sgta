@@ -12,6 +12,10 @@ import {
   type DatabaseHandle,
 } from "../../src/db/client-core";
 import {
+  assertProductionBuild,
+  buildE2EApplicationEnv,
+} from "./application-env";
+import {
   activity,
   administrativeCycle,
   career,
@@ -443,6 +447,8 @@ async function shutdown(exitCode: number) {
 }
 
 async function main() {
+  assertProductionBuild(process.cwd());
+
   consultationSourceFixture = await startConsultationSourceFixture();
   container = await new PostgreSqlContainer(POSTGRES_IMAGE)
     .withDatabase(E2E_DATABASE_NAME)
@@ -465,9 +471,8 @@ async function main() {
     process.cwd(),
     "node_modules/next/dist/bin/next",
   );
-  serverProcess = spawn(process.execPath, [nextBin, "start"], {
-    env: {
-      ...process.env,
+  const nextProcess = spawn(process.execPath, [nextBin, "start"], {
+    env: buildE2EApplicationEnv(process.env, {
       NODE_ENV: "production",
       SGTA_E2E_MODE: "true",
       SGTA_E2E_NOW: E2E_FIXED_NOW,
@@ -494,11 +499,12 @@ async function main() {
       SGTA_E2E_CONSULTATION_SOURCE_URL: consultationSourceFixture.apiBaseUrl,
       NEXT_TELEMETRY_DISABLED: "1",
       PORT: "3000",
-    },
+    }),
     stdio: "inherit",
   });
+  serverProcess = nextProcess;
 
-  serverProcess.once("exit", (code) => {
+  nextProcess.once("exit", (code) => {
     void shutdown(code ?? 1);
   });
 

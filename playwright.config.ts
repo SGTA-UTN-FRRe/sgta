@@ -6,8 +6,11 @@ export default defineConfig({
   testDir: "./tests/e2e",
   // Budgets are set once here; specs must not override them.
   timeout: 60_000,
+  // Bound the full browser run below the 15-minute CI job timeout.
+  globalTimeout: 10 * 60_000,
   retries: isCI ? 1 : 0,
   forbidOnly: isCI,
+  testMatch: "**/*.spec.ts",
   // Authenticated journeys share one mutable database, so avoid overlapping writes.
   workers: 1,
   reporter: [
