@@ -68,7 +68,7 @@ Test boundaries and CI behavior are documented in [Testing](TESTING.md).
 
 Skills are optional personal tooling; build and test commands do not require them.
 Use the [engineering playbook skills](https://github.com/acevedo-daniel/engineering-playbook/tree/main/.agents/skills).
-Follow its [installation instructions](https://github.com/acevedo-daniel/engineering-playbook#install-the-agent-skills)
+Follow its [installation instructions](https://github.com/acevedo-daniel/engineering-playbook#install-and-sync)
 at user scope: `~/.agents/skills/` for Codex and `~/.claude/skills/` for Claude Code.
 The playbook owns installation and workflow procedures; refresh skills as it evolves.
 

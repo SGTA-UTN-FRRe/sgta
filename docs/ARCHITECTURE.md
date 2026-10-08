@@ -53,7 +53,7 @@ intended routes and interaction behavior.
 Login's page and screen import login fixture data/types; the Admin overview screen
 imports fixture modules for presentation copy, types, and states even though its
 operational data comes from its service. These imports remain a current limitation,
-owned by the [UI engineering foundation](DEVELOPMENT-ROADMAP.md#phase-ui-engineering-foundation).
+owned by the [Design system foundation](DEVELOPMENT-ROADMAP.md#phase-design-system-foundation).
 
 ## Data and persistence
 
