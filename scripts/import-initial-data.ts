@@ -42,7 +42,7 @@ import {
 } from "../src/features/tutors/tutor-validation";
 
 const IMPORT_NAMESPACE = "8d07178c-9b8a-5e15-a826-3344c4a9242f";
-const DEFAULT_INPUT_DIRECTORY = path.resolve("local-docs/data/build/m1");
+const DEFAULT_INPUT_DIRECTORY = path.resolve("local-docs/keep/data/build/m1");
 
 type SourceLocation = { file: string; line: number };
 type SourceRow = SourceLocation & { values: Record<string, string> };
