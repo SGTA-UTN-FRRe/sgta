@@ -4,13 +4,11 @@ on:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -140,11 +138,22 @@ jobs:
       - name: Run E2E test suite
         run: pnpm test:e2e
 
-      - name: Upload E2E failure artifacts
-        if: failure()
+      - name: Report flaky E2E tests
+        if: ${{ !cancelled() }}
+        run: |
+          report=playwright-report/results.json
+          [ -f "$report" ] || exit 0
+          jq -r '.. | objects | select(has("specs")) | .specs[] | select(any(.tests[]; .status == "flaky")) | "\(.file):\(.line) \(.title)"' "$report" \
+            | sort -u | while read -r entry; do
+                echo "::warning title=Flaky E2E test::$entry"
+                echo "- $entry" >> "$GITHUB_STEP_SUMMARY"
+              done
+
+      - name: Upload E2E artifacts
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-failure-artifacts
+          name: e2e-artifacts
           path: |
             playwright-report/
             test-results/
