@@ -1,4 +1,4 @@
-# SGTA - Project
+# SGTA — Project
 
 > Product purpose, scope, workflows, and business rules.
 
@@ -25,6 +25,7 @@ application with cycle context and traceable changes.
 
 ### Out of scope
 
+- Attendance tracking or duty-occurrence records.
 - Formal scholarship certification.
 - Full production operations and data cutover.
 
@@ -64,7 +65,10 @@ Tutor signs in with an enabled identity linked to a Tutor record
 - Schedule assignments describe planned time. Hour balances change through explicit ledger movements.
 - Hour balances derive from credit and debit movements; corrections are represented by reversal movements.
 - Google Sheets is an import source only. Admin review controls which staged rows become canonical consultations.
-- Cycle membership scopes operational records and preserves historical context when a cycle closes.
+- Hour categories classify explicit movements. Categories linked to activities or recovery accept credits and create the corresponding activity origin; absences are recorded manually as debits under "Inasistencia", without attendance automation. See the [hour service](../src/features/hours/hour-service.ts) and [migration-upgrade coverage](../tests/integration/migration-upgrade.integration.test.ts).
+- Scholarship references hold informational types, known required hours, and notes; they do not certify eligibility or award a scholarship. See the [Tutor catalog service](../src/features/tutors/tutor-service.ts).
+- Cycle membership scopes operational records. Closing a cycle preserves its history and blocks further operational writes; a successor must be opened explicitly, with no automatic membership or hour transfer. See the [cycle service](../src/features/cycles/cycle-service.ts) and [integration coverage](../tests/integration/foundation.integration.test.ts).
+- "Materias" coverage is derived from canonical Tutor-subject relationships and current-cycle membership, restricted to active Tutors, subjects, and careers; it is not a separate editable total. See `listSubjectCoverage` in the [Tutor service](../src/features/tutors/tutor-service.ts).
 
 ## Current limitations
 

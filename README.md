@@ -1,4 +1,4 @@
-# SGTA - Sistema de Gestión de Tutorías
+# SGTA — Sistema de Gestión de Tutorías
 
 [![CI](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml/badge.svg)](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml)
 
@@ -22,7 +22,7 @@ part of the current runtime.
 - **Server-side access control:** Better Auth identities are explicitly provisioned; protected routes and APIs enforce roles on the server.
 - **Movement-derived balances:** hour totals derive from the signed movement ledger, and corrections remain traceable as reversal rows.
 - **Reviewable imports:** Sheets is an input boundary, while staging and canonical records remain in PostgreSQL and reporting does not require a live source request.
-- **Read-only schedule workspace:** effective schedule entries are resolved from regular and special plans without mutating schedule data during reads.
+- **Bounded audit events:** administrative changes record validated metadata and actor context through the append-only audit boundary.
 - **Isolated data checks:** PostgreSQL integration and authenticated browser suites use disposable Testcontainers databases and deterministic fixtures.
 
 ## Architecture
@@ -84,12 +84,11 @@ Open [http://localhost:3000](http://localhost:3000). See
 ## Quality
 
 ```bash
-corepack pnpm lint && corepack pnpm typecheck
+corepack pnpm verify
 ```
 
-The CI workflow also runs unit/component tests, isolated PostgreSQL integration
-tests, E2E, and a production build. `CI Gate` aggregates those jobs. See
-[Testing](docs/TESTING.md) for commands and boundaries.
+The same checks run in CI, where `CI Gate` aggregates their results and must pass before merge.
+See [Testing](docs/TESTING.md) for commands and boundaries.
 
 ## Documentation
 
@@ -103,7 +102,6 @@ tests, E2E, and a production build. `CI Gate` aggregates those jobs. See
 - [Development roadmap](docs/DEVELOPMENT-ROADMAP.md)
 - [Agent instructions](AGENTS.md)
 - [Agent tooling](docs/DEVELOPMENT.md#agent-tooling)
-- [Pull request template](.github/PULL_REQUEST_TEMPLATE.md)
 
 ## License
 

@@ -8,13 +8,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# SGTA - Agent Instructions
+# SGTA — Agent Instructions
 
 ## Project
 
-SGTA is an executable Next.js application for the Tutorias UTN FRRe interface. The current runtime includes the public login route with role-aware root redirects, protected Admin and Tutor route/layout shells, responsive navigation, shared UI components, local UI primitives, a PostgreSQL/Drizzle persistence boundary, provisioned Google-only Better Auth configuration, server-side authorization, AdministrativeCycle lifecycle controls, the live Admin overview and canonical operational reports, live Tutor self-service and academic catalog workflows, Admin schedule planning and assignment editing, Admin hour-accounting operations, read-only Google Sheets consultation intake and Admin curation, derived Materias coverage, auditable events, Vitest/Testing Library coverage, PostgreSQL integration coverage, and authenticated/unauthenticated Playwright browser coverage.
-
-The current runtime does not yet include formal scholarship certification or production operational workflows. The `src/auth/` and `src/db/` boundaries contain active secure-foundation implementations, while `src/features/` contains the implemented Admin overview and reporting, cycle/settings, tutor self-service and academic, scheduling, hour-accounting, and consultation slices plus reserved locations for later verticals.
+SGTA is a Next.js application for the Tutorias area at UTN FRRe, with server-authorized Admin operations and read-only Tutor self-service.
+It is deployed for presentation; production cutover and formal scholarship certification remain outside the current runtime.
 
 ## Instruction hierarchy
 
@@ -22,7 +21,7 @@ Use this order when instructions overlap:
 
 1. explicit user request;
 2. nearest applicable `AGENTS.md`;
-3. invoked repository skill under `.agents/skills/`;
+3. invoked skill;
 4. approved project decision documents;
 5. current source, tests, manifests, runtime configuration, and CI as evidence of what exists now.
 
@@ -53,32 +52,27 @@ Rules for mixed content:
 
 ## Planning and delivery boundary
 
-`docs/DEVELOPMENT-ROADMAP.md` is the planning authority for outcomes, sequencing, scope boundaries, and exit criteria. Roadmap labels, phase numbers, task numbers, milestone labels, and `PHASE-XX.md` names are planning metadata. They may be used in the roadmap, local execution plans, and prompts to locate work.
+`docs/DEVELOPMENT-ROADMAP.md` is the planning authority for outcomes, sequencing, scope boundaries, and exit criteria. Roadmap labels, phase numbers, task numbers, and milestone labels are planning metadata. They may be used in the roadmap, local execution plans, and prompts to locate work.
 
 Planning metadata must not leak into branches, commit subjects, pull request titles or bodies, squash messages, tags, filenames, directories, identifiers, labels, or product-facing names. Derive the durable implementation outcome before creating delivery text.
 
-## Repository skills
+## Skills
 
-Repository skills are optional local tooling and are not included in a fresh
-clone. See [Agent tooling](docs/DEVELOPMENT.md#agent-tooling) for the pinned
-playbook source and installation instructions. Build and test commands do not
-require an AI tool or local skills.
-
-Use the installed skills for their owned procedures:
+Skills are optional personal tooling installed from the [engineering playbook](https://github.com/acevedo-daniel/engineering-playbook); build and test commands do not require them.
 
 - `$plan-implementation` turns roadmap or product intent into a decision-complete execution plan.
 - `$implement-task` implements one concrete approved task and verifies its boundaries.
-- `$git-delivery` creates outcome-oriented branch, commit, pull request, and squash-delivery text when requested.
-- `$delegate-task` turns an independently completable plan task or ad-hoc request into a self-contained issue for a teammate.
+- `$git-delivery` creates outcome-oriented branches, commits, pull requests, and squash-delivery text when requested.
+- `$delegate-task` turns independently completable work into a self-contained issue for a teammate.
 
-Do not duplicate those procedures in project documentation.
+A skill owns its procedure and output format. Do not duplicate those procedures in project documentation.
 
 ## Delegation
 
 - **Issue language:** Spanish (see Language policy).
 - **Tracker:** GitHub Project #1 owned by `SGTA-UTN-FRRe`.
 
-Delegation is optional. Mark a plan task `Delegable: yes` only when a teammate can complete it from the issue alone and no other task depends on it. Use `$delegate-task` or the Task issue form; the skill owns issue drafting and creation. Create an issue or add it to the project only when explicitly requested.
+Delegation is optional. Mark a plan task `Delegable: yes` only when a teammate can complete it from the issue alone and no other task depends on it. Use `$delegate-task` or the Task issue form; the skill owns issue drafting and creation. Create an issue or add it to the project only when explicitly requested. If an issue does not match the repository or its next step is unclear, comment on the issue and wait; sending the comment requires authorization from the user or the invoked delegation skill.
 
 ## Sources of truth
 
@@ -109,36 +103,38 @@ Use existing decision documents instead of creating competing specifications. Up
 Key boundaries:
 
 ```text
-src/app/              App Router routes, layouts, metadata, and global styles
-src/features/         implemented cycle/settings, tutor self-service and academic, scheduling, and hour-accounting operations, plus future slices
-src/shared/           small cross-feature product components and utilities
-src/components/ui/    low-level reusable UI primitives
-src/auth/             active authentication, session, and authorization boundary
-src/db/               active PostgreSQL persistence, schema, audit, and migration boundary
-tests/e2e/            Playwright browser scenarios
-tests/integration/    isolated PostgreSQL/Testcontainers scenarios
+src/app/                         App Router routes, layouts, metadata, and global styles
+src/features/admin-overview/     Admin overview
+src/features/consultations/      Read-only intake and Admin curation
+src/features/cycles/             AdministrativeCycle lifecycle
+src/features/hours/              Hour ledger and movement operations
+src/features/reports/            Canonical operational reports
+src/features/schedules/          Schedule plans and assignments
+src/features/settings/           Admin settings interface
+src/features/tutor-self-service/ Owner-scoped Tutor views
+src/features/tutors/              Tutor registry, academic catalogs, and coverage
+src/shared/                      Small cross-feature product components and utilities
+src/components/ui/               Low-level reusable UI primitives
+src/mocks/                       Fixtures; still imported by login and Admin overview
+src/config/                      Validated environment configuration
+src/auth/                        Authentication, sessions, provisioning, and authorization
+src/db/                          PostgreSQL client, schema, and audit boundary
+drizzle/                         Committed generated migration artifacts
+scripts/                         Operator commands and repository checks
+tests/integration/               Isolated PostgreSQL/Testcontainers scenarios
+tests/e2e/                       Playwright browser scenarios
 ```
 
-Keep route composition thin and place feature-specific behavior under a feature-owned directory within `src/features/`.
+Keep route composition thin and place feature-specific behavior under its owner in `src/features/`.
 
 ## Key paths
 
-- `src/app/` - routes, layouts, metadata, and global styles;
-- `src/features/` - implemented cycle/settings, tutor self-service and academic, scheduling, and hour-accounting slices plus future feature verticals;
-- `src/shared/` - shared product components and utilities;
-- `src/components/ui/` - low-level UI primitives;
-- `src/auth/` - Better Auth configuration, identity policy, provisioning, and server authorization;
-- `src/db/` - Drizzle schema, audit validation/recording, and PostgreSQL client boundary;
-- `drizzle/` - committed Drizzle migration artifacts;
-- `tests/` - unit/component, integration, and Playwright scenarios;
-- `vitest.integration.config.ts` - isolated Node/Testcontainers test configuration;
-- `scripts/bootstrap-admin.ts` - operator-only first Admin provisioning command;
-- `design/` - approved product visual direction and interface behavior specifications;
-- `docs/` - current-state documentation, testing contract, and development roadmap;
-- `.github/ISSUE_TEMPLATE/` - task intake and security reporting contact;
-- `SECURITY.md` - vulnerability disclosure policy;
-- `.github/workflows/ci.yml` - CI topology and `CI Gate`;
+- `design/` - approved visual direction and interface behavior specifications.
+- `docs/` - current-state documentation, testing contract, and development roadmap.
+- `.github/ISSUE_TEMPLATE/` - task intake and security reporting contact.
+- `.github/workflows/ci.yml` - CI topology and `CI Gate`.
 - `.github/PULL_REQUEST_TEMPLATE.md` - pull request structure.
+- `SECURITY.md` - vulnerability disclosure policy.
 
 ## Commands
 
@@ -149,7 +145,12 @@ Keep route composition thin and place feature-specific behavior under a feature-
 | Install | `corepack pnpm install --frozen-lockfile` |
 | Dev | `corepack pnpm dev` |
 | Migration check | `corepack pnpm db:check` |
+| Generate migrations | `corepack pnpm db:generate` |
 | Apply migrations | `corepack pnpm db:migrate` |
+| Bootstrap Admin | `corepack pnpm auth:bootstrap-admin` |
+| Import initial data (dry-run by default) | `corepack pnpm data:import` |
+| Verify initial data | `corepack pnpm data:verify` |
+| Review database query plans | `corepack pnpm db:query-audit` |
 | Lint | `corepack pnpm lint` |
 | Type check | `corepack pnpm typecheck` |
 | Unit/component tests | `corepack pnpm test` |
@@ -159,16 +160,27 @@ Keep route composition thin and place feature-specific behavior under a feature-
 
 The E2E browser may require `corepack pnpm exec playwright install chromium` once per environment.
 
-## Code and domain invariants
+## Code rules
 
 - Use React Server Components by default; add Client Components only for hooks, event listeners, or browser interaction.
 - Keep `src/shared/` small and add code there only for real cross-feature consumers.
 - Maintain strict TypeScript, validate external and mutation inputs at their boundaries, and preserve established error handling.
 - When protected behavior is implemented, enforce authentication and authorization on the server rather than through client-only role checks.
 - Future domain work must preserve cycle-aware data, auditable changes, and movement-derived hour balances from the approved project decisions.
-- Do not add dependencies without a justified implementation need or edit generated artifacts manually.
+- Prefer established idiomatic patterns unless an approved change replaces them. Do not edit generated artifacts manually.
 
-## Testing and repository hygiene
+## Ask before
+
+Ask the user before the following actions unless the current request or approved execution plan already authorizes them:
+
+- Adding, removing, or upgrading dependencies.
+- Changing a database schema, migration, or persisted data.
+- Deleting files, data, or public API surface.
+- Changing CI workflows, repository settings, or branch protection.
+- Editing approved decision documents (`docs/DEVELOPMENT-ROADMAP.md`, `design/PROJECT-DESIGN.md`, `design/UI-SPEC.md`).
+- Creating branches, commits, pushes, or pull requests that were not requested.
+
+## Testing rules
 
 - Keep unit/component tests co-located with their implementation and Playwright scenarios under `tests/e2e/`.
 - Add integration or authorization checks only when the corresponding runtime boundary exists.
@@ -176,5 +188,19 @@ The E2E browser may require `corepack pnpm exec playwright install chromium` onc
 - Run the smallest relevant checks and use the CI contract documented in `docs/TESTING.md`.
 - Treat flaky tests as defects and never claim a check passed unless it actually ran successfully.
 - Keep generated directories and artifacts out of manual edits.
-- Use the normal protected-branch PR flow. Follow `$git-delivery` for delivery language; merge or squash remains a manual user action unless explicitly requested.
-- Keep `main` runnable after each coherent change.
+- Test the smallest correct boundary: unit, then integration, then E2E. Add or update tests for changed behavior when that boundary exists.
+- Run `corepack pnpm verify` before reporting runtime work as done; documentation-only deliveries may use the relevant template, lint, type, and diff checks, with the full `CI Gate` required before merge.
+- If the same check still fails after two fix attempts, stop and report the command, failure output, and hypothesis. Never weaken, skip, or retry a check merely to obtain a pass.
+
+## Documentation rules
+
+- Current-state docs describe verified repository facts; keep target decisions in their existing authoritative documents.
+- Remove stale claims instead of layering contradictory notes.
+- When a change alters a view in UI-SPEC's README screenshot column, regenerate its screenshot in the same change once the Screenshots command exists. The UI engineering foundation owns that command and the initial README screenshots.
+- `local-docs/` is ignored working space for plans, audits, review screenshots, and scratch notes. Tracked documents never link to it.
+
+## Repository delivery
+
+- Use focused, outcome-oriented branches and pull requests with one dominant outcome per PR.
+- Use the normal protected-branch PR flow and keep `main` runnable after each coherent delivery.
+- Follow `$git-delivery` for naming and delivery text. Merge or squash remains a manual user action unless explicitly requested.

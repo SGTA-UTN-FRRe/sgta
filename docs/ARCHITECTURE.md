@@ -1,4 +1,4 @@
-# SGTA - Architecture
+# SGTA — Architecture
 
 > Components, boundaries, data flow, invariants, and trade-offs.
 
@@ -28,7 +28,32 @@ Browser
 | `src/features/` | Feature screens, validation, APIs, and domain services | Each workflow stays in its feature vertical. |
 | `src/shared/` and `src/components/ui/` | Product-wide components and low-level UI primitives | Feature-specific rules stay out of shared UI. |
 | `src/db/` | PostgreSQL client, Drizzle schema, migrations, and audit handling | Database access is server-only. |
+| `src/mocks/` | Synthetic fixture data, copy, types, and screen states | Login and Admin overview still import these modules in production code; separation is pending. |
+| `src/config/` | Environment parsing and validation | Validates server settings at the configuration boundary. |
+| `scripts/` | Admin bootstrap, initial-data import/verification, query audit, and template checks | Operator writes require an explicit target and command; query audit uses disposable PostgreSQL. |
+| `drizzle/` | Generated SQL migrations and journal | Committed artifacts consumed by migration tooling. |
 | Google Sheets source | Read-only consultation input | Source rows are imported into SGTA; application changes do not write to the Sheet. |
+
+## Route surfaces
+
+Current pages and handlers live under [`src/app/`](../src/app/). This grouped
+inventory describes implemented surfaces; [UI-SPEC](../design/UI-SPEC.md) owns
+intended routes and interaction behavior.
+
+| Surface | Implemented areas | Access |
+| --- | --- | --- |
+| `/` | Role-aware redirect to login or the appropriate role home. | Session-derived. |
+| `/login`, `/forbidden` | Google sign-in and access-denied state. | Public pages. |
+| `/admin`, `/admin/*` | Overview, Tutors and subject coverage, schedules, hours and movement history, consultations, reports, settings. | Enabled Admin. |
+| `/tutor`, `/tutor/*` | Current-cycle summary, schedule, hours. | Enabled Tutor; owner resolved from the signed-in identity. |
+| `/api/admin/*` | Users, Tutors and subject coverage, cycles, schedules/plans/assignments, hours/movements/reversals, consultation import/review/bulk actions, settings catalogs. | Server-authorized Admin. |
+| `/api/tutor/*` | Summary, schedule, hours. | Server-authorized, owner-scoped Tutor. |
+| `/api/auth/*` | Better Auth catch-all handler for sign-in, sessions, and sign-out. | Better Auth and provisioned identity policy. |
+
+Login's page and screen import login fixture data/types; the Admin overview screen
+imports fixture modules for presentation copy, types, and states even though its
+operational data comes from its service. These imports remain a current limitation,
+owned by the [UI engineering foundation](DEVELOPMENT-ROADMAP.md#phase-ui-engineering-foundation).
 
 ## Data and persistence
 
