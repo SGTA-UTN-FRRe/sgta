@@ -29,6 +29,7 @@ import {
   type ScheduleAssignmentPattern,
   type SchedulePlanKind,
 } from "@/db/schema";
+import type { CareerColor } from "@/shared/career-color";
 import { formatTutorName } from "@/shared/tutor-name";
 
 import {
@@ -156,6 +157,7 @@ export type SafeScheduleTutor = {
   id: string;
   formalName: string;
   careerName: string;
+  careerColor: CareerColor;
   status: RecordStatus;
 };
 
@@ -1026,6 +1028,7 @@ async function listEligibleScheduleTutors(
       firstName: tutor.firstName,
       lastName: tutor.lastName,
       careerName: career.name,
+      careerColor: career.color,
       status: tutor.status,
     })
     .from(tutor)
@@ -1044,6 +1047,7 @@ async function listEligibleScheduleTutors(
     id: row.id,
     formalName: formatTutorName(row),
     careerName: row.careerName,
+    careerColor: row.careerColor,
     status: row.status,
   }));
 }

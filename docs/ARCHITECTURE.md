@@ -52,6 +52,15 @@ intended routes and interaction behavior.
 
 ## Data and persistence
 
+Careers carry an Admin-selected palette color configured in Settings, where career
+badges show the color and a derived abbreviation.
+The eight-value `career_color` enum is validated at the API and service boundaries.
+New careers without an explicit color receive the least-used color among active careers,
+with ties resolved in palette order; imports use the same assignment helper.
+Existing careers are backfilled in normalized-name order, cycling through the palette.
+Career color changes follow the existing audit path. Schedule Tutor read models expose
+`careerColor` alongside `careerName`.
+
 PostgreSQL is the application persistence boundary. Drizzle schema definitions
 live in `src/db/schema.ts`; generated SQL migrations and their journal are
 committed under `drizzle/`. Better Auth identity and session records share this

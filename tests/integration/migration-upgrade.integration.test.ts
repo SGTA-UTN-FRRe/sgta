@@ -8,6 +8,7 @@ import { expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+import { CAREER_COLORS } from "@/shared/career-color";
 import migrationJournal from "../../drizzle/meta/_journal.json";
 import { createDatabaseHandle, type DatabaseHandle } from "@/db/client-core";
 import {
@@ -59,6 +60,11 @@ async function seedHistoricalRecords(pool: Pool) {
      VALUES ($1, $2, $3, $4, $4)`,
     [ids.career, "Upgrade Career", "upgrade career", timestamp],
   );
+  // Extra careers deliberately arrive out of order; inactive careers also receive a color.
+  for (let index = 8; index >= 0; index--) {
+    await pool.query(`INSERT INTO career (id, name, normalized_name, status) VALUES ($1, $2, $3, $4)`,
+      [identifier(100 + index), `Backfill Career ${index}`, `backfill career ${index}`, index === 0 ? "INACTIVE" : "ACTIVE"]);
+  }
   await pool.query(
     `INSERT INTO administrative_cycle (id, name, start_date, end_date, status, created_at, updated_at)
      VALUES ($1, $2, $3, $4, 'OPEN', $5, $5)`,
@@ -164,7 +170,8 @@ async function retainedHistory(pool: Pool) {
   const snapshot: Record<string, Record<string, unknown>[]> = {};
   for (const table of tables) {
     const omittedColumn = table === "activity" ? "duty_occurrence_id"
-      : table === "hour_movement" ? "attendance_record_id" : "";
+      : table === "hour_movement" ? "attendance_record_id"
+      : table === "career" ? "color" : "";
     const result = await pool.query<{ record: Record<string, unknown> }>(
       `SELECT to_jsonb(retained) - $1::text AS record FROM "${table}" AS retained ORDER BY 1`,
       [omittedColumn],
@@ -226,10 +233,13 @@ it("preserves populated ledger history and reversal capability across the remova
     expect(before.audit_event).toHaveLength(4);
 
     await migrate(db, { migrationsFolder });
+    const backfilled = (await pool.query("SELECT color FROM career ORDER BY normalized_name, id")).rows;
+    expect(backfilled.map(({ color }) => color)).toEqual(Array.from({ length: 10 }, (_, index) => CAREER_COLORS[index % CAREER_COLORS.length]));
     expect(await retainedHistory(pool)).toEqual(before);
     expect(await signedBalance(pool)).toBe(30);
     await migrate(db, { migrationsFolder });
     expect(await retainedHistory(pool)).toEqual(before);
+    expect((await pool.query("SELECT color FROM career ORDER BY normalized_name, id")).rows).toEqual(backfilled);
     expect(await signedBalance(pool)).toBe(30);
 
     expect((await pool.query(

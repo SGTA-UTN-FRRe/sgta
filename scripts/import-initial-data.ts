@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { loadEnvConfig } from "@next/env";
 import { and, asc, eq, sql } from "drizzle-orm";
 
+import { getLeastUsedCareerColor } from "../src/shared/career-color";
 import { parseAuditEventInput } from "../src/db/audit-validation";
 import { createDatabaseHandle, type Database } from "../src/db/client-core";
 import {
@@ -860,7 +861,8 @@ const careerAdapter: EntitySyncAdapter = {
     return recordObject(row);
   },
   async insert(tx, id, values) {
-    await tx.insert(career).values({ id, ...values } as typeof career.$inferInsert);
+    const activeColors = await tx.select({ color: career.color }).from(career).where(eq(career.status, "ACTIVE"));
+    await tx.insert(career).values({ id, ...values, color: getLeastUsedCareerColor(activeColors.map((row) => row.color)) } as typeof career.$inferInsert);
   },
   async update(tx, id, values) {
     await tx.update(career).set({ ...values, updatedAt: new Date() } as typeof career.$inferInsert)

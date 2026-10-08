@@ -28,6 +28,7 @@ import {
   user,
   type RecordStatus,
 } from "@/db/schema";
+import { getLeastUsedCareerColor, type CareerColor } from "@/shared/career-color";
 import { formatTutorName } from "@/shared/tutor-name";
 
 import {
@@ -138,6 +139,7 @@ export type SafeCycleContext = {
 };
 
 export type SafeCareer = {
+  color: CareerColor;
   id: string;
   name: string;
   status: RecordStatus;
@@ -273,11 +275,13 @@ function toSafeCycle(row: CycleRow): SafeCycleContext {
 }
 
 function toSafeCareer(row: {
+  color: CareerColor;
   id: string;
   name: string;
   status: RecordStatus;
 }): SafeCareer {
   return {
+    color: row.color,
     id: row.id,
     name: row.name,
     status: row.status,
@@ -353,6 +357,7 @@ function toSafeTutorListItem(
     institutionalIdentifier: string | null;
     careerId: string;
     careerName: string;
+    careerColor: CareerColor;
     careerStatus: RecordStatus;
     status: RecordStatus;
     createdAt: Date;
@@ -382,6 +387,7 @@ function toSafeTutorListItem(
     primaryCareer: {
       id: row.careerId,
       name: row.careerName,
+      color: row.careerColor,
       status: row.careerStatus,
     },
     currentCycle,
@@ -747,6 +753,7 @@ async function getTutorRecord(db: SelectDatabase, tutorId: string) {
       updatedAt: tutor.updatedAt,
       careerId: career.id,
       careerName: career.name,
+      careerColor: career.color,
       careerStatus: career.status,
     })
     .from(tutor)
@@ -857,6 +864,7 @@ export async function listTutors(
         updatedAt: tutor.updatedAt,
         careerId: career.id,
         careerName: career.name,
+        careerColor: career.color,
         careerStatus: career.status,
       })
       .from(tutor)
@@ -943,7 +951,7 @@ export async function listCareers(
 ): Promise<SafeCareer[]> {
   return runQuery(async () => {
     const rows = await db
-      .select({ id: career.id, name: career.name, status: career.status })
+      .select({ id: career.id, name: career.name, color: career.color, status: career.status })
       .from(career)
       .where(status === "ALL" ? undefined : eq(career.status, status))
       .orderBy(asc(career.normalizedName), asc(career.id));
@@ -1052,6 +1060,7 @@ export async function listSubjectCoverage(
         subjectStatus: subject.status,
         careerId: career.id,
         careerName: career.name,
+        careerColor: career.color,
         careerStatus: career.status,
         tutorId: tutor.id,
         tutorFirstName: tutor.firstName,
@@ -1114,6 +1123,7 @@ export async function listSubjectCoverage(
           career: {
             id: row.careerId,
             name: row.careerName,
+            color: row.careerColor,
             status: row.careerStatus,
           },
           tutors: [coverageTutor],
@@ -1134,7 +1144,7 @@ export const getSubjectCoverage = listSubjectCoverage;
 
 async function requireActiveCareer(db: MutationDatabase, careerId: string) {
   const [row] = await db
-    .select({ id: career.id, name: career.name, status: career.status })
+    .select({ id: career.id, name: career.name, color: career.color, status: career.status })
     .from(career)
     .where(eq(career.id, careerId))
     .limit(1);
@@ -1888,7 +1898,7 @@ export const setTutorStatus = transitionTutorStatus;
 
 async function getCareerRecord(db: SelectDatabase, careerId: string) {
   const [row] = await db
-    .select({ id: career.id, name: career.name, status: career.status })
+    .select({ id: career.id, name: career.name, color: career.color, status: career.status })
     .from(career)
     .where(eq(career.id, careerId))
     .limit(1);
@@ -1925,9 +1935,15 @@ export async function createCareer(
 
   return runMutation(db, async (transaction) => {
     const displayName = cleanDisplayText(parsed.name);
+    const activeColors = parsed.color === undefined
+      ? await transaction.select({ color: career.color }).from(career)
+          .where(eq(career.status, "ACTIVE"))
+      : [];
+    const color = parsed.color ?? getLeastUsedCareerColor(activeColors.map((row) => row.color));
     const [created] = await transaction
       .insert(career)
       .values({
+        color,
         name: displayName,
         normalizedName: normalizeName(displayName),
         status: "ACTIVE",
@@ -1946,7 +1962,7 @@ export async function createCareer(
       action: "career.created",
       entityType: "career",
       entityId: created.id,
-      metadata: { status: "ACTIVE" },
+      metadata: { status: "ACTIVE", color },
       requestId: context.requestId ?? null,
       ipAddress: context.ipAddress ?? null,
     });
@@ -1979,6 +1995,7 @@ export async function updateCareer(
     await transaction
       .update(career)
       .set({
+        color: parsed.color ?? existing.color,
         name: displayName,
         normalizedName: normalizeName(displayName),
         updatedAt: new Date(),
@@ -1990,7 +2007,13 @@ export async function updateCareer(
       action: "career.updated",
       entityType: "career",
       entityId: parsedCareerId,
-      metadata: { changedFields: ["name"] },
+      metadata: {
+        changedFields: [
+          ...(parsed.name === undefined ? [] : ["name"]),
+          ...(parsed.color === undefined ? [] : ["color"]),
+        ],
+        ...(parsed.color === undefined ? {} : { color: parsed.color }),
+      },
       requestId: context.requestId ?? null,
       ipAddress: context.ipAddress ?? null,
     });

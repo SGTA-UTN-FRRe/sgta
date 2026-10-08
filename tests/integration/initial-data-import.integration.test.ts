@@ -85,6 +85,11 @@ describe("initial data import", () => {
       .delete(career)
       .where(eq(career.id, conflictingCareerId!.id));
 
+    await database.insert(career).values({
+      name: "Existing Palette Career",
+      normalizedName: "existing palette career",
+      color: "BLUE",
+    });
     const firstApply = await executeInitialDataImport(database, result.data, {
       apply: true,
     });
@@ -112,6 +117,10 @@ describe("initial data import", () => {
       preferredDisplayName: "Avery",
       institutionalIdentifier: "SYN-001",
     });
+    const importedCareerId = importedTutorRows[0]!.primaryCareerId;
+    expect((await database.select().from(career).where(eq(career.id, importedCareerId)))[0]?.color).toBe("EMERALD");
+    // Import reruns preserve a color subsequently selected by an Admin.
+    await database.update(career).set({ color: "GRAPHITE" }).where(eq(career.id, importedCareerId));
 
     const importedSubjects = await database.select().from(subject);
     expect(importedSubjects[0]?.aliases).toEqual([
@@ -137,6 +146,7 @@ describe("initial data import", () => {
     }
     expect(secondApply.cycles.unchanged).toBe(2);
     expect(secondApply.hourMovements.unchanged).toBe(1);
+    expect((await database.select().from(career).where(eq(career.id, importedCareerId)))[0]?.color).toBe("GRAPHITE");
 
     const verification = await verifyInitialData(database, result.data, {
       "tutors.ACTIVE": 1,
@@ -146,6 +156,7 @@ describe("initial data import", () => {
       [`consultations.career.${importedTutorRows[0]!.primaryCareerId}`]: 0,
     });
     expect(verification.verified).toBe(true);
+    expect(verification.checks["registry.careerColors"]).toBe(true);
     expect(verification.metrics["balances.matched"]).toBe(1);
     expect(Object.keys(verification.checks).filter(key => key.startsWith("reports.cycle."))).toHaveLength(4);
     const incorrectExpectation = await verifyInitialData(database, result.data, {

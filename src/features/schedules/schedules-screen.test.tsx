@@ -43,12 +43,14 @@ const specialPlan: SafeSchedulePlan = {
 
 const tutors = [
   {
+    careerColor: "BLUE" as const,
     careerName: "Tecnicatura Universitaria en Programación",
     formalName: "Benítez, Marina",
     id: "44444444-4444-4444-8444-444444444444",
     status: "ACTIVE" as const,
   },
   {
+    careerColor: "BLUE" as const,
     careerName: "Ingeniería en Sistemas de Información",
     formalName: "Acosta, Tomás",
     id: "55555555-5555-4555-8555-555555555555",

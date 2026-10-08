@@ -19,6 +19,7 @@ export const consultationFilters: ConsultationFilters = {
 
 export const consultationCareers: SafeCareer[] = [
   {
+    color: "BLUE",
     id: consultationCareerId,
     name: "Ingeniería en Sistemas de Información",
     status: "ACTIVE",

@@ -17,6 +17,7 @@ import {
   schedulePlan,
   tutor,
 } from "../src/db/schema";
+import { CAREER_COLORS } from "../src/shared/career-color";
 import { getOperationalReport } from "../src/features/reports/report-service";
 import { executeInitialDataImport, loadInitialDataPackage } from "./import-initial-data";
 
@@ -31,6 +32,8 @@ export async function verifyInitialData(
   return database.transaction(async (tx) => {
     const checks: Record<string, boolean> = {};
     const metrics: Record<string, number> = {};
+    const careerColors = await tx.select({ color: career.color }).from(career);
+    checks["registry.careerColors"] = careerColors.every(({ color }) => CAREER_COLORS.includes(color));
     const counts = await executeInitialDataImport(tx, data, { apply: false });
     for (const [table, result] of Object.entries(counts)) {
       checks[`registry.${table}`] = result.created === 0 && result.updated === 0;
