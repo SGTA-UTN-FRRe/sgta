@@ -17,6 +17,12 @@ function expectSecurityHeaders(headers: Record<string, string>) {
 }
 
 test.describe("UI smoke journeys", () => {
+  test("keeps the design preview out of production", async ({ request }) => {
+    const response = await request.get("/design-preview");
+
+    expect(response.status()).toBe(404);
+  });
+
   test("applies security headers to pages and Google sign-in callbacks", async ({
     request,
   }) => {

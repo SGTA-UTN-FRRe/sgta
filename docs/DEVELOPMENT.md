@@ -52,6 +52,11 @@ Open [http://localhost:3000](http://localhost:3000). The bootstrap command
 creates or updates one enabled Admin; it is an operator command, not public
 sign-up.
 
+## Design preview
+
+While running `corepack pnpm dev`, open `/design-preview` to inspect the design
+tokens and shared UI components. The route returns 404 in a production build.
+
 ## Commands
 
 The complete command list is maintained in [AGENTS.md](../AGENTS.md#commands).
