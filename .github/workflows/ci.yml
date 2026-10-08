@@ -27,15 +27,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check for unfilled template placeholders
-        run: |
-          status=0
-          git grep -nE '<(FILL|OPTIONAL)[:>]|^(# )?TEMPLATE |^status: template$' -- . ':!.agents/' ':!.claude/' ':!*.template.*' || status=$?
-          if [ "$status" -ne 1 ]; then
-            echo "::error::Unfilled template placeholders or template headers found"
-            exit 1
-          fi
-
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -46,6 +37,9 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+
+      - name: Check for unfilled template placeholders
+        run: pnpm check:templates
 
       - name: Install dependencies (locked)
         run: pnpm install --frozen-lockfile

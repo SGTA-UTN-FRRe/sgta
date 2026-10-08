@@ -28,13 +28,28 @@ Use this order when instructions overlap:
 
 Do not infer repository workflow from task wording when an explicit rule or skill exists.
 
-## Language boundary
+## Language policy
 
-La documentación del repositorio y los issues de GitHub, incluidos sus títulos y cuerpos, se redactan en español. La skill `delegate-task` y el formulario de tareas deben mantener ese idioma.
+Choose the language by artifact, never by the language of the conversation or the task prompt.
 
-La interfaz y los mensajes visibles para las personas usuarias de SGTA se redactan en español. La locale `es-AR` controla la localización y los formatos regionales, pero no habilita el voseo, el lunfardo ni los modismos coloquiales argentinos. Seguí `design/PROJECT-DESIGN.md` para la voz aprobada y `design/UI-SPEC.md` para el microcopy de cada vista.
+| Artifact | Language |
+| --- | --- |
+| Product UI and user-visible messages (labels, errors, metadata, emails) | Spanish, neutral institutional register per `design/PROJECT-DESIGN.md` §2.5 |
+| GitHub issues (title, body, comments), issue forms, GitHub Project items and fields | Spanish |
+| Roadmap, implementation plans, execution packets | English |
+| Development documentation: `README.md`, `docs/`, `design/`, `SECURITY.md`, `AGENTS.md`, `CLAUDE.md`, skills | English |
+| Code, identifiers, comments, tests, fixtures, files, directories, route segments | English |
+| Branches, commits, PR titles and bodies, squash text | English, per `$git-delivery` |
 
-El código y los artefactos técnicos se escriben en inglés: identificadores, comentarios técnicos, nombres de pruebas y fixtures técnicos, archivos, directorios y segmentos de ruta. Las ramas, los mensajes de commit, los títulos y descripciones de PR, y el texto de squash también se escriben en inglés, según `$git-delivery`.
+`design/` is development documentation: its prose is English even though it defines Spanish product copy.
+
+Rules for mixed content:
+
+- Quoted product copy stays verbatim in Spanish inside English artifacts (design specs, test assertions).
+- Inside Spanish text, identifiers, paths, commands, and route segments stay in English inside backticks.
+- `es-AR` sets locale formats only (dates, numbers); it does not set the voice. No voseo, lunfardo, or colloquial regionalisms.
+- Reply to the user in the language they write in; that does not change any artifact's language.
+- For an unlisted artifact: English if developers or agents read it inside the repository; Spanish if end users or teammates read it outside the repository.
 
 ## Planning and delivery boundary
 
@@ -43,6 +58,11 @@ El código y los artefactos técnicos se escriben en inglés: identificadores, c
 Planning metadata must not leak into branches, commit subjects, pull request titles or bodies, squash messages, tags, filenames, directories, identifiers, labels, or product-facing names. Derive the durable implementation outcome before creating delivery text.
 
 ## Repository skills
+
+Repository skills are optional local tooling and are not included in a fresh
+clone. See [Agent tooling](docs/DEVELOPMENT.md#agent-tooling) for the pinned
+playbook source and installation instructions. Build and test commands do not
+require an AI tool or local skills.
 
 Use the installed skills for their owned procedures:
 
@@ -55,7 +75,7 @@ Do not duplicate those procedures in project documentation.
 
 ## Delegation
 
-- **Issue language:** Spanish.
+- **Issue language:** Spanish (see Language policy).
 - **Tracker:** GitHub Project #1 owned by `SGTA-UTN-FRRe`.
 
 Delegation is optional. Mark a plan task `Delegable: yes` only when a teammate can complete it from the issue alone and no other task depends on it. Use `$delegate-task` or the Task issue form; the skill owns issue drafting and creation. Create an issue or add it to the project only when explicitly requested.
@@ -125,6 +145,7 @@ Keep route composition thin and place feature-specific behavior under a feature-
 | Task | Command |
 | --- | --- |
 | Verify (mirrors CI Gate) | `corepack pnpm verify` |
+| Template placeholder check | `corepack pnpm check:templates` |
 | Install | `corepack pnpm install --frozen-lockfile` |
 | Dev | `corepack pnpm dev` |
 | Migration check | `corepack pnpm db:check` |

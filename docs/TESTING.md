@@ -25,6 +25,15 @@ PostgreSQL databases. Integration tests apply the committed migrations twice to
 check rerunnability. Containers use available host ports and are removed after
 the suite. Docker is required locally for both boundaries.
 
+The populated migration-upgrade scenario creates a separate database inside the
+integration container. It applies committed migrations through 0010, seeds
+synthetic legacy origins and ledger history, then applies the full migration
+set twice. It verifies preserved balances, movements, activities, categories,
+audits, and planning records across attendance removal, and reverses a migrated
+debit through the current hour service. Its database and temporary migration
+folder are removed in cleanup; it does not use an operational connection or
+alter the shared fully migrated integration database.
+
 Fixtures are deterministic and synthetic. The E2E web-server wrapper seeds its
 database and sessions, then serves the built application with `next start`. The
 consultation journey uses a loopback HTTP fixture for the read-only Sheets
@@ -41,9 +50,17 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm verify
 ```
 
-The command runs lint, type checking, unit/component tests, PostgreSQL
+The command runs template validation, lint, type checking, unit/component tests, PostgreSQL
 integration tests, the production build, and browser tests in sequence. Run the
 individual package scripts when diagnosing a single gate.
+
+Run template validation independently with `corepack pnpm check:templates`.
+The dependency-free Node CLI scans Git-tracked working-tree files for unfilled
+FILL/OPTIONAL markers, template title lines, and template status. It excludes
+`.agents/`, `.claude/`, and paths matching `*.template.*`. Ignored `local-docs/`
+and untracked files are outside the scan; binary matches retain Git's default
+handling. Git invocation errors fail the check. Local verify and CI Quality
+use this same command, with CI running it before dependency installation.
 
 Build before E2E because the web-server wrapper starts the production build.
 Install Playwright Chromium once when it is not available locally:
@@ -81,7 +98,7 @@ credentials, or a live consultation source.
 
 | Gate | Checks |
 | --- | --- |
-| `Quality` | ESLint and strict TypeScript validation. |
+| `Quality` | Template validation, ESLint, and strict TypeScript validation. |
 | `Tests` | Unit and component suite. |
 | `Integration` | Isolated PostgreSQL/Testcontainers suite. |
 | `E2E` | Production build followed by Playwright. |
