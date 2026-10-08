@@ -30,6 +30,7 @@
 
 # Personal agent configuration
 /.agents/
+/.claude/skills/
 CLAUDE.local.md
 .claude/settings.local.json
 

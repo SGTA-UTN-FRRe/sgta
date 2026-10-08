@@ -201,7 +201,7 @@ Ask the user before the following actions unless the current request or approved
 - Current-state docs describe verified repository facts; keep target decisions in their existing authoritative documents.
 - Remove stale claims instead of layering contradictory notes.
 - When a change alters a view in UI-SPEC's README screenshot column, regenerate its screenshot in the same change once the Screenshots command exists. The UI engineering foundation owns that command and the initial README screenshots.
-- `local-docs/` is ignored working space for plans, audits, review screenshots, and scratch notes. Tracked documents never link to it.
+- `local-docs/` is git-ignored and never linked from tracked files: active plans in `execution/`, issue drafts in `issues/`, human-kept material in `keep/`, and every other agent-written file (scripts, PR text, screenshots, build output) in `tmp/`. Deleting `tmp/` contents, plans whose PRs merged, and posted issue drafts needs no confirmation; never delete `keep/`.
 
 ## Repository delivery
 
