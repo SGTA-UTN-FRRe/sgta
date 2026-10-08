@@ -228,14 +228,14 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
           "relative flex min-h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors",
           "focus-visible:z-10 focus-visible:outline-none",
           active
-            ? "bg-nav-active font-semibold text-nav-active-foreground"
-            : "text-nav-muted hover:bg-nav-hover hover:text-nav-foreground",
+            ? "bg-sidebar-primary font-semibold text-sidebar-primary-foreground"
+            : "text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
         )}
       >
         {active && (
           <span
             data-testid="faro-marker"
-            className="absolute inset-y-2 left-0.5 w-1 rounded-r-full bg-nav-active-marker"
+            className="absolute inset-y-2 left-0.5 w-1 rounded-r-full bg-sidebar-marker"
             aria-hidden="true"
           />
         )}
@@ -246,22 +246,22 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
   };
 
   const navContent = (isMobile = false) => (
-    <div className="flex h-full min-h-0 flex-col bg-nav-background text-nav-foreground">
-      <div className="flex min-h-20 items-center justify-between border-b border-border-subtle px-4 lg:px-5">
+    <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
+      <div className="flex min-h-20 items-center justify-between border-b border-border px-4 lg:px-5">
         <Link
           href={homeHref}
           onClick={closeMobileNav}
           aria-label="Tutorias UTN FRRe - inicio"
           className="group flex min-w-0 items-center gap-3 rounded-md"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-accent/40 bg-accent-surface text-accent transition-colors group-hover:border-accent">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-faro/40 bg-muted text-faro transition-colors group-hover:border-faro">
             <FaroIcon className="h-7 w-7" />
           </span>
           <span className="min-w-0 md:hidden lg:flex lg:flex-col">
-            <span className="truncate text-sm font-bold tracking-tight text-nav-foreground">
+            <span className="truncate text-sm font-bold tracking-tight text-sidebar-foreground">
               Tutorias
             </span>
-            <span className="truncate text-xs font-medium text-nav-muted">UTN FRRe · SGTA</span>
+            <span className="truncate text-xs font-medium text-sidebar-muted-foreground">UTN FRRe · SGTA</span>
           </span>
         </Link>
 
@@ -270,7 +270,7 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
             ref={mobileCloseRef}
             type="button"
             onClick={closeMobileNav}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-nav-muted hover:bg-nav-hover hover:text-nav-foreground md:hidden"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground md:hidden"
             aria-label="Cerrar navegación"
           >
             <X className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
@@ -282,8 +282,8 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
         <div className="space-y-1">{primaryItems.map(renderNavItem)}</div>
 
         {secondaryItems.length > 0 && (
-          <div className="mt-6 border-t border-border-subtle pt-4">
-            <p className="mb-2 px-3 text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-nav-muted md:hidden lg:block">
+          <div className="mt-6 border-t border-border pt-4">
+            <p className="mb-2 px-3 text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-sidebar-muted-foreground md:hidden lg:block">
               Sistema
             </p>
             <div className="space-y-1">{secondaryItems.map(renderNavItem)}</div>
@@ -291,24 +291,24 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
         )}
       </nav>
 
-      <div className="border-t border-border-subtle p-3">
-        <div className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm text-nav-muted">
+      <div className="border-t border-border p-3">
+        <div className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm text-sidebar-muted-foreground">
           <UserRound className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden="true" />
           {user === undefined ? (
             <span className="truncate md:hidden lg:inline">{roleLabel}</span>
           ) : (
             <span className="flex min-w-0 flex-col md:hidden lg:flex">
-              <span className="truncate text-sm font-semibold text-nav-foreground">
+              <span className="truncate text-sm font-semibold text-sidebar-foreground">
                 {user.name}
               </span>
-              <span className="truncate text-xs text-nav-muted">{roleLabel}</span>
+              <span className="truncate text-xs text-sidebar-muted-foreground">{roleLabel}</span>
             </span>
           )}
         </div>
         <SignOutButton
-          className="mt-1 w-full justify-start gap-3 rounded-md px-3 text-nav-muted hover:bg-nav-hover hover:text-nav-foreground [&_svg]:size-5"
+          className="mt-1 w-full justify-start gap-3 rounded-md px-3 text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground [&_svg]:size-5"
           labelClassName={isMobile ? undefined : "md:hidden lg:inline"}
-          errorClassName={isMobile ? undefined : "md:absolute md:bottom-0 md:left-full md:ml-2 md:w-60 md:rounded-md md:border md:border-danger/20 md:bg-danger-surface md:p-3 md:shadow-sm lg:static lg:ml-0 lg:w-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"}
+          errorClassName={isMobile ? undefined : "md:absolute md:bottom-0 md:left-full md:ml-2 md:w-60 md:rounded-md md:border md:border-destructive/20 md:bg-muted md:p-3 md:shadow-xs lg:static lg:ml-0 lg:w-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"}
         />
       </div>
     </div>
@@ -316,12 +316,12 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
 
   const desktopSidebarClassName =
     variant === "admin-expanded"
-      ? "flex w-[var(--sidebar-width)]"
+      ? "flex w-sidebar"
       : variant === "admin-rail"
-        ? "flex w-[var(--sidebar-width-collapsed)]"
+        ? "flex w-sidebar-rail"
         : variant === "mobile-drawer"
           ? "hidden"
-          : "hidden md:flex md:w-[var(--sidebar-width-collapsed)] lg:w-[var(--sidebar-width)]";
+          : "hidden md:flex md:w-sidebar-rail lg:w-sidebar";
 
   return (
     <>
@@ -333,7 +333,7 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
           aria-label="Abrir navegación"
           aria-controls="sgta-mobile-navigation"
           aria-expanded={mobileOpen}
-          className="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-surface text-foreground shadow-sm hover:bg-surface-subtle"
+          className="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-card text-foreground shadow-xs hover:bg-muted"
         >
           <Menu className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
         </button>
@@ -349,7 +349,7 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
           />
           <aside
             id="sgta-mobile-navigation"
-            className="relative z-10 h-full w-[min(var(--sidebar-width),calc(100%-2rem))] shadow-dialog"
+            className="relative z-10 h-full w-sidebar max-w-full shadow-lg"
             aria-label={productLabel}
             role="dialog"
             aria-modal="true"
@@ -362,7 +362,7 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
 
       <aside
         className={cn(
-          "sticky top-0 z-30 h-svh shrink-0 flex-col border-r border-border-subtle",
+          "sticky top-0 z-30 h-svh shrink-0 flex-col border-r border-border",
           desktopSidebarClassName,
         )}
         aria-label={productLabel}

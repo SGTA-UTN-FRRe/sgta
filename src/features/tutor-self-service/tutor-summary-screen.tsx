@@ -65,11 +65,11 @@ function SummaryLoading() {
       className="space-y-6"
       role="status"
     >
-      <div className="h-9 w-56 animate-pulse rounded-sm bg-surface-subtle" />
+      <div className="h-9 w-56 animate-pulse rounded-sm bg-muted" />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <div
-            className="h-40 animate-pulse rounded-md border border-border-subtle bg-surface"
+            className="h-40 animate-pulse rounded-md border border-border bg-card"
             key={index}
           />
         ))}
@@ -82,13 +82,13 @@ function SummaryError({ message, onRetry }: { message: string; onRetry: () => vo
   return (
     <div
       aria-live="assertive"
-      className="rounded-md border border-danger/30 bg-danger-surface/70 p-6"
+      className="rounded-md border border-destructive/30 bg-muted/70 p-6"
       role="alert"
     >
       <h2 className="text-base font-semibold text-foreground">
         No se pudo cargar el resumen
       </h2>
-      <p className="mt-2 text-sm leading-6 text-foreground-secondary">{message}</p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{message}</p>
       <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
         <RefreshCw aria-hidden="true" />
         Reintentar
@@ -109,12 +109,12 @@ function SummaryRequiredAction({
   return (
     <div
       aria-live="polite"
-      className="rounded-md border border-warning/30 bg-warning-surface/70 p-6"
+      className="rounded-md border border-warning/30 bg-muted/70 p-6"
       role="status"
     >
       <StatusBadge label="Acción requerida" variant="warning" />
       <h2 className="mt-4 text-lg font-semibold text-foreground">{copy.title}</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground-secondary">
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
         {copy.description}
       </p>
       <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
@@ -148,13 +148,13 @@ function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { sta
       <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <section
           aria-labelledby="tutor-summary-hours"
-          className="rounded-md border border-border bg-surface p-5 shadow-xs"
+          className="rounded-md border border-border bg-card p-5 shadow-xs"
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-foreground-secondary">Horas</p>
+              <p className="text-sm font-semibold text-muted-foreground">Horas</p>
               <h2
-                className="mt-3 font-numeric text-3xl font-extrabold tabular-nums text-foreground"
+                className="mt-3 font-sans text-3xl font-extrabold tabular-nums text-foreground"
                 id="tutor-summary-hours"
               >
                 {formatSignedMinutes(data.balance.signedBalanceMinutes)}
@@ -171,11 +171,11 @@ function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { sta
 
         <section
           aria-labelledby="tutor-summary-next-duty"
-          className="rounded-md border border-border bg-surface p-5 shadow-xs md:col-span-1 xl:col-span-2"
+          className="rounded-md border border-border bg-card p-5 shadow-xs md:col-span-1 xl:col-span-2"
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-foreground-secondary">
+              <p className="text-sm font-semibold text-muted-foreground">
                 Próxima guardia
               </p>
               <h2 className="mt-3 text-lg font-bold text-foreground" id="tutor-summary-next-duty">
@@ -185,7 +185,7 @@ function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { sta
             <CalendarDays aria-hidden="true" className="h-5 w-5 text-primary" />
           </div>
           {nextDuty && (
-            <p className="mt-4 text-sm leading-6 text-foreground-secondary">
+            <p className="mt-4 text-sm leading-6 text-muted-foreground">
               <time dateTime={`${nextDuty.date}T${formatTime(nextDuty.startMinutes)}`}>
                 {formatTimeRange(nextDuty.startMinutes, nextDuty.endMinutes)}
               </time>
@@ -196,13 +196,13 @@ function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { sta
 
         <section
           aria-labelledby="tutor-summary-career"
-          className="rounded-md border border-border bg-surface p-5 shadow-xs"
+          className="rounded-md border border-border bg-card p-5 shadow-xs"
         >
-          <p className="text-sm font-semibold text-foreground-secondary">Carrera</p>
+          <p className="text-sm font-semibold text-muted-foreground">Carrera</p>
           <h2 className="mt-3 text-lg font-bold text-foreground" id="tutor-summary-career">
             {data.tutor.career.name}
           </h2>
-          <p className="mt-2 text-sm text-foreground-secondary">
+          <p className="mt-2 text-sm text-muted-foreground">
             {data.tutor.subjects.length === 1
               ? "1 materia asignada"
               : `${data.tutor.subjects.length} materias asignadas`}
@@ -213,7 +213,7 @@ function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { sta
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <section
           aria-labelledby="tutor-summary-subjects"
-          className="rounded-md border border-border bg-surface p-5 shadow-xs"
+          className="rounded-md border border-border bg-card p-5 shadow-xs"
         >
           <div className="flex items-start gap-3">
             <BookOpen aria-hidden="true" className="mt-0.5 h-5 w-5 text-primary" />
@@ -221,25 +221,25 @@ function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { sta
               <h2 className="text-lg font-bold text-foreground" id="tutor-summary-subjects">
                 Materias
               </h2>
-              <p className="mt-1 text-sm text-foreground-secondary">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Materias asignadas.
               </p>
             </div>
           </div>
           {data.tutor.subjects.length === 0 ? (
-            <p className="mt-6 rounded-sm bg-surface-subtle px-4 py-3 text-sm text-foreground-secondary">
+            <p className="mt-6 rounded-sm bg-muted px-4 py-3 text-sm text-muted-foreground">
               Todavía no hay materias asignadas.
             </p>
           ) : (
             <ul className="mt-5 grid gap-2 sm:grid-cols-2" data-testid="tutor-subject-list">
               {data.tutor.subjects.map((subject) => (
                 <li
-                  className="rounded-sm border border-border-subtle bg-canvas px-4 py-3 text-sm font-semibold text-foreground"
+                  className="rounded-sm border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground"
                   key={subject.id}
                 >
                   <span>{subject.name}</span>
                   {subject.status === "INACTIVE" && (
-                    <span className="mt-1 block text-xs font-medium text-foreground-muted">
+                    <span className="mt-1 block text-xs font-medium text-muted-foreground">
                       Materia inactiva
                     </span>
                   )}
@@ -251,25 +251,25 @@ function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { sta
 
         <section
           aria-labelledby="tutor-summary-cycle"
-          className="rounded-md border border-border bg-surface p-5 shadow-xs"
+          className="rounded-md border border-border bg-card p-5 shadow-xs"
         >
           <div className="flex items-start gap-3">
-            <Sparkles aria-hidden="true" className="mt-0.5 h-5 w-5 text-accent" />
+            <Sparkles aria-hidden="true" className="mt-0.5 h-5 w-5 text-faro" />
             <div>
               <h2 className="text-lg font-bold text-foreground" id="tutor-summary-cycle">
                 Ciclo vigente
               </h2>
-              <p className="mt-1 text-sm text-foreground-secondary">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Contexto de la pertenencia actual.
               </p>
             </div>
           </div>
           <p className="mt-5 font-semibold text-foreground">{data.cycle.name}</p>
-          <p className="mt-1 text-sm text-foreground-secondary">
+          <p className="mt-1 text-sm text-muted-foreground">
             {formatLongDate(data.cycle.startDate)} — {formatLongDate(data.cycle.endDate)}
           </p>
-          <div className="mt-5 border-t border-border-subtle pt-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground-muted">
+          <div className="mt-5 border-t border-border pt-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Referencia de beca
             </p>
             <p className="mt-2 text-sm font-semibold text-foreground">

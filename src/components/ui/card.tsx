@@ -7,7 +7,7 @@ function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
     <div
       data-slot="card"
       className={cn(
-        "rounded-md border border-border bg-surface text-foreground shadow-xs",
+        "rounded-md border border-border bg-card text-foreground shadow-xs",
         className,
       )}
       {...props}
@@ -39,7 +39,7 @@ function CardDescription({ className, ...props }: HTMLAttributes<HTMLParagraphEl
   return (
     <p
       data-slot="card-description"
-      className={cn("text-sm text-foreground-muted", className)}
+      className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
   );

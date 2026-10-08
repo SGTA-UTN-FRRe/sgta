@@ -1,6 +1,36 @@
 import type { Locator, Page } from "@playwright/test";
+import { expect } from "./fixtures";
 
 type KeyboardSelectTarget = string | { label: string };
+
+export async function expectFocusOutline(locator: Locator) {
+  await expect(locator).toBeFocused();
+  await expect(locator).toHaveCSS("outline-style", "solid");
+  await expect(locator).toHaveCSS("outline-width", "2px");
+  await expect(locator).toHaveCSS("outline-offset", "2px");
+  // Resolve both colors in the browser: custom properties retain LAB percentage
+  // syntax while computed colors serialize it differently. Poll also observes
+  // completion of the control's outline-color transition.
+  await expect.poll(() => locator.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    const ring = styles.getPropertyValue("--ring").trim();
+    const probe = document.createElement("span");
+    probe.hidden = true;
+    probe.style.color = ring;
+    document.body.append(probe);
+    try {
+      const expected = getComputedStyle(probe).color;
+      return {
+        valid: CSS.supports("color", ring),
+        actual: styles.outlineColor,
+        expected,
+        matches: styles.outlineColor === expected,
+      };
+    } finally {
+      probe.remove();
+    }
+  })).toMatchObject({ valid: true, matches: true });
+}
 
 export async function focusWithKeyboard(page: Page, locator: Locator) {
   await locator.waitFor({ state: "visible" });

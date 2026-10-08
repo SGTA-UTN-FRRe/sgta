@@ -25,24 +25,24 @@ export function FaroIllustration({ className, ...props }: FaroIllustrationProps)
         cx="48"
         cy="48"
         r="44"
-        className="fill-accent/5 stroke-accent/20"
+        className="fill-faro/5 stroke-faro/20"
         strokeWidth="1.5"
         strokeDasharray="4 3"
       />
 
       <path
         d="M48 27L18 19M48 31L16 35M48 27L78 19M48 31L80 35"
-        className="stroke-accent"
+        className="stroke-faro"
         stroke="currentColor"
         strokeWidth="1.75"
         strokeLinecap="round"
         strokeOpacity="0.7"
       />
 
-      <circle cx="48" cy="19" r="2.5" className="fill-accent" />
+      <circle cx="48" cy="19" r="2.5" className="fill-faro" />
       <path
         d="M42 27C42 23.5 44.5 21 48 21C51.5 21 54 23.5 54 27H42Z"
-        className="fill-accent"
+        className="fill-faro"
       />
 
       <rect
@@ -51,7 +51,7 @@ export function FaroIllustration({ className, ...props }: FaroIllustrationProps)
         width="12"
         height="8"
         rx="1"
-        className="fill-surface-warm stroke-brand-navy"
+        className="fill-muted stroke-brand-navy"
         stroke="currentColor"
         strokeWidth="2"
       />
@@ -60,7 +60,7 @@ export function FaroIllustration({ className, ...props }: FaroIllustrationProps)
         y1="27"
         x2="48"
         y2="35"
-        className="stroke-accent"
+        className="stroke-faro"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
@@ -79,7 +79,7 @@ export function FaroIllustration({ className, ...props }: FaroIllustrationProps)
 
       <path
         d="M43 35L38 72H58L53 35H43Z"
-        className="fill-surface stroke-brand-navy"
+        className="fill-card stroke-brand-navy"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinejoin="round"
@@ -87,7 +87,7 @@ export function FaroIllustration({ className, ...props }: FaroIllustrationProps)
 
       <path
         d="M41 48L39.5 58H56.5L55 48H41Z"
-        className="fill-accent stroke-accent"
+        className="fill-faro stroke-faro"
         stroke="currentColor"
         strokeWidth="1"
         strokeLinejoin="round"

@@ -11,6 +11,7 @@ import {
 } from "./e2e-test-data";
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 import { addE2ESessionCookie } from "./session-cookie";
+import { expectFocusOutline } from "./keyboard-helpers";
 
 const viewports = [
   { height: 844, name: "Compact", width: 390 },
@@ -220,9 +221,7 @@ test.describe("authenticated Tutor self-service", () => {
     const trigger = page.getByRole("button", { name: "Abrir navegación" });
     await page.keyboard.press("Tab");
     await expect(trigger).toBeFocused();
-    await expect
-      .poll(() => trigger.evaluate((element) => getComputedStyle(element).boxShadow))
-      .not.toBe("none");
+    await expectFocusOutline(trigger);
     const skipLink = page.getByRole("link", {
       name: "Saltar al contenido principal",
     });
@@ -261,9 +260,7 @@ test.describe("authenticated Tutor self-service", () => {
       name: "Mi horario",
     });
     await expect(scheduleTitle).toBeFocused();
-    await expect
-      .poll(() => scheduleTitle.evaluate((element) => getComputedStyle(element).boxShadow))
-      .not.toBe("none");
+    await expectFocusOutline(scheduleTitle);
 
     await page.keyboard.press("Shift+Tab");
     await expect(skipLink).toBeFocused();

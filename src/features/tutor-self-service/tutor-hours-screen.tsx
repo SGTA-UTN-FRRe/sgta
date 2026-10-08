@@ -56,12 +56,12 @@ function HoursLoading() {
       className="space-y-6"
       role="status"
     >
-      <div className="h-9 w-48 animate-pulse rounded-sm bg-surface-subtle" />
-      <div className="h-36 animate-pulse rounded-md border border-border-subtle bg-surface" />
+      <div className="h-9 w-48 animate-pulse rounded-sm bg-muted" />
+      <div className="h-36 animate-pulse rounded-md border border-border bg-card" />
       <div className="space-y-3">
         {Array.from({ length: 3 }, (_, index) => (
           <div
-            className="h-20 animate-pulse rounded-md border border-border-subtle bg-surface"
+            className="h-20 animate-pulse rounded-md border border-border bg-card"
             key={index}
           />
         ))}
@@ -74,11 +74,11 @@ function HoursError({ message, onRetry }: { message: string; onRetry: () => void
   return (
     <div
       aria-live="assertive"
-      className="rounded-md border border-danger/30 bg-danger-surface/70 p-6"
+      className="rounded-md border border-destructive/30 bg-muted/70 p-6"
       role="alert"
     >
       <h2 className="text-base font-semibold text-foreground">No se pudieron cargar las horas</h2>
-      <p className="mt-2 text-sm leading-6 text-foreground-secondary">{message}</p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{message}</p>
       <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
         <RefreshCw aria-hidden="true" />
         Reintentar
@@ -99,12 +99,12 @@ function HoursRequiredAction({
   return (
     <div
       aria-live="polite"
-      className="rounded-md border border-warning/30 bg-warning-surface/70 p-6"
+      className="rounded-md border border-warning/30 bg-muted/70 p-6"
       role="status"
     >
       <StatusBadge label="Acción requerida" variant="warning" />
       <h2 className="mt-4 text-lg font-semibold text-foreground">{copy.title}</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground-secondary">
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
         {copy.description}
       </p>
       <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
@@ -133,20 +133,20 @@ function HoursEmpty({ onRetry }: { onRetry: () => void }) {
 function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: "ready" }> }) {
   return (
     <>
-      <section className="mt-6 rounded-md border border-border bg-surface p-5 shadow-xs sm:p-6" aria-labelledby="tutor-hours-balance">
+      <section className="mt-6 rounded-md border border-border bg-card p-5 shadow-xs sm:p-6" aria-labelledby="tutor-hours-balance">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-foreground-secondary">Ciclo vigente</p>
+            <p className="text-sm font-semibold text-muted-foreground">Ciclo vigente</p>
             <h2 className="mt-2 text-xl font-bold text-foreground" id="tutor-hours-balance">
               {data.cycle.name}
             </h2>
-            <p className="mt-1 text-sm text-foreground-secondary">
+            <p className="mt-1 text-sm text-muted-foreground">
               {formatLongDate(data.cycle.startDate)} — {formatLongDate(data.cycle.endDate)}
             </p>
           </div>
           <div className="sm:text-right">
-            <p className="text-sm font-semibold text-foreground-secondary">Saldo del ciclo</p>
-            <p className="mt-1 font-numeric text-4xl font-extrabold tabular-nums text-foreground">
+            <p className="text-sm font-semibold text-muted-foreground">Saldo del ciclo</p>
+            <p className="mt-1 font-sans text-4xl font-extrabold tabular-nums text-foreground">
               {formatSignedMinutes(data.balance.signedBalanceMinutes)}
             </p>
             <StatusBadge
@@ -165,7 +165,7 @@ function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: 
             <h2 className="text-lg font-bold text-foreground" id="tutor-hours-history">
               Historial de movimientos
             </h2>
-            <p className="mt-1 text-sm text-foreground-secondary">
+            <p className="mt-1 text-sm text-muted-foreground">
               Movimientos del ciclo vigente, ordenados del más reciente al más antiguo.
             </p>
           </div>
@@ -181,7 +181,7 @@ function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: 
 
             return (
               <li
-                className="rounded-md border border-border bg-surface p-4 shadow-xs sm:p-5"
+                className="rounded-md border border-border bg-card p-4 shadow-xs sm:p-5"
                 key={movement.id}
               >
                 <div className="flex items-start gap-3">
@@ -189,8 +189,8 @@ function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: 
                     aria-hidden="true"
                     className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
                       isCredit
-                        ? "bg-success-surface text-success"
-                        : "bg-warning-surface text-warning"
+                        ? "bg-muted text-success"
+                        : "bg-muted text-warning"
                     }`}
                   >
                     {isCredit ? (
@@ -203,16 +203,16 @@ function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: 
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                       <div>
                         <p className="font-semibold text-foreground">{movement.category.name}</p>
-                        <p className="mt-1 text-sm text-foreground-secondary">
+                        <p className="mt-1 text-sm text-muted-foreground">
                           {getMovementDirectionLabel(movement.direction)} · {formatLongDate(movement.movementDate)}
                         </p>
                       </div>
-                      <p className="font-numeric text-lg font-bold tabular-nums text-foreground">
+                      <p className="font-sans text-lg font-bold tabular-nums text-foreground">
                         {formatSignedMinutes(movement.signedDurationMinutes)}
                       </p>
                     </div>
                     {movement.note && (
-                      <p className="mt-3 text-sm leading-6 text-foreground-secondary">{movement.note}</p>
+                      <p className="mt-3 text-sm leading-6 text-muted-foreground">{movement.note}</p>
                     )}
                     {movement.reversalState !== "CONFIRMED" && (
                       <StatusBadge

@@ -33,7 +33,7 @@ export function EmptyState({
       role="status"
       data-slot="empty-state"
       className={cn(
-        "flex min-h-[16rem] w-full flex-col items-center justify-center rounded-md border border-dashed border-border bg-surface/40 px-6 py-10 text-center transition-colors sm:px-12 sm:py-14",
+        "flex min-h-[16rem] w-full flex-col items-center justify-center rounded-md border border-dashed border-border bg-card/40 px-6 py-10 text-center transition-colors sm:px-12 sm:py-14",
         className,
       )}
     >
@@ -46,7 +46,7 @@ export function EmptyState({
       </h3>
 
       {description && (
-        <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-foreground-secondary">
+        <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
           {description}
         </p>
       )}

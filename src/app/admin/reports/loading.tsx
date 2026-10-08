@@ -15,13 +15,13 @@ export default function AdminReportsLoading() {
       />
       <Card>
         <CardHeader>
-          <span className="h-5 w-24 animate-pulse rounded-sm bg-surface-subtle" />
+          <span className="h-5 w-24 animate-pulse rounded-sm bg-muted" />
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           {Array.from({ length: 6 }, (_, index) => (
             <span
               aria-hidden="true"
-              className="h-10 animate-pulse rounded-sm bg-surface-subtle"
+              className="h-10 animate-pulse rounded-sm bg-muted"
               key={index}
             />
           ))}
@@ -31,9 +31,9 @@ export default function AdminReportsLoading() {
         {Array.from({ length: 4 }, (_, index) => (
           <Card key={index}>
             <CardContent className="space-y-3 p-5">
-              <span className="block h-4 w-28 animate-pulse rounded-sm bg-surface-subtle" />
-              <span className="block h-8 w-20 animate-pulse rounded-sm bg-surface-subtle" />
-              <span className="block h-3 w-36 animate-pulse rounded-sm bg-surface-subtle" />
+              <span className="block h-4 w-28 animate-pulse rounded-sm bg-muted" />
+              <span className="block h-8 w-20 animate-pulse rounded-sm bg-muted" />
+              <span className="block h-3 w-36 animate-pulse rounded-sm bg-muted" />
             </CardContent>
           </Card>
         ))}

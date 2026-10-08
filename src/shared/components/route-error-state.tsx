@@ -15,7 +15,7 @@ export function RouteErrorState({ retry, homeHref }: RouteErrorStateProps) {
   return (
     <div className="space-y-6 pb-8">
       <div role="alert" className="space-y-4">
-        <CircleAlert className="h-8 w-8 text-danger" aria-hidden="true" />
+        <CircleAlert className="h-8 w-8 text-destructive" aria-hidden="true" />
         <PageHeader
           title="No se pudo cargar esta sección"
           description="Intentar nuevamente. Si el problema continúa, avisar a la administración."

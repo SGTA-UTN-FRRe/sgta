@@ -15,15 +15,15 @@ const badgeVariants = cva(
         outline:
           "border border-border text-foreground",
         success:
-          "border border-success/30 bg-success-surface text-success",
+          "border border-success/30 bg-muted text-success",
         warning:
-          "border border-warning/30 bg-warning-surface text-warning",
+          "border border-warning/30 bg-muted text-warning",
         danger:
-          "border border-danger/30 bg-danger-surface text-danger",
+          "border border-destructive/30 bg-muted text-destructive",
         info:
-          "border border-info/30 bg-info-surface text-info",
+          "border border-info/30 bg-muted text-info",
         faro:
-          "border border-accent/40 bg-accent-surface text-accent-foreground",
+          "border border-faro/40 bg-muted text-foreground",
       },
     },
     defaultVariants: {

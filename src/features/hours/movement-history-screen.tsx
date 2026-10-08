@@ -67,7 +67,7 @@ const focusableSelector = [
 ].join(",");
 
 const selectClassName =
-  "h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "h-10 w-full rounded-sm border border-border bg-card px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 const directionLabels = {
   CREDIT: "Crédito",
@@ -286,12 +286,12 @@ function InlineStateNotice({
   tone: "danger" | "success" | "warning";
 }) {
   const styles = {
-    danger: "border-danger/30 bg-danger-surface/60",
-    success: "border-success/30 bg-success-surface/60",
-    warning: "border-warning/30 bg-warning-surface/60",
+    danger: "border-destructive/30 bg-muted/60",
+    success: "border-success/30 bg-muted/60",
+    warning: "border-warning/30 bg-muted/60",
   } as const;
   const iconStyles = {
-    danger: "text-danger",
+    danger: "text-destructive",
     success: "text-success",
     warning: "text-warning",
   } as const;
@@ -308,7 +308,7 @@ function InlineStateNotice({
       <span className={cn("mt-0.5 shrink-0", iconStyles[tone])}>{icon}</span>
       <div className="min-w-0">
         <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-foreground-secondary">
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
           {description}
         </p>
         {action && <div className="mt-3">{action}</div>}
@@ -371,7 +371,7 @@ function HistoryFilters({
     <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(14rem,1.4fr)_minmax(12rem,1fr)_minmax(12rem,1fr)_minmax(10rem,0.8fr)_auto]">
       <div className="space-y-1.5">
         <label
-          className="text-xs font-semibold text-foreground-secondary"
+          className="text-xs font-semibold text-muted-foreground"
           htmlFor="movement-history-search"
         >
           Buscar
@@ -379,7 +379,7 @@ function HistoryFilters({
         <div className="relative">
           <Search
             aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
           />
           <Input
             className="pl-9"
@@ -395,7 +395,7 @@ function HistoryFilters({
 
       <div className="space-y-1.5">
         <label
-          className="text-xs font-semibold text-foreground-secondary"
+          className="text-xs font-semibold text-muted-foreground"
           htmlFor="movement-history-cycle"
         >
           Ciclo
@@ -421,7 +421,7 @@ function HistoryFilters({
 
       <div className="space-y-1.5">
         <label
-          className="text-xs font-semibold text-foreground-secondary"
+          className="text-xs font-semibold text-muted-foreground"
           htmlFor="movement-history-tutor"
         >
           Tutor
@@ -447,7 +447,7 @@ function HistoryFilters({
 
       <div className="space-y-1.5">
         <label
-          className="text-xs font-semibold text-foreground-secondary"
+          className="text-xs font-semibold text-muted-foreground"
           htmlFor="movement-history-category"
         >
           Categoría
@@ -482,7 +482,7 @@ function HistoryFilters({
 
       <div className="space-y-1.5">
         <label
-          className="text-xs font-semibold text-foreground-secondary"
+          className="text-xs font-semibold text-muted-foreground"
           htmlFor="movement-history-direction"
         >
           Dirección
@@ -504,7 +504,7 @@ function HistoryFilters({
 
       <div className="space-y-1.5">
         <label
-          className="text-xs font-semibold text-foreground-secondary"
+          className="text-xs font-semibold text-muted-foreground"
           htmlFor="movement-history-source"
         >
           Origen
@@ -527,7 +527,7 @@ function HistoryFilters({
 
       <div className="space-y-1.5">
         <label
-          className="text-xs font-semibold text-foreground-secondary"
+          className="text-xs font-semibold text-muted-foreground"
           htmlFor="movement-history-reversal"
         >
           Estado
@@ -557,7 +557,7 @@ function MovementRelationship({ movement }: { movement: SafeHourMovement }) {
     movement.reversalMovementId !== null
   ) {
     return (
-      <p className="mt-4 rounded-sm border border-warning/30 bg-warning-surface/60 p-3 text-xs leading-5 text-foreground-secondary">
+      <p className="mt-4 rounded-sm border border-warning/30 bg-muted/60 p-3 text-xs leading-5 text-muted-foreground">
         El movimiento original permanece visible como revertido. {" "}
         <a
           className="font-semibold text-foreground underline underline-offset-4"
@@ -574,7 +574,7 @@ function MovementRelationship({ movement }: { movement: SafeHourMovement }) {
     movement.reversalOfMovementId !== null
   ) {
     return (
-      <p className="mt-4 rounded-sm border border-info/30 bg-info-surface/60 p-3 text-xs leading-5 text-foreground-secondary">
+      <p className="mt-4 rounded-sm border border-info/30 bg-muted/60 p-3 text-xs leading-5 text-muted-foreground">
         Esta fila compensa un movimiento anterior y no puede revertirse otra vez. {" "}
         <a
           className="font-semibold text-foreground underline underline-offset-4"
@@ -588,7 +588,7 @@ function MovementRelationship({ movement }: { movement: SafeHourMovement }) {
 
   if (movement.cycle.status === "CLOSED") {
     return (
-      <p className="mt-4 rounded-sm border border-border-subtle bg-surface-subtle/60 p-3 text-xs leading-5 text-foreground-secondary">
+      <p className="mt-4 rounded-sm border border-border bg-muted/60 p-3 text-xs leading-5 text-muted-foreground">
         El ciclo está cerrado; este movimiento permanece disponible sólo para consulta.
       </p>
     );
@@ -614,7 +614,7 @@ function MovementHistoryRow({
   return (
     <li
       className={cn(
-        "scroll-mt-8 rounded-md border bg-surface p-4 shadow-xs",
+        "scroll-mt-8 rounded-md border bg-card p-4 shadow-xs",
         movement.reversalState === "REVERSED"
           ? "border-warning/40"
           : movement.reversalState === "REVERSAL"
@@ -630,7 +630,7 @@ function MovementHistoryRow({
           <p className="text-sm font-semibold text-foreground">
             {formatDate(movement.movementDate)} · {movement.category.name}
           </p>
-          <p className="mt-1 text-xs leading-5 text-foreground-muted">
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
             {directionLabels[movement.direction]} · {formatDurationMinutes(movement.durationMinutes)} · {formatOrigin(movement)}
           </p>
         </div>
@@ -656,48 +656,48 @@ function MovementHistoryRow({
 
       <div className="mt-5 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <dl>
-          <dt className="text-xs font-medium text-foreground-muted">Tutor</dt>
+          <dt className="text-xs font-medium text-muted-foreground">Tutor</dt>
           <dd className="mt-1 font-semibold text-foreground">{movement.tutor.formalName}</dd>
-          <dd className="mt-1 text-xs text-foreground-muted">{movement.tutor.careerName}</dd>
+          <dd className="mt-1 text-xs text-muted-foreground">{movement.tutor.careerName}</dd>
         </dl>
         <dl>
-          <dt className="text-xs font-medium text-foreground-muted">Duración</dt>
-          <dd className="mt-1 font-numeric text-xl font-bold tabular-nums text-foreground">
+          <dt className="text-xs font-medium text-muted-foreground">Duración</dt>
+          <dd className="mt-1 font-sans text-xl font-bold tabular-nums text-foreground">
             {formatSignedDuration(movement.signedDurationMinutes)}
           </dd>
-          <dd className="mt-1 text-xs text-foreground-muted">
+          <dd className="mt-1 text-xs text-muted-foreground">
             {directionLabels[movement.direction]} · {formatDurationMinutes(movement.durationMinutes)}
           </dd>
         </dl>
         <dl>
-          <dt className="text-xs font-medium text-foreground-muted">Origen</dt>
+          <dt className="text-xs font-medium text-muted-foreground">Origen</dt>
           <dd className="mt-1 font-semibold text-foreground">{formatOrigin(movement)}</dd>
           {movement.origin !== null && (
-            <dd className="mt-1 text-xs leading-5 text-foreground-muted">
+            <dd className="mt-1 text-xs leading-5 text-muted-foreground">
               {formatDate(movement.origin.activityDate)} · {formatDurationMinutes(movement.origin.durationMinutes)}
             </dd>
           )}
         </dl>
         <dl>
-          <dt className="text-xs font-medium text-foreground-muted">Ciclo y actor</dt>
-          <dd className="mt-1 text-foreground-secondary">{movement.cycle.name}</dd>
-          <dd className="mt-1 text-xs leading-5 text-foreground-muted">
+          <dt className="text-xs font-medium text-muted-foreground">Ciclo y actor</dt>
+          <dd className="mt-1 text-muted-foreground">{movement.cycle.name}</dd>
+          <dd className="mt-1 text-xs leading-5 text-muted-foreground">
             {formatCycleStatus(movement.cycle.status)} · {movement.actor.displayName}
           </dd>
         </dl>
       </div>
 
-      <div className="mt-5 grid gap-4 border-t border-border-subtle pt-4 text-sm sm:grid-cols-2">
+      <div className="mt-5 grid gap-4 border-t border-border pt-4 text-sm sm:grid-cols-2">
         <dl>
-          <dt className="text-xs font-medium text-foreground-muted">Nota</dt>
-          <dd className="mt-1 leading-6 text-foreground-secondary">
+          <dt className="text-xs font-medium text-muted-foreground">Nota</dt>
+          <dd className="mt-1 leading-6 text-muted-foreground">
             {movement.note ?? "Sin nota"}
           </dd>
         </dl>
         {movement.origin !== null && (
           <dl>
-            <dt className="text-xs font-medium text-foreground-muted">Origen registrado por</dt>
-            <dd className="mt-1 leading-6 text-foreground-secondary">
+            <dt className="text-xs font-medium text-muted-foreground">Origen registrado por</dt>
+            <dd className="mt-1 leading-6 text-muted-foreground">
               {movement.origin.actor.displayName} · {formatDate(movement.origin.activityDate)}
             </dd>
           </dl>
@@ -718,13 +718,13 @@ function LoadingHistory() {
       role="status"
     >
       {["one", "two", "three"].map((key) => (
-        <div className="space-y-4 rounded-md border border-border bg-surface p-5" key={key}>
-          <div className="h-5 w-2/3 animate-pulse rounded-sm bg-surface-subtle" />
+        <div className="space-y-4 rounded-md border border-border bg-card p-5" key={key}>
+          <div className="h-5 w-2/3 animate-pulse rounded-sm bg-muted" />
           <div className="grid gap-3 sm:grid-cols-4">
-            <div className="h-10 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="h-10 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="h-10 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="h-10 animate-pulse rounded-sm bg-surface-subtle" />
+            <div className="h-10 animate-pulse rounded-sm bg-muted" />
+            <div className="h-10 animate-pulse rounded-sm bg-muted" />
+            <div className="h-10 animate-pulse rounded-sm bg-muted" />
+            <div className="h-10 animate-pulse rounded-sm bg-muted" />
           </div>
         </div>
       ))}
@@ -840,7 +840,7 @@ function ReversalDialog({
         aria-describedby="movement-reversal-description"
         aria-labelledby="movement-reversal-title"
         aria-modal="true"
-        className="w-full max-w-[34rem] border-border bg-surface shadow-2xl sm:rounded-md sm:border"
+        className="w-full max-w-[34rem] border-border bg-card shadow-2xl sm:rounded-md sm:border"
         ref={panelRef}
         role="dialog"
         tabIndex={-1}
@@ -857,7 +857,7 @@ function ReversalDialog({
               Revertir movimiento
             </h2>
             <p
-              className="mt-2 text-sm leading-6 text-foreground-secondary"
+              className="mt-2 text-sm leading-6 text-muted-foreground"
               id="movement-reversal-description"
             >
               Se agregará un movimiento opuesto y el original permanecerá visible como revertido.
@@ -865,7 +865,7 @@ function ReversalDialog({
           </div>
           <button
             aria-label="Cerrar confirmación de reversión"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-foreground-secondary transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             disabled={submitting}
             onClick={onClose}
             ref={closeButtonRef}
@@ -879,7 +879,7 @@ function ReversalDialog({
           {error && (
             <div
               aria-live="assertive"
-              className="flex items-start gap-3 rounded-md border border-danger/30 bg-danger-surface/60 p-4 text-sm text-danger"
+              className="flex items-start gap-3 rounded-md border border-destructive/30 bg-muted/60 p-4 text-sm text-destructive"
               role="alert"
             >
               <CircleAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
@@ -887,35 +887,35 @@ function ReversalDialog({
             </div>
           )}
 
-          <dl className="grid gap-4 rounded-md border border-border-subtle bg-surface-subtle/60 p-4 text-sm sm:grid-cols-2">
+          <dl className="grid gap-4 rounded-md border border-border bg-muted/60 p-4 text-sm sm:grid-cols-2">
             <div>
-              <dt className="text-xs font-medium text-foreground-muted">Tutor</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Tutor</dt>
               <dd className="mt-1 font-semibold text-foreground">{target.tutor.formalName}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-foreground-muted">Movimiento</dt>
-              <dd className="mt-1 text-foreground-secondary">
+              <dt className="text-xs font-medium text-muted-foreground">Movimiento</dt>
+              <dd className="mt-1 text-muted-foreground">
                 {formatDate(target.movementDate)} · {target.category.name}
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-foreground-muted">Saldo que compensa</dt>
-              <dd className="mt-1 font-numeric font-bold tabular-nums text-foreground">
+              <dt className="text-xs font-medium text-muted-foreground">Saldo que compensa</dt>
+              <dd className="mt-1 font-sans font-bold tabular-nums text-foreground">
                 {formatSignedDuration(target.signedDurationMinutes)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-foreground-muted">Origen</dt>
-              <dd className="mt-1 text-foreground-secondary">{formatOrigin(target)}</dd>
+              <dt className="text-xs font-medium text-muted-foreground">Origen</dt>
+              <dd className="mt-1 text-muted-foreground">{formatOrigin(target)}</dd>
             </div>
           </dl>
 
-          <p className="text-sm leading-6 text-foreground-secondary">
+          <p className="text-sm leading-6 text-muted-foreground">
             El saldo de horas se actualizará con la reversión. El movimiento original seguirá en el historial.
           </p>
         </div>
 
-        <div className="flex flex-col-reverse gap-3 border-t border-border bg-surface px-6 py-4 sm:flex-row sm:justify-end">
+        <div className="flex flex-col-reverse gap-3 border-t border-border bg-card px-6 py-4 sm:flex-row sm:justify-end">
           <Button disabled={submitting} onClick={onClose} type="button" variant="outline">
             Cancelar
           </Button>
@@ -1223,7 +1223,7 @@ export function MovementHistoryScreen({
         {announcement && screenState !== "success" && (
           <div
             aria-live="polite"
-            className="mt-6 rounded-md border border-info/30 bg-info-surface/60 p-4 text-sm leading-6 text-foreground"
+            className="mt-6 rounded-md border border-info/30 bg-muted/60 p-4 text-sm leading-6 text-foreground"
             role="status"
           >
             {announcement}
@@ -1307,7 +1307,7 @@ export function MovementHistoryScreen({
               tutorId={selectedTutorId}
             />
 
-            <p aria-live="polite" className="mt-4 text-sm text-foreground-secondary">
+            <p aria-live="polite" className="mt-4 text-sm text-muted-foreground">
               {isLoading
                 ? "Consultando movimientos…"
                 : filteredMovements.length === 0 && hasActiveFilters

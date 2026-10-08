@@ -85,7 +85,7 @@ describe("Shared UI Primitives (SGTA)", () => {
       rerender(<StatusBadge variant="danger">Falta</StatusBadge>);
       expect(screen.getByText("Falta")).toBeInTheDocument();
       badge = screen.getByText("Falta").parentElement;
-      expect(badge).toHaveClass("text-danger");
+      expect(badge).toHaveClass("text-destructive");
 
       rerender(<StatusBadge variant="info">En curso</StatusBadge>);
       expect(screen.getByText("En curso")).toBeInTheDocument();
@@ -100,7 +100,7 @@ describe("Shared UI Primitives (SGTA)", () => {
       rerender(<StatusBadge variant="faro">Faro UTN</StatusBadge>);
       expect(screen.getByText("Faro UTN")).toBeInTheDocument();
       badge = screen.getByText("Faro UTN").parentElement;
-      expect(badge).toHaveClass("text-accent-foreground");
+      expect(badge).toHaveClass("text-foreground");
     });
 
     it("supports custom Lucide icon with uniform strokeWidth", () => {
@@ -185,7 +185,7 @@ describe("Shared UI Primitives (SGTA)", () => {
 
       const container = screen.getByTestId("container");
       expect(container).toHaveClass("w-full");
-      expect(container).toHaveClass("max-w-[var(--max-width)]");
+      expect(container).toHaveClass("max-w-page");
       expect(container).toHaveClass("px-4");
       expect(container).toHaveClass("md:px-6");
       expect(container).toHaveClass("lg:px-8");
@@ -200,7 +200,7 @@ describe("Shared UI Primitives (SGTA)", () => {
 
       const main = screen.getByRole("main", { name: "Área principal" });
       expect(main).toBeInTheDocument();
-      expect(main).toHaveClass("max-w-[var(--max-width)]");
+      expect(main).toHaveClass("max-w-page");
     });
   });
 });

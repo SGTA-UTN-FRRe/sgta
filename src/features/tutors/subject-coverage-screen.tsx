@@ -173,7 +173,7 @@ function TutorLink({ tutor }: { tutor: SafeSubjectCoverageTutor }) {
         variant={tutorStatusVariant(tutor.status)}
       />
       {tutor.status === "INACTIVE" && (
-        <span className="text-xs text-foreground-muted">Relación histórica</span>
+        <span className="text-xs text-muted-foreground">Relación histórica</span>
       )}
     </li>
   );
@@ -181,7 +181,7 @@ function TutorLink({ tutor }: { tutor: SafeSubjectCoverageTutor }) {
 
 function CoverageTutorList({ tutors }: { tutors: SafeSubjectCoverageTutor[] }) {
   if (tutors.length === 0) {
-    return <p className="text-sm text-foreground-secondary">Sin tutor asignado.</p>;
+    return <p className="text-sm text-muted-foreground">Sin tutor asignado.</p>;
   }
 
   return (
@@ -204,22 +204,22 @@ function CoverageTutorDetails({
   const historicalCount = tutors.length - activeCount;
 
   return (
-    <details className={cn("group", wide && "rounded-sm border border-border-subtle p-2")} open>
+    <details className={cn("group", wide && "rounded-sm border border-border p-2")} open>
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-sm text-sm text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
         <span className="font-medium">
           {activeCoverageLabel(tutors)}
           {historicalCount > 0 && (
-            <span className="ml-2 text-xs font-normal text-foreground-muted">
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
             + {historicalCount} histórico{historicalCount === 1 ? "" : "s"}
             </span>
           )}
         </span>
         <ChevronDown
           aria-hidden="true"
-          className="h-4 w-4 shrink-0 text-foreground-muted transition-transform group-open:rotate-180"
+          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
         />
       </summary>
-      <div className="mt-3 border-t border-border-subtle pt-3">
+      <div className="mt-3 border-t border-border pt-3">
         <CoverageTutorList tutors={tutors} />
       </div>
     </details>
@@ -251,25 +251,25 @@ function CoverageCompactList({
       <ul aria-label="Cobertura de materias" className="space-y-3">
         {subjects.map((coverage) => (
           <li key={coverage.subject.id}>
-            <details className="group rounded-md border border-border bg-surface shadow-xs">
+            <details className="group rounded-md border border-border bg-card shadow-xs">
               <summary className="flex cursor-pointer list-none items-start justify-between gap-3 p-4 outline-none focus-visible:ring-3 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-foreground">{coverage.subject.name}</p>
-                  <p className="mt-1 truncate text-sm text-foreground-secondary">
+                  <p className="mt-1 truncate text-sm text-muted-foreground">
                     {coverage.career.name}
                   </p>
                 </div>
-                <span className="flex shrink-0 items-center gap-2 text-right text-xs text-foreground-secondary">
+                <span className="flex shrink-0 items-center gap-2 text-right text-xs text-muted-foreground">
                   {activeCoverageLabel(coverage.tutors)}
                   <ChevronDown
                     aria-hidden="true"
-                    className="h-4 w-4 text-foreground-muted transition-transform group-open:rotate-180"
+                    className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180"
                   />
                 </span>
               </summary>
-              <div className="space-y-4 border-t border-border-subtle px-4 py-4">
+              <div className="space-y-4 border-t border-border px-4 py-4">
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-foreground-secondary">Ciclo vigente</span>
+                  <span className="text-muted-foreground">Ciclo vigente</span>
                   <span className="font-medium text-foreground">{currentCycleName}</span>
                 </div>
                 <CoverageTutorList tutors={coverage.tutors} />
@@ -291,7 +291,7 @@ function CoverageMediumTable({
 }) {
   return (
     <div
-      className="mt-4 hidden overflow-x-auto rounded-md border border-border bg-surface md:block lg:hidden"
+      className="mt-4 hidden overflow-x-auto rounded-md border border-border bg-card md:block lg:hidden"
       data-layout="medium"
     >
       <Table className="min-w-[46rem]">
@@ -308,9 +308,9 @@ function CoverageMediumTable({
           {subjects.map((coverage) => (
             <TableRow key={coverage.subject.id}>
               <TableCell><SubjectLabel coverage={coverage} /></TableCell>
-              <TableCell className="text-foreground-secondary">{coverage.career.name}</TableCell>
+              <TableCell className="text-muted-foreground">{coverage.career.name}</TableCell>
               <TableCell><CoverageTutorList tutors={coverage.tutors} /></TableCell>
-              <TableCell className="whitespace-nowrap text-foreground-secondary">
+              <TableCell className="whitespace-nowrap text-muted-foreground">
                 {currentCycleName}
               </TableCell>
             </TableRow>
@@ -330,7 +330,7 @@ function CoverageWideTable({
 }) {
   return (
     <div
-      className="mt-4 hidden overflow-x-auto rounded-md border border-border bg-surface lg:block"
+      className="mt-4 hidden overflow-x-auto rounded-md border border-border bg-card lg:block"
       data-layout="wide"
     >
       <Table className="min-w-[64rem]">
@@ -348,14 +348,14 @@ function CoverageWideTable({
           {subjects.map((coverage) => (
             <TableRow key={coverage.subject.id}>
               <TableCell><SubjectLabel coverage={coverage} /></TableCell>
-              <TableCell className="text-foreground-secondary">{coverage.career.name}</TableCell>
+              <TableCell className="text-muted-foreground">{coverage.career.name}</TableCell>
               <TableCell><CoverageTutorDetails tutors={coverage.tutors} wide /></TableCell>
-              <TableCell className="whitespace-nowrap text-foreground-secondary">
+              <TableCell className="whitespace-nowrap text-muted-foreground">
                 {currentCycleName}
               </TableCell>
               <TableCell>
                 <Link
-                  className="text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+                  className="text-sm font-medium text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
                   href="/admin/tutors"
                 >
                   Ver tutores
@@ -374,30 +374,30 @@ function CoverageLoadingState() {
     <div
       aria-label="Cargando cobertura de materias"
       aria-live="polite"
-      className="mt-4 overflow-hidden rounded-md border border-border bg-surface"
+      className="mt-4 overflow-hidden rounded-md border border-border bg-card"
       role="status"
     >
       <span className="sr-only">Cargando cobertura de materias</span>
       <div className="hidden lg:block">
         {Array.from({ length: 4 }, (_, index) => (
           <div
-            className="grid grid-cols-[1.2fr_1.2fr_2fr_1fr_1fr] gap-4 border-b border-border-subtle px-3 py-5 last:border-b-0"
+            className="grid grid-cols-[1.2fr_1.2fr_2fr_1fr_1fr] gap-4 border-b border-border px-3 py-5 last:border-b-0"
             key={index}
           >
-            <span className="h-5 w-32 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-5 w-40 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-5 w-48 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-5 w-24 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-5 w-24 animate-pulse rounded-sm bg-surface-subtle" />
+            <span className="h-5 w-32 animate-pulse rounded-sm bg-muted" />
+            <span className="h-5 w-40 animate-pulse rounded-sm bg-muted" />
+            <span className="h-5 w-48 animate-pulse rounded-sm bg-muted" />
+            <span className="h-5 w-24 animate-pulse rounded-sm bg-muted" />
+            <span className="h-5 w-24 animate-pulse rounded-sm bg-muted" />
           </div>
         ))}
       </div>
       <div className="space-y-3 p-4 md:hidden">
         {Array.from({ length: 3 }, (_, index) => (
-          <div className="rounded-md border border-border-subtle p-4" key={index}>
-            <div className="h-5 w-40 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="mt-2 h-4 w-52 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="mt-5 h-12 animate-pulse rounded-sm bg-surface-subtle" />
+          <div className="rounded-md border border-border p-4" key={index}>
+            <div className="h-5 w-40 animate-pulse rounded-sm bg-muted" />
+            <div className="mt-2 h-4 w-52 animate-pulse rounded-sm bg-muted" />
+            <div className="mt-5 h-12 animate-pulse rounded-sm bg-muted" />
           </div>
         ))}
       </div>
@@ -407,26 +407,26 @@ function CoverageLoadingState() {
 
 function CoverageContext({ cycleName }: { cycleName: string }) {
   return (
-    <div className="mt-6 grid gap-3 rounded-md border border-border-subtle bg-surface-subtle/60 p-4 text-sm md:grid-cols-3">
+    <div className="mt-6 grid gap-3 rounded-md border border-border bg-muted/60 p-4 text-sm md:grid-cols-3">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground-muted">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Ciclo vigente
         </p>
         <p className="mt-1 font-semibold text-foreground">{cycleName}</p>
       </div>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground-muted">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Criterio de cobertura
         </p>
-        <p className="mt-1 text-foreground-secondary">
+        <p className="mt-1 text-muted-foreground">
           Solo tutores activos con asignación en el ciclo vigente.
         </p>
       </div>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground-muted">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Horas planificadas
         </p>
-        <p className="mt-1 text-foreground-secondary">
+        <p className="mt-1 text-muted-foreground">
           No disponibles en esta vista hasta contar con datos de horarios.
         </p>
       </div>
@@ -446,11 +446,11 @@ function StateNotice({
   tone: "danger" | "warning";
 }) {
   const styles = {
-    danger: "border-danger/30 bg-danger-surface/60",
-    warning: "border-warning/30 bg-warning-surface/60",
+    danger: "border-destructive/30 bg-muted/60",
+    warning: "border-warning/30 bg-muted/60",
   } as const;
   const iconStyles = {
-    danger: "text-danger",
+    danger: "text-destructive",
     warning: "text-warning",
   } as const;
 
@@ -463,7 +463,7 @@ function StateNotice({
       <CircleAlert aria-hidden="true" className={cn("mt-0.5 h-5 w-5 shrink-0", iconStyles[tone])} />
       <div>
         <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-foreground-secondary">{children}</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{children}</p>
         {action && <div className="mt-3">{action}</div>}
       </div>
     </div>
@@ -590,9 +590,9 @@ export function SubjectCoverageScreen({
 
       {derivedState !== "error" && derivedState !== "required-action" && (
         <>
-          <div className="mt-6 rounded-md border border-border-subtle bg-surface-subtle/60 p-4">
+          <div className="mt-6 rounded-md border border-border bg-muted/60 p-4">
             <label
-              className="text-xs font-semibold text-foreground-secondary"
+              className="text-xs font-semibold text-muted-foreground"
               htmlFor={searchInputId}
             >
               Buscar cobertura
@@ -600,7 +600,7 @@ export function SubjectCoverageScreen({
             <div className="relative mt-1.5 max-w-2xl">
               <Search
                 aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
               />
               <Input
                 aria-label={searchPlaceholder}
@@ -651,7 +651,7 @@ export function SubjectCoverageScreen({
           {derivedState !== "loading" && derivedState !== "empty" && derivedState !== "search-empty" && coverage.currentCycle !== null && (
             <>
               <CoverageContext cycleName={coverage.currentCycle.name} />
-              <p aria-live="polite" className="mt-4 text-sm text-foreground-secondary">
+              <p aria-live="polite" className="mt-4 text-sm text-muted-foreground">
                 Mostrando {filteredSubjects.length} {filteredSubjects.length === 1 ? "materia" : "materias"} con cobertura.
               </p>
               <CoverageCompactList

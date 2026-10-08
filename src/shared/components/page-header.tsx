@@ -41,7 +41,7 @@ export function PageHeader({
   return (
     <header className={cn("w-full space-y-3 pb-6 border-b border-border/70", className)} data-slot="page-header">
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav aria-label="Migas de pan" className="flex items-center text-xs text-foreground-muted">
+        <nav aria-label="Migas de pan" className="flex items-center text-xs text-muted-foreground">
           <ol className="flex flex-wrap items-center gap-1.5">
             {breadcrumbs.map((item, index) => {
               const isLast = index === breadcrumbs.length - 1;
@@ -50,7 +50,7 @@ export function PageHeader({
                 <li key={`${item.label}-${index}`} className="flex items-center gap-1.5">
                   {index > 0 && (
                     <ChevronRight
-                      className="h-3.5 w-3.5 shrink-0 text-foreground-muted/60"
+                      className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60"
                       strokeWidth={ICON_STROKE_WIDTH}
                       aria-hidden="true"
                     />
@@ -64,7 +64,7 @@ export function PageHeader({
                     </Link>
                   ) : (
                     <span
-                      className={cn(isLast ? "font-medium text-foreground" : "text-foreground-muted")}
+                      className={cn(isLast ? "font-medium text-foreground" : "text-muted-foreground")}
                       aria-current={isLast ? "page" : undefined}
                     >
                       {item.label}
@@ -87,7 +87,7 @@ export function PageHeader({
             {title}
           </h1>
           {description && (
-            <p className="text-sm leading-relaxed text-foreground-secondary max-w-3xl">
+            <p className="text-sm leading-relaxed text-muted-foreground max-w-3xl">
               {description}
             </p>
           )}

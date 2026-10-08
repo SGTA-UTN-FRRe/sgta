@@ -12,6 +12,7 @@ import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 import { addE2ESessionCookie } from "./session-cookie";
 import {
   activateWithKeyboard,
+  expectFocusOutline,
   expectReducedMotion,
 } from "./keyboard-helpers";
 
@@ -230,9 +231,7 @@ test.describe("Admin accessibility and responsive layouts", () => {
     await expect(page).toHaveURL(/\/admin\/schedules$/);
     const pageTitle = page.getByRole("heading", { level: 1, name: "Horarios" });
     await expect(pageTitle).toBeFocused();
-    await expect
-      .poll(() => pageTitle.evaluate((element) => getComputedStyle(element).boxShadow))
-      .not.toBe("none");
+    await expectFocusOutline(pageTitle);
     expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 });

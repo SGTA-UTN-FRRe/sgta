@@ -35,11 +35,11 @@ function FaroBeam() {
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 overflow-hidden"
     >
-      <span className="absolute -right-32 top-[22%] h-px w-[34rem] rotate-[18deg] bg-accent/35" />
-      <span className="absolute -right-28 top-[48%] h-px w-[28rem] rotate-[-13deg] bg-accent/25" />
-      <span className="absolute right-[14%] top-[11%] h-[24rem] w-px rotate-[22deg] bg-accent/20" />
+      <span className="absolute -right-32 top-[22%] h-px w-[34rem] rotate-[18deg] bg-faro/35" />
+      <span className="absolute -right-28 top-[48%] h-px w-[28rem] rotate-[-13deg] bg-faro/25" />
+      <span className="absolute right-[14%] top-[11%] h-[24rem] w-px rotate-[22deg] bg-faro/20" />
       <span className="absolute right-[37%] top-[36%] h-56 w-px rotate-[-19deg] bg-white/10" />
-      <span className="absolute -right-24 top-[33%] h-40 w-40 rounded-full border border-accent/20" />
+      <span className="absolute -right-24 top-[33%] h-40 w-40 rounded-full border border-faro/20" />
     </div>
   );
 }
@@ -63,7 +63,7 @@ function LoginFeedback({
           <p className="text-sm font-semibold text-foreground">
             {data.states.loadingLabel}
           </p>
-          <p className="mt-1 text-sm leading-6 text-foreground-secondary">
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
             Verificando el acceso. Espere un momento.
           </p>
         </div>
@@ -81,13 +81,13 @@ function LoginFeedback({
       >
         <CircleAlert
           aria-hidden="true"
-          className="mt-0.5 h-5 w-5 shrink-0 text-danger"
+          className="mt-0.5 h-5 w-5 shrink-0 text-destructive"
         />
         <div>
           <p className="text-sm font-semibold text-foreground">
             {data.states.errorTitle}
           </p>
-          <p className="mt-1 text-sm leading-6 text-foreground-secondary">
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
             {data.states.errorDescription}
           </p>
         </div>
@@ -111,7 +111,7 @@ function LoginFeedback({
           <p className="text-sm font-semibold text-foreground">
             {data.states.permissionDeniedTitle}
           </p>
-          <p className="mt-1 text-sm leading-6 text-foreground-secondary">
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
             {data.states.permissionDeniedDescription}
           </p>
         </div>
@@ -129,7 +129,7 @@ function LoginFeedback({
         <p className="text-sm font-semibold text-foreground">
           Acceso restringido
         </p>
-        <p className="mt-1 text-sm leading-6 text-foreground-secondary">
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
           Solo pueden ingresar las personas habilitadas por la administración.
         </p>
       </div>
@@ -176,7 +176,7 @@ export function LoginScreen({
   return (
     <main
       aria-labelledby="login-title"
-      className="min-h-svh overflow-x-hidden bg-canvas"
+      className="min-h-svh overflow-x-hidden bg-background"
       data-slot="login-screen"
       data-state={currentState}
     >
@@ -188,7 +188,7 @@ export function LoginScreen({
           <FaroBeam />
           <div className="relative z-10 flex w-full flex-col justify-between gap-12">
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-md border border-white/20 bg-white/10 text-accent">
+              <span className="flex h-11 w-11 items-center justify-center rounded-md border border-white/20 bg-white/10 text-faro">
                 <FaroIcon aria-hidden="true" className="h-7 w-7" />
               </span>
               <div>
@@ -222,7 +222,7 @@ export function LoginScreen({
 
         <section
           aria-label="Acceso institucional"
-          className="flex min-w-0 items-center justify-center bg-canvas px-6 py-12 sm:px-10 sm:py-16 lg:px-16"
+          className="flex min-w-0 items-center justify-center bg-background px-6 py-12 sm:px-10 sm:py-16 lg:px-16"
         >
           <div className="w-full max-w-[30rem]">
             <div className="mb-8">
@@ -235,7 +235,7 @@ export function LoginScreen({
               >
                 {data.title}
               </h1>
-              <p className="mt-4 max-w-xl text-base leading-7 text-foreground-secondary">
+              <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
                 {data.supportingText}
               </p>
             </div>
@@ -243,7 +243,7 @@ export function LoginScreen({
             <div
               aria-busy={isLoading}
               aria-describedby="login-status login-recovery login-access-note"
-              className="rounded-[var(--radius-xl)] border border-border-subtle bg-surface p-6 shadow-sm sm:p-8"
+              className="rounded-xl border border-border bg-card p-6 shadow-xs sm:p-8"
             >
               <LoginFeedback data={data} state={currentState} />
 
@@ -265,7 +265,7 @@ export function LoginScreen({
               </Button>
 
               <p
-                className="mt-5 text-center text-sm leading-6 text-foreground-secondary"
+                className="mt-5 text-center text-sm leading-6 text-muted-foreground"
                 id="login-recovery"
               >
                 {data.recoveryText}
@@ -273,7 +273,7 @@ export function LoginScreen({
             </div>
 
             <div
-              className="mt-6 flex items-start gap-2 text-xs leading-5 text-foreground-muted"
+              className="mt-6 flex items-start gap-2 text-xs leading-5 text-muted-foreground"
               id="login-access-note"
             >
               <LockKeyhole aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />

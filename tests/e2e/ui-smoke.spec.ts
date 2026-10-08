@@ -1,6 +1,7 @@
 import { expect, test } from "./fixtures";
 
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
+import { expectFocusOutline } from "./keyboard-helpers";
 
 const requiredSecurityHeaders = {
   "x-frame-options": "DENY",
@@ -93,9 +94,7 @@ test.describe("UI smoke journeys", () => {
       const home = page.getByRole("link", { name: "Volver al inicio" });
       await page.keyboard.press("Tab");
       await expect(home).toBeFocused();
-      await expect
-        .poll(() => home.evaluate((element) => getComputedStyle(element).boxShadow))
-        .not.toBe("none");
+      await expectFocusOutline(home);
       const pageWidths = await page.evaluate(() => ({
         client: document.documentElement.clientWidth,
         scroll: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
@@ -124,9 +123,7 @@ test.describe("UI smoke journeys", () => {
       await page.keyboard.press("Tab");
       const retry = page.getByRole("button", { name: "Reintentar" });
       await expect(retry).toBeFocused();
-      await expect
-        .poll(() => retry.evaluate((element) => getComputedStyle(element).boxShadow))
-        .not.toBe("none");
+      await expectFocusOutline(retry);
 
       const errorWidths = await page.evaluate(() => ({
         client: document.documentElement.clientWidth,

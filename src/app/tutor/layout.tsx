@@ -12,7 +12,7 @@ export default async function TutorLayout({
   const user = await requireRole("TUTOR");
 
   return (
-    <div className="flex min-h-svh bg-canvas">
+    <div className="flex min-h-svh bg-background">
       <AppSidebar
         variant="tutor"
         user={{ name: user.name, role: user.role }}
@@ -20,7 +20,7 @@ export default async function TutorLayout({
       <div className="min-w-0 flex-1">
         <a
           href="#tutor-main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-60 focus:rounded-md focus:bg-surface focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-foreground focus:shadow-sm"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-60 focus:rounded-md focus:bg-card focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-foreground focus:shadow-xs"
         >
           Saltar al contenido principal
         </a>

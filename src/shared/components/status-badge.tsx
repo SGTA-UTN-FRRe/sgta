@@ -47,12 +47,12 @@ const DEFAULT_ICONS: Record<StatusBadgeVariant, ComponentType<{ className?: stri
 };
 
 const VARIANT_STYLES: Record<StatusBadgeVariant, string> = {
-  success: "border-success/30 bg-success-surface text-success",
-  warning: "border-warning/30 bg-warning-surface text-warning",
-  danger: "border-danger/30 bg-danger-surface text-danger",
-  info: "border-info/30 bg-info-surface text-info",
+  success: "border-success/30 bg-muted text-success",
+  warning: "border-warning/30 bg-muted text-warning",
+  danger: "border-destructive/30 bg-muted text-destructive",
+  info: "border-info/30 bg-muted text-info",
   neutral: "border-border bg-secondary text-secondary-foreground",
-  faro: "border-accent/40 bg-accent-surface text-accent-foreground",
+  faro: "border-faro/40 bg-muted text-foreground",
 };
 
 /**

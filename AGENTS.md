@@ -33,7 +33,7 @@ Choose the language by artifact, never by the language of the conversation or th
 
 | Artifact | Language |
 | --- | --- |
-| Product UI and user-visible messages (labels, errors, metadata, emails) | Spanish, neutral institutional register per `design/PROJECT-DESIGN.md` §2.5 |
+| Product UI and user-visible messages (labels, errors, metadata, emails) | Spanish, neutral institutional register per `design/PROJECT-DESIGN.md` › Voice |
 | GitHub issues (title, body, comments), issue forms, GitHub Project items and fields | Spanish |
 | Roadmap, implementation plans, execution packets | English |
 | Development documentation: `README.md`, `docs/`, `design/`, `SECURITY.md`, `AGENTS.md`, `CLAUDE.md`, skills | English |

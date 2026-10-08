@@ -23,7 +23,7 @@ describe("Base shadcn/ui components with SGTA design system", () => {
       expect(screen.getByRole("button", { name: "Cancelar" })).toHaveClass("bg-secondary");
 
       rerender(<Button variant="destructive">Eliminar</Button>);
-      expect(screen.getByRole("button", { name: "Eliminar" })).toHaveClass("bg-danger");
+      expect(screen.getByRole("button", { name: "Eliminar" })).toHaveClass("bg-destructive");
     });
   });
 
@@ -47,25 +47,25 @@ describe("Base shadcn/ui components with SGTA design system", () => {
   describe("Badge", () => {
     it("renders semantic variants with surface colors", () => {
       const { rerender } = render(<Badge variant="success">Activo</Badge>);
-      expect(screen.getByText("Activo")).toHaveClass("bg-success-surface");
+      expect(screen.getByText("Activo")).toHaveClass("bg-muted");
       expect(screen.getByText("Activo")).toHaveClass("text-success");
       expect(screen.getByText("Activo")).toHaveClass("rounded-full");
 
       rerender(<Badge variant="warning">Pendiente</Badge>);
-      expect(screen.getByText("Pendiente")).toHaveClass("bg-warning-surface");
+      expect(screen.getByText("Pendiente")).toHaveClass("bg-muted");
       expect(screen.getByText("Pendiente")).toHaveClass("text-warning");
 
       rerender(<Badge variant="danger">Falta</Badge>);
-      expect(screen.getByText("Falta")).toHaveClass("bg-danger-surface");
-      expect(screen.getByText("Falta")).toHaveClass("text-danger");
+      expect(screen.getByText("Falta")).toHaveClass("bg-muted");
+      expect(screen.getByText("Falta")).toHaveClass("text-destructive");
 
       rerender(<Badge variant="info">En curso</Badge>);
-      expect(screen.getByText("En curso")).toHaveClass("bg-info-surface");
+      expect(screen.getByText("En curso")).toHaveClass("bg-muted");
       expect(screen.getByText("En curso")).toHaveClass("text-info");
 
       rerender(<Badge variant="faro">Faro</Badge>);
-      expect(screen.getByText("Faro")).toHaveClass("bg-accent-surface");
-      expect(screen.getByText("Faro")).toHaveClass("text-accent-foreground");
+      expect(screen.getByText("Faro")).toHaveClass("bg-muted");
+      expect(screen.getByText("Faro")).toHaveClass("text-foreground");
     });
   });
 
@@ -83,7 +83,7 @@ describe("Base shadcn/ui components with SGTA design system", () => {
 
       const card = screen.getByTestId("card");
       expect(card).toHaveClass("rounded-md");
-      expect(card).toHaveClass("bg-surface");
+      expect(card).toHaveClass("bg-card");
       expect(screen.getByText("Resumen")).toBeInTheDocument();
       expect(screen.getByText("Detalle del ciclo")).toBeInTheDocument();
       expect(screen.getByText("Contenido")).toBeInTheDocument();
@@ -91,7 +91,7 @@ describe("Base shadcn/ui components with SGTA design system", () => {
   });
 
   describe("Table", () => {
-    it("enforces tabular-nums and font-numeric for column alignment", () => {
+    it("enforces tabular-nums and font-sans for column alignment", () => {
       render(
         <Table data-testid="table">
           <TableHeader>
@@ -111,7 +111,7 @@ describe("Base shadcn/ui components with SGTA design system", () => {
 
       const table = screen.getByTestId("table");
       expect(table).toHaveClass("tabular-nums");
-      expect(table).toHaveClass("font-numeric");
+      expect(table).toHaveClass("font-sans");
       expect(screen.getByText("Husak, Guillermo")).toBeInTheDocument();
       expect(screen.getByText("+12.5")).toBeInTheDocument();
     });

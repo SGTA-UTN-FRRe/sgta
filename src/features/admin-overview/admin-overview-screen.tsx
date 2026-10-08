@@ -50,16 +50,16 @@ const attentionVariants: Record<AttentionTone, StatusBadgeVariant> = {
 
 const noticeStyles = {
   danger: {
-    icon: "text-danger",
-    surface: "border-danger/30 bg-danger-surface/60",
+    icon: "text-destructive",
+    surface: "border-destructive/30 bg-muted/60",
   },
   info: {
     icon: "text-info",
-    surface: "border-info/30 bg-info-surface/60",
+    surface: "border-info/30 bg-muted/60",
   },
   warning: {
     icon: "text-warning",
-    surface: "border-warning/30 bg-warning-surface/60",
+    surface: "border-warning/30 bg-muted/60",
   },
 } as const;
 
@@ -102,9 +102,9 @@ function CycleContext({
         className="flex flex-wrap items-center gap-2"
       >
         <span className="sr-only">Cargando ciclo y fecha</span>
-        <span className="h-4 w-44 animate-pulse rounded-sm bg-surface-subtle" />
-        <span className="h-4 w-32 animate-pulse rounded-sm bg-surface-subtle" />
-        <span className="h-5 w-24 animate-pulse rounded-full bg-surface-subtle" />
+        <span className="h-4 w-44 animate-pulse rounded-sm bg-muted" />
+        <span className="h-4 w-32 animate-pulse rounded-sm bg-muted" />
+        <span className="h-5 w-24 animate-pulse rounded-full bg-muted" />
       </span>
     );
   }
@@ -113,7 +113,7 @@ function CycleContext({
     return (
       <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <StatusBadge label="Ciclo requerido" variant="warning" />
-        <span className="text-sm text-foreground-secondary">
+        <span className="text-sm text-muted-foreground">
           No hay un ciclo abierto para operar.
         </span>
       </span>
@@ -124,7 +124,7 @@ function CycleContext({
     return (
       <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <StatusBadge label="Ciclo no disponible" variant="danger" />
-        <span className="text-sm text-foreground-secondary">
+        <span className="text-sm text-muted-foreground">
           No se pudo consultar el ciclo administrativo vigente.
         </span>
       </span>
@@ -132,13 +132,13 @@ function CycleContext({
   }
 
   return (
-    <span className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-foreground-secondary">
+    <span className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
       <span className="font-semibold text-foreground">{data.cycle.name}</span>
-      <span aria-hidden="true" className="text-foreground-muted">
+      <span aria-hidden="true" className="text-muted-foreground">
         ·
       </span>
       <span>{data.cycle.period}</span>
-      <span aria-hidden="true" className="text-foreground-muted">
+      <span aria-hidden="true" className="text-muted-foreground">
         ·
       </span>
       <span className="inline-flex items-center gap-1.5">
@@ -198,7 +198,7 @@ function OverviewNotice({
         <span className={cn("mt-0.5 shrink-0", styles.icon)}>{icon}</span>
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-          <p className="mt-2 text-sm leading-6 text-foreground-secondary">
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
             {description}
           </p>
         </div>
@@ -222,27 +222,27 @@ function AttentionCard({
 }: AttentionItem) {
   return (
     <Link
-      className="group flex min-h-[12rem] flex-col justify-between rounded-md border border-border bg-surface p-5 shadow-xs transition-colors hover:border-primary/40 hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+      className="group flex min-h-[12rem] flex-col justify-between rounded-md border border-border bg-card p-5 shadow-xs transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
       href={href}
     >
       <div className="flex items-start justify-between gap-4">
         <StatusBadge label={label} variant={attentionVariants[tone]} />
         <ArrowUpRight
           aria-hidden="true"
-          className="h-5 w-5 shrink-0 text-foreground-muted transition-colors group-hover:text-primary"
+          className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover:text-link"
         />
       </div>
 
       <div className="mt-6">
-        <p className="font-numeric text-3xl font-extrabold tabular-nums text-foreground">
+        <p className="font-sans text-3xl font-extrabold tabular-nums text-foreground">
           {count}
         </p>
-        <p className="mt-1 max-w-sm text-sm leading-6 text-foreground-secondary">
+        <p className="mt-1 max-w-sm text-sm leading-6 text-muted-foreground">
           {description}
         </p>
       </div>
 
-      <span className="mt-5 text-sm font-semibold text-primary transition-colors group-hover:text-primary-hover">
+      <span className="mt-5 text-sm font-semibold text-link transition-colors group-hover:text-link">
         Ver detalle
       </span>
     </Link>
@@ -260,14 +260,14 @@ function AttentionSkeletons() {
       <span className="sr-only">Cargando atención</span>
       {["one", "two", "three"].map((key) => (
         <div
-          className="min-h-[12rem] rounded-md border border-border-subtle bg-surface p-5"
+          className="min-h-[12rem] rounded-md border border-border bg-card p-5"
           data-slot="admin-overview-attention-skeleton"
           key={key}
         >
-          <div className="h-6 w-36 animate-pulse rounded-full bg-surface-subtle" />
-          <div className="mt-8 h-9 w-12 animate-pulse rounded-sm bg-surface-subtle" />
-          <div className="mt-3 h-4 w-full animate-pulse rounded-sm bg-surface-subtle" />
-          <div className="mt-2 h-4 w-2/3 animate-pulse rounded-sm bg-surface-subtle" />
+          <div className="h-6 w-36 animate-pulse rounded-full bg-muted" />
+          <div className="mt-8 h-9 w-12 animate-pulse rounded-sm bg-muted" />
+          <div className="mt-3 h-4 w-full animate-pulse rounded-sm bg-muted" />
+          <div className="mt-2 h-4 w-2/3 animate-pulse rounded-sm bg-muted" />
         </div>
       ))}
     </div>
@@ -290,7 +290,7 @@ function AttentionSection({
           <h2 className="text-xl font-bold tracking-tight text-foreground" id="attention-heading">
             Necesita atención
           </h2>
-          <p className="mt-1 text-sm text-foreground-secondary">
+          <p className="mt-1 text-sm text-muted-foreground">
             Lo que requiere una decisión o seguimiento administrativo.
           </p>
         </div>
@@ -382,13 +382,13 @@ function DutyRow({
   return (
     <li>
       <Link
-        className="group grid grid-cols-[4.75rem_minmax(0,1fr)] gap-4 px-4 py-4 transition-colors hover:bg-surface-subtle focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:items-center sm:px-5"
+        className="group grid grid-cols-[4.75rem_minmax(0,1fr)] gap-4 px-4 py-4 transition-colors hover:bg-muted focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:items-center sm:px-5"
         href={`/admin/schedules?date=${date}`}
       >
         <div>
           <p className="text-sm font-bold text-foreground">{dayLabel}</p>
           <time
-            className="mt-1 block text-xs tabular-nums text-foreground-muted"
+            className="mt-1 block text-xs tabular-nums text-muted-foreground"
             dateTime={date}
           >
             {formatShortDate(date)}
@@ -397,18 +397,18 @@ function DutyRow({
 
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground">{tutor}</p>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-foreground-secondary">
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <Clock3 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
             <span>{time}</span>
           </p>
-          <p className="mt-1 truncate text-xs text-foreground-muted">
+          <p className="mt-1 truncate text-xs text-muted-foreground">
             Modalidad: {modality}
           </p>
         </div>
 
         <ArrowUpRight
           aria-hidden="true"
-          className="hidden h-5 w-5 text-foreground-muted transition-colors group-hover:text-primary sm:block"
+          className="hidden h-5 w-5 text-muted-foreground transition-colors group-hover:text-link sm:block"
         />
       </Link>
     </li>
@@ -420,24 +420,24 @@ function DutySkeletons() {
     <div
       aria-label="Cargando guardias"
       aria-live="polite"
-      className="overflow-hidden rounded-md border border-border bg-surface"
+      className="overflow-hidden rounded-md border border-border bg-card"
       role="status"
     >
       <span className="sr-only">Cargando guardias</span>
       {["one", "two", "three"].map((key) => (
         <div
-          className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-4 border-b border-border-subtle px-4 py-4 last:border-b-0 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:px-5"
+          className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-4 border-b border-border px-4 py-4 last:border-b-0 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:px-5"
           data-slot="admin-overview-duty-skeleton"
           key={key}
         >
           <div>
-            <div className="h-4 w-12 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="mt-2 h-3 w-10 animate-pulse rounded-sm bg-surface-subtle" />
+            <div className="h-4 w-12 animate-pulse rounded-sm bg-muted" />
+            <div className="mt-2 h-3 w-10 animate-pulse rounded-sm bg-muted" />
           </div>
           <div>
-            <div className="h-4 w-40 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="mt-2 h-3 w-28 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="mt-2 h-3 w-32 animate-pulse rounded-sm bg-surface-subtle" />
+            <div className="h-4 w-40 animate-pulse rounded-sm bg-muted" />
+            <div className="mt-2 h-3 w-28 animate-pulse rounded-sm bg-muted" />
+            <div className="mt-2 h-3 w-32 animate-pulse rounded-sm bg-muted" />
           </div>
         </div>
       ))}
@@ -459,12 +459,12 @@ function UpcomingSection({
           <h2 className="text-xl font-bold tracking-tight text-foreground" id="upcoming-heading">
             Hoy
           </h2>
-          <p className="mt-1 text-sm text-foreground-secondary">
+          <p className="mt-1 text-sm text-muted-foreground">
             Guardias de hoy y próximamente, en orden cronológico.
           </p>
         </div>
         <Link
-          className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-primary underline-offset-4 hover:text-primary-hover hover:underline sm:self-auto"
+          className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-link underline-offset-4 hover:text-link hover:underline sm:self-auto"
           href="/admin/schedules"
         >
           Ver horarios
@@ -491,7 +491,7 @@ function UpcomingSection({
           title="Sin guardias próximas"
         />
       ) : (
-        <ol className="overflow-hidden rounded-md border border-border bg-surface">
+        <ol className="overflow-hidden rounded-md border border-border bg-card">
           {data.upcomingDuties.map((duty) => (
             <DutyRow key={duty.id} {...duty} />
           ))}

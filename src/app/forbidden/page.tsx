@@ -14,15 +14,15 @@ export const metadata: Metadata = {
 
 export default function ForbiddenPage() {
   return (
-    <main className="flex min-h-svh items-center justify-center bg-canvas px-4 py-12">
+    <main className="flex min-h-svh items-center justify-center bg-background px-4 py-12">
       <section
         aria-labelledby="forbidden-title"
-        className="w-full max-w-lg rounded-lg border border-border bg-surface px-6 py-10 text-center shadow-sm sm:px-10"
+        className="w-full max-w-lg rounded-lg border border-border bg-card px-6 py-10 text-center shadow-xs sm:px-10"
       >
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl border border-accent/40 bg-accent-surface text-accent">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl border border-faro/40 bg-muted text-faro">
           <FaroIcon className="h-10 w-10" />
         </div>
-        <div className="mt-6 flex items-center justify-center gap-2 text-sm font-semibold text-danger">
+        <div className="mt-6 flex items-center justify-center gap-2 text-sm font-semibold text-destructive">
           <ShieldAlert className="h-4 w-4" aria-hidden="true" />
           <span>Acceso restringido</span>
         </div>
@@ -32,7 +32,7 @@ export default function ForbiddenPage() {
         >
           No tienes permisos para esta sección
         </h1>
-        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-foreground-secondary">
+        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
           Tu cuenta está habilitada en SGTA, pero necesita otro nivel de acceso
           para continuar aquí.
         </p>
