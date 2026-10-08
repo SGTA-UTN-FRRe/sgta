@@ -103,7 +103,6 @@ tests, E2E, and a production build. `CI Gate` aggregates those jobs. See
 - [Development roadmap](docs/DEVELOPMENT-ROADMAP.md)
 - [Agent instructions](AGENTS.md)
 - [Agent tooling](docs/DEVELOPMENT.md#agent-tooling)
-- [Pull request template](.github/PULL_REQUEST_TEMPLATE.md)
 
 ## License
 

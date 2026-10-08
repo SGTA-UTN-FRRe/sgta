@@ -57,138 +57,20 @@ sign-up.
 The complete command list is maintained in [AGENTS.md](../AGENTS.md#commands).
 Test boundaries and CI behavior are documented in [Testing](TESTING.md).
 
+| Operator command | Notes |
+| --- | --- |
+| `corepack pnpm auth:bootstrap-admin` | Creates or updates one enabled Admin; supply `-- --email=admin@example.com --name="SGTA Admin"` and the intended database connection. |
+| `corepack pnpm data:import` | Dry-run by default; writes require `--apply --yes` and an enabled Admin in the target database. |
+| `corepack pnpm data:verify` | Read-only reconciliation; `--expected=<path>` supplies private aggregate expectations. |
+| `corepack pnpm db:query-audit` | On-demand query-plan inspection in disposable PostgreSQL; Docker is required. |
+
 ## Agent tooling
 
-Repository skills are optional local tooling. They are not included in a fresh clone. Install the pinned playbook revision below when using the documented agent workflows; never overwrite an existing local customization without reviewing it.
-
-Project build and test commands do not require an AI tool or local skills.
-The source is the [engineering playbook skill collection](https://github.com/acevedo-daniel/engineering-playbook/tree/9eb3c786b844b9ed83b744658601b67b3fd7ad42/.agents/skills),
-pinned to revision `9eb3c786b844b9ed83b744658601b67b3fd7ad42`.
-The five directories are `apply-playbook`, `delegate-task`, `git-delivery`,
-`implement-task`, and `plan-implementation`. Their `SKILL.md` files own the
-procedures; this section only describes installation.
-
-Run the following commands from the SGTA repository root with Git available.
-The source clone goes under ignored `local-docs/tools/engineering-playbook`;
-Codex skills go under ignored `.agents/skills/`. Download and installation are
-separate steps: each refuses an existing clone or destination, respectively.
-If some skills are already installed, select only missing names in the install
-list. Review existing customizations separately before updating them; compare
-the installed files with the pinned source and apply reviewed changes manually.
-Do not delete or overwrite an existing clone or install to rerun these commands.
-
-### PowerShell
-
-Download the pinned source:
-
-```powershell
-& {
-    $ErrorActionPreference = 'Stop'
-    $playbookPath = 'local-docs/tools/engineering-playbook'
-    if (Test-Path -LiteralPath $playbookPath) { throw "Source already exists: $playbookPath" }
-    New-Item -ItemType Directory -Force -Path 'local-docs/tools' | Out-Null
-    git clone https://github.com/acevedo-daniel/engineering-playbook.git $playbookPath
-    if ($LASTEXITCODE -ne 0) { throw 'Playbook clone failed.' }
-    git -C $playbookPath checkout --detach 9eb3c786b844b9ed83b744658601b67b3fd7ad42
-    if ($LASTEXITCODE -ne 0) { throw 'Pinned checkout failed.' }
-}
-```
-
-Install only missing directories after verifying the checkout:
-
-```powershell
-& {
-    $ErrorActionPreference = 'Stop'
-    $playbookPath = 'local-docs/tools/engineering-playbook'
-    $skillRoot = '.agents/skills'
-    $skillNames = @('apply-playbook', 'delegate-task', 'git-delivery', 'implement-task', 'plan-implementation')
-    $playbookRevision = git -C $playbookPath rev-parse HEAD
-    if ($LASTEXITCODE -ne 0 -or $playbookRevision -ne '9eb3c786b844b9ed83b744658601b67b3fd7ad42') { throw 'Pinned checkout required.' }
-    foreach ($skillName in $skillNames) {
-        $sourcePath = Join-Path $playbookPath ".agents/skills/$skillName"
-        $destinationPath = Join-Path $skillRoot $skillName
-        if (-not (Test-Path -LiteralPath "$sourcePath/SKILL.md" -PathType Leaf)) { throw "Missing source: $sourcePath" }
-        if (Test-Path -LiteralPath $destinationPath) { throw "Destination already exists: $destinationPath" }
-    }
-    New-Item -ItemType Directory -Force -Path $skillRoot | Out-Null
-    foreach ($skillName in $skillNames) {
-        Copy-Item -LiteralPath (Join-Path $playbookPath ".agents/skills/$skillName") -Destination (Join-Path $skillRoot $skillName) -Recurse
-    }
-}
-```
-
-### POSIX shell
-
-Download the pinned source:
-
-```sh
-(
-    set -eu
-    playbook_path='local-docs/tools/engineering-playbook'
-    if [ -e "$playbook_path" ] || [ -L "$playbook_path" ]; then
-        echo "Source already exists: $playbook_path" >&2
-        exit 1
-    fi
-    mkdir -p local-docs/tools
-    git clone https://github.com/acevedo-daniel/engineering-playbook.git "$playbook_path"
-    git -C "$playbook_path" checkout --detach 9eb3c786b844b9ed83b744658601b67b3fd7ad42
-)
-```
-
-Install only missing directories after verifying the checkout:
-
-```sh
-(
-    set -eu
-    playbook_path='local-docs/tools/engineering-playbook'
-    skill_root='.agents/skills'
-    skill_names='apply-playbook delegate-task git-delivery implement-task plan-implementation'
-    playbook_revision=$(git -C "$playbook_path" rev-parse HEAD)
-    if [ "$playbook_revision" != '9eb3c786b844b9ed83b744658601b67b3fd7ad42' ]; then
-        echo 'Pinned checkout required.' >&2
-        exit 1
-    fi
-    for skill_name in $skill_names; do
-        source_path="$playbook_path/.agents/skills/$skill_name"
-        destination_path="$skill_root/$skill_name"
-        if [ ! -f "$source_path/SKILL.md" ]; then
-            echo "Missing source: $source_path" >&2
-            exit 1
-        fi
-        if [ -e "$destination_path" ] || [ -L "$destination_path" ]; then
-            echo "Destination already exists: $destination_path" >&2
-            exit 1
-        fi
-    done
-    mkdir -p "$skill_root"
-    for skill_name in $skill_names; do
-        cp -R "$playbook_path/.agents/skills/$skill_name" "$skill_root/$skill_name"
-    done
-)
-```
-
-### Claude Code
-
-Claude Code reads `.claude/skills/`, rather than `.agents/skills/`. Use the same
-pinned source and selected directories above. Before copying, add
-`/.claude/skills/` to the repository's local Git exclusion so the install stays
-outside commits. From the repository root, use PowerShell:
-
-```powershell
-Add-Content -LiteralPath (git rev-parse --git-path info/exclude) -Value '/.claude/skills/'
-```
-
-Or a POSIX shell:
-
-```sh
-printf '%s\n' '/.claude/skills/' >> "$(git rev-parse --git-path info/exclude)"
-```
-
-Then run the corresponding installation block with `$skillRoot` set to
-`.claude/skills` in PowerShell or `skill_root` set to `.claude/skills` in POSIX.
-Reuse the pinned source clone; do not repeat the download step. The same
-existing-destination checks preserve Claude's local customizations. Local
-exclusions are machine-specific and are not part of a fresh clone.
+Skills are optional personal tooling; build and test commands do not require them.
+Use the [engineering playbook skills](https://github.com/acevedo-daniel/engineering-playbook/tree/main/.agents/skills).
+Follow its [installation instructions](https://github.com/acevedo-daniel/engineering-playbook#install-the-agent-skills)
+at user scope: `~/.agents/skills/` for Codex and `~/.claude/skills/` for Claude Code.
+The playbook owns installation and workflow procedures; refresh skills as it evolves.
 
 ## Database workflow
 
