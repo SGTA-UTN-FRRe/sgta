@@ -140,6 +140,7 @@ Keep route composition thin and place feature-specific behavior under a feature-
 | Task | Command |
 | --- | --- |
 | Verify (mirrors CI Gate) | `corepack pnpm verify` |
+| Template placeholder check | `corepack pnpm check:templates` |
 | Install | `corepack pnpm install --frozen-lockfile` |
 | Dev | `corepack pnpm dev` |
 | Migration check | `corepack pnpm db:check` |
