@@ -59,6 +59,11 @@ Planning metadata must not leak into branches, commit subjects, pull request tit
 
 ## Repository skills
 
+Repository skills are optional local tooling and are not included in a fresh
+clone. See [Agent tooling](docs/DEVELOPMENT.md#agent-tooling) for the pinned
+playbook source and installation instructions. Build and test commands do not
+require an AI tool or local skills.
+
 Use the installed skills for their owned procedures:
 
 - `$plan-implementation` turns roadmap or product intent into a decision-complete execution plan.

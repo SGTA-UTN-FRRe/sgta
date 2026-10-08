@@ -5,7 +5,7 @@ type: project-design-direction
 status: approved
 project: SGTA
 authority: product-visual-direction
-inherits_from: DESIGN-STANDARD.md
+inherits_from: https://github.com/acevedo-daniel/engineering-playbook/blob/9eb3c786b844b9ed83b744658601b67b3fd7ad42/docs/DESIGN-STANDARD.md
 ---
 
 # SGTA - Design Direction

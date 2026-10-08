@@ -6,7 +6,7 @@ status: approved
 project: SGTA
 authority: implementation-ui
 inherits_from:
-  - DESIGN-STANDARD.md
+  - https://github.com/acevedo-daniel/engineering-playbook/blob/9eb3c786b844b9ed83b744658601b67b3fd7ad42/docs/DESIGN-STANDARD.md
   - PROJECT-DESIGN.md
 ---
 
