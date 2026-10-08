@@ -52,11 +52,12 @@ verification are deterministic foundations for later work.
 - Run a baseline screenshot review of the main Admin and Tutor routes and
   classify each finding as a design-system or a view-level problem.
 - Rewrite the project design in the current template while preserving the
-  approved direction: brand colors, the Faro signature move, Branded Product
-  expression, Operational density, Manrope, and the neutral Spanish voice.
-  Register tokens as `oklch()` values with shadcn semantic names plus product
-  extensions for navigation, brand surfaces, and status pairs, and remove the
-  link to the retired design standard.
+  approved brand colors, the Faro identity, Branded Product expression,
+  Operational density, and the neutral Spanish voice, and adding a serif
+  heading face, neutral surfaces without pastel tints, navy ink actions, and a
+  saturated career palette. Register tokens as `oklch()` values with shadcn
+  semantic names plus product extensions for navigation, brand surfaces, and
+  status pairs, and remove the link to the retired design standard.
 - Implement the token registry in `src/app/globals.css` and expose spacing,
   type, tracking, layering, and layout tokens to Tailwind so components need no
   arbitrary values.
@@ -68,13 +69,17 @@ verification are deterministic foundations for later work.
 - Add a development-only design preview route that renders the type scale,
   every color token, controls in each variant and state, table rows, status
   badges, an empty state, and a page header with the signature move.
-- Build shared product patterns from primitives: the application shell with
-  Compact sheet navigation, page header, data table, filter bar, form field,
-  confirmation dialog, and system states.
+- Build shared product patterns from primitives: the application shell with an
+  Admin sidebar that becomes a sheet in Compact and a Tutor top navigation bar,
+  page header, data table, filter bar, form field, confirmation dialog, and
+  system states.
 - Add a lint rule that rejects raw `button`, `input`, `select`, `textarea`, and
   `dialog` elements outside `src/components/ui/`, starting at warning level.
-- Rebuild Horas, including the movement dialog, at full fidelity as the
-  reference screen for later migrations.
+- Rebuild Horarios at full fidelity as the reference screen for later
+  migrations, with assignments colored and labeled by the Tutor's career and a
+  career legend that filters the grid.
+- Let Admins assign a palette color to each career in Configuración, migrate
+  existing careers, and validate the color on the server.
 - Restructure the UI specification in the current template: global rules,
   system states, a route inventory with a README screenshot column, and
   per-view files under `design/ui-spec/`. Remove visual prose that duplicates
@@ -87,9 +92,10 @@ verification are deterministic foundations for later work.
 
 ### Out of scope
 
-- Migrating views other than Horas.
+- Migrating views other than Horarios.
 - A dark color scheme.
-- New domain capabilities or changes to hour-accounting rules.
+- New domain capabilities other than the career color, or changes to
+  hour-accounting rules.
 - Production hosting, data migration, and external service cutover.
 
 ### Exit criteria
@@ -101,8 +107,12 @@ verification are deterministic foundations for later work.
   automated check.
 - The raw-element lint rule flags a fixture containing each restricted element
   and passes primitives and pages that compose them.
-- Horas uses only primitives, shared patterns, and registered tokens, and passes
-  the screenshot review in Constraints.
+- Horarios uses only primitives, shared patterns, and registered tokens, and
+  passes the screenshot review in Constraints.
+- Every career has a palette color: existing careers are migrated, new careers
+  receive one, and the server rejects values outside the palette.
+- Token, primitive, and shell changes add no new Blocking or Major finding to
+  other views compared with the baseline screenshot review.
 - Production feature code does not import fixture modules, and server-side
   business-date calculations use the shared date boundary.
 - Browser journeys pass with a fixed test date before the deadline in
@@ -132,6 +142,8 @@ deterministic demo data.
 - Make filters, movement links, and label conventions consistent across related
   views.
 - Reconcile each view's UI specification with its delivered content and states.
+- Apply the shared duration format, compact system states, and career colors in
+  every view that shows durations, empty states, or careers.
 - Add a Screenshots command and README screenshots for the views marked in the
   UI specification's README column.
 - Run a final screenshot review across all views and raise the raw-element lint
