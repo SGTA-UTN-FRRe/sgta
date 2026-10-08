@@ -38,7 +38,7 @@ Choose the language by artifact, never by the language of the conversation or th
 | Roadmap, implementation plans, execution packets | English |
 | Development documentation: `README.md`, `docs/`, `design/`, `SECURITY.md`, `AGENTS.md`, `CLAUDE.md`, skills | English |
 | Code, identifiers, comments, tests, fixtures, files, directories, route segments | English |
-| Branches, commits, PR titles and bodies, squash text | English, per `$git-delivery` |
+| Branches, commits, PR titles and bodies, squash text | English, per `git-delivery` |
 
 `design/` is development documentation: its prose is English even though it defines Spanish product copy.
 
@@ -60,11 +60,18 @@ Planning metadata must not leak into branches, commit subjects, pull request tit
 
 Skills are optional personal tooling installed from the [engineering playbook](https://github.com/acevedo-daniel/engineering-playbook); build and test commands do not require them.
 
-- `$plan-implementation` turns roadmap or product intent into a decision-complete execution plan.
-- `$implement-task` implements one concrete approved task and verifies its boundaries.
-- `$write-tests` writes and repairs tests deterministically, including flaky-test triage.
-- `$git-delivery` creates outcome-oriented branches, commits, pull requests, and squash-delivery text when requested.
-- `$delegate-task` turns independently completable work into a self-contained issue for a teammate.
+| Work | Skill |
+| --- | --- |
+| Plan a feature, phase, or refactor | `plan-implementation` |
+| Implement a planned task, fix, or feature | `implement-task` |
+| Write or repair tests | `write-tests` |
+| Set up or change CI or protect main | `setup-ci` |
+| Branch, commit, PR, or merge text | `git-delivery` |
+| Visual direction and design tokens | `define-design` |
+| Any visible UI change or visual review | `build-ui` |
+| Hand work to a teammate | `delegate-task` |
+| Audit this project against the playbook | `apply-playbook` |
+| Record a recurring agent mistake | `record-lesson` |
 
 A skill owns its procedure and output format. Do not duplicate those procedures in project documentation.
 
@@ -73,7 +80,7 @@ A skill owns its procedure and output format. Do not duplicate those procedures 
 - **Issue language:** Spanish (see Language policy).
 - **Tracker:** GitHub Project #1 owned by `SGTA-UTN-FRRe`.
 
-Delegation is optional. Mark a plan task `Delegable: yes` only when a teammate can complete it from the issue alone and no other task depends on it. Use `$delegate-task` or the Task issue form; the skill owns issue drafting and creation. Create an issue or add it to the project only when explicitly requested. If an issue does not match the repository or its next step is unclear, comment on the issue and wait; sending the comment requires authorization from the user or the invoked delegation skill.
+Delegation is optional. Mark a plan task `Delegable: yes` only when a teammate can complete it from the issue alone and no other task depends on it. Use `delegate-task` or the Task issue form; the skill owns issue drafting and creation. Create an issue or add it to the project only when explicitly requested. If an issue does not match the repository or its next step is unclear, comment on the issue and wait; sending the comment requires authorization from the user or the invoked delegation skill.
 
 ## Sources of truth
 
@@ -169,6 +176,16 @@ The E2E browser may require `corepack pnpm exec playwright install chromium` onc
 - When protected behavior is implemented, enforce authentication and authorization on the server rather than through client-only role checks.
 - Future domain work must preserve cycle-aware data, auditable changes, and movement-derived hour balances from the approved project decisions.
 - Prefer established idiomatic patterns unless an approved change replaces them. Do not edit generated artifacts manually.
+- Compose visible UI from primitives in `src/components/ui/` and tokens registered in `design/PROJECT-DESIGN.md`; add a missing primitive or variant instead of restyling at the call site.
+
+## Always
+
+- Run `corepack pnpm verify` before reporting runtime work as done; documentation-only deliveries may use the relevant template, lint, type, and diff checks, with the full `CI Gate` required before merge. Never claim a check passed unless it actually ran successfully.
+- If the same check still fails after two fix attempts, stop and report the command, failure output, and hypothesis.
+- Never weaken, skip, or retry a check merely to obtain a pass.
+- Choose each artifact's language from the Language policy.
+- Planning labels (phase, task, and milestone names or numbers) never appear in branches, commits, PRs, files, or identifiers.
+- Current code is evidence of what exists; `docs/DEVELOPMENT-ROADMAP.md`, `design/PROJECT-DESIGN.md`, and `design/UI-SPEC.md` are the approved target.
 
 ## Ask before
 
@@ -187,24 +204,21 @@ Ask the user before the following actions unless the current request or approved
 - Add integration or authorization checks only when the corresponding runtime boundary exists.
 - Use deterministic synthetic data; never commit secrets, credentials, personal data, production logs, or data exports.
 - Run the smallest relevant checks and use the CI contract documented in `docs/TESTING.md`.
-- Never claim a check passed unless it actually ran successfully.
 - Timeouts are budgets set once in `playwright.config.ts`, `vitest.config.ts`, and `src/test/setup.ts`; never add per-test or per-wait overrides. A test that hits its budget has a cause to fix.
 - Browser tests import `test` from `tests/e2e/fixtures.ts`, which waits for `html[data-hydrated="true"]`; call `waitForHydration` after click-driven full navigations.
-- CI retries E2E tests once; a flaky warning is a defect to fix with `$write-tests`, not a pass.
+- CI retries E2E tests once; a flaky warning is a defect to fix with `write-tests`, not a pass.
 - Keep generated directories and artifacts out of manual edits.
 - Test the smallest correct boundary: unit, then integration, then E2E. Add or update tests for changed behavior when that boundary exists.
-- Run `corepack pnpm verify` before reporting runtime work as done; documentation-only deliveries may use the relevant template, lint, type, and diff checks, with the full `CI Gate` required before merge.
-- If the same check still fails after two fix attempts, stop and report the command, failure output, and hypothesis. Never weaken, skip, or retry a check merely to obtain a pass.
 
 ## Documentation rules
 
 - Current-state docs describe verified repository facts; keep target decisions in their existing authoritative documents.
 - Remove stale claims instead of layering contradictory notes.
-- When a change alters a view in UI-SPEC's README screenshot column, regenerate its screenshot in the same change once the Screenshots command exists. The UI engineering foundation owns that command and the initial README screenshots.
+- When a change alters a view in UI-SPEC's README screenshot column, regenerate its screenshot in the same change once the Screenshots command exists. The Interface migration phase owns that command and the initial README screenshots.
 - `local-docs/` is git-ignored and never linked from tracked files: active plans in `execution/`, issue drafts in `issues/`, human-kept material in `keep/`, and every other agent-written file (scripts, PR text, screenshots, build output) in `tmp/`. Deleting `tmp/` contents, plans whose PRs merged, and posted issue drafts needs no confirmation; never delete `keep/`.
 
 ## Repository delivery
 
 - Use focused, outcome-oriented branches and pull requests with one dominant outcome per PR.
 - Use the normal protected-branch PR flow and keep `main` runnable after each coherent delivery.
-- Follow `$git-delivery` for naming and delivery text. Merge or squash remains a manual user action unless explicitly requested.
+- Follow `git-delivery` for naming and delivery text. Merge or squash remains a manual user action unless explicitly requested.
