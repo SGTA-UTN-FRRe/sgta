@@ -5,9 +5,8 @@ import {
   AuthorizationUnavailableError,
   getAuthorizedUser,
 } from "@/auth/authorization";
-import { loginScreenData } from "@/mocks/login.mock";
-
 import { loginStateFromAuthErrorCode } from "./login-auth";
+import { loginScreenData } from "./login-copy";
 import { LoginScreen } from "./login-screen";
 
 export const metadata: Metadata = {
