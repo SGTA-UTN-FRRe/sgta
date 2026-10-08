@@ -1,5 +1,20 @@
 export type AttentionTone = "warning" | "danger" | "info";
 
+export type AdminOverviewState =
+  | "default"
+  | "loading"
+  | "empty"
+  | "error"
+  | "degraded"
+  | "required-action";
+
+export interface AdminOverviewStateCopy {
+  state: Exclude<AdminOverviewState, "default">;
+  title: string;
+  description: string;
+  actionLabel?: string;
+}
+
 export interface CycleSummary {
   name: string;
   period: string;
