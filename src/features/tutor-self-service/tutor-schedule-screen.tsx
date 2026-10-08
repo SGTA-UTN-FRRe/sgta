@@ -231,7 +231,7 @@ function ScheduleContent({
               ? "Sin horario asignado"
               : `Plan ${getPlanKindLabel(data.effectivePlan.kind)}`
           }
-          variant={data.effectivePlan?.kind === "SPECIAL" ? "faro" : "info"}
+          variant={data.effectivePlan?.kind === "SPECIAL" ? "neutral" : "info"}
         />
         <span className="text-sm text-muted-foreground">
           {data.effectivePlan?.name ?? "No hay guardias asignadas para la fecha de referencia."}

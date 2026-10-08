@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Clock,
   Info,
-  Sparkles,
   XCircle,
 } from "lucide-react";
 
@@ -21,8 +20,7 @@ export type StatusBadgeVariant =
   | "warning"
   | "danger"
   | "info"
-  | "neutral"
-  | "faro";
+  | "neutral";
 
 type StatusBadgeContent =
   | { label: string; children?: ReactNode }
@@ -43,7 +41,6 @@ const DEFAULT_ICONS: Record<StatusBadgeVariant, ComponentType<{ className?: stri
   danger: XCircle,
   info: Info,
   neutral: Clock,
-  faro: Sparkles,
 };
 
 const VARIANT_STYLES: Record<StatusBadgeVariant, string> = {
@@ -52,7 +49,6 @@ const VARIANT_STYLES: Record<StatusBadgeVariant, string> = {
   danger: "border-destructive/30 bg-muted text-destructive",
   info: "border-info/30 bg-muted text-info",
   neutral: "border-border bg-secondary text-secondary-foreground",
-  faro: "border-faro/40 bg-muted text-foreground",
 };
 
 /**

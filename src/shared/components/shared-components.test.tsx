@@ -97,10 +97,6 @@ describe("Shared UI Primitives (SGTA)", () => {
       badge = screen.getByText("Borrador").parentElement;
       expect(badge).toHaveClass("text-secondary-foreground");
 
-      rerender(<StatusBadge variant="faro">Faro UTN</StatusBadge>);
-      expect(screen.getByText("Faro UTN")).toBeInTheDocument();
-      badge = screen.getByText("Faro UTN").parentElement;
-      expect(badge).toHaveClass("text-foreground");
     });
 
     it("supports custom Lucide icon with uniform strokeWidth", () => {
