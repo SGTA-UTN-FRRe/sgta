@@ -68,7 +68,7 @@ type BalanceFilter = SafeHourBalance["state"] | "all";
 type ActivityKind = NonNullable<SafeHourCategory["activityKind"]>;
 
 const selectClassName =
-  "h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "h-10 w-full rounded-sm border border-border bg-card px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 const focusableSelector = [
   "a[href]",
@@ -373,12 +373,12 @@ function InlineStateNotice({
   tone: "danger" | "success" | "warning";
 }) {
   const styles = {
-    danger: "border-danger/30 bg-danger-surface/60",
-    success: "border-success/30 bg-success-surface/60",
-    warning: "border-warning/30 bg-warning-surface/60",
+    danger: "border-destructive/30 bg-muted/60",
+    success: "border-success/30 bg-muted/60",
+    warning: "border-warning/30 bg-muted/60",
   } as const;
   const iconStyles = {
-    danger: "text-danger",
+    danger: "text-destructive",
     success: "text-success",
     warning: "text-warning",
   } as const;
@@ -395,7 +395,7 @@ function InlineStateNotice({
       <span className={cn("mt-0.5 shrink-0", iconStyles[tone])}>{icon}</span>
       <div className="min-w-0">
         <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-foreground-secondary">{description}</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
         {action && <div className="mt-3">{action}</div>}
       </div>
     </div>
@@ -435,7 +435,7 @@ function FilterToolbar({
     <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(14rem,1.4fr)_minmax(10rem,0.8fr)_minmax(12rem,1fr)_auto]">
       <div className="space-y-1.5">
         <label
-          className="text-xs font-semibold text-foreground-secondary"
+          className="text-xs font-semibold text-muted-foreground"
           htmlFor="hours-search"
         >
           Buscar
@@ -443,7 +443,7 @@ function FilterToolbar({
         <div className="relative">
           <Search
             aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
           />
           <Input
             className="pl-9"
@@ -459,7 +459,7 @@ function FilterToolbar({
 
       <div className="space-y-1.5">
         <label
-          className="text-xs font-semibold text-foreground-secondary"
+          className="text-xs font-semibold text-muted-foreground"
           htmlFor="hours-status"
         >
           {statusLabel}
@@ -479,7 +479,7 @@ function FilterToolbar({
 
       <div className="space-y-1.5">
         <label
-          className="text-xs font-semibold text-foreground-secondary"
+          className="text-xs font-semibold text-muted-foreground"
           htmlFor="hours-category"
         >
           {categoryLabel}
@@ -549,7 +549,7 @@ function BalanceIdentity({ balance }: { balance: SafeHourBalance }) {
   return (
     <div className="min-w-0">
       <TutorProfileLink className="block truncate font-semibold text-foreground" name={balance.tutor.formalName} />
-      <p className="mt-1 truncate text-xs text-foreground-muted">
+      <p className="mt-1 truncate text-xs text-muted-foreground">
         {balance.tutor.careerName} · {balance.cycle.name}
       </p>
     </div>
@@ -561,8 +561,8 @@ function BalanceValue({ balance }: { balance: SafeHourBalance }) {
     <div>
       <p
         className={cn(
-          "font-numeric text-xl font-bold tabular-nums tracking-tight",
-          balance.state === "current" ? "text-success" : "text-danger",
+          "font-sans text-xl font-bold tabular-nums tracking-tight",
+          balance.state === "current" ? "text-success" : "text-destructive",
         )}
       >
         {formatSignedDuration(balance.signedBalanceMinutes)}
@@ -586,7 +586,7 @@ function BalanceLists({
   );
 
   return (
-    <div className="mt-4 overflow-hidden rounded-md border border-border bg-surface">
+    <div className="mt-4 overflow-hidden rounded-md border border-border bg-card">
       <div className="hidden lg:block">
         <Table className="min-w-[52rem]">
           <TableHeader>
@@ -645,7 +645,7 @@ function BalanceLists({
         </Table>
       </div>
 
-      <div className="divide-y divide-border-subtle md:hidden">
+      <div className="divide-y divide-border md:hidden">
         {balances.map((balance) => (
           <article
             className="scroll-mt-8 space-y-4 p-4"
@@ -674,47 +674,47 @@ function LoadingBalanceList() {
     <div
       aria-label="Cargando saldos"
       aria-live="polite"
-      className="mt-4 overflow-hidden rounded-md border border-border bg-surface"
+      className="mt-4 overflow-hidden rounded-md border border-border bg-card"
       role="status"
     >
       <span className="sr-only">Cargando saldos</span>
       <div className="hidden lg:block">
         <div className="grid grid-cols-[1.5fr_1fr_1fr_10rem] gap-4 border-b border-border px-3 py-3">
           {rows.map((key) => (
-            <span className="h-3 animate-pulse rounded-sm bg-surface-subtle" key={key} />
+            <span className="h-3 animate-pulse rounded-sm bg-muted" key={key} />
           ))}
         </div>
         {rows.map((key) => (
           <div
-            className="grid grid-cols-[1.5fr_1fr_1fr_10rem] gap-4 border-b border-border-subtle px-3 py-5 last:border-b-0"
+            className="grid grid-cols-[1.5fr_1fr_1fr_10rem] gap-4 border-b border-border px-3 py-5 last:border-b-0"
             key={key}
           >
-            <span className="h-5 w-36 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-6 w-20 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-6 w-20 animate-pulse rounded-full bg-surface-subtle" />
-            <span className="h-8 w-32 animate-pulse rounded-sm bg-surface-subtle" />
+            <span className="h-5 w-36 animate-pulse rounded-sm bg-muted" />
+            <span className="h-6 w-20 animate-pulse rounded-sm bg-muted" />
+            <span className="h-6 w-20 animate-pulse rounded-full bg-muted" />
+            <span className="h-8 w-32 animate-pulse rounded-sm bg-muted" />
           </div>
         ))}
       </div>
       <div className="hidden md:block lg:hidden">
         {rows.map((key) => (
           <div
-            className="grid grid-cols-[1.4fr_1fr_1fr_9rem] gap-4 border-b border-border-subtle px-3 py-5 last:border-b-0"
+            className="grid grid-cols-[1.4fr_1fr_1fr_9rem] gap-4 border-b border-border px-3 py-5 last:border-b-0"
             key={key}
           >
-            <span className="h-5 w-36 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-6 w-20 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-6 w-20 animate-pulse rounded-full bg-surface-subtle" />
-            <span className="h-8 w-28 animate-pulse rounded-sm bg-surface-subtle" />
+            <span className="h-5 w-36 animate-pulse rounded-sm bg-muted" />
+            <span className="h-6 w-20 animate-pulse rounded-sm bg-muted" />
+            <span className="h-6 w-20 animate-pulse rounded-full bg-muted" />
+            <span className="h-8 w-28 animate-pulse rounded-sm bg-muted" />
           </div>
         ))}
       </div>
-      <div className="divide-y divide-border-subtle md:hidden">
+      <div className="divide-y divide-border md:hidden">
         {rows.map((key) => (
           <div className="space-y-4 p-4" key={key}>
-            <div className="h-5 w-36 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="h-6 w-24 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="h-8 w-full animate-pulse rounded-sm bg-surface-subtle" />
+            <div className="h-5 w-36 animate-pulse rounded-sm bg-muted" />
+            <div className="h-6 w-24 animate-pulse rounded-sm bg-muted" />
+            <div className="h-8 w-full animate-pulse rounded-sm bg-muted" />
           </div>
         ))}
       </div>
@@ -832,7 +832,7 @@ function MovementHistorySheet({
         aria-describedby="hours-history-description"
         aria-labelledby="hours-history-title"
         aria-modal="true"
-        className="flex h-full w-full max-w-[38rem] flex-col border-l border-border bg-surface shadow-2xl"
+        className="flex h-full w-full max-w-[38rem] flex-col border-l border-border bg-card shadow-2xl"
         ref={panelRef}
         role="dialog"
         tabIndex={-1}
@@ -849,7 +849,7 @@ function MovementHistorySheet({
               {balance.tutor.formalName}
             </h2>
             <p
-              className="mt-2 text-sm leading-6 text-foreground-secondary"
+              className="mt-2 text-sm leading-6 text-muted-foreground"
               id="hours-history-description"
             >
               Movimientos del {balance.cycle.name}. El saldo se calcula a partir de los movimientos confirmados.
@@ -857,7 +857,7 @@ function MovementHistorySheet({
           </div>
           <button
             aria-label="Cerrar historial de movimientos"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-foreground-secondary transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
             onClick={onClose}
             ref={closeButtonRef}
             type="button"
@@ -867,19 +867,19 @@ function MovementHistorySheet({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-          <div className="rounded-md border border-border-subtle bg-surface-subtle/60 p-4">
+          <div className="rounded-md border border-border bg-muted/60 p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground-muted">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Saldo
                 </p>
-                <p className="mt-2 font-numeric text-3xl font-bold tabular-nums text-foreground">
+                <p className="mt-2 font-sans text-3xl font-bold tabular-nums text-foreground">
                   {formatSignedDuration(balance.signedBalanceMinutes)}
                 </p>
               </div>
               <BalanceStatus balance={balance} />
             </div>
-            <p className="mt-3 text-sm leading-6 text-foreground-secondary">
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
               El estado se acompaña con texto y no depende solo del color.
             </p>
           </div>
@@ -889,13 +889,13 @@ function MovementHistorySheet({
               <h3 className="text-sm font-bold text-foreground" id="hours-history-list-title">
                 Movimientos
               </h3>
-              <span className="text-xs text-foreground-muted">
+              <span className="text-xs text-muted-foreground">
                 {entries.length} {entries.length === 1 ? "registro" : "registros"}
               </span>
             </div>
 
             {loading ? (
-              <div className="mt-4 rounded-md border border-border-subtle bg-surface-subtle/60 p-4 text-sm text-foreground-secondary" role="status">
+              <div className="mt-4 rounded-md border border-border bg-muted/60 p-4 text-sm text-muted-foreground" role="status">
                 Cargando movimientos…
               </div>
             ) : error ? (
@@ -911,14 +911,14 @@ function MovementHistorySheet({
                 tone="danger"
               />
             ) : entries.length === 0 ? (
-              <p className="mt-4 rounded-md border border-dashed border-border p-4 text-sm leading-6 text-foreground-secondary">
+              <p className="mt-4 rounded-md border border-dashed border-border p-4 text-sm leading-6 text-muted-foreground">
                 Todavía no hay movimientos para este tutor en el ciclo actual.
               </p>
             ) : (
               <ol className="mt-4 space-y-3">
                 {entries.map((entry) => (
                   <li
-                    className="rounded-md border border-border-subtle bg-surface p-4"
+                    className="rounded-md border border-border bg-card p-4"
                     key={entry.id}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -926,7 +926,7 @@ function MovementHistorySheet({
                         <p className="text-sm font-semibold text-foreground">
                           {formatDate(entry.movementDate)} · {entry.category.name}
                         </p>
-                        <p className="mt-1 text-xs text-foreground-muted">
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {directionLabels[entry.direction]} · {formatDurationMinutes(entry.durationMinutes)} · {formatMovementOrigin(entry)}
                         </p>
                       </div>
@@ -944,25 +944,25 @@ function MovementHistorySheet({
 
                     <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                       <div>
-                        <dt className="text-xs font-medium text-foreground-muted">Nota</dt>
-                        <dd className="mt-1 leading-6 text-foreground-secondary">
+                        <dt className="text-xs font-medium text-muted-foreground">Nota</dt>
+                        <dd className="mt-1 leading-6 text-muted-foreground">
                           {entry.note ?? "Sin nota"}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs font-medium text-foreground-muted">Actor</dt>
-                        <dd className="mt-1 text-foreground-secondary">{entry.actor.displayName}</dd>
+                        <dt className="text-xs font-medium text-muted-foreground">Actor</dt>
+                        <dd className="mt-1 text-muted-foreground">{entry.actor.displayName}</dd>
                       </div>
                     </dl>
 
                     {entry.origin !== null && (
-                      <p className="mt-4 rounded-sm border border-info/30 bg-info-surface/60 p-3 text-xs leading-5 text-foreground-secondary">
+                      <p className="mt-4 rounded-sm border border-info/30 bg-muted/60 p-3 text-xs leading-5 text-muted-foreground">
                         Origen registrado: {formatActivityKind(entry.origin.kind)} · {formatDate(entry.origin.activityDate)}
                       </p>
                     )}
 
                     {entry.reversalState === "REVERSED" && (
-                      <p className="mt-4 rounded-sm border border-warning/30 bg-warning-surface/60 p-3 text-xs leading-5 text-foreground-secondary">
+                      <p className="mt-4 rounded-sm border border-warning/30 bg-muted/60 p-3 text-xs leading-5 text-muted-foreground">
                         El movimiento original se conserva sin editar y se muestra como revertido.
                       </p>
                     )}
@@ -973,8 +973,8 @@ function MovementHistorySheet({
           </section>
         </div>
 
-        <div className="border-t border-border bg-surface px-6 py-4">
-          <p className="text-xs leading-5 text-foreground-muted">
+        <div className="border-t border-border bg-card px-6 py-4">
+          <p className="text-xs leading-5 text-muted-foreground">
             El saldo se calcula a partir de los movimientos registrados y no se puede modificar directamente.
           </p>
           <Link
@@ -1100,7 +1100,7 @@ function MovementDialog({
         aria-describedby="hours-movement-description"
         aria-labelledby="hours-movement-title"
         aria-modal="true"
-        className="flex h-full max-h-[100svh] w-full flex-col border-border bg-surface shadow-2xl sm:h-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-[44rem] sm:rounded-md sm:border"
+        className="flex h-full max-h-[100svh] w-full flex-col border-border bg-card shadow-2xl sm:h-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-[44rem] sm:rounded-md sm:border"
         ref={panelRef}
         role="dialog"
         tabIndex={-1}
@@ -1117,7 +1117,7 @@ function MovementDialog({
               Registrar movimiento
             </h2>
             <p
-              className="mt-2 text-sm leading-6 text-foreground-secondary"
+              className="mt-2 text-sm leading-6 text-muted-foreground"
               id="hours-movement-description"
             >
               Revisar el resumen antes de registrar el mismo movimiento para todos los tutores seleccionados.
@@ -1125,7 +1125,7 @@ function MovementDialog({
           </div>
           <button
             aria-label="Cerrar diálogo de movimiento"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-foreground-secondary transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
             onClick={onClose}
             ref={closeButtonRef}
             type="button"
@@ -1139,7 +1139,7 @@ function MovementDialog({
             {errorMessage && (
               <div
                 aria-live="assertive"
-                className="flex items-start gap-3 rounded-md border border-danger/30 bg-danger-surface/60 p-4 text-sm text-danger"
+                className="flex items-start gap-3 rounded-md border border-destructive/30 bg-muted/60 p-4 text-sm text-destructive"
                 role="alert"
               >
                 <CircleAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
@@ -1165,7 +1165,7 @@ function MovementDialog({
                       "flex min-h-11 cursor-pointer items-center justify-center rounded-sm border px-4 text-sm font-semibold transition-colors focus-within:ring-3 focus-within:ring-ring",
                       operation === value
                         ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-surface text-foreground-secondary hover:bg-surface-subtle",
+                        : "border-border bg-card text-muted-foreground hover:bg-muted",
                     )}
                     key={value}
                   >
@@ -1196,7 +1196,7 @@ function MovementDialog({
                         "flex min-h-11 cursor-pointer items-center justify-center rounded-sm border px-4 text-sm font-semibold transition-colors focus-within:ring-3 focus-within:ring-ring",
                         isSelected
                           ? "border-primary bg-primary/10 text-primary"
-                          : "border-border bg-surface text-foreground-secondary hover:bg-surface-subtle",
+                          : "border-border bg-card text-muted-foreground hover:bg-muted",
                         isDisabled && "cursor-not-allowed opacity-50",
                       )}
                       key={option}
@@ -1216,7 +1216,7 @@ function MovementDialog({
                 })}
               </div>
               {selectedCategory?.activityKind && (
-                <p className="mt-2 text-xs leading-5 text-foreground-secondary">
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
                   Las categorías de {formatActivityKind(selectedCategory.activityKind).toLocaleLowerCase("es-AR")} requieren un crédito.
                 </p>
               )}
@@ -1254,7 +1254,7 @@ function MovementDialog({
               <legend className="text-sm font-bold text-foreground">Duración</legend>
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="movement-hours">
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="movement-hours">
                     Horas
                   </label>
                   <Input
@@ -1269,7 +1269,7 @@ function MovementDialog({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="movement-minutes">
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="movement-minutes">
                     Minutos
                   </label>
                   <Input
@@ -1293,7 +1293,7 @@ function MovementDialog({
               <div className="relative">
                 <CalendarDays
                   aria-hidden="true"
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                 />
                 <Input
                   className="pl-9"
@@ -1312,7 +1312,7 @@ function MovementDialog({
                 Nota
               </label>
               <textarea
-                className="min-h-24 w-full resize-y rounded-sm border border-border bg-surface px-3 py-2 text-sm leading-6 text-foreground shadow-xs outline-none transition-colors placeholder:text-foreground-muted focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-24 w-full resize-y rounded-sm border border-border bg-card px-3 py-2 text-sm leading-6 text-foreground shadow-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={submitting}
                 id="movement-note"
                 onChange={(event) => onNoteChange(event.target.value)}
@@ -1323,8 +1323,8 @@ function MovementDialog({
 
             <fieldset>
               <legend className="text-sm font-bold text-foreground">Tutores</legend>
-              <div className="mt-3 rounded-md border border-border-subtle bg-surface-subtle/60">
-                <label className="flex items-center gap-3 border-b border-border-subtle px-4 py-3 text-sm font-semibold text-foreground">
+              <div className="mt-3 rounded-md border border-border bg-muted/60">
+                <label className="flex items-center gap-3 border-b border-border px-4 py-3 text-sm font-semibold text-foreground">
                   <input
                     aria-checked={hasPartialSelection ? "mixed" : allSelected}
                     aria-label="Seleccionar todos"
@@ -1336,7 +1336,7 @@ function MovementDialog({
                     type="checkbox"
                   />
                   <span>Seleccionar todos</span>
-                  <span className="ml-auto text-xs font-normal text-foreground-muted">
+                  <span className="ml-auto text-xs font-normal text-muted-foreground">
                     {selectedTutorIds.length} de {data.eligibleTutors.length}
                   </span>
                 </label>
@@ -1344,7 +1344,7 @@ function MovementDialog({
                   Seleccionar todos: {selectedTutorIds.length} de {data.eligibleTutors.length} tutores seleccionados
                   {hasPartialSelection ? ", selección mixta" : ""}.
                 </div>
-                <div className="divide-y divide-border-subtle">
+                <div className="divide-y divide-border">
                   {data.eligibleTutors.map((tutor) => {
                     const isSelected = selectedTutorIds.includes(tutor.id);
 
@@ -1360,7 +1360,7 @@ function MovementDialog({
                         />
                         <span className="min-w-0">
                           <span className="block text-sm font-semibold text-foreground">{tutor.formalName}</span>
-                          <span className="mt-1 block text-xs leading-5 text-foreground-muted">{tutor.careerName}</span>
+                          <span className="mt-1 block text-xs leading-5 text-muted-foreground">{tutor.careerName}</span>
                         </span>
                       </label>
                     );
@@ -1369,18 +1369,18 @@ function MovementDialog({
               </div>
             </fieldset>
 
-            <section aria-labelledby="movement-summary-title" className="rounded-md border border-info/30 bg-info-surface/60 p-4">
+            <section aria-labelledby="movement-summary-title" className="rounded-md border border-info/30 bg-muted/60 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-info" id="movement-summary-title">
                 Resumen explícito
               </p>
               <p className="mt-2 text-sm font-semibold leading-6 text-foreground">{summary}</p>
-              <p className="mt-2 text-xs leading-5 text-foreground-secondary">
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
                 La transacción se confirma sólo cuando todos los movimientos seleccionados pueden registrarse.
               </p>
             </section>
           </div>
 
-          <div className="border-t border-border bg-surface px-6 py-4">
+          <div className="border-t border-border bg-card px-6 py-4">
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <Button disabled={submitting} onClick={onClose} type="button" variant="outline">
                 Cancelar
@@ -1390,7 +1390,7 @@ function MovementDialog({
                 {operation === "RECOVERY" ? "Reconocer recuperación" : "Registrar movimientos"}
               </Button>
             </div>
-            <p className="mt-3 text-center text-xs leading-5 text-foreground-muted sm:text-right">
+            <p className="mt-3 text-center text-xs leading-5 text-muted-foreground sm:text-right">
               No se modifica ningún saldo directamente; el balance se deriva de los movimientos registrados.
             </p>
           </div>
@@ -1755,7 +1755,7 @@ export function HoursScreen({
         {announcement && screenState !== "success" && (
           <div
             aria-live="polite"
-            className="mt-6 flex items-start gap-3 rounded-md border border-info/30 bg-info-surface/60 p-4"
+            className="mt-6 flex items-start gap-3 rounded-md border border-info/30 bg-muted/60 p-4"
             role="status"
           >
             <CheckCircle2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-info" />
@@ -1810,7 +1810,7 @@ export function HoursScreen({
               statusLabel={data.statusFilterLabel}
             />
 
-            <p aria-live="polite" className="mt-4 text-sm text-foreground-secondary">
+            <p aria-live="polite" className="mt-4 text-sm text-muted-foreground">
               {screenState === "loading"
                 ? "Preparando los saldos del ciclo…"
                 : screenState === "empty"

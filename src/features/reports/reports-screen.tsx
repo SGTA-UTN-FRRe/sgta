@@ -112,7 +112,7 @@ function FieldLabel({
 }
 
 const selectClassName =
-  "h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring";
+  "h-10 w-full rounded-sm border border-border bg-card px-3 text-sm text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring";
 
 function FilterSelect({
   id,
@@ -177,7 +177,7 @@ function ReportFiltersForm({
       <CardContent>
         {filterOptionsError && (
           <p
-            className="mb-4 rounded-sm border border-warning/30 bg-warning-surface/60 px-3 py-2 text-sm text-foreground"
+            className="mb-4 rounded-sm border border-warning/30 bg-muted/60 px-3 py-2 text-sm text-foreground"
             role="status"
           >
             No se pudieron cargar todas las opciones de filtro. Los resultados
@@ -257,7 +257,7 @@ function ReportFiltersForm({
               </select>
             </div>
           </div>
-          <p className="text-xs text-foreground-muted">
+          <p className="text-xs text-muted-foreground">
             El período incluye ambas fechas y admite hasta 366 días. Una materia
             elegida debe pertenecer a la carrera seleccionada.
           </p>
@@ -288,11 +288,11 @@ function MetricCard({
   return (
     <Card>
       <CardContent className="p-4 sm:p-5">
-        <p className="text-sm font-medium text-foreground-secondary">{label}</p>
+        <p className="text-sm font-medium text-muted-foreground">{label}</p>
         <p className="mt-2 text-2xl font-bold tabular-nums text-foreground">
           {value}
         </p>
-        <p className="mt-1 text-xs text-foreground-muted">{detail}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
       </CardContent>
     </Card>
   );
@@ -318,7 +318,7 @@ function ReportTable({
     >
       <table className="w-full min-w-full border-collapse text-left text-sm tabular-nums">
         <caption className="sr-only">{caption}</caption>
-        <thead className="border-b border-border bg-surface-subtle text-foreground-secondary">
+        <thead className="border-b border-border bg-muted text-muted-foreground">
           <tr>
             {headers.map((header) => (
               <th className="px-3 py-2.5 font-medium" key={header} scope="col">
@@ -341,7 +341,7 @@ function ReportTable({
           ) : (
             <tr>
               <td
-                className="px-3 py-4 text-sm text-foreground-muted"
+                className="px-3 py-4 text-sm text-muted-foreground"
                 colSpan={headers.length}
               >
                 {emptyLabel ?? "No hay datos para los filtros seleccionados."}
@@ -368,7 +368,7 @@ function ReportCard({
       <CardHeader className="pb-3">
         <CardTitle className="text-base">{title}</CardTitle>
         {description && (
-          <p className="text-xs leading-relaxed text-foreground-muted">
+          <p className="text-xs leading-relaxed text-muted-foreground">
             {description}
           </p>
         )}
@@ -389,13 +389,13 @@ function SectionState({
 }) {
   return (
     <div
-      className="rounded-sm border border-danger/30 bg-danger-surface/50 p-4"
+      className="rounded-sm border border-destructive/30 bg-muted/50 p-4"
       role="alert"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-semibold text-foreground">{title}</p>
-          <p className="mt-1 text-sm text-foreground-secondary">{description}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </div>
         <Link className={buttonVariants({ variant: "outline", size: "sm" })} href={retryHref}>
           Reintentar
@@ -419,7 +419,7 @@ function SectionHeading({
       <h2 className="text-xl font-bold tracking-tight text-foreground" id={id}>
         {title}
       </h2>
-      <p className="text-sm text-foreground-secondary">{description}</p>
+      <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -450,7 +450,7 @@ function GroupTable<T extends ReportGroup<string | null>>({
         }))}
       />
       {groups.truncated && (
-        <p className="text-xs text-foreground-muted">
+        <p className="text-xs text-muted-foreground">
           Se muestran los primeros 50 resultados ordenados por cantidad.
         </p>
       )}
@@ -535,18 +535,18 @@ function CoverageSection({
         <div className="space-y-2">
           <p className="text-2xl font-bold tabular-nums text-foreground">
             {formatNumber(section.data.coveredSubjects)} / {formatNumber(section.data.totalSubjects)}
-            <span className="ml-2 text-sm font-medium text-foreground-secondary">
+            <span className="ml-2 text-sm font-medium text-muted-foreground">
               materias cubiertas
             </span>
           </p>
           {section.data.coveragePercent !== null && (
-            <p className="text-sm text-foreground-secondary">
+            <p className="text-sm text-muted-foreground">
               {percentFormatter.format(section.data.coveragePercent)} % del total
             </p>
           )}
         </div>
       ) : section.status === "unavailable" ? (
-        <p className="text-sm text-foreground-secondary">
+        <p className="text-sm text-muted-foreground">
           No hay un ciclo abierto para consultar la cobertura de materias.
         </p>
       ) : (
@@ -562,8 +562,8 @@ function CoverageSection({
 
 function InlineMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-sm bg-surface-subtle p-3">
-      <dt className="text-xs text-foreground-secondary">{label}</dt>
+    <div className="rounded-sm bg-muted p-3">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="mt-1 text-lg font-semibold tabular-nums text-foreground">
         {formatNumber(value)}
       </dd>
@@ -593,8 +593,8 @@ function PlannedSchedulesSection({
         <div className="space-y-4">
           <dl className="grid grid-cols-2 gap-3">
             <InlineMetric label="Ocurrencias" value={section.data.totalOccurrences} />
-            <div className="rounded-sm bg-surface-subtle p-3">
-              <dt className="text-xs text-foreground-secondary">Tiempo programado</dt>
+            <div className="rounded-sm bg-muted p-3">
+              <dt className="text-xs text-muted-foreground">Tiempo programado</dt>
               <dd className="mt-1 text-lg font-semibold tabular-nums text-foreground">
                 {formatMinutes(section.data.totalMinutes)}
               </dd>
@@ -625,7 +625,7 @@ function PlannedSchedulesSection({
             }))}
           />
           {section.data.byTutor.truncated && (
-            <p className="text-xs text-foreground-muted">
+            <p className="text-xs text-muted-foreground">
               Se muestran los primeros 50 tutores ordenados por cantidad de guardias.
             </p>
           )}
@@ -682,7 +682,7 @@ function CurrentBalancesSection({
           <InlineMetric label="Al día" value={section.data.current} />
         </dl>
       ) : section.status === "unavailable" ? (
-        <p className="text-sm text-foreground-secondary">
+        <p className="text-sm text-muted-foreground">
           No hay un ciclo abierto para consultar los saldos actuales.
         </p>
       ) : (
@@ -717,20 +717,20 @@ function MovementsSection({
       ) : (
         <div className="space-y-4">
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-sm bg-surface-subtle p-3">
-              <dt className="text-xs text-foreground-secondary">Créditos</dt>
+            <div className="rounded-sm bg-muted p-3">
+              <dt className="text-xs text-muted-foreground">Créditos</dt>
               <dd className="mt-1 font-semibold tabular-nums text-foreground">
                 {formatNumber(section.data.creditCount)} · {formatMinutes(section.data.creditMinutes)}
               </dd>
             </div>
-            <div className="rounded-sm bg-surface-subtle p-3">
-              <dt className="text-xs text-foreground-secondary">Débitos</dt>
+            <div className="rounded-sm bg-muted p-3">
+              <dt className="text-xs text-muted-foreground">Débitos</dt>
               <dd className="mt-1 font-semibold tabular-nums text-foreground">
                 {formatNumber(section.data.debitCount)} · {formatMinutes(section.data.debitMinutes)}
               </dd>
             </div>
-            <div className="rounded-sm bg-surface-subtle p-3 sm:col-span-2">
-              <dt className="text-xs text-foreground-secondary">Neto (créditos menos débitos)</dt>
+            <div className="rounded-sm bg-muted p-3 sm:col-span-2">
+              <dt className="text-xs text-muted-foreground">Neto (créditos menos débitos)</dt>
               <dd className="mt-1 font-semibold tabular-nums text-foreground">
                 {formatMinutes(section.data.netMinutes)}
               </dd>
@@ -751,7 +751,7 @@ function MovementsSection({
             }))}
           />
           {section.data.groups.truncated && (
-            <p className="text-xs text-foreground-muted">
+            <p className="text-xs text-muted-foreground">
               Se muestran los primeros 1.000 grupos ordenados por fecha.
             </p>
           )}
@@ -793,8 +793,8 @@ function ActivitiesSection({
         <div className="space-y-4">
           <dl className="grid grid-cols-2 gap-3">
             <InlineMetric label="Actividades" value={section.data.totalActivities} />
-            <div className="rounded-sm bg-surface-subtle p-3">
-              <dt className="text-xs text-foreground-secondary">Duración registrada</dt>
+            <div className="rounded-sm bg-muted p-3">
+              <dt className="text-xs text-muted-foreground">Duración registrada</dt>
               <dd className="mt-1 text-lg font-semibold tabular-nums text-foreground">
                 {formatMinutes(section.data.totalMinutes)}
               </dd>
@@ -907,13 +907,13 @@ export function ReportsScreen({
 
       {issues.length > 0 && (
         <div
-          className="rounded-sm border border-danger/30 bg-danger-surface/50 p-4"
+          className="rounded-sm border border-destructive/30 bg-muted/50 p-4"
           role="alert"
         >
           <p className="font-semibold text-foreground">
             Revise los filtros seleccionados
           </p>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground-secondary">
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             {issues.map((issue) => <li key={issue}>{issue}</li>)}
           </ul>
         </div>
@@ -928,10 +928,10 @@ export function ReportsScreen({
       )}
 
       {partial && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-warning/30 bg-warning-surface/60 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-warning/30 bg-muted/60 px-4 py-3">
           <div className="flex items-center gap-3">
             <StatusBadge label="Carga parcial" variant="warning" />
-            <p className="text-sm text-foreground-secondary">
+            <p className="text-sm text-muted-foreground">
               Una o más secciones no están disponibles; el resto conserva sus resultados.
             </p>
           </div>
@@ -952,7 +952,7 @@ export function ReportsScreen({
                 >
                   Resumen
                 </h2>
-                <p className="mt-1 text-sm text-foreground-secondary">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Período del {formatDate(report.filters.fromDate)} al {formatDate(report.filters.toDate)}
                 </p>
               </div>

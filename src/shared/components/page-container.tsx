@@ -28,7 +28,7 @@ export function PageContainer<T extends ElementType = "div">({
     <Component
       data-slot="page-container"
       className={cn(
-        "mx-auto w-full max-w-[var(--max-width)] px-4 py-6 sm:py-8 md:px-6 lg:px-8",
+        "mx-auto w-full max-w-page px-4 py-6 sm:py-8 md:px-6 lg:px-8",
         className,
       )}
       {...props}

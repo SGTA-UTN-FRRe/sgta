@@ -126,7 +126,7 @@ class ScheduleRequestError extends Error {
 }
 
 const selectClassName =
-  "h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "h-10 w-full rounded-sm border border-border bg-card px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 const focusableSelector = [
   "a[href]",
   "button:not([disabled])",
@@ -458,12 +458,12 @@ function InlineStateNotice({
   tone: "danger" | "success" | "warning";
 }) {
   const styles = {
-    danger: "border-danger/30 bg-danger-surface/60",
-    success: "border-success/30 bg-success-surface/60",
-    warning: "border-warning/30 bg-warning-surface/60",
+    danger: "border-destructive/30 bg-muted/60",
+    success: "border-success/30 bg-muted/60",
+    warning: "border-warning/30 bg-muted/60",
   } as const;
   const iconStyles = {
-    danger: "text-danger",
+    danger: "text-destructive",
     success: "text-success",
     warning: "text-warning",
   } as const;
@@ -477,7 +477,7 @@ function InlineStateNotice({
       <span className={cn("mt-0.5 shrink-0", iconStyles[tone])}>{icon}</span>
       <div className="min-w-0">
         <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-foreground-secondary">{description}</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
         {action && <div className="mt-3">{action}</div>}
       </div>
     </div>
@@ -491,28 +491,28 @@ function LoadingScheduleWorkspace() {
     <div
       aria-label="Cargando horarios"
       aria-live="polite"
-      className="mt-6 overflow-hidden rounded-md border border-border bg-surface"
+      className="mt-6 overflow-hidden rounded-md border border-border bg-card"
       role="status"
     >
       <span className="sr-only">Cargando horarios</span>
       <div className="hidden md:block">
         <div className="grid grid-cols-[4.5rem_repeat(5,1fr)] border-b border-border">
           {rows.map((key) => (
-            <span className="m-3 h-3 animate-pulse rounded-sm bg-surface-subtle" key={key} />
+            <span className="m-3 h-3 animate-pulse rounded-sm bg-muted" key={key} />
           ))}
         </div>
         <div className="grid grid-cols-[4.5rem_repeat(5,1fr)]">
           {rows.map((key) => (
-            <span className="h-24 border-b border-r border-border-subtle bg-surface-subtle/30" key={key} />
+            <span className="h-24 border-b border-r border-border bg-muted/30" key={key} />
           ))}
         </div>
       </div>
       <div className="space-y-3 p-4 md:hidden">
         {rows.slice(0, 3).map((key) => (
-          <div className="space-y-2 rounded-md border border-border-subtle p-4" key={key}>
-            <span className="block h-4 w-32 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="block h-4 w-48 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="block h-8 w-full animate-pulse rounded-sm bg-surface-subtle" />
+          <div className="space-y-2 rounded-md border border-border p-4" key={key}>
+            <span className="block h-4 w-32 animate-pulse rounded-sm bg-muted" />
+            <span className="block h-4 w-48 animate-pulse rounded-sm bg-muted" />
+            <span className="block h-8 w-full animate-pulse rounded-sm bg-muted" />
           </div>
         ))}
       </div>
@@ -544,7 +544,7 @@ function PlanContext({
   return (
     <section
       aria-labelledby="schedule-plan-context-title"
-      className="mt-4 rounded-md border border-border bg-surface p-3 sm:mt-6 sm:p-5"
+      className="mt-4 rounded-md border border-border bg-card p-3 sm:mt-6 sm:p-5"
     >
       <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between xl:gap-5">
         <div className="min-w-0">
@@ -569,19 +569,19 @@ function PlanContext({
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs sm:mt-4 sm:gap-3 sm:text-sm lg:grid-cols-3">
             <div className="min-w-0">
-              <dt className="text-xs font-medium text-foreground-muted">Ciclo vigente</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Ciclo vigente</dt>
               <dd className="mt-1 break-words font-semibold text-foreground">
                 {workspace.currentCycle.name}
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-xs font-medium text-foreground-muted">Vigencia</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Vigencia</dt>
               <dd className="mt-1 font-semibold text-foreground">
                 {formatDate(selectedPlan.validFrom)} — {formatDate(selectedPlan.validTo)}
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-xs font-medium text-foreground-muted">Fecha de referencia</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Fecha de referencia</dt>
               <dd className="mt-1 font-semibold text-foreground">
                 {formatDate(workspace.effective.date)}
               </dd>
@@ -605,8 +605,8 @@ function PlanContext({
         </div>
       </div>
 
-      <div className="mt-3 border-t border-border-subtle pt-3 sm:mt-5 sm:pt-4">
-        <p className="text-xs font-semibold text-foreground-secondary">Seleccionar plan</p>
+      <div className="mt-3 border-t border-border pt-3 sm:mt-5 sm:pt-4">
+        <p className="text-xs font-semibold text-muted-foreground">Seleccionar plan</p>
         <div
           aria-label="Planes de horario"
           className={cn(
@@ -625,7 +625,7 @@ function PlanContext({
                   "flex min-h-12 flex-col items-stretch gap-1 rounded-sm border px-2 py-1 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring sm:gap-2 sm:px-4 sm:py-2 sm:text-sm",
                   isSelected
                     ? "border-primary bg-primary/10 text-foreground"
-                    : "border-border bg-surface text-foreground-secondary hover:bg-surface-subtle",
+                    : "border-border bg-card text-muted-foreground hover:bg-muted",
                 )}
                 disabled={isMutating}
                 key={plan.id}
@@ -640,7 +640,7 @@ function PlanContext({
                     {isSelected ? "Seleccionado" : plan.kind === "REGULAR" ? "Regular" : "Especial"}
                   </span>
                 </span>
-                <span className="block w-full whitespace-nowrap text-xs leading-4 text-foreground-muted">
+                <span className="block w-full whitespace-nowrap text-xs leading-4 text-muted-foreground">
                   {formatDate(plan.validFrom)} — {formatDate(plan.validTo)}
                 </span>
               </button>
@@ -691,11 +691,11 @@ function ScheduleBlock({
         !readOnly && "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
         readOnly && "cursor-default opacity-85",
         conflict
-          ? "border-danger bg-danger-surface text-foreground"
+          ? "border-destructive bg-muted text-foreground"
           : selected
             ? "border-primary bg-primary/10 text-foreground ring-2 ring-primary/30"
-            : "border-info/30 bg-info-surface text-foreground",
-        !readOnly && (conflict ? "hover:bg-danger-surface/80" : "hover:bg-info-surface/80"),
+            : "border-info/30 bg-muted text-foreground",
+        !readOnly && (conflict ? "hover:bg-muted/80" : "hover:bg-muted/80"),
       )}
       data-schedule-assignment-id={assignment.id}
       data-duration-layout={isCompact ? "compact" : "full"}
@@ -716,7 +716,7 @@ function ScheduleBlock({
             {assignment.tutor}
           </span>
           <span
-            className="shrink-0 whitespace-nowrap text-xs font-semibold font-numeric tabular-nums"
+            className="shrink-0 whitespace-nowrap text-xs font-semibold font-sans tabular-nums"
             data-schedule-assignment-time
           >
             {assignment.start}–{assignment.end}
@@ -737,13 +737,13 @@ function ScheduleBlock({
       ) : (
         <>
           <span className="w-full truncate text-xs font-bold">{assignment.tutor}</span>
-          <span className="mt-1 flex items-center gap-1 text-xs font-numeric tabular-nums">
+          <span className="mt-1 flex items-center gap-1 text-xs font-sans tabular-nums">
             <Clock3 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
             <span className="shrink-0 whitespace-nowrap" data-schedule-assignment-time>
               {assignment.start} — {assignment.end}
             </span>
           </span>
-          <span className="mt-1 w-full truncate text-[11px] text-foreground-secondary">
+          <span className="mt-1 w-full truncate text-[11px] text-muted-foreground">
             {assignment.modality ?? "Sin modalidad"}
           </span>
           <span className="mt-auto flex flex-wrap gap-1">
@@ -774,7 +774,7 @@ function TimeRail() {
   return (
     <div
       aria-hidden="true"
-      className="relative h-[48rem] border-r border-border-subtle bg-surface-subtle/30"
+      className="relative h-[48rem] border-r border-border bg-muted/30"
     >
       {hours.map((hour, index) => {
         const isFirst = index === 0;
@@ -783,7 +783,7 @@ function TimeRail() {
         return (
           <span
             className={cn(
-              "absolute right-2 text-[11px] font-numeric tabular-nums text-foreground-muted select-none",
+              "absolute right-2 text-[11px] font-sans tabular-nums text-muted-foreground select-none",
               isFirst
                 ? "translate-y-1"
                 : isLast
@@ -828,12 +828,12 @@ function ScheduleDayColumn({
 
   return (
     <div
-      className="relative h-[48rem] border-r border-border-subtle last:border-r-0"
+      className="relative h-[48rem] border-r border-border last:border-r-0"
       data-schedule-day-column={day}
     >
       {hours.map((hour) => (
         <span
-          className="absolute inset-x-0 border-t border-border-subtle"
+          className="absolute inset-x-0 border-t border-border"
           key={hour}
           style={{ top: `${hour * SCHEDULE_GRID_HOUR_HEIGHT_REM}rem` }}
         />
@@ -897,16 +897,16 @@ function ScheduleGrid({
           <h2 className="text-sm font-bold text-foreground" id={`${title}-title`}>
             {title}
           </h2>
-          <p className="mt-1 text-xs text-foreground-muted">
+          <p className="mt-1 text-xs text-muted-foreground">
             {readOnly
               ? "Modo solo lectura para el plan archivado."
               : "Seleccionar una guardia para editarla."}
           </p>
         </div>
-        <span className="text-xs text-foreground-muted">{formatTutorCount(assignments.length)}</span>
+        <span className="text-xs text-muted-foreground">{formatTutorCount(assignments.length)}</span>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-md border border-border bg-surface">
+      <div className="mt-4 overflow-x-auto rounded-md border border-border bg-card">
         <div
           aria-label={title}
           className="grid min-w-[40rem]"
@@ -917,12 +917,12 @@ function ScheduleGrid({
               .join(" ")}`,
           }}
         >
-          <div className="border-b border-border bg-surface-subtle/60 p-3 text-xs font-semibold text-foreground-muted">
+          <div className="border-b border-border bg-muted/60 p-3 text-xs font-semibold text-muted-foreground">
             Hora
           </div>
           {dayLayouts.map(({ day }) => (
             <div
-              className="border-b border-l border-border bg-surface-subtle/60 p-3 text-center text-xs font-bold tracking-[0.12em] text-foreground-secondary"
+              className="border-b border-l border-border bg-muted/60 p-3 text-center text-xs font-bold tracking-[0.12em] text-muted-foreground"
               key={day}
             >
               {day}
@@ -974,7 +974,7 @@ function CompactSchedule({
           <h2 className="text-sm font-bold text-foreground" id="compact-schedule-title">
             Editor por día
           </h2>
-          <p className="mt-1 text-xs leading-5 text-foreground-muted">
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
             Seleccionar un día para revisar y editar sus asignaciones.
           </p>
         </div>
@@ -986,7 +986,7 @@ function CompactSchedule({
 
       <div
         aria-label="Días del plan"
-        className="mt-3 grid grid-cols-5 gap-1 rounded-md border border-border bg-surface p-1 sm:mt-4"
+        className="mt-3 grid grid-cols-5 gap-1 rounded-md border border-border bg-card p-1 sm:mt-4"
         role="group"
       >
         {days.map((day) => (
@@ -996,7 +996,7 @@ function CompactSchedule({
               "min-h-10 rounded-sm px-1 text-xs font-bold tracking-[0.08em] transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
               day === selectedDay
                 ? "bg-primary text-primary-foreground"
-                : "text-foreground-secondary hover:bg-surface-subtle",
+                : "text-muted-foreground hover:bg-muted",
             )}
             key={day}
             onClick={() => onSelectDay(day)}
@@ -1010,7 +1010,7 @@ function CompactSchedule({
       {dayAssignments.length === 0 ? (
         <div className="mt-4 rounded-md border border-dashed border-border p-5 text-center">
           <p className="text-sm font-semibold text-foreground">No hay asignaciones para {selectedDay}</p>
-          <p className="mt-1 text-sm leading-6 text-foreground-secondary">
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
             Agregar una asignación para completar este día del plan.
           </p>
           <Button className="mt-4" onClick={onAdd} size="sm" type="button">
@@ -1019,7 +1019,7 @@ function CompactSchedule({
           </Button>
         </div>
       ) : (
-        <div className="mt-3 divide-y divide-border-subtle overflow-hidden rounded-md border border-border bg-surface sm:mt-4">
+        <div className="mt-3 divide-y divide-border overflow-hidden rounded-md border border-border bg-card sm:mt-4">
           {dayAssignments.map((assignment) => {
             const isSelected = assignment.id === selectedAssignmentId;
             const hasConflict = conflictIds.has(assignment.id);
@@ -1031,10 +1031,10 @@ function CompactSchedule({
                 className={cn(
                   "flex w-full items-start justify-between gap-4 p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
                   hasConflict
-                    ? "bg-danger-surface/60 hover:bg-danger-surface"
+                    ? "bg-muted/60 hover:bg-muted"
                     : isSelected
-                      ? "bg-info-surface/60"
-                      : "hover:bg-surface-subtle",
+                      ? "bg-muted/60"
+                      : "hover:bg-muted",
                 )}
                 data-schedule-assignment-id={assignment.id}
                 key={assignment.id}
@@ -1045,11 +1045,11 @@ function CompactSchedule({
                   <span className="block truncate text-sm font-semibold text-foreground">
                     {assignment.tutor}
                   </span>
-                  <span className="mt-1 flex items-center gap-1.5 text-xs font-numeric tabular-nums text-foreground-secondary">
+                  <span className="mt-1 flex items-center gap-1.5 text-xs font-sans tabular-nums text-muted-foreground">
                     <Clock3 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
                     {assignment.start} — {assignment.end}
                   </span>
-                  <span className="mt-1 block truncate text-xs text-foreground-muted">
+                  <span className="mt-1 block truncate text-xs text-muted-foreground">
                     {assignment.modality ?? "Sin modalidad"}
                   </span>
                 </span>
@@ -1061,7 +1061,7 @@ function CompactSchedule({
                   {isSelected && !hasConflict && (
                     <span className="text-xs font-semibold text-info">Seleccionada</span>
                   )}
-                  <Edit3 aria-hidden="true" className="h-4 w-4 text-foreground-muted" />
+                  <Edit3 aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                 </span>
               </button>
             );
@@ -1142,7 +1142,7 @@ function PlanEditor({
         aria-describedby="plan-editor-description"
         aria-labelledby="plan-editor-title"
         aria-modal="true"
-        className="flex h-full max-h-[100svh] w-full flex-col border-border bg-surface shadow-2xl sm:h-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-[42rem] sm:rounded-md sm:border"
+        className="flex h-full max-h-[100svh] w-full flex-col border-border bg-card shadow-2xl sm:h-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-[42rem] sm:rounded-md sm:border"
         ref={panelRef}
         role="dialog"
         tabIndex={-1}
@@ -1153,13 +1153,13 @@ function PlanEditor({
             <h2 className="mt-2 text-xl font-bold tracking-tight text-foreground" id="plan-editor-title">
               Crear plan de horario
             </h2>
-            <p className="mt-2 text-sm leading-6 text-foreground-secondary" id="plan-editor-description">
+            <p className="mt-2 text-sm leading-6 text-muted-foreground" id="plan-editor-description">
               La vigencia debe pertenecer al ciclo {cycle.name}.
             </p>
           </div>
           <button
             aria-label="Cerrar nuevo plan"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-foreground-secondary transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
             onClick={onClose}
             ref={closeButtonRef}
             type="button"
@@ -1171,8 +1171,8 @@ function PlanEditor({
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
           <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-6">
             {error && (
-              <div aria-live="assertive" className="flex items-start gap-3 rounded-md border border-danger/30 bg-danger-surface/60 p-4" role="alert">
-                <CircleAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-danger" />
+              <div aria-live="assertive" className="flex items-start gap-3 rounded-md border border-destructive/30 bg-muted/60 p-4" role="alert">
+                <CircleAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
                 <p className="text-sm leading-6 text-foreground">{error}</p>
               </div>
             )}
@@ -1208,7 +1208,7 @@ function PlanEditor({
               <legend className="text-sm font-bold text-foreground">Vigencia</legend>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="schedule-plan-valid-from">
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="schedule-plan-valid-from">
                     Desde
                   </label>
                   <Input
@@ -1222,7 +1222,7 @@ function PlanEditor({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="schedule-plan-valid-to">
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="schedule-plan-valid-to">
                     Hasta
                   </label>
                   <Input
@@ -1239,7 +1239,7 @@ function PlanEditor({
             </fieldset>
           </div>
 
-          <div className="border-t border-border bg-surface px-6 py-4">
+          <div className="border-t border-border bg-card px-6 py-4">
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <Button disabled={saving} onClick={onClose} type="button" variant="outline">
                 Cancelar
@@ -1393,7 +1393,7 @@ function AssignmentEditor({
         aria-describedby="assignment-editor-description"
         aria-labelledby="assignment-editor-title"
         aria-modal="true"
-        className="flex h-full max-h-[100svh] w-full flex-col border-border bg-surface shadow-2xl sm:h-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-[42rem] sm:rounded-md sm:border"
+        className="flex h-full max-h-[100svh] w-full flex-col border-border bg-card shadow-2xl sm:h-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-[42rem] sm:rounded-md sm:border"
         ref={panelRef}
         role="dialog"
         tabIndex={-1}
@@ -1406,13 +1406,13 @@ function AssignmentEditor({
             <h2 className="mt-2 text-xl font-bold tracking-tight text-foreground" id="assignment-editor-title">
               {mode === "add" ? "Agregar asignación" : "Editar asignación"}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-foreground-secondary" id="assignment-editor-description">
+            <p className="mt-2 text-sm leading-6 text-muted-foreground" id="assignment-editor-description">
               Los cambios se validan y guardan en el sistema para el plan seleccionado.
             </p>
           </div>
           <button
             aria-label="Cerrar editor de asignación"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-foreground-secondary transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
             onClick={onClose}
             ref={closeButtonRef}
             type="button"
@@ -1423,19 +1423,19 @@ function AssignmentEditor({
 
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
           <div className="min-h-0 flex-1 space-y-7 overflow-y-auto px-6 py-6">
-            <section aria-labelledby="assignment-plan-heading" className="rounded-md border border-border-subtle bg-surface-subtle/60 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground-muted" id="assignment-plan-heading">
+            <section aria-labelledby="assignment-plan-heading" className="rounded-md border border-border bg-muted/60 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground" id="assignment-plan-heading">
                 Plan seleccionado
               </p>
               <p className="mt-2 text-sm font-bold text-foreground">{plan.name}</p>
-              <p className="mt-1 text-xs leading-5 text-foreground-secondary">
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 {plan.kind === "REGULAR" ? "Regular" : "Especial"} · Vigencia {formatDate(plan.validFrom)} — {formatDate(plan.validTo)}
               </p>
             </section>
 
             {error && (
-              <div aria-live="assertive" className="flex items-start gap-3 rounded-md border border-danger/30 bg-danger-surface/60 p-4" role="alert">
-                <CircleAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-danger" />
+              <div aria-live="assertive" className="flex items-start gap-3 rounded-md border border-destructive/30 bg-muted/60 p-4" role="alert">
+                <CircleAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
                 <p className="text-sm leading-6 text-foreground">{error}</p>
               </div>
             )}
@@ -1502,7 +1502,7 @@ function AssignmentEditor({
                   Fecha
                 </label>
                 <div className="relative">
-                  <CalendarDays aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
+                  <CalendarDays aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     className="pl-9"
                     disabled={saving || changingStatus || pattern === "WEEKDAY"}
@@ -1522,13 +1522,13 @@ function AssignmentEditor({
               <legend className="text-sm font-bold text-foreground">Horario</legend>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="assignment-start">
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="assignment-start">
                     Inicio
                   </label>
                   <Input disabled={saving || changingStatus} id="assignment-start" onChange={(event) => setStart(event.target.value)} required type="time" value={start} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="assignment-end">
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="assignment-end">
                     Fin
                   </label>
                   <Input disabled={saving || changingStatus} id="assignment-end" onChange={(event) => setEnd(event.target.value)} required type="time" value={end} />
@@ -1559,22 +1559,22 @@ function AssignmentEditor({
               <Input disabled={saving || changingStatus} id="assignment-modality" onChange={(event) => setModality(event.target.value)} value={modality} />
             </div>
 
-            <section aria-labelledby="assignment-summary-heading" className="rounded-md border border-info/30 bg-info-surface/60 p-4">
+            <section aria-labelledby="assignment-summary-heading" className="rounded-md border border-info/30 bg-muted/60 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-info" id="assignment-summary-heading">
                 Resumen de asignación
               </p>
               <p className="mt-2 text-sm font-semibold leading-6 text-foreground">{summary}</p>
-              <p className="mt-2 text-xs leading-5 text-foreground-secondary">
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
                 La validación del servidor conserva la vigencia, elegibilidad y conflictos del plan.
               </p>
             </section>
           </div>
 
-          <div className="border-t border-border bg-surface px-6 py-4">
+          <div className="border-t border-border bg-card px-6 py-4">
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               {assignment ? (
                 <Button
-                  className="border border-danger/30 bg-danger-surface text-danger hover:bg-danger-surface/80 hover:text-danger"
+                  className="border border-destructive/30 bg-muted text-destructive hover:bg-muted/80 hover:text-destructive"
                   disabled={saving || changingStatus}
                   onClick={handleStatusChange}
                   type="button"
@@ -1643,7 +1643,7 @@ function ArchivePlanConfirmationDialog({
         aria-describedby="archive-plan-dialog-description"
         aria-labelledby="archive-plan-dialog-title"
         aria-modal="true"
-        className="flex w-full flex-col border-border bg-surface p-6 shadow-2xl sm:max-w-md sm:rounded-md sm:border"
+        className="flex w-full flex-col border-border bg-card p-6 shadow-2xl sm:max-w-md sm:rounded-md sm:border"
         ref={panelRef}
         role="alertdialog"
         tabIndex={-1}
@@ -1656,13 +1656,13 @@ function ArchivePlanConfirmationDialog({
             <h2 className="text-lg font-bold text-foreground" id="archive-plan-dialog-title">
               ¿Archivar este plan?
             </h2>
-            <p className="mt-2 text-sm leading-6 text-foreground-secondary" id="archive-plan-dialog-description">
+            <p className="mt-2 text-sm leading-6 text-muted-foreground" id="archive-plan-dialog-description">
               El plan <strong className="text-foreground">{plan.name}</strong> se moverá al archivo de planes y dejará de estar disponible en la grilla operativa principal. Podrás reactivarlo en cualquier momento desde el Archivo de planes.
             </p>
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-border-subtle pt-4">
+        <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-border pt-4">
           <button
             className={cn(buttonVariants({ variant: "outline" }))}
             disabled={isMutating}
@@ -1798,7 +1798,7 @@ function PlansArchiveDialog({
         aria-describedby="plans-archive-dialog-description"
         aria-labelledby="plans-archive-dialog-title"
         aria-modal="true"
-        className="flex h-full max-h-[100svh] w-full flex-col border-border bg-surface shadow-2xl sm:h-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-4xl sm:rounded-md sm:border"
+        className="flex h-full max-h-[100svh] w-full flex-col border-border bg-card shadow-2xl sm:h-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-4xl sm:rounded-md sm:border"
         ref={panelRef}
         role="dialog"
         tabIndex={-1}
@@ -1811,13 +1811,13 @@ function PlansArchiveDialog({
             <h2 className="mt-1 text-xl font-bold tracking-tight text-foreground" id="plans-archive-dialog-title">
               Archivo de planes
             </h2>
-            <p className="mt-1.5 text-sm leading-6 text-foreground-secondary" id="plans-archive-dialog-description">
+            <p className="mt-1.5 text-sm leading-6 text-muted-foreground" id="plans-archive-dialog-description">
               Planes inactivados en el ciclo. Podés consultar sus asignaciones en modo solo lectura o reactivarlos.
             </p>
           </div>
           <button
             aria-label="Cerrar archivo de planes"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-foreground-secondary transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
             disabled={isMutating}
             onClick={onClose}
             ref={closeButtonRef}
@@ -1831,13 +1831,13 @@ function PlansArchiveDialog({
           {archivedPlans.length === 0 ? (
             <EmptyState
               description="Los planes que archives aparecerán aquí para su consulta histórica o reactivación."
-              illustration={<Archive className="h-10 w-10 text-foreground-muted" />}
+              illustration={<Archive className="h-10 w-10 text-muted-foreground" />}
               title="No hay planes archivados"
             />
           ) : (
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
               <div className="space-y-3 lg:col-span-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground-muted">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Planes archivados ({archivedPlans.length})
                 </p>
                 <div
@@ -1854,7 +1854,7 @@ function PlansArchiveDialog({
                           "flex flex-col gap-2 rounded-md border p-3 transition-colors",
                           isSelected
                             ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                            : "border-border bg-surface hover:bg-surface-subtle",
+                            : "border-border bg-card hover:bg-muted",
                         )}
                         key={plan.id}
                       >
@@ -1870,14 +1870,14 @@ function PlansArchiveDialog({
                             </span>
                             <StatusBadge label="Archivado" variant="neutral" />
                           </div>
-                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground-secondary">
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                             <span>{plan.kind === "REGULAR" ? "Regular" : "Especial"}</span>
                             <span>·</span>
                             <span>{formatDate(plan.validFrom)} — {formatDate(plan.validTo)}</span>
                           </div>
                         </button>
-                        <div className="flex items-center justify-between border-t border-border-subtle pt-2">
-                          <span className="text-[11px] text-foreground-muted">
+                        <div className="flex items-center justify-between border-t border-border pt-2">
+                          <span className="text-[11px] text-muted-foreground">
                             {cycle.name}
                           </span>
                           <Button
@@ -1900,7 +1900,7 @@ function PlansArchiveDialog({
               <div className="min-w-0 lg:col-span-7">
                 {selectedArchivedPlan && (
                   <div className="flex flex-col gap-4">
-                    <div className="rounded-md border border-border bg-surface-subtle/50 p-4">
+                    <div className="rounded-md border border-border bg-muted/50 p-4">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <div className="flex items-center gap-2">
@@ -1909,7 +1909,7 @@ function PlansArchiveDialog({
                             </h3>
                             <StatusBadge label="Solo lectura" variant="info" />
                           </div>
-                          <p className="mt-1 text-xs text-foreground-secondary">
+                          <p className="mt-1 text-xs text-muted-foreground">
                             {selectedArchivedPlan.kind === "REGULAR" ? "Plan Regular" : "Plan Especial"} · Vigencia: {formatDate(selectedArchivedPlan.validFrom)} — {formatDate(selectedArchivedPlan.validTo)}
                           </p>
                         </div>
@@ -2417,7 +2417,7 @@ export function SchedulesScreen({
         )}
 
         {announcement && currentState !== "success" && (
-          <div aria-live="polite" className="mt-6 flex items-start gap-3 rounded-md border border-info/30 bg-info-surface/60 p-4" role="status">
+          <div aria-live="polite" className="mt-6 flex items-start gap-3 rounded-md border border-info/30 bg-muted/60 p-4" role="status">
             <CheckCircle2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-info" />
             <p className="text-sm leading-6 text-foreground">{announcement}</p>
           </div>
@@ -2559,7 +2559,7 @@ export function SchedulesScreen({
                     selectedAssignmentId={selectedAssignmentId}
                     title="Grilla reducida"
                   />
-                  <p className="mt-3 text-xs leading-5 text-foreground-muted">
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
                     La vista Medium muestra tres días a la vez; utilizar Compact para recorrer cada día.
                   </p>
                 </div>

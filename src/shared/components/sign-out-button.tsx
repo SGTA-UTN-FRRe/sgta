@@ -71,7 +71,7 @@ export function SignOutButton({
       {failed && (
         <p
           role="alert"
-          className={cn("mt-2 wrap-break-word text-sm text-danger", errorClassName)}
+          className={cn("mt-2 wrap-break-word text-sm text-destructive", errorClassName)}
         >
           No se pudo cerrar la sesión. Intentar nuevamente.
         </p>

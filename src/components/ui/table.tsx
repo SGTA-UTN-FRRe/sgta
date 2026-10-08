@@ -8,7 +8,7 @@ function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
       <table
         data-slot="table"
         className={cn(
-          "w-full caption-bottom text-sm font-numeric tabular-nums",
+          "w-full caption-bottom text-sm font-sans tabular-nums",
           className,
         )}
         {...props}
@@ -41,7 +41,7 @@ function TableFooter({ className, ...props }: HTMLAttributes<HTMLTableSectionEle
   return (
     <tfoot
       data-slot="table-footer"
-      className={cn("border-t border-border bg-surface-subtle font-medium text-foreground", className)}
+      className={cn("border-t border-border bg-muted font-medium text-foreground", className)}
       {...props}
     />
   );
@@ -52,7 +52,7 @@ function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) 
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b border-border transition-colors hover:bg-surface-subtle/50 data-[state=selected]:bg-surface-subtle",
+        "border-b border-border transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
         className,
       )}
       {...props}
@@ -65,7 +65,7 @@ function TableHead({ className, ...props }: ThHTMLAttributes<HTMLTableCellElemen
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-3 text-left align-middle font-medium text-foreground-secondary [&:has([role=checkbox])]:pr-0",
+        "h-10 px-3 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
@@ -87,7 +87,7 @@ function TableCaption({ className, ...props }: HTMLAttributes<HTMLTableCaptionEl
   return (
     <caption
       data-slot="table-caption"
-      className={cn("mt-4 text-xs text-foreground-muted", className)}
+      className={cn("mt-4 text-xs text-muted-foreground", className)}
       {...props}
     />
   );

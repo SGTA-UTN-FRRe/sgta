@@ -149,7 +149,7 @@ class TutorRequestError extends Error {
 }
 
 const selectClassName =
-  "h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "h-10 w-full rounded-sm border border-border bg-card px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 const focusableSelector = [
   'a[href]',
@@ -399,9 +399,9 @@ function TutorIdentity({
           variant="warning"
         />
       )}
-      <p className="mt-1 truncate text-xs text-foreground-muted">{cycleLabel(tutor)}</p>
+      <p className="mt-1 truncate text-xs text-muted-foreground">{cycleLabel(tutor)}</p>
       {showScholarship && (
-        <p className="mt-1 truncate text-xs text-foreground-secondary">
+        <p className="mt-1 truncate text-xs text-muted-foreground">
           Beca: {scholarshipLabel(tutor)}
         </p>
       )}
@@ -450,11 +450,11 @@ function FilterToolbar({
   const hasActiveFilters = Boolean(search || careerId || status !== "all");
 
   return (
-    <div className="mt-6 rounded-md border border-border-subtle bg-surface-subtle/60 p-4">
+    <div className="mt-6 rounded-md border border-border bg-muted/60 p-4">
       <div className="grid gap-4 md:grid-cols-2 md:items-end xl:grid-cols-[minmax(15rem,1fr)_minmax(12rem,0.7fr)_minmax(12rem,0.7fr)_auto]">
         <div className="space-y-1.5">
           <label
-            className="text-xs font-semibold text-foreground-secondary"
+            className="text-xs font-semibold text-muted-foreground"
             htmlFor="tutor-search"
           >
             Buscar tutor
@@ -462,7 +462,7 @@ function FilterToolbar({
           <div className="relative">
             <Search
               aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             />
             <Input
               aria-label="Buscar tutor"
@@ -479,7 +479,7 @@ function FilterToolbar({
 
         <div className="space-y-1.5">
           <label
-            className="text-xs font-semibold text-foreground-secondary"
+            className="text-xs font-semibold text-muted-foreground"
             htmlFor="tutor-career"
           >
             {careerLabel}
@@ -502,7 +502,7 @@ function FilterToolbar({
 
         <div className="space-y-1.5">
           <label
-            className="text-xs font-semibold text-foreground-secondary"
+            className="text-xs font-semibold text-muted-foreground"
             htmlFor="tutor-status"
           >
             {statusFilterLabel}
@@ -584,7 +584,7 @@ function TutorActionsMenu({
         aria-haspopup="menu"
         aria-controls={menuId}
         aria-label={`Acciones para ${tutor.formalName}`}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-foreground-secondary transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
         onClick={() => onToggle(isOpen ? null : menuKey)}
         ref={menuButtonRef}
         type="button"
@@ -596,7 +596,7 @@ function TutorActionsMenu({
         <div
           aria-label={`Acciones para ${tutor.formalName}`}
           className={cn(
-            "absolute right-0 top-full z-30 mt-1 min-w-48 rounded-md border border-border bg-surface p-1 shadow-lg",
+            "absolute right-0 top-full z-30 mt-1 min-w-48 rounded-md border border-border bg-card p-1 shadow-lg",
             view === "compact" && "right-0",
           )}
           id={menuId}
@@ -655,40 +655,40 @@ function TutorActionsMenu({
           role="menu"
         >
           <button
-            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-none"
+            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
             onClick={(event) =>
               onOpenSheet("view", tutor, menuButtonRef.current ?? event.currentTarget)
             }
             role="menuitem"
             type="button"
           >
-            <UserRound aria-hidden="true" className="h-4 w-4 text-foreground-muted" />
+            <UserRound aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
             Ver detalle
           </button>
           <button
-            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-none"
+            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
             onClick={(event) =>
               onOpenSheet("edit", tutor, menuButtonRef.current ?? event.currentTarget)
             }
             role="menuitem"
             type="button"
           >
-            <Pencil aria-hidden="true" className="h-4 w-4 text-foreground-muted" />
+            <Pencil aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
             Editar
           </button>
           <button
-            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-none"
+            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
             onClick={(event) =>
               onOpenSheet("view", tutor, menuButtonRef.current ?? event.currentTarget)
             }
             role="menuitem"
             type="button"
           >
-            <BookOpen aria-hidden="true" className="h-4 w-4 text-foreground-muted" />
+            <BookOpen aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
             Ver materias
           </button>
           <button
-            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-none"
+            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
             onClick={() => {
               onToggle(null);
               const trigger =
@@ -705,9 +705,9 @@ function TutorActionsMenu({
             type="button"
           >
             {tutor.status === "ACTIVE" ? (
-              <Power aria-hidden="true" className="h-4 w-4 text-foreground-muted" />
+              <Power aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <RefreshCw aria-hidden="true" className="h-4 w-4 text-foreground-muted" />
+              <RefreshCw aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
             )}
             {actionLabel}
           </button>
@@ -736,7 +736,7 @@ function TutorWideTable({
 }) {
   return (
     <div
-      className="hidden overflow-x-auto rounded-md border border-border bg-surface lg:block"
+      className="hidden overflow-x-auto rounded-md border border-border bg-card lg:block"
       data-layout="wide"
     >
       <Table className="min-w-[62rem]">
@@ -758,7 +758,7 @@ function TutorWideTable({
             <TableRow key={tutor.id}>
               <TableCell><TutorIdentity onOpenSheet={onOpenSheet} tutor={tutor} /></TableCell>
               <TableCell><span className="text-sm text-foreground">{tutor.primaryCareer.name}</span></TableCell>
-              <TableCell><span className="text-sm text-foreground-secondary">{scholarshipLabel(tutor)}</span></TableCell>
+              <TableCell><span className="text-sm text-muted-foreground">{scholarshipLabel(tutor)}</span></TableCell>
               <TableCell>
                 <span className="text-sm tabular-nums text-foreground">
                   {tutor.subjectCount} {tutor.subjectCount === 1 ? "materia" : "materias"}
@@ -803,7 +803,7 @@ function TutorMediumTable({
 }) {
   return (
     <div
-      className="hidden overflow-x-auto rounded-md border border-border bg-surface md:block lg:hidden"
+      className="hidden overflow-x-auto rounded-md border border-border bg-card md:block lg:hidden"
       data-layout="medium"
     >
       <Table className="min-w-[40rem]">
@@ -868,7 +868,7 @@ function TutorCompactList({
 }) {
   return (
     <ul
-      className="divide-y divide-border-subtle overflow-hidden rounded-md border border-border bg-surface md:hidden"
+      className="divide-y divide-border overflow-hidden rounded-md border border-border bg-card md:hidden"
       data-layout="compact"
     >
       {rows.map((tutor) => (
@@ -876,7 +876,7 @@ function TutorCompactList({
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <TutorDetailButton className="text-base font-bold" onOpenSheet={onOpenSheet} tutor={tutor} />
-              <p className="mt-1 text-sm leading-6 text-foreground-secondary">{tutor.primaryCareer.name}</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">{tutor.primaryCareer.name}</p>
             </div>
             <TutorActionsMenu
               menuKey={`compact:${tutor.id}`}
@@ -889,19 +889,19 @@ function TutorCompactList({
             />
           </div>
 
-          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border-subtle pt-4">
+          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border pt-4">
             <div>
-              <dt className="text-xs font-medium text-foreground-muted">Beca</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Beca</dt>
               <dd className="mt-1 truncate text-sm text-foreground">{scholarshipLabel(tutor)}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-foreground-muted">Materias</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Materias</dt>
               <dd className="mt-1 text-sm tabular-nums text-foreground">
                 {tutor.subjectCount} {tutor.subjectCount === 1 ? "materia" : "materias"}
               </dd>
             </div>
             <div className="col-span-2">
-              <dt className="text-xs font-medium text-foreground-muted">Estado</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Estado</dt>
               <dd className="mt-1"><TutorStatus tutor={tutor} /></dd>
             </div>
           </dl>
@@ -962,36 +962,36 @@ function LoadingTutorList() {
     <div
       aria-label="Cargando tutores"
       aria-live="polite"
-      className="mt-4 overflow-hidden rounded-md border border-border bg-surface"
+      className="mt-4 overflow-hidden rounded-md border border-border bg-card"
       role="status"
     >
       <span className="sr-only">Cargando tutores</span>
       <div className="hidden lg:block">
         <div className="grid grid-cols-[1.3fr_1.4fr_1fr_0.7fr_0.8fr_3rem] gap-4 border-b border-border px-3 py-3">
           {rows.slice(0, 6).map((key) => (
-            <span className="h-3 animate-pulse rounded-sm bg-surface-subtle" key={key} />
+            <span className="h-3 animate-pulse rounded-sm bg-muted" key={key} />
           ))}
         </div>
         {rows.map((key) => (
           <div
-            className="grid grid-cols-[1.3fr_1.4fr_1fr_0.7fr_0.8fr_3rem] gap-4 border-b border-border-subtle px-3 py-5 last:border-b-0"
+            className="grid grid-cols-[1.3fr_1.4fr_1fr_0.7fr_0.8fr_3rem] gap-4 border-b border-border px-3 py-5 last:border-b-0"
             key={key}
           >
-            <span className="h-4 w-32 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-4 w-44 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-4 w-24 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-4 w-12 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="h-4 w-16 animate-pulse rounded-sm bg-surface-subtle" />
-            <span className="ml-auto h-8 w-8 animate-pulse rounded-sm bg-surface-subtle" />
+            <span className="h-4 w-32 animate-pulse rounded-sm bg-muted" />
+            <span className="h-4 w-44 animate-pulse rounded-sm bg-muted" />
+            <span className="h-4 w-24 animate-pulse rounded-sm bg-muted" />
+            <span className="h-4 w-12 animate-pulse rounded-sm bg-muted" />
+            <span className="h-4 w-16 animate-pulse rounded-sm bg-muted" />
+            <span className="ml-auto h-8 w-8 animate-pulse rounded-sm bg-muted" />
           </div>
         ))}
       </div>
       <div className="space-y-4 p-4 md:hidden">
         {rows.slice(0, 3).map((key) => (
-          <div className="rounded-md border border-border-subtle p-4" key={key}>
-            <div className="h-5 w-40 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="mt-2 h-4 w-48 animate-pulse rounded-sm bg-surface-subtle" />
-            <div className="mt-5 h-16 animate-pulse rounded-sm bg-surface-subtle" />
+          <div className="rounded-md border border-border p-4" key={key}>
+            <div className="h-5 w-40 animate-pulse rounded-sm bg-muted" />
+            <div className="mt-2 h-4 w-48 animate-pulse rounded-sm bg-muted" />
+            <div className="mt-5 h-16 animate-pulse rounded-sm bg-muted" />
           </div>
         ))}
       </div>
@@ -1013,12 +1013,12 @@ function InlineStateNotice({
   tone: "danger" | "success" | "warning";
 }) {
   const styles = {
-    danger: "border-danger/30 bg-danger-surface/60",
-    success: "border-success/30 bg-success-surface/60",
-    warning: "border-warning/30 bg-warning-surface/60",
+    danger: "border-destructive/30 bg-muted/60",
+    success: "border-success/30 bg-muted/60",
+    warning: "border-warning/30 bg-muted/60",
   } as const;
   const iconStyles = {
-    danger: "text-danger",
+    danger: "text-destructive",
     success: "text-success",
     warning: "text-warning",
   } as const;
@@ -1032,7 +1032,7 @@ function InlineStateNotice({
       <span className={cn("mt-0.5 shrink-0", iconStyles[tone])}>{icon}</span>
       <div className="min-w-0">
         <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-foreground-secondary">{description}</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
         {action && <div className="mt-3">{action}</div>}
       </div>
     </div>
@@ -1045,7 +1045,7 @@ function FieldError({ message, id }: { message?: string; id: string }) {
   }
 
   return (
-    <p className="text-xs text-danger" id={id}>
+    <p className="text-xs text-destructive" id={id}>
       {message}
     </p>
   );
@@ -1298,7 +1298,7 @@ function TutorSheet({
         aria-describedby="tutor-sheet-description"
         aria-labelledby="tutor-sheet-title"
         aria-modal="true"
-        className="flex h-full w-full max-w-[36rem] flex-col border-l border-border bg-surface shadow-2xl"
+        className="flex h-full w-full max-w-[36rem] flex-col border-l border-border bg-card shadow-2xl"
         ref={panelRef}
         role="dialog"
         tabIndex={-1}
@@ -1309,7 +1309,7 @@ function TutorSheet({
             <h2 className="mt-2 truncate text-xl font-bold tracking-tight text-foreground" id="tutor-sheet-title">
               {title}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-foreground-secondary" id="tutor-sheet-description">
+            <p className="mt-2 text-sm leading-6 text-muted-foreground" id="tutor-sheet-description">
               {isAdd
                 ? "Completar los datos para guardar el registro del tutor."
                 : "Consultar o actualizar el contexto académico y la información vigente del tutor."}
@@ -1317,7 +1317,7 @@ function TutorSheet({
           </div>
           <button
             aria-label="Cerrar panel de tutor"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-foreground-secondary transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
             onClick={attemptClose}
             ref={closeButtonRef}
             type="button"
@@ -1329,12 +1329,12 @@ function TutorSheet({
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
           <div className="min-h-0 flex-1 space-y-8 overflow-y-auto px-6 py-6">
             {sheetError && (
-              <div aria-live="assertive" className="rounded-md border border-danger/30 bg-danger-surface/60 p-4 text-sm text-danger" role="alert">
+              <div aria-live="assertive" className="rounded-md border border-destructive/30 bg-muted/60 p-4 text-sm text-destructive" role="alert">
                 {getTutorErrorMessage(sheetError)}
               </div>
             )}
             {detailError && (
-              <div aria-live="assertive" className="rounded-md border border-danger/30 bg-danger-surface/60 p-4 text-sm text-danger" role="alert">
+              <div aria-live="assertive" className="rounded-md border border-destructive/30 bg-muted/60 p-4 text-sm text-destructive" role="alert">
                 <p>{getTutorErrorMessage(detailError, "No se pudo cargar el detalle del tutor.")}</p>
                 <Button className="mt-3" onClick={onRetryDetail} size="sm" type="button" variant="outline">
                   Reintentar
@@ -1342,7 +1342,7 @@ function TutorSheet({
               </div>
             )}
             {detailLoading && (
-              <div aria-live="polite" className="flex items-center gap-2 text-sm text-foreground-secondary" role="status">
+              <div aria-live="polite" className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
                 <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" />
                 Cargando el detalle del tutor…
               </div>
@@ -1352,7 +1352,7 @@ function TutorSheet({
               <h3 className="text-sm font-bold text-foreground" id="tutor-identity-heading">Identidad</h3>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-first-name">Nombre</label>
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="tutor-first-name">Nombre</label>
                   <Input
                     aria-describedby={fieldErrors.firstName === undefined ? undefined : fieldErrorId("first-name")}
                     aria-invalid={fieldErrors.firstName !== undefined}
@@ -1365,7 +1365,7 @@ function TutorSheet({
                   <FieldError id={fieldErrorId("first-name")} message={fieldErrors.firstName} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-last-name">Apellido (opcional)</label>
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="tutor-last-name">Apellido (opcional)</label>
                   <Input
                     aria-describedby={fieldErrors.lastName === undefined ? undefined : fieldErrorId("last-name")}
                     aria-invalid={fieldErrors.lastName !== undefined}
@@ -1378,7 +1378,7 @@ function TutorSheet({
                   <FieldError id={fieldErrorId("last-name")} message={fieldErrors.lastName} />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-preferred-name">Nombre preferido (opcional)</label>
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="tutor-preferred-name">Nombre preferido (opcional)</label>
                   <Input
                     disabled={isView || detailLoading || detailUnavailable}
                     id="tutor-preferred-name"
@@ -1388,7 +1388,7 @@ function TutorSheet({
                   />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-institutional-identifier">Identificador institucional (opcional)</label>
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="tutor-institutional-identifier">Identificador institucional (opcional)</label>
                   <Input
                     aria-describedby={fieldErrors.institutionalIdentifier === undefined ? undefined : fieldErrorId("institutional-identifier")}
                     aria-invalid={fieldErrors.institutionalIdentifier !== undefined}
@@ -1405,11 +1405,11 @@ function TutorSheet({
 
             <section aria-labelledby="tutor-account-heading">
               <h3 className="text-sm font-bold text-foreground" id="tutor-account-heading">Cuenta de acceso</h3>
-              <p className="mt-2 text-sm leading-6 text-foreground-secondary">
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 Vincular una cuenta de Tutor habilitada. Dejar vacío para desvincular la cuenta actual.
               </p>
               <div className="mt-4 space-y-1.5">
-                <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-application-email">Correo de la cuenta habilitada (opcional)</label>
+                <label className="text-xs font-semibold text-muted-foreground" htmlFor="tutor-application-email">Correo de la cuenta habilitada (opcional)</label>
                 <Input
                   aria-describedby={fieldErrors.applicationEmail === undefined ? undefined : fieldErrorId("application-email")}
                   aria-invalid={fieldErrors.applicationEmail !== undefined}
@@ -1428,7 +1428,7 @@ function TutorSheet({
             <section aria-labelledby="tutor-academic-heading">
               <h3 className="text-sm font-bold text-foreground" id="tutor-academic-heading">Contexto académico</h3>
               <div className="mt-4 space-y-1.5">
-                <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-career-sheet">Carrera</label>
+                <label className="text-xs font-semibold text-muted-foreground" htmlFor="tutor-career-sheet">Carrera</label>
                 <select
                   aria-describedby={fieldErrors.primaryCareerId === undefined ? undefined : fieldErrorId("career")}
                   aria-invalid={fieldErrors.primaryCareerId !== undefined}
@@ -1449,22 +1449,22 @@ function TutorSheet({
 
             <section aria-labelledby="tutor-subjects-heading">
               <h3 className="text-sm font-bold text-foreground" id="tutor-subjects-heading">Materias</h3>
-              <p className="mt-2 text-sm leading-6 text-foreground-secondary">
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 Seleccionar las materias asociadas a la carrera del tutor.
               </p>
               <FieldError id={fieldErrorId("subjects")} message={fieldErrors.subjectIds} />
-              <div className="mt-4 space-y-2 rounded-md border border-border-subtle bg-surface-subtle/60 p-4">
+              <div className="mt-4 space-y-2 rounded-md border border-border bg-muted/60 p-4">
                 {form.primaryCareerId === "" ? (
-                  <p className="text-sm text-foreground-secondary">Seleccionar una carrera para ver sus materias.</p>
+                  <p className="text-sm text-muted-foreground">Seleccionar una carrera para ver sus materias.</p>
                 ) : subjectOptions.length === 0 ? (
-                  <p className="text-sm text-foreground-secondary">No hay materias activas para esta carrera.</p>
+                  <p className="text-sm text-muted-foreground">No hay materias activas para esta carrera.</p>
                 ) : (
                   subjectOptions.map((subject) => {
                     const checked = form.subjectIds.includes(subject.id);
                     const inactive = subject.status === "INACTIVE";
 
                     return (
-                      <label className="flex items-start gap-3 rounded-sm px-2 py-2 hover:bg-surface" key={subject.id}>
+                      <label className="flex items-start gap-3 rounded-sm px-2 py-2 hover:bg-card" key={subject.id}>
                         <input
                           checked={checked}
                           className="mt-1 h-4 w-4 rounded border-border text-primary focus-visible:ring-3 focus-visible:ring-ring"
@@ -1474,21 +1474,21 @@ function TutorSheet({
                         />
                         <span className="min-w-0 text-sm text-foreground">
                           <span className="block font-medium">{subject.name}</span>
-                          {inactive && <span className="text-xs text-foreground-muted">Inactiva · se conserva como antecedente</span>}
+                          {inactive && <span className="text-xs text-muted-foreground">Inactiva · se conserva como antecedente</span>}
                         </span>
                       </label>
                     );
                   })
                 )}
               </div>
-              <p className="mt-2 text-xs text-foreground-muted">{form.subjectIds.length} {form.subjectIds.length === 1 ? "materia seleccionada" : "materias seleccionadas"}</p>
+              <p className="mt-2 text-xs text-muted-foreground">{form.subjectIds.length} {form.subjectIds.length === 1 ? "materia seleccionada" : "materias seleccionadas"}</p>
             </section>
 
             <section aria-labelledby="tutor-cycle-heading">
               <h3 className="text-sm font-bold text-foreground" id="tutor-cycle-heading">Ciclo y beca</h3>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-cycle">Ciclo abierto</label>
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="tutor-cycle">Ciclo abierto</label>
                   <select
                     aria-describedby={fieldErrors.cycleId === undefined ? undefined : fieldErrorId("cycle")}
                     aria-invalid={fieldErrors.cycleId !== undefined}
@@ -1514,7 +1514,7 @@ function TutorSheet({
                   <FieldError id={fieldErrorId("cycle")} message={fieldErrors.cycleId} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary" htmlFor="tutor-scholarship">Referencia de beca (opcional)</label>
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="tutor-scholarship">Referencia de beca (opcional)</label>
                   <select
                     className={selectClassName}
                     disabled={isView || detailLoading || detailUnavailable}
@@ -1544,14 +1544,14 @@ function TutorSheet({
                   label={statusLabel(record?.status ?? "ACTIVE")}
                   variant={stateVariants[record?.status ?? "ACTIVE"]}
                 />
-                <span className="text-sm text-foreground-secondary">
+                <span className="text-sm text-muted-foreground">
                   {isAdd ? "El tutor se crea activo." : "El estado se actualiza desde el menú de acciones."}
                 </span>
               </div>
             </section>
           </div>
 
-          <div className="border-t border-border bg-surface px-6 py-4">
+          <div className="border-t border-border bg-card px-6 py-4">
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <Button onClick={attemptClose} type="button" variant="outline">Cerrar</Button>
               {isView && record?.currentCycle && (
@@ -1611,7 +1611,7 @@ function StatusConfirmation({
         aria-describedby="status-confirmation-description"
         aria-labelledby="status-confirmation-title"
         aria-modal="true"
-        className="w-full max-w-lg rounded-lg border border-border bg-surface p-6 shadow-dialog"
+        className="w-full max-w-lg rounded-lg border border-border bg-card p-6 shadow-lg"
         onKeyDown={(event) => {
           if (event.key === "Escape" && !loading) {
             event.preventDefault();
@@ -1653,13 +1653,13 @@ function StatusConfirmation({
         tabIndex={-1}
       >
         <h2 className="text-lg font-semibold text-foreground" id="status-confirmation-title">{action}</h2>
-        <p className="mt-2 text-sm leading-6 text-foreground-secondary" id="status-confirmation-description">
+        <p className="mt-2 text-sm leading-6 text-muted-foreground" id="status-confirmation-description">
           {isDeactivation
             ? `El tutor ${request.tutor.formalName} quedará inactivo. Sus materias y antecedentes de ciclo se conservarán.`
             : `El tutor ${request.tutor.formalName} volverá a estar disponible en las operaciones activas.`}
         </p>
         {error && (
-          <p aria-live="assertive" className="mt-4 rounded-md border border-danger/30 bg-danger-surface/60 p-3 text-sm text-danger" role="alert">
+          <p aria-live="assertive" className="mt-4 rounded-md border border-destructive/30 bg-muted/60 p-3 text-sm text-destructive" role="alert">
             {getTutorErrorMessage(error)}
           </p>
         )}
@@ -2058,7 +2058,7 @@ export function TutorsScreen({
         )}
 
         {announcement !== null && screenState !== "success" && (
-          <div aria-live="polite" className="mt-6 flex items-start gap-3 rounded-md border border-info/30 bg-info-surface/60 p-4" role="status">
+          <div aria-live="polite" className="mt-6 flex items-start gap-3 rounded-md border border-info/30 bg-muted/60 p-4" role="status">
             <CheckCircle2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-info" />
             <p className="text-sm leading-6 text-foreground">{announcement}</p>
           </div>
@@ -2101,7 +2101,7 @@ export function TutorsScreen({
               statusLabel={data.statusFilterLabel}
             />
 
-            <p aria-live="polite" className="mt-4 text-sm text-foreground-secondary">
+            <p aria-live="polite" className="mt-4 text-sm text-muted-foreground">
               {derivedState === "loading"
                 ? "Preparando la lista de tutores…"
                 : derivedState === "empty"

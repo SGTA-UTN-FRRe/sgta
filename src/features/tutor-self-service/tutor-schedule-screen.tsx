@@ -67,12 +67,12 @@ function ScheduleLoading() {
       className="space-y-6"
       role="status"
     >
-      <div className="h-9 w-56 animate-pulse rounded-sm bg-surface-subtle" />
-      <div className="h-20 animate-pulse rounded-md border border-border-subtle bg-surface" />
+      <div className="h-9 w-56 animate-pulse rounded-sm bg-muted" />
+      <div className="h-20 animate-pulse rounded-md border border-border bg-card" />
       <div className="grid gap-3 md:grid-cols-7">
         {Array.from({ length: 7 }, (_, index) => (
           <div
-            className="h-44 animate-pulse rounded-md border border-border-subtle bg-surface"
+            className="h-44 animate-pulse rounded-md border border-border bg-card"
             key={index}
           />
         ))}
@@ -85,11 +85,11 @@ function ScheduleError({ message, onRetry }: { message: string; onRetry: () => v
   return (
     <div
       aria-live="assertive"
-      className="rounded-md border border-danger/30 bg-danger-surface/70 p-6"
+      className="rounded-md border border-destructive/30 bg-muted/70 p-6"
       role="alert"
     >
       <h2 className="text-base font-semibold text-foreground">No se pudo cargar el horario</h2>
-      <p className="mt-2 text-sm leading-6 text-foreground-secondary">{message}</p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{message}</p>
       <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
         <RefreshCw aria-hidden="true" />
         Reintentar
@@ -110,12 +110,12 @@ function ScheduleRequiredAction({
   return (
     <div
       aria-live="polite"
-      className="rounded-md border border-warning/30 bg-warning-surface/70 p-6"
+      className="rounded-md border border-warning/30 bg-muted/70 p-6"
       role="status"
     >
       <StatusBadge label="Acción requerida" variant="warning" />
       <h2 className="mt-4 text-lg font-semibold text-foreground">{copy.title}</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground-secondary">
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
         {copy.description}
       </p>
       <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
@@ -150,12 +150,12 @@ function ScheduleAssignment({
   >["days"][number]["assignments"][number];
 }) {
   return (
-    <li className="rounded-sm border border-border-subtle bg-surface px-3 py-3 shadow-xs">
+    <li className="rounded-sm border border-border bg-card px-3 py-3 shadow-xs">
       <div className="flex items-start justify-between gap-2">
         <span className="text-xs font-semibold uppercase tracking-[0.1em] text-primary">
           {getAssignmentKindLabel(assignment.kind)}
         </span>
-        <Clock3 aria-hidden="true" className="h-4 w-4 shrink-0 text-foreground-muted" />
+        <Clock3 aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
       </div>
       <p className="mt-2 text-sm font-bold tabular-nums text-foreground">
         <time dateTime={`${assignment.date}T${formatTime(assignment.startMinutes)}`}>
@@ -163,7 +163,7 @@ function ScheduleAssignment({
         </time>
       </p>
       {assignment.modality && (
-        <p className="mt-1 text-xs leading-5 text-foreground-secondary">{assignment.modality}</p>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">{assignment.modality}</p>
       )}
     </li>
   );
@@ -192,11 +192,11 @@ function ScheduleContent({
 
   return (
     <>
-      <div className="mt-6 rounded-md border border-border bg-surface p-4 shadow-xs sm:p-5">
+      <div className="mt-6 rounded-md border border-border bg-card p-4 shadow-xs sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold text-foreground">{data.cycle.name}</p>
-            <p className="mt-1 text-sm text-foreground-secondary">
+            <p className="mt-1 text-sm text-muted-foreground">
               {formatLongDate(data.cycle.startDate)} — {formatLongDate(data.cycle.endDate)}
             </p>
           </div>
@@ -223,7 +223,7 @@ function ScheduleContent({
 
       <section
         aria-label="Contexto del horario"
-        className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-accent/30 bg-accent-surface/60 px-4 py-3"
+        className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-faro/30 bg-muted/60 px-4 py-3"
       >
         <StatusBadge
           label={
@@ -233,7 +233,7 @@ function ScheduleContent({
           }
           variant={data.effectivePlan?.kind === "SPECIAL" ? "faro" : "info"}
         />
-        <span className="text-sm text-foreground-secondary">
+        <span className="text-sm text-muted-foreground">
           {data.effectivePlan?.name ?? "No hay guardias asignadas para la fecha de referencia."}
         </span>
       </section>
@@ -244,11 +244,11 @@ function ScheduleContent({
             <h2 className="text-lg font-bold text-foreground" id="tutor-schedule-days">
               Guardias del período
             </h2>
-            <p className="mt-1 text-sm text-foreground-secondary">
+            <p className="mt-1 text-sm text-muted-foreground">
               Vista cronológica en móvil y semanal en pantallas amplias.
             </p>
           </div>
-          <span className="hidden text-sm font-semibold text-foreground-secondary sm:inline">
+          <span className="hidden text-sm font-semibold text-muted-foreground sm:inline">
             {assignments.length} {assignments.length === 1 ? "guardia" : "guardias"}
           </span>
         </div>
@@ -260,12 +260,12 @@ function ScheduleContent({
         >
           {data.days.map((day) => (
             <li
-              className="min-w-0 rounded-md border border-border bg-canvas p-3"
+              className="min-w-0 rounded-md border border-border bg-background p-3"
               data-date={day.date}
               key={day.date}
             >
-              <div className="border-b border-border-subtle pb-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-foreground-muted">
+              <div className="border-b border-border pb-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                   {formatLongDate(day.date).split(" ")[0]}
                 </p>
                 <p className="mt-1 text-sm font-bold text-foreground">
@@ -273,7 +273,7 @@ function ScheduleContent({
                 </p>
               </div>
               {day.assignments.length === 0 ? (
-                <p className="py-4 text-xs leading-5 text-foreground-muted">Sin guardias</p>
+                <p className="py-4 text-xs leading-5 text-muted-foreground">Sin guardias</p>
               ) : (
                 <ul className="mt-3 space-y-2">
                   {day.assignments.map((assignment) => (
@@ -292,15 +292,15 @@ function ScheduleContent({
         </h2>
         <ol className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {assignments.length === 0 ? (
-            <li className="text-sm text-foreground-secondary">No hay guardias próximas en esta consulta.</li>
+            <li className="text-sm text-muted-foreground">No hay guardias próximas en esta consulta.</li>
           ) : (
             assignments.map((assignment) => (
               <li
-                className="rounded-md border border-border bg-surface p-4 shadow-xs"
+                className="rounded-md border border-border bg-card p-4 shadow-xs"
                 key={`upcoming-${assignment.id}`}
               >
                 <p className="text-sm font-semibold text-foreground">{formatLongDate(assignment.date)}</p>
-                <p className="mt-1 text-sm tabular-nums text-foreground-secondary">
+                <p className="mt-1 text-sm tabular-nums text-muted-foreground">
                   {getAssignmentKindLabel(assignment.kind)} · {formatTimeRange(assignment.startMinutes, assignment.endMinutes)}
                 </p>
               </li>

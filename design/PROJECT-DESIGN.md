@@ -1,752 +1,305 @@
 ---
-document: PROJECT-DESIGN
-mode: decision
-type: project-design-direction
-status: approved
-project: SGTA
-authority: product-visual-direction
-inherits_from: https://github.com/acevedo-daniel/engineering-playbook/blob/main/docs/DESIGN-STANDARD.md
+status: draft
 ---
 
-# SGTA - Design Direction
-
-> Product-specific visual, UX, and interaction direction for the Sistema de Gestion de Tutorias at UTN FRRe.
-
-## AI reading contract
-
-Mode: **decision**.
-
-This document is the shared source of truth for SGTA visual identity and design tokens.
-
-Rules:
-
-1. The target is a high-quality product interface, not a generic admin template.
-2. Section 13 is the only canonical registry of exact visual token values.
-3. `UI-SPEC.md` inherits visual decisions from this document.
-4. Existing code is a baseline to transform, not a reason to preserve weaker visual decisions.
-5. Update this document in place when the product direction intentionally changes.
-6. If UTN FRRe later provides official brand specifications or production-ready assets, reconcile them here without creating a competing visual source.
-7. Do not leave candidate choices or unresolved design options in this document.
-
-## 1. Product context
-
-### 1.1 Product summary
-
-SGTA is the internal operational workspace for Tutorias at UTN FRRe.
-
-It centralizes tutor administration, schedules, hour accounting, consultation intake, and operational reporting while preserving human administrative judgment and traceability.
-
-The interface must make repeated administrative work feel clear, humane, fast, and contemporary without losing institutional seriousness.
-
-### 1.2 Target users and environment
-
-Primary users:
-
-- **Admin:** works frequently with lists, schedule grids, hour movements, consultation review, and reports.
-- **Tutor:** checks personal schedule, subjects, and hour status occasionally and expects immediate, readable answers.
-
-Environment:
-
-- Admin work is desktop-first.
-- Tablet is a meaningful secondary workspace.
-- Tutor self-service must be excellent on mobile.
-- Admin mobile use supports review and simple actions, not complex schedule editing.
-- During migration, the product may coexist with spreadsheets, but it must feel clearly superior to spreadsheet-based operation.
-
-### 1.3 Core workflows
-
-1. Manage tutors, careers, subjects, and cycle context.
-2. Build regular and special schedules and record agreed hour changes in the movement ledger.
-3. Understand and modify hour status through traceable movements.
-4. Import, review, classify, and report student consultations.
-5. Let tutors inspect their own schedule and hour history.
-
-### 1.4 Primary product value and trust
-
-The UI must make three things obvious:
-
-1. what is happening now;
-2. what action is available;
-3. why a status or balance has the value it has.
-
-Trust is established through:
-
-- explicit data provenance;
-- visible current cycle and selected schedule context;
-- readable history;
-- clear confirmation for consequential actions;
-- non-destructive administrative behavior;
-- polished loading, empty, error, and degraded states;
-- stable navigation and predictable layouts;
-- accessible status communication beyond color.
-
-## 2. Visual direction and expression
-
-### 2.1 Aesthetic statement
-
-> **Friendly institutional premium: a bright, confident operational workspace with strong typography, soft geometry, disciplined data presentation, and a distinctive Faro identity.**
-
-The product is predominantly light.
-
-The working surface should feel closer to a modern service product than to legacy university software. Brand expression is visible but controlled. The interface should feel designed for real people doing repeated administrative work, not like a component library preview or a developer dashboard.
-
-### 2.2 Visual expression and density
-
-- **Expression level:** **E1 - Branded Product**
-- **Density level:** **D3 - Operational**
-- **Rationale:** SGTA contains tables, scheduling, history, filters, and repeated transactions. It needs efficient scanning and comparison, but its users are not expert operators who benefit from extreme density. Brand warmth, readable grouping, and generous page-level rhythm remain important.
-
-### 2.3 Visual tension and spectrum positioning
-
-Anchors:
-
-- clean over expressive;
-- moderately soft, never bubbly;
-- friendly over technical;
-- operational over editorial;
-- medium-high density inside data regions;
-- spacious hierarchy around data regions.
-
-Positioning statement:
-
-> Strongly friendly and operational, moderately soft, visually restrained, high-confidence, and clearly branded.
-
-Design consequence:
-
-- Use bold hierarchy and generous structural spacing.
-- Use compact rows only where comparison benefits from it.
-- Let typography, alignment, and whitespace do more work than decorative chrome.
-- Use brand color to establish temperature and orientation, not to color every component.
-- Avoid heavy dark enterprise shells, tiny gray text, and card grids that reduce usable data area.
-
-### 2.4 Brand personality
-
-- Approachable
-- Competent
-- Calm
-- Warm
-- Trustworthy
-
-### 2.5 Tone, voice, and terminology
-
-The SGTA product-copy contract is:
-
-- **Product language:** Spanish.
-- **Locale:** `es-AR`.
-- **Writing register:** neutral institutional Spanish.
-- **Regional voice:** neutral; avoid voseo and colloquial regionalisms.
-- **Terminology conventions:** use concrete, established Tutorias terms and direct interface commands; do not expose implementation terminology to users.
-
-The `es-AR` locale is retained for Argentina-specific locale behavior, including appropriate date, number, currency, and similar regional formatting. It does not mean that the interface should imitate everyday Argentine speech.
-
-SGTA is an institutional operational product for Tutorias UTN FRRe. Its copy should be:
-
-- concise;
-- clear;
-- professional;
-- institutional without sounding bureaucratic;
-- natural Spanish;
-- direct when naming actions;
-- calm and actionable in errors and recovery messages.
-
-Avoid:
-
-- voseo;
-- Argentine slang;
-- deliberately Rioplatense expressions;
-- unnecessary second-person pronouns;
-- conversational filler;
-- exaggerated friendliness;
-- literal technical terminology exposed to users.
-
-Prefer action labels that work naturally as neutral interface commands, especially infinitive forms where appropriate:
-
-- `Agregar tutor`
-- `Guardar cambios`
-- `Registrar movimiento`
-- `Actualizar consultas`
-- `Crear horario especial`
-- `Cerrar ciclo`
-- `Reintentar`
-- `Cancelar`
-- `Confirmar`
-
-For explanatory and recovery copy, prefer neutral constructions such as:
-
-- `No se pudo guardar el registro.`
-- `El correo es obligatorio.`
-- `Los cambios se guardaron correctamente.`
-- `Contactar a la administración de Tutorías para solicitar acceso.`
-
-Avoid variants such as:
-
-- `Guardá los cambios.`
-- `Ingresá tu correo.`
-- `Podés volver a intentarlo.`
-- `Contactá a la administración.`
-- `Si necesitás acceso...`
-- `¿Querés continuar?`
-
-Do not mechanically rewrite every sentence into an impersonal form if that makes Spanish unnatural. The objective is neutral institutional Spanish, not robotic Spanish.
-
-Avoid user-facing implementation terms:
-
-- ledger;
-- staging;
-- entity;
-- adapter;
-- mutation;
-- sync job.
-
-Use `Horas` or `Credito de horas` in the product.
-
-Use `Consultas`, not `QR`, as the owned product capability. The QR/Form is an external capture mechanism.
-
-Use `Desactivar tutor`, not `Eliminar tutor`, when history exists.
-
-## 3. Must and must not
-
-### 3.1 Must feel
-
-- Visibly better than a generic admin starter.
-- Friendly on first contact and serious during consequential operations.
-- Fast to scan.
-- Calm even when the page contains a lot of data.
-- Consistent across Tutor, Schedule, Hours, Consultation, and Report surfaces.
-- Distinctly connected to Tutorias FRRe.
-- Premium through typography, spacing, alignment, states, and detail rather than decoration.
-
-### 3.2 Must not feel
-
-- Like Excel with rounded corners.
-- Like a dark enterprise control panel.
-- Like a generic shadcn demo.
-- Like a marketing landing page inside an operations product.
-- Like every metric needs a card.
-- Like Faro orange is a warning color.
-- Like a developer tool.
-- Like visual polish was postponed until the end.
-
-## 4. Relationship to the global standard
-
-### 4.1 Adopted directly
-
-- Hierarchy before decoration.
-- Accessibility before subtle aesthetics.
-- Border-first, shadow-second.
-- Neutral-first, not colorless.
-- Strong typography and disciplined spacing.
-- Semantic colors retain semantic meaning.
-- Repeated components remain visually consistent.
-- Product screens have one clear dominant action.
-
-### 4.2 Adapted principles
-
-| Global principle | SGTA adaptation | Rationale |
-|---|---|---|
-| Soft, not bubbly | Friendly radii and roomy controls, while tables and grids remain planar and precise | SGTA needs warmth without losing administrative clarity |
-| Neutral-first | White and quiet cool-neutral surfaces dominate, with institutional blue and Faro orange used intentionally | Preserves seriousness while avoiding sterile gray software |
-| Brand temperature | Orange acts as a warm beacon and visual signature, not as the primary action or warning color | Keeps the Faro identity recognizable without harming status semantics |
-| Operational density | Dense data zones are balanced by generous page headers, section separation, and focused sheets | Makes repeated work efficient without visual fatigue |
-| Premium restraint | Visual distinction comes from composition, typography, states, and signature brand moments | Avoids novelty UI that would age quickly |
-
-### 4.3 Intentional deviations
-
-| Global principle | Deviation | Rationale |
-|---|---|---|
-| None | None | SGTA can reach its desired identity inside the current global standard |
-
-## 5. Selected references and principles
-
-| Reference | Adopt | Reject | SGTA application |
-|---|---|---|---|
-| Apple | Premium restraint, alignment, confident negative space, careful motion | Marketing-scale whitespace and cinematic product presentation inside the workspace | Page hierarchy, login composition, polished details |
-| Wise | Friendly confidence, readable hierarchy, strong brand temperature | Consumer-finance promotional treatments | Warmth, approachable controls, page rhythm |
-| Tripadvisor | Strong list scanning, bold hierarchy, approachable geometry | Media-heavy marketplace presentation | Tutor and Consultation list clarity |
-| NexHealth | Contemporary operational software that feels humane and trustworthy | Healthcare-specific metaphors and workflow assumptions | Dense admin workflows, forms, state feedback |
-| Airbnb | Clear filtering and friendly interaction patterns | Image-first card layouts | Filter rhythm and approachable form behavior |
-
-## 6. Brand and media direction
-
-### 6.1 Product identity
-
-Visible identity:
-
-- `Tutorias UTN FRRe` provides institutional context.
-- `SGTA` is the product/system name.
-
-Admin shell:
-
-- use the Faro mark at navigation origin;
-- show the full Tutorias label at expanded widths;
-- keep SGTA secondary;
-- do not force the complete university lockup into every application screen.
-
-Login:
-
-- may use fuller institutional context;
-- should feel like a designed entry surface, not a raw OAuth button floating in the center.
-
-Logo rules:
-
-- use an official or production-ready Faro vector asset when available;
-- do not distort or recolor official university marks;
-- do not recreate the full poster inside the application;
-- the colors in this document are the SGTA working palette unless an official brand manual supersedes them.
-
-### 6.2 Imagery role
-
-**Imagery role:** minimal.
-
-Workspace pages do not use decorative photography.
-
-Appropriate visual media:
-
-- official brand marks;
-- simple Faro-derived vector geometry;
-- product screenshots in documentation;
-- charts that answer real questions.
-
-Forbidden:
-
-- stock student photography inside operations;
-- faux 3D illustrations;
-- generic education clipart;
-- glass blobs;
-- decorative isometric dashboards;
-- unrelated gradient art.
-
-### 6.3 Signature move - Faro Beam
-
-SGTA uses a restrained geometric Faro Beam motif.
-
-It may appear in:
-
-- login;
-- empty states;
-- active navigation;
-- selected schedule plan;
-- occasional section orientation.
-
-The motif uses simple bars, lines, or geometric beam shapes.
-
-It must never compete with data.
-
-It is not a semantic status indicator.
-
-## 7. Visual system
-
-### 7.1 Color strategy
-
-- Light-first canvas.
-- White operational surfaces.
-- Institutional navy for primary text and structural confidence.
-- Institutional blue for primary actions, links, selected controls, and focus.
-- Faro orange for brand warmth and orientation.
-- Quiet blue and warm-tint surfaces provide soft emphasis without relying on shadow.
-- Semantic success, warning, danger, and information colors remain independent from brand orange.
-
-The final application shell is light.
-
-A full-height dark sidebar is not the target.
-
-Dark navy may appear in compact brand moments, login composition, or high-contrast identity areas.
-
-### 7.2 Typography strategy
-
-Use one modern rounded-geometric family with enough seriousness for operations.
-
-The target family is Manrope.
-
-Rules:
-
-- page titles are confident and compact;
-- section headings remain clearly subordinate;
-- table/body typography is quieter;
-- operational numbers use tabular figures;
-- uppercase is reserved for small metadata, never primary navigation;
-- avoid tiny muted text as a default information style.
-
-### 7.3 Geometry
-
-Shape character: balanced-soft.
-
-- compact controls remain precise;
-- cards and panels have more generosity than controls;
-- sheets and dialogs have the softest containment;
-- pill geometry is reserved for statuses, filters, and compact segmented controls.
-
-### 7.4 Iconography
-
-Use Lucide as the default icon family.
-
-Rules:
-
-- consistent outline style;
-- consistent optical size;
-- icons normally accompany labels;
-- icon-only actions require accessible names and tooltip support when meaning is not universal;
-- do not mix icon families unless an official brand mark requires it.
-
-### 7.5 Accessibility baseline
-
-Baseline: **WCAG 2.2 AA**.
-
-Product requirements:
-
-- normal text color pairs meet 4.5:1;
-- large text meets 3:1;
-- meaningful UI graphics/components meet 3:1;
-- primary button text meets AA;
-- focus remains visible and is not hidden by sticky UI;
-- all workflows are keyboard operable;
-- status meaning never depends on color alone;
-- form errors are associated with controls and explain recovery;
-- dialogs receive an accessible name, focus entry, containment, Escape or visible dismiss behavior, and focus return;
-- schedule drag-and-drop always has a non-drag alternative;
-- non-essential motion respects reduced-motion preferences;
-- compact touch interfaces use comfortable touch targets.
-
-Verified canonical contrast examples:
-
-| Pair | Approx. ratio | Result |
-|---|---:|---|
-| `foreground` on `surface` | 12.75:1 | Pass |
-| `foreground-muted` on `surface` | 5.43:1 | Pass |
-| `foreground-muted` on `canvas` | 5.14:1 | Pass |
-| `primary-foreground` on `primary` | 5.36:1 | Pass |
-| `primary-foreground` on `primary-hover` | 6.81:1 | Pass |
-
-## 8. Layout and density
-
-### 8.1 Information density
-
-Density is operational but not expert-dense.
-
-Page level:
-
-- spacious;
-- strong title/context;
-- one dominant action;
-- clear section boundaries.
-
-Data level:
-
-- compact enough for comparison;
-- no unnecessary wrapper cards;
-- visible row rhythm;
-- sticky table headers where useful;
-- filters stay physically close to their dataset.
-
-### 8.2 Workspace principles
-
-Admin desktop:
-
-- persistent light sidebar;
-- main content surface;
-- no redundant persistent top bar consuming vertical space;
-- account/help controls remain quiet and accessible;
-- page header belongs to page content;
-- wide data and schedule views can use nearly the full workspace.
-
-Tutor:
-
-- lighter navigation;
-- simpler information architecture;
-- mobile-first readability.
-
-## 9. Surfaces and key components
-
-### 9.1 Surfaces and cards
-
-Cards are used when content is a meaningful unit.
-
-Do not card-wrap:
-
-- every table;
-- every filter;
-- every section;
-- every metric.
-
-Summary cards are allowed when they communicate a current operational condition or direct next action.
-
-### 9.2 Tables and lists
-
-Tables are a primary SGTA pattern.
-
-Rules:
-
-- strong first column;
-- quiet header;
-- subtle row separators;
-- consistent numeric alignment;
-- explicit hover only when the row is actionable;
-- sticky header for long operational lists where useful;
-- row actions remain secondary;
-- mobile does not simply shrink a desktop table until unreadable.
-
-### 9.3 Controls
-
-Primary actions:
-
-- one clear primary action per view;
-- strong blue treatment;
-- readable label;
-- predictable position.
-
-Secondary actions:
-
-- neutral surface or text treatment.
-
-Destructive actions:
-
-- semantic danger only;
-- never use Faro orange.
-
-Inputs:
-
-- visible border;
-- strong focus;
-- labels always present for forms;
-- placeholder never replaces a label.
-
-### 9.4 Overlays
-
-Use:
-
-- side sheets for contextual editing while list context matters;
-- dialogs for compact transactions and confirmation;
-- full pages for complex multi-section workflows;
-- popovers for small option sets only.
-
-Bulk hour registration uses a dedicated dialog or sheet with a confirmation summary.
-
-## 10. Responsive architecture
-
-### 10.1 Compact workspace
-
-- Admin navigation becomes a drawer.
-- Tutor navigation becomes a compact header/navigation pattern.
-- Data tables reflow to structured rows when comparison remains clear.
-- Horizontal scrolling is reserved for relationships that must remain tabular.
-- Schedule uses day/list mode for editing.
-- Sheets become full-height or full-screen when necessary.
-- Primary actions remain reachable without excessive scrolling.
-
-### 10.2 Medium workspace
-
-- Sidebar becomes a compact rail or collapsible navigation.
-- Tables preserve the most valuable columns and move secondary details to expansion.
-- Schedule can show reduced multi-day context.
-- Detail sheets remain contextual.
-
-### 10.3 Wide workspace
-
-- Expanded persistent sidebar.
-- Full operational tables.
-- Wide schedule grid.
-- Side-by-side list and detail where it improves throughput.
-- Reports may use multi-column compositions when hierarchy remains obvious.
-
-## 11. Motion and transitions
-
-### 11.1 Motion character
-
-Motion is fast, tactile, and orienting.
-
-It confirms spatial relationships and state.
-
-It is never the main visual attraction.
-
-### 11.2 Allowed
-
-- quick hover/focus transitions;
-- short sheet/dialog transitions;
-- restrained disclosure expansion;
-- tab or segmented-control state transitions;
-- schedule drag preview when supported.
-
-### 11.3 Forbidden
-
-- bouncy springs;
-- parallax;
-- animated gradients;
-- decorative counter animation;
-- slow card lift;
-- layout-shifting tab transitions;
-- perpetual loading animation when a simpler progress state is clearer.
-
-## 12. Explicit anti-patterns
-
-- Full-height dark enterprise sidebar as the final visual identity.
-- Generic shadcn demo styling left uncustomized.
-- Glassmorphism.
-- Neon/glow effects.
-- Decorative gradients.
-- Huge KPI cards with little decision value.
-- Rainbow charts.
-- Low-contrast muted text.
-- Orange used as warning or danger.
-- Color-only balance or status state.
-- Tiny icon-only row actions without names or tooltips.
-- Separate manually maintained subject coverage data.
-- A standalone QR module duplicating Consultation Intake.
-- Hiding important Admin actions inside overflow menus.
-- Creating a late polish phase to repair visually weak implemented screens.
-
-## 13. Canonical token registry
-
-This section is the only canonical registry of exact visual values for SGTA.
-
-### 13.1 CSS custom properties
+# Project Design
+
+## Brief
+
+- Product: SGTA manages Tutorías at UTN FRRe. Its surfaces are the public login, server-authorized Admin workspace, and read-only Tutor self-service.
+- Audience and context: Tutorías Admins work on desktop daily; Tutors consult their own information on phones weekly.
+- Expression: E1 Branded Product, with institutional identity expressed through typography, ink actions, and the Faro Beam.
+- Density: D3 Operational, with 14px body text, compact rows, and 12–16px data-region padding for daily scanning.
+- Must feel: Clean and modern with an academic seriousness; Comfortable and accessible for daily work; Fast to scan, with color that carries meaning.
+- Must not feel: Pastel or decorative; Like a generic admin template; Gamified or playful.
+- Signature move: page titles use `font-display text-title`; the Faro Beam is a `w-1 h-5 rounded-full bg-sidebar-marker` bar at the leading edge of the active Admin navigation pill and on the login brand mark. It appears nowhere else.
+- Color schemes: light only, with no user scheme switch.
+
+## References
+
+The four user-supplied visual references reviewed on 2026-10-08 are described here; their images are not repository assets.
+
+| Reference | Take | Avoid |
+| --- | --- | --- |
+| EONIX dashboard | Saturated fills and hatch as a second data cue | Decorative KPI panels |
+| Calendar week view | Day chips and filled time blocks | Pastels and a dark glass frame |
+| FORTHEYE | Key figures row and pill controls | Gamification and tiny gray text |
+| hope dashboard | Gray canvas, white rounded panels, solid active pill | Sub-12px text and promotional blocks |
+
+## Voice
+
+Language selects copy; locale formats dates and numbers; register sets tone, pronouns, and regionalisms.
+
+- Language: Spanish. BCP 47 locale: `es-AR` for Argentina date and number formatting.
+- Register: neutral institutional Spanish, concise, clear, professional, direct, and calm. Avoid unnecessary second-person pronouns and bureaucratic wording.
+- Regional voice: neutral; no voseo, slang, deliberately Rioplatense expressions, conversational filler, or exaggerated friendliness. Locale does not set voice.
+- Terminology: use established Tutorías terms. Technical names, staging, ledger, and transaction implementation details remain internal.
+- Microcopy: prefer infinitive action labels such as `Agregar tutor`, `Guardar cambios`, `Registrar movimiento`, `Actualizar consultas`, `Crear horario especial`, `Cerrar ciclo`, `Reintentar`, `Cancelar`, and `Confirmar`.
+- Errors and recovery: `No se pudo guardar el registro.`, `El correo es obligatorio.`, and `Contactar a la administración de Tutorías para solicitar acceso.` Success: `Los cambios se guardaron correctamente.` Empty states state what is absent and the available next action without invented data.
+- Avoid `Guardá los cambios.`, `Ingresá tu correo.`, `Podés volver a intentarlo.`, and `¿Querés continuar?`. Do not force unnatural impersonal wording.
+
+| Internal concept | Product label |
+| --- | --- |
+| `Tutor` | Tutor |
+| `HourLedger` | Horas / Crédito de horas |
+| `HourMovement` | Movimiento |
+| `Consultation` | Consulta |
+| `SchedulePlan` | Horario / Plan de horario |
+| `AdministrativeCycle` | Ciclo |
+| `SUBJECT` consultation | Materia |
+| `GENERAL` consultation | General / Varias |
+
+## Visual rules
+
+- Surfaces: cool gray canvas and white panels at one level. Use layout, typography, and dividers to group content; never nest panels or add a panel around empty content. Muted and accent surfaces are neutral gray, never pastel or tinted.
+- Typography: page and section headings use Source Serif 4 at weight 600; all other text uses Manrope. Body text is 14px, with no text below 12px. Roles and classes are listed below. Comparable numbers use `tabular-nums`.
+- Color as data: saturated career colors identify careers, with an abbreviation on each colored element and the full name in legends and tooltips. Career colors never express status. Recovery adds `bg-hatch` and `Recuperación`; conflicts add a destructive icon and `Conflicto`. Color is never the only cue.
+- Actions: navy ink is the primary action and selected state for buttons, navigation, days, and segments. Institutional blue is for links, focus, and information. Faro orange is brand-only, limited to the signature mark.
+- Status: neutral pills with a saturated dot and icon; success, warning, danger, info, and neutral semantics. Do not use orange for warnings or career colors for status.
+- Shape: buttons, chips, navigation items, and segmented controls use `rounded-full`; inputs `rounded-md`; panels `rounded-xl`. Geometry comes from the radius multipliers below.
+- Depth: `shadow-xs` for panels, `shadow-lg` for floating overlays. Use the registered sticky, navigation, overlay, toast, and skip-link layers.
+- Motion: quick color and focus feedback at 120–180ms and short disclosure, sheet, or dialog transitions at 180–240ms; easing `cubic-bezier(0.2, 0, 0, 1)`. No bounce, parallax, animated gradients, decorative counters, slow card lifts, or layout-shifting tabs. Respect reduced motion and preserve immediate state feedback.
+- Icons: Lucide outline icons with stroke width 2, normally `size-4` for controls or `size-5` for supporting context. Icons normally accompany labels; icon-only actions require accessible names and tooltips when meaning is not universal. Do not mix icon families except official brand marks.
+- Imagery: institutional brand marks only; no decorative dashboard imagery or invented promotional content.
+- Accessibility: WCAG 2.2 AA; text contrast at least 4.5:1, meaningful boundaries and focus at least 3:1; visible keyboard focus, logical order, named controls, 44px touch targets in Compact, and usable content at 200% zoom. Focus uses `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`; the global fallback is a 2px ring-colored outline with 2px offset.
+- Number formatting: durations are `1 h 30 min`, zero is `0 min`, and signs appear only for movements. Zero never uses a status color. Existing views adopt the duration formatter during their interface migration.
+
+## Product anti-patterns
+
+- Pastel or tinted surfaces; nested panels; panels around empty content.
+- Career colors in status contexts; orange as warning; color-only meaning.
+- Text below 12px or tiny unnamed icon actions.
+- Important Admin actions hidden in overflow menus.
+- Gamification, promotional blocks, invented metrics, or decorative KPI panels.
+- Separate manually maintained subject coverage or a standalone QR module duplicating consultation intake.
+
+## Token registry
+
+Implemented in: `src/app/globals.css`.
+
+Change this registry and that file in the same commit. When they disagree, this registry wins and the code is corrected. Colors use full `oklch()` values rounded to three decimals. The static `@theme` exposes layout, spacing, and typography; `@theme inline` exposes semantic colors, fonts, radii, and shadows to Tailwind. Layer utilities are `z-sticky`, `z-nav`, `z-overlay`, `z-toast`, and `z-skip-link`. `bg-hatch` uses repeating 45° stripes, 2px colored and 4px transparent, with `color-mix(in oklch, currentColor 22%, transparent)`.
+
+The input boundary was darkened from the target `#8C97A8` to `#8994A5` before conversion to meet 3:1 against white. Every ratio below is calculated from the final rounded OKLCH values, converted to linear sRGB with out-of-gamut channels clipped. Brand orange is not a text foreground.
 
 ```css
 :root {
-  /* Brand */
-  --brand-navy: #233251;
-  --brand-blue: #0E6EB5;
-  --brand-orange: #F09110;
+  --background: oklch(0.954 0.005 258.325);
+  --foreground: oklch(0.320 0.059 263.759);
+  --card: oklch(1.000 0.000 0.000);
+  --card-foreground: oklch(0.320 0.059 263.759);
+  --popover: oklch(1.000 0.000 0.000);
+  --popover-foreground: oklch(0.320 0.059 263.759);
+  --primary: oklch(0.320 0.059 263.759);
+  --primary-foreground: oklch(1.000 0.000 0.000);
+  --primary-hover: oklch(0.272 0.051 264.441);
+  --secondary: oklch(0.933 0.007 260.732);
+  --secondary-foreground: oklch(0.320 0.059 263.759);
+  --muted: oklch(0.970 0.003 264.542);
+  --muted-foreground: oklch(0.488 0.039 256.824);
+  --accent: oklch(0.933 0.007 260.732);
+  --accent-foreground: oklch(0.320 0.059 263.759);
+  --link: oklch(0.526 0.137 248.289);
+  --destructive: oklch(0.500 0.182 29.513);
+  --destructive-foreground: oklch(1.000 0.000 0.000);
+  --ring: oklch(0.526 0.137 248.289);
+  --success: oklch(0.511 0.110 158.444);
+  --success-foreground: oklch(1.000 0.000 0.000);
+  --warning: oklch(0.537 0.114 74.298);
+  --warning-foreground: oklch(1.000 0.000 0.000);
+  --info: oklch(0.526 0.137 248.289);
+  --info-foreground: oklch(1.000 0.000 0.000);
+  --border: oklch(0.924 0.008 260.732);
+  --input: oklch(0.663 0.028 259.044);
+  --brand-navy: oklch(0.320 0.059 263.759);
+  --faro: oklch(0.740 0.164 64.503);
+  --sidebar: oklch(1.000 0.000 0.000);
+  --sidebar-foreground: oklch(0.320 0.059 263.759);
+  --sidebar-muted-foreground: oklch(0.488 0.039 256.824);
+  --sidebar-accent: oklch(0.970 0.003 264.542);
+  --sidebar-accent-foreground: oklch(0.320 0.059 263.759);
+  --sidebar-primary: oklch(0.320 0.059 263.759);
+  --sidebar-primary-foreground: oklch(1.000 0.000 0.000);
+  --sidebar-border: oklch(0.924 0.008 260.732);
+  --sidebar-ring: oklch(0.526 0.137 248.289);
+  --sidebar-marker: oklch(0.740 0.164 64.503);
+  --career-blue: oklch(0.546 0.215 262.881);
+  --career-blue-foreground: oklch(1.000 0.000 0.000);
+  --career-emerald: oklch(0.696 0.149 162.480);
+  --career-emerald-foreground: oklch(0.320 0.059 263.759);
+  --career-violet: oklch(0.541 0.247 293.009);
+  --career-violet-foreground: oklch(1.000 0.000 0.000);
+  --career-yellow: oklch(0.861 0.173 91.936);
+  --career-yellow-foreground: oklch(0.320 0.059 263.759);
+  --career-cyan: oklch(0.715 0.126 215.221);
+  --career-cyan-foreground: oklch(0.320 0.059 263.759);
+  --career-magenta: oklch(0.525 0.199 3.958);
+  --career-magenta-foreground: oklch(1.000 0.000 0.000);
+  --career-lime: oklch(0.768 0.204 130.850);
+  --career-lime-foreground: oklch(0.320 0.059 263.759);
+  --career-graphite: oklch(0.446 0.037 257.281);
+  --career-graphite-foreground: oklch(1.000 0.000 0.000);
+  --radius: 1rem;
+  --shadow-xs: 0 1px 2px oklch(0.320 0.059 263.759 / 0.06);
+  --shadow-lg: 0 24px 60px oklch(0.320 0.059 263.759 / 0.18);
+  --layer-sticky: 20;
+  --layer-nav: 40;
+  --layer-overlay: 50;
+  --layer-toast: 60;
+  --layer-skip-link: 70;
+}
 
-  /* Canvas and surfaces */
-  --canvas: #F7F9FB;
-  --surface: #FFFFFF;
-  --surface-raised: #FFFFFF;
-  --surface-subtle: #F1F5F8;
-  --surface-blue: #EAF4FB;
-  --surface-warm: #FFF4E3;
-
-  /* Foreground */
-  --foreground: #233251;
-  --foreground-secondary: #526176;
-  --foreground-muted: #5F6B7A;
-  --foreground-on-dark: #FFFFFF;
-
-  /* Borders */
-  --border-subtle: #E8EEF3;
-  --border: #D7E1E9;
-  --border-strong: #A9BAC8;
-
-  /* Actions */
-  --primary: #0E6EB5;
-  --primary-hover: #0B5E9A;
-  --primary-foreground: #FFFFFF;
-  --secondary: #EEF3F7;
-  --secondary-hover: #E3EBF1;
-  --secondary-foreground: #233251;
-  --accent: #F09110;
-  --accent-hover: #D97E08;
-  --accent-foreground: #4F3200;
-  --accent-surface: #FFF4E3;
-
-  /* Navigation */
-  --nav-background: #FFFFFF;
-  --nav-foreground: #233251;
-  --nav-muted: #5F6B7A;
-  --nav-hover: #F1F6FA;
-  --nav-active: #EAF4FB;
-  --nav-active-foreground: #0B5E9A;
-  --nav-active-marker: #F09110;
-
-  /* Semantic */
-  --success: #18794E;
-  --success-surface: #ECF8F2;
-  --warning: #946200;
-  --warning-surface: #FFF7E6;
-  --danger: #B42318;
-  --danger-surface: #FFF0EE;
-  --info: #0E6EB5;
-  --info-surface: #EAF4FB;
-
-  /* Typography */
-  --font-sans: "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: var(--font-sans);
-  --font-numeric: var(--font-sans);
-
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 2rem;
+@theme {
+  --spacing-sidebar: 15.25rem;
+  --spacing-sidebar-rail: 4.5rem;
+  --spacing-row: 2.75rem;
+  --container-page: 96rem;
+  --container-dialog: 40rem;
+  --container-dialog-wide: 52rem;
+  --tracking-eyebrow: 0.12em;
   --text-display: 2.5rem;
+  --text-display--line-height: 1.15;
+  --text-title: 2rem;
+  --text-title--line-height: 1.2;
+}
 
-  --leading-tight: 1.18;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.65;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  --font-weight-extrabold: 800;
-
-  /* Spacing */
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 0.75rem;
-  --spacing-lg: 1rem;
-  --spacing-xl: 1.5rem;
-  --spacing-2xl: 2rem;
-  --spacing-3xl: 3rem;
-
-  /* Geometry */
-  --radius-sm: 0.625rem;
-  --radius-md: 0.875rem;
-  --radius-lg: 1.125rem;
-  --radius-xl: 1.5rem;
-  --radius-pill: 9999px;
-
-  /* Controls */
-  --control-height-sm: 2.25rem;
-  --control-height-md: 2.5rem;
-  --control-height-lg: 2.75rem;
-  --touch-target: 2.75rem;
-
-  /* Layout */
-  --max-width: 96rem;
-  --sidebar-width: 15.25rem;
-  --sidebar-width-collapsed: 4.5rem;
-  --gutter-desktop: 2rem;
-  --gutter-tablet: 1.5rem;
-  --gutter-mobile: 1rem;
-
-  /* Focus */
-  --focus-ring-color: rgb(14 110 181 / 0.32);
-  --focus-ring: 0 0 0 3px var(--focus-ring-color);
-
-  /* Motion */
-  --motion-fast: 120ms cubic-bezier(0.2, 0, 0, 1);
-  --motion-normal: 180ms cubic-bezier(0.2, 0, 0, 1);
-  --motion-slow: 240ms cubic-bezier(0.2, 0, 0, 1);
-
-  /* Elevation */
-  --shadow-xs: 0 1px 2px rgb(35 50 81 / 0.05);
-  --shadow-sm: 0 3px 10px rgb(35 50 81 / 0.07);
-  --shadow-hover: 0 6px 18px rgb(35 50 81 / 0.09);
-  --shadow-raised: 0 16px 38px rgb(35 50 81 / 0.13);
-  --shadow-dialog: 0 24px 60px rgb(35 50 81 / 0.18);
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-link: var(--link);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-brand-navy: var(--brand-navy);
+  --color-faro: var(--faro);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-marker: var(--sidebar-marker);
+  --color-career-blue: var(--career-blue);
+  --color-career-blue-foreground: var(--career-blue-foreground);
+  --color-career-emerald: var(--career-emerald);
+  --color-career-emerald-foreground: var(--career-emerald-foreground);
+  --color-career-violet: var(--career-violet);
+  --color-career-violet-foreground: var(--career-violet-foreground);
+  --color-career-yellow: var(--career-yellow);
+  --color-career-yellow-foreground: var(--career-yellow-foreground);
+  --color-career-cyan: var(--career-cyan);
+  --color-career-cyan-foreground: var(--career-cyan-foreground);
+  --color-career-magenta: var(--career-magenta);
+  --color-career-magenta-foreground: var(--career-magenta-foreground);
+  --color-career-lime: var(--career-lime);
+  --color-career-lime-foreground: var(--career-lime-foreground);
+  --color-career-graphite: var(--career-graphite);
+  --color-career-graphite-foreground: var(--career-graphite-foreground);
+  --font-sans: var(--font-ui);
+  --font-display: var(--font-heading);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-lg: var(--shadow-lg);
 }
 ```
 
-### 13.2 Breakpoints
+| Foreground / boundary | Background | Measured contrast | Minimum |
+| --- | --- | ---: | ---: |
+| `--foreground` | `--background` | 11.15:1 | 4.5:1 |
+| `--card-foreground` | `--card` | 12.75:1 | 4.5:1 |
+| `--popover-foreground` | `--popover` | 12.75:1 | 4.5:1 |
+| `--secondary-foreground` | `--secondary` | 10.47:1 | 4.5:1 |
+| `--muted-foreground` | `--muted` | 5.78:1 | 4.5:1 |
+| `--accent-foreground` | `--accent` | 10.47:1 | 4.5:1 |
+| `--sidebar-foreground` | `--sidebar` | 12.75:1 | 4.5:1 |
+| `--sidebar-accent-foreground` | `--sidebar-accent` | 11.69:1 | 4.5:1 |
+| `--muted-foreground` | `--card` | 6.31:1 | 4.5:1 |
+| `--muted-foreground` | `--muted` | 5.78:1 | 4.5:1 |
+| `--sidebar-muted-foreground` | `--sidebar` | 6.31:1 | 4.5:1 |
+| `--primary-foreground` | `--primary` | 12.75:1 | 4.5:1 |
+| `--destructive-foreground` | `--destructive` | 6.58:1 | 4.5:1 |
+| `--success-foreground` | `--success` | 5.42:1 | 4.5:1 |
+| `--warning-foreground` | `--warning` | 5.23:1 | 4.5:1 |
+| `--info-foreground` | `--info` | 5.35:1 | 4.5:1 |
+| `--sidebar-primary-foreground` | `--sidebar-primary` | 12.75:1 | 4.5:1 |
+| `--career-blue-foreground` | `--career-blue` | 5.17:1 | 4.5:1 |
+| `--career-emerald-foreground` | `--career-emerald` | 5.03:1 | 4.5:1 |
+| `--career-violet-foreground` | `--career-violet` | 5.71:1 | 4.5:1 |
+| `--career-yellow-foreground` | `--career-yellow` | 8.34:1 | 4.5:1 |
+| `--career-cyan-foreground` | `--career-cyan` | 5.25:1 | 4.5:1 |
+| `--career-magenta-foreground` | `--career-magenta` | 6.03:1 | 4.5:1 |
+| `--career-lime-foreground` | `--career-lime` | 6.45:1 | 4.5:1 |
+| `--career-graphite-foreground` | `--career-graphite` | 7.56:1 | 4.5:1 |
+| `--primary-foreground` | `--primary-hover` | 15.03:1 | 4.5:1 |
+| `--link` | `--card` | 5.35:1 | 4.5:1 |
+| `--link` | `--muted` | 4.91:1 | 4.5:1 |
+| `--success` | `--card` | 5.42:1 | 4.5:1 |
+| `--success` | `--muted` | 4.97:1 | 4.5:1 |
+| `--warning` | `--card` | 5.23:1 | 4.5:1 |
+| `--warning` | `--muted` | 4.80:1 | 4.5:1 |
+| `--destructive` | `--card` | 6.58:1 | 4.5:1 |
+| `--destructive` | `--muted` | 6.04:1 | 4.5:1 |
+| `--info` | `--card` | 5.35:1 | 4.5:1 |
+| `--info` | `--muted` | 4.91:1 | 4.5:1 |
+| `--input` | `--card` | 3.07:1 | 3:1 |
+| `--ring` | `--card` | 5.35:1 | 3:1 |
+| `--sidebar-ring` | `--sidebar` | 5.35:1 | 3:1 |
 
-| Token | Min width | Workspace | Primary adaptation |
-|---|---:|---|---|
-| `sm` | `640px` | Large compact | Improved compact spacing and form width |
-| `md` | `768px` | Medium | Navigation rail/collapse and partial table preservation |
-| `lg` | `1024px` | Wide | Persistent expanded workspace navigation and full tables |
-| `xl` | `1440px` | Wide large | Expanded gutters and full schedule/report canvas |
 
-## 14. Design audit checklist
+Career slots are blue (Azul), emerald (Esmeralda), violet (Violeta), yellow (Amarillo), cyan (Cian), magenta (Magenta), lime (Lima), and graphite (Grafito). Each has a foreground pair at 4.5:1 or higher. Chroma is at least 0.12 except graphite; hues stay at least 25° from Faro orange and destructive red. Abbreviations derive from uppercase initials excluding `de`, `del`, `la`, `las`, `el`, `los`, `en`, `y`, and `e`, with a maximum of four characters (`Ingeniería en Sistemas de Información` → `ISI`).
 
-- [x] The target does not resemble a generic admin starter.
-- [x] E1 and D3 are the selected expression and density targets.
-- [x] Section 13 is the only exact token registry.
-- [x] Canonical core text and primary action contrast meet WCAG 2.2 AA.
-- [x] Controls, cards, and dialogs have a defined radius hierarchy.
-- [x] Data regions remain operationally efficient.
-- [x] The final application shell is light and institutionally friendly.
-- [x] Faro Beam is a restrained product signature.
-- [x] Responsive behavior is defined for Compact, Medium, and Wide.
-- [x] No unresolved visual alternatives remain.
+| Role | Size / line height | Weight | Tracking | Class |
+| --- | --- | --- | --- | --- |
+| Display | 40px / 1.15 | 600 | Normal | `font-display text-display font-semibold` |
+| Page title | 32px / 1.2; 24px / 1.33 Compact | 600 | Normal | `font-display text-2xl md:text-title font-semibold` |
+| Section heading | 20px / 1.4 | 600 | Normal | `font-display text-xl font-semibold` |
+| Body | 14px / 1.43 | 400 | Normal | `text-sm` |
+| Body large | 16px / 1.5 | 400 | Normal | `text-base` |
+| Label | 14px / 1.43 | 600 | Normal | `text-sm font-semibold` |
+| Caption | 12px / 1.33 | 400 | Normal | `text-xs` |
+| Metadata | 12px / 1.33 | 600 | 0.12em | `text-xs font-semibold uppercase tracking-eyebrow` |
+
+| Font role | Family and fallback | Weights | Token / class |
+| --- | --- | --- | --- |
+| UI | Manrope, ui-sans-serif, system-ui, sans-serif | 400–800 | `--font-ui` / `font-sans` |
+| Heading | Source Serif 4, ui-serif, Georgia, serif | 600 | `--font-heading` / `font-display` |
+
+Fonts are self-hosted by `next/font/google` and their variable classes are attached to the root layout. Native system fallbacks are provided by Next.js font optimization.
+
+## Breakpoints and layout modes
+
+Tailwind defaults: `sm` 640px, `md` 768px, `lg` 1024px, `xl` 1280px, and `2xl` 1536px. Mode changes use `md` and `lg`.
+
+| Mode | Width | Admin layout | Tutor layout |
+| --- | --- | --- | --- |
+| Compact | < 768px | Top bar and left Sheet; single-column content with `px-4` | Brand and account bar; three equal full-width segments on a second row; `px-4` |
+| Medium | 768px to < 1024px | `w-sidebar-rail` navigation with tooltips; priority data columns; `px-6` | Top bar with navigation pills and account menu; `px-6` |
+| Wide | >= 1024px | Expanded `w-sidebar` light navigation and full tables; `px-8` | Brand left, navigation pills, account menu right; `px-8` |
+
+Content uses `max-w-page`. Tutor destinations are `Mi resumen`, `Mi horario`, and `Mis horas`, with an ink active pill. Dialogs use `max-w-dialog` or `max-w-dialog-wide`. Shared shell and view adoption follow the interface specification; this registry does not claim every existing view already meets the target rules.

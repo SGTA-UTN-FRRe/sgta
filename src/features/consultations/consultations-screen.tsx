@@ -249,7 +249,7 @@ function fullName(firstName: string | null | undefined, lastName: string | null 
 }
 
 function selectClassName() {
-  return "flex h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  return "flex h-10 w-full rounded-sm border border-border bg-card px-3 text-sm text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 }
 
 function sourcePresentation(summary: ConsultationSummary) {
@@ -957,11 +957,11 @@ export function ConsultationsScreen({
 
         <section
           aria-label="Estado de la fuente de consultas"
-          className="mt-5 grid gap-4 rounded-md border border-border bg-surface p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5"
+          className="mt-5 grid gap-4 rounded-md border border-border bg-card p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5"
           data-state={currentWorkspace.import.status === "FAILED" ? "unavailable" : currentWorkspace.import.status === "PARTIAL" ? "degraded" : "ready"}
         >
           <div className="flex min-w-0 items-start gap-3">
-            <span className="mt-0.5 text-foreground-secondary" aria-hidden="true">
+            <span className="mt-0.5 text-muted-foreground" aria-hidden="true">
               {currentWorkspace.import.status === "FAILED" || currentWorkspace.import.status === "PARTIAL"
                 ? <AlertTriangle className="h-5 w-5" />
                 : <CheckCircle2 className="h-5 w-5" />}
@@ -971,30 +971,30 @@ export function ConsultationsScreen({
                 <h2 className="font-semibold text-foreground">Estado de la importación</h2>
                 <StatusBadge label={status.label} variant={status.variant} />
               </div>
-              <p className="mt-1 text-sm text-foreground-secondary">{status.description}</p>
-              <p className="mt-1 text-xs text-foreground-muted">
+              <p className="mt-1 text-sm text-muted-foreground">{status.description}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Última actualización correcta: {lastUpdate ? formatDate(lastUpdate) : "Sin registros"}
               </p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-x-5 gap-y-1 text-sm sm:min-w-52">
-            <span className="text-foreground-secondary">Pendientes de revisión</span>
+            <span className="text-muted-foreground">Pendientes de revisión</span>
             <strong className="text-right tabular-nums">{currentWorkspace.pendingReviewCount}</strong>
-            <span className="text-foreground-secondary">Filas con errores</span>
+            <span className="text-muted-foreground">Filas con errores</span>
             <strong className="text-right tabular-nums">{currentWorkspace.import.errorRows}</strong>
           </div>
         </section>
 
         {importError && (
-          <div className="mt-4 flex items-start gap-2 rounded-md border border-danger/30 bg-danger-surface/60 p-3 text-sm text-foreground" role="alert">
-            <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+          <div className="mt-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-muted/60 p-3 text-sm text-foreground" role="alert">
+            <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
             <span>{importError}</span>
           </div>
         )}
         {importMessage && (
-          <div className="mt-4 rounded-md border border-success/30 bg-success-surface/60 p-3 text-sm text-foreground" role="status">
+          <div className="mt-4 rounded-md border border-success/30 bg-muted/60 p-3 text-sm text-foreground" role="status">
             <p>{importMessage}</p>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground-secondary">
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <span>Nuevas: {currentWorkspace.import.newRows}</span>
               <span>Ya procesadas: {currentWorkspace.import.alreadyProcessedRows}</span>
               <span>Para revisar: {currentWorkspace.import.reviewRows}</span>
@@ -1006,25 +1006,25 @@ export function ConsultationsScreen({
           <p aria-live="polite" className="sr-only" role="status">{announcement}</p>
         )}
         {filterError && (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-warning/30 bg-warning-surface/60 p-3 text-sm" role="alert">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-warning/30 bg-muted/60 p-3 text-sm" role="alert">
             <span>Los filtros de la dirección no son válidos. Se muestran todas las consultas.</span>
             <Button onClick={clearFilters} size="sm" type="button" variant="outline">Limpiar filtros</Button>
           </div>
         )}
         {listError && workspace !== null && (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-danger/30 bg-danger-surface/60 p-3 text-sm" role="alert">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-destructive/30 bg-muted/60 p-3 text-sm" role="alert">
             <span>{listError} Se conservan los datos que ya estaban disponibles.</span>
             <Button onClick={retryList} size="sm" type="button" variant="outline">Reintentar</Button>
           </div>
         )}
 
-        <section aria-label="Filtros de consultas" className="mt-6 rounded-md border border-border bg-surface p-4 sm:p-5">
+        <section aria-label="Filtros de consultas" className="mt-6 rounded-md border border-border bg-card p-4 sm:p-5">
           <div className="mb-4 flex items-center gap-2">
-            <Search aria-hidden="true" className="h-4 w-4 text-foreground-secondary" />
+            <Search aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
             <h2 className="font-semibold text-foreground">Filtrar consultas</h2>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
-            <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary">
+            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
               Estado
               <select className={selectClassName()} value={filters.status} onChange={(event) => updateFilter("status", event.target.value)}>
                 <option value="ALL">Todos</option>
@@ -1034,29 +1034,29 @@ export function ConsultationsScreen({
                 <option value="DUPLICATE">Duplicadas</option>
               </select>
             </label>
-            <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary">
+            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
               Carrera
               <select className={selectClassName()} value={filters.careerId ?? ""} onChange={(event) => updateFilter("careerId", event.target.value)}>
                 <option value="">Todas las carreras</option>
                 {careers.map((career) => <option key={career.id} value={career.id}>{career.name}</option>)}
               </select>
             </label>
-            <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary">
+            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
               Tutor
               <select className={selectClassName()} value={filters.tutorId ?? ""} onChange={(event) => updateFilter("tutorId", event.target.value)}>
                 <option value="">Todos los tutores</option>
                 {tutors.map((tutor) => <option key={tutor.id} value={tutor.id}>{tutor.name}{tutor.status === "INACTIVE" ? " · Inactivo" : ""}</option>)}
               </select>
             </label>
-            <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary">
+            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
               Desde
               <Input aria-label="Fecha desde" type="date" value={filters.fromDate ?? ""} onChange={(event) => updateFilter("fromDate", event.target.value)} />
             </label>
-            <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary">
+            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
               Hasta
               <Input aria-label="Fecha hasta" type="date" value={filters.toDate ?? ""} onChange={(event) => updateFilter("toDate", event.target.value)} />
             </label>
-            <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary">
+            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
               Clasificación
               <select className={selectClassName()} value={filters.classification ?? ""} onChange={(event) => updateFilter("classification", event.target.value)}>
                 <option value="">Todas</option>
@@ -1065,7 +1065,7 @@ export function ConsultationsScreen({
                 <option value="PENDING_CLASSIFICATION">Pendiente de clasificación</option>
               </select>
             </label>
-            <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary">
+            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
               Sugerencia de materia
               <select className={selectClassName()} value={filters.suggestion} onChange={(event) => updateFilter("suggestion", event.target.value)}>
                 <option value="ALL">Todas</option>
@@ -1073,7 +1073,7 @@ export function ConsultationsScreen({
                 <option value="WITHOUT_SUGGESTION">Sin sugerencia</option>
               </select>
             </label>
-            <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary sm:col-span-2 xl:col-span-4">
+            <label className="grid gap-1.5 text-xs font-medium text-muted-foreground sm:col-span-2 xl:col-span-4">
               Buscar
               <Input
                 aria-label="Buscar consultas"
@@ -1091,7 +1091,7 @@ export function ConsultationsScreen({
           </div>
         </section>
 
-        <p aria-live="polite" className="mt-4 min-h-5 text-sm text-foreground-secondary" role="status">
+        <p aria-live="polite" className="mt-4 min-h-5 text-sm text-muted-foreground" role="status">
           {listLoading
             ? <><LoaderCircle aria-hidden="true" className="mr-2 inline h-4 w-4 animate-spin" />Actualizando resultados…</>
             : screenState === "loading"
@@ -1103,10 +1103,10 @@ export function ConsultationsScreen({
 
         {screenState === "error" && workspace === null && (
           <div className="mt-3">
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-danger/30 bg-danger-surface/50 p-5" role="alert">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-destructive/30 bg-muted/50 p-5" role="alert">
               <div>
                 <h2 className="font-semibold text-foreground">No se pudo cargar la lista</h2>
-                <p className="mt-1 text-sm text-foreground-secondary">{listError ?? "Reintentar para volver a consultar las consultas registradas."}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{listError ?? "Reintentar para volver a consultar las consultas registradas."}</p>
               </div>
               <Button onClick={retryList} type="button" variant="outline">Reintentar</Button>
             </div>
@@ -1119,9 +1119,9 @@ export function ConsultationsScreen({
             <section aria-labelledby="pending-reviews-heading" className="mt-5">
               <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-lg font-semibold text-foreground" id="pending-reviews-heading">Pendientes de revisión</h2>
-                <span className="text-sm text-foreground-secondary">{currentWorkspace.pendingReviewCount} en total</span>
+                <span className="text-sm text-muted-foreground">{currentWorkspace.pendingReviewCount} en total</span>
               </div>
-              <div className="mb-3 grid gap-3 rounded-md border border-border bg-surface p-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="mb-3 grid gap-3 rounded-md border border-border bg-card p-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
                 <div className="flex flex-wrap items-center gap-3">
                   <label className="flex min-h-10 items-center gap-2 text-sm font-medium text-foreground">
                     <input
@@ -1145,7 +1145,7 @@ export function ConsultationsScreen({
                   >
                     {selectionLoading ? "Seleccionando…" : "Seleccionar todas las filtradas"}
                   </Button>
-                  <span className="text-sm text-foreground-secondary">
+                  <span className="text-sm text-muted-foreground">
                     {selectedStagingIds.length} seleccionadas · máximo 500
                   </span>
                 </div>
@@ -1175,12 +1175,12 @@ export function ConsultationsScreen({
                 </div>
               </div>
               {bulkMessage && (
-                <p className="mb-3 rounded-md border border-success/30 bg-success-surface/50 p-3 text-sm text-foreground" role="status">
+                <p className="mb-3 rounded-md border border-success/30 bg-muted/50 p-3 text-sm text-foreground" role="status">
                   {bulkMessage}
                 </p>
               )}
               {bulkError && bulkConfirmationAction === null && (
-                <p className="mb-3 rounded-md border border-danger/30 bg-danger-surface/50 p-3 text-sm text-foreground" role="alert">
+                <p className="mb-3 rounded-md border border-destructive/30 bg-muted/50 p-3 text-sm text-foreground" role="alert">
                   {bulkError}
                 </p>
               )}
@@ -1197,7 +1197,7 @@ export function ConsultationsScreen({
                   ))}
                 </div>
               ) : (
-                <p className="rounded-md border border-dashed border-border px-4 py-5 text-sm text-foreground-secondary">
+                <p className="rounded-md border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
                   {filters.status === "PENDING_REVIEW" ? "No hay consultas pendientes con estos filtros." : "No hay consultas pendientes en este resultado."}
                 </p>
               )}
@@ -1207,7 +1207,7 @@ export function ConsultationsScreen({
               <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-lg font-semibold text-foreground" id="canonical-consultations-heading">Consultas registradas</h2>
                 {currentWorkspace.totalRows > 0 && (
-                  <span className="text-sm text-foreground-secondary">Mostrando {currentPageStart}–{currentPageEnd} de {currentWorkspace.totalRows}</span>
+                  <span className="text-sm text-muted-foreground">Mostrando {currentPageStart}–{currentPageEnd} de {currentWorkspace.totalRows}</span>
                 )}
               </div>
               {visibleRows.length > 0 ? (
@@ -1233,7 +1233,7 @@ export function ConsultationsScreen({
                   >
                     <ArrowLeft aria-hidden="true" />Anterior
                   </Button>
-                  <span className="text-sm text-foreground-secondary">Página {Math.floor(currentWorkspace.pagination.offset / currentWorkspace.pagination.limit) + 1}</span>
+                  <span className="text-sm text-muted-foreground">Página {Math.floor(currentWorkspace.pagination.offset / currentWorkspace.pagination.limit) + 1}</span>
                   <Button
                     disabled={!canGoForward || listLoading}
                     onClick={() => updateFilter("offset", String(nextOffset))}
@@ -1314,7 +1314,7 @@ function BulkConfirmationDialog({
         aria-describedby="consultation-bulk-description"
         aria-labelledby="consultation-bulk-title"
         aria-modal="true"
-        className="w-full max-w-xl rounded-t-md border border-border bg-surface p-5 shadow-dialog sm:rounded-md sm:p-6"
+        className="w-full max-w-xl rounded-t-md border border-border bg-card p-5 shadow-lg sm:rounded-md sm:p-6"
         ref={panelRef}
         onKeyDown={(event) => {
           if (event.key === "Escape" && !submitting) {
@@ -1346,16 +1346,16 @@ function BulkConfirmationDialog({
         <h2 className="text-lg font-semibold text-foreground" id="consultation-bulk-title">
           {title}
         </h2>
-        <p className="mt-3 text-sm leading-6 text-foreground-secondary" id="consultation-bulk-description">
+        <p className="mt-3 text-sm leading-6 text-muted-foreground" id="consultation-bulk-description">
           {action === "CONFIRM_SUGGESTED_SUBJECT"
             ? `Se intentará consolidar ${count} consultas con la materia sugerida.`
             : `Se intentará consolidar ${count} consultas como General / Varias.`}
         </p>
-        <p className="mt-3 text-sm leading-6 text-foreground-secondary">
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
           Se reconocerán las observaciones no bloqueantes de apellido, tema, tramo académico y modalidad. El servidor volverá a validar cada fila e informará cuántas se confirmaron y cuántas se omitieron.
         </p>
         {error && (
-          <p className="mt-3 rounded-md border border-danger/30 bg-danger-surface/50 p-3 text-sm text-foreground" role="alert">
+          <p className="mt-3 rounded-md border border-destructive/30 bg-muted/50 p-3 text-sm text-foreground" role="alert">
             {error}
           </p>
         )}
@@ -1393,7 +1393,7 @@ function LoadingWorkspace() {
     <div aria-label="Cargando consultas" className="mt-5 grid gap-3" role="status">
       <span className="sr-only">Cargando consultas…</span>
       {[0, 1, 2].map((item) => (
-        <div aria-hidden="true" className="h-20 animate-pulse rounded-md border border-border bg-surface-subtle" key={item} />
+        <div aria-hidden="true" className="h-20 animate-pulse rounded-md border border-border bg-muted" key={item} />
       ))}
     </div>
   );
@@ -1414,7 +1414,7 @@ function ReviewQueueCard({
   const unresolved = item.anomalyFlags.filter((flag) => !item.acknowledgedAnomalies.includes(flag));
 
   return (
-    <article className="grid gap-4 rounded-md border border-warning/30 bg-warning-surface/30 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+    <article className="grid gap-4 rounded-md border border-warning/30 bg-muted/30 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -1426,7 +1426,7 @@ function ReviewQueueCard({
           <h3 className="font-semibold text-foreground">{name}</h3>
           <StatusBadge label={statusLabels[item.status] ?? "Pendiente"} variant="warning" />
         </div>
-        <p className="mt-1 text-sm text-foreground-secondary">
+        <p className="mt-1 text-sm text-muted-foreground">
           {formatDate(item.consultationDate)} · {item.career ?? "Carrera sin resolver"} · {item.tutor ?? "Tutor sin resolver"}
         </p>
         {unresolved.length > 0 && (
@@ -1435,8 +1435,8 @@ function ReviewQueueCard({
             <span>{unresolved.map(anomalyLabel).join(" ")}</span>
           </p>
         )}
-        <p className="mt-1 text-xs text-foreground-secondary">Clasificación: {classificationLabel(item.classification)}</p>
-        <p className="mt-1 text-xs text-foreground-secondary">
+        <p className="mt-1 text-xs text-muted-foreground">Clasificación: {classificationLabel(item.classification)}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
           {item.suggestedSubject
             ? `Materia sugerida: ${item.suggestedSubject}`
             : "Sin sugerencia de materia"}
@@ -1459,23 +1459,23 @@ function ConsultationList({ rows, onOpen }: { rows: ConsultationListItem[]; onOp
     <>
       <ul className="grid gap-3 md:hidden" aria-label="Consultas registradas">
         {rows.map((row) => (
-          <li className="rounded-md border border-border bg-surface p-4" key={row.id}>
+          <li className="rounded-md border border-border bg-card p-4" key={row.id}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-semibold text-foreground">{fullName(row.studentFirstName, row.studentLastName)}</p>
-                <p className="mt-1 text-sm text-foreground-secondary">{formatDate(row.consultationDate)} · {row.tutor}</p>
-                <p className="mt-1 text-sm text-foreground-secondary">{row.rawTopic ?? "Tema no informado"}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{formatDate(row.consultationDate)} · {row.tutor}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{row.rawTopic ?? "Tema no informado"}</p>
               </div>
               <StatusBadge label={statusLabels[row.status] ?? row.status} variant={statusVariant(row.status)} />
             </div>
             <div className="mt-3 flex items-center justify-between gap-3">
-              <span className="text-sm text-foreground-secondary">{classificationLabel(row.classification)}{row.subject ? ` · ${row.subject}` : ""}</span>
+              <span className="text-sm text-muted-foreground">{classificationLabel(row.classification)}{row.subject ? ` · ${row.subject}` : ""}</span>
               <Button onClick={(event) => onOpen(row.stagingId, event.currentTarget)} size="sm" type="button" variant="outline">Ver detalle</Button>
             </div>
           </li>
         ))}
       </ul>
-      <div className="hidden rounded-md border border-border bg-surface md:block">
+      <div className="hidden rounded-md border border-border bg-card md:block">
         <Table>
           <caption className="sr-only">Consultas registradas con fecha, estudiante, carrera, tutor, tema, clasificación y estado</caption>
           <TableHeader>
@@ -1496,12 +1496,12 @@ function ConsultationList({ rows, onOpen }: { rows: ConsultationListItem[]; onOp
                 <TableCell className="whitespace-nowrap">{formatDate(row.consultationDate)}</TableCell>
                 <TableCell>
                   <div className="font-medium">{fullName(row.studentFirstName, row.studentLastName)}</div>
-                  {row.studentContact && <a aria-label={`Contacto de ${fullName(row.studentFirstName, row.studentLastName)}`} className="text-xs text-primary underline-offset-4 hover:underline" href={`mailto:${encodeURIComponent(row.studentContact)}`}>{row.studentContact}</a>}
+                  {row.studentContact && <a aria-label={`Contacto de ${fullName(row.studentFirstName, row.studentLastName)}`} className="text-xs text-link underline-offset-4 hover:underline" href={`mailto:${encodeURIComponent(row.studentContact)}`}>{row.studentContact}</a>}
                 </TableCell>
                 <TableCell className="hidden max-w-56 truncate xl:table-cell">{row.career}</TableCell>
                 <TableCell>{row.tutor}</TableCell>
                 <TableCell className="hidden max-w-64 truncate xl:table-cell">{row.rawTopic ?? "Sin tema"}</TableCell>
-                <TableCell>{classificationLabel(row.classification)}{row.subject ? <span className="block text-xs text-foreground-secondary">{row.subject}</span> : null}</TableCell>
+                <TableCell>{classificationLabel(row.classification)}{row.subject ? <span className="block text-xs text-muted-foreground">{row.subject}</span> : null}</TableCell>
                 <TableCell><StatusBadge label={statusLabels[row.status] ?? row.status} variant={statusVariant(row.status)} /></TableCell>
                 <TableCell><Button aria-label={`Ver detalle de ${fullName(row.studentFirstName, row.studentLastName)}`} onClick={(event) => onOpen(row.stagingId, event.currentTarget)} size="sm" type="button" variant="outline">Ver detalle</Button></TableCell>
               </TableRow>
@@ -1653,17 +1653,17 @@ function ReviewSheet({
       <div
         aria-labelledby="consultation-review-title"
         aria-modal="true"
-        className="flex h-full w-full max-w-2xl flex-col overflow-hidden border-l border-border bg-canvas shadow-dialog"
+        className="flex h-full w-full max-w-2xl flex-col overflow-hidden border-l border-border bg-background shadow-lg"
         ref={panelRef}
         role="dialog"
         tabIndex={-1}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-border bg-surface px-4 py-4 sm:px-6">
+        <header className="flex items-start justify-between gap-4 border-b border-border bg-card px-4 py-4 sm:px-6">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-foreground" id="consultation-review-title">
               {detail ? `Detalle de ${fullName(detail.normalized.studentFirstName ?? detail.sourceRow.studentFirstName, detail.normalized.studentLastName ?? detail.sourceRow.studentLastName)}` : "Revisión de consulta"}
             </h2>
-            <p className="mt-1 text-sm text-foreground-secondary">Comparar la fila original con los valores normalizados.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Comparar la fila original con los valores normalizados.</p>
           </div>
           <Button aria-label="Cerrar detalle" data-review-close onClick={onClose} size="icon" type="button" variant="ghost">
             <X aria-hidden="true" />
@@ -1672,39 +1672,39 @@ function ReviewSheet({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
           {loading && (
-            <div aria-live="polite" className="flex items-center gap-2 rounded-md border border-border bg-surface p-4 text-sm text-foreground-secondary" role="status">
+            <div aria-live="polite" className="flex items-center gap-2 rounded-md border border-border bg-card p-4 text-sm text-muted-foreground" role="status">
               <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" />Cargando detalle de la consulta…
             </div>
           )}
           {error && (
-            <div className="rounded-md border border-danger/30 bg-danger-surface/60 p-4" role="alert">
+            <div className="rounded-md border border-destructive/30 bg-muted/60 p-4" role="alert">
               <p className="text-sm text-foreground">{error}</p>
               <Button className="mt-3" onClick={onRetry} size="sm" type="button" variant="outline">Reintentar</Button>
             </div>
           )}
-          {success && <p className="mb-4 rounded-md border border-success/30 bg-success-surface/60 p-3 text-sm" role="status">{success}</p>}
+          {success && <p className="mb-4 rounded-md border border-success/30 bg-muted/60 p-3 text-sm" role="status">{success}</p>}
           {detail && (
             <div className="grid gap-5">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge label={statusLabels[detail.status] ?? detail.status} variant={statusVariant(detail.status)} />
-                <span className="text-sm text-foreground-secondary">Revisión {detail.reviewVersion}</span>
+                <span className="text-sm text-muted-foreground">Revisión {detail.reviewVersion}</span>
               </div>
 
               <section aria-labelledby="source-comparison-heading">
                 <h3 className="mb-2 font-semibold text-foreground" id="source-comparison-heading">Valores originales y normalizados</h3>
-                <div className="overflow-hidden rounded-md border border-border bg-surface">
-                  <div className="grid grid-cols-[minmax(5rem,0.55fr)_minmax(0,1fr)_minmax(0,1fr)] border-b border-border bg-surface-subtle px-3 py-2 text-xs font-semibold text-foreground-secondary sm:px-4">
+                <div className="overflow-hidden rounded-md border border-border bg-card">
+                  <div className="grid grid-cols-[minmax(5rem,0.55fr)_minmax(0,1fr)_minmax(0,1fr)] border-b border-border bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground sm:px-4">
                     <span>Campo</span><span>Valor original</span><span>Candidato normalizado</span>
                   </div>
                   {rawAndNormalized.map((field) => (
                     <div className="grid grid-cols-[minmax(5rem,0.55fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 border-b border-border/70 px-3 py-3 text-sm last:border-b-0 sm:px-4" key={field.label}>
                       <strong className="text-foreground">{field.label}</strong>
-                      <span className="break-words text-foreground-secondary">{field.raw?.trim() || "Sin dato"}</span>
+                      <span className="break-words text-muted-foreground">{field.raw?.trim() || "Sin dato"}</span>
                       <span className="break-words text-foreground">{field.normalized?.trim() || "Sin dato"}</span>
                     </div>
                   ))}
                 </div>
-                {detail.normalized.contact && <p aria-label="Contacto de la persona estudiante" className="mt-2 break-all text-sm text-foreground-secondary">Contacto: {detail.normalized.contact}</p>}
+                {detail.normalized.contact && <p aria-label="Contacto de la persona estudiante" className="mt-2 break-all text-sm text-muted-foreground">Contacto: {detail.normalized.contact}</p>}
               </section>
 
               <section aria-labelledby="anomalies-heading">
@@ -1712,17 +1712,17 @@ function ReviewSheet({
                   <AlertTriangle aria-hidden="true" className="h-4 w-4 text-warning" />Observaciones que requieren revisión
                 </h3>
                 {detail.anomalyFlags.length === 0 ? (
-                  <p className="rounded-md border border-success/30 bg-success-surface/40 p-3 text-sm">No se detectaron observaciones.</p>
+                  <p className="rounded-md border border-success/30 bg-muted/40 p-3 text-sm">No se detectaron observaciones.</p>
                 ) : (
                   <ul className="grid gap-2">
                     {detail.anomalyFlags.map((anomaly) => {
                       const resolvedByField = anomalyFieldResolution[anomaly];
                       const checked = form?.acknowledgedAnomalies.includes(anomaly) ?? false;
                       return (
-                        <li className="rounded-md border border-warning/30 bg-warning-surface/20 p-3" key={anomaly}>
+                        <li className="rounded-md border border-warning/30 bg-muted/20 p-3" key={anomaly}>
                           <p className="text-sm text-foreground">{anomalyLabel(anomaly)}</p>
                           {resolvedByField && (
-                            <p className="mt-1 text-xs text-foreground-secondary">Se resuelve al confirmar el campo correspondiente.</p>
+                            <p className="mt-1 text-xs text-muted-foreground">Se resuelve al confirmar el campo correspondiente.</p>
                           )}
                           <label className="mt-2 flex items-start gap-2 text-sm text-foreground">
                             <input
@@ -1749,9 +1749,9 @@ function ReviewSheet({
               <section aria-labelledby="review-fields-heading">
                 <h3 className="mb-3 font-semibold text-foreground" id="review-fields-heading">Decisión de revisión</h3>
                 {readOnly ? (
-                  <p className="rounded-md border border-border bg-surface p-3 text-sm text-foreground-secondary">Este registro ya tiene un estado final. El detalle se muestra en modo de consulta.</p>
+                  <p className="rounded-md border border-border bg-card p-3 text-sm text-muted-foreground">Este registro ya tiene un estado final. El detalle se muestra en modo de consulta.</p>
                 ) : form ? (
-                  <form className="grid gap-3 rounded-md border border-border bg-surface p-4" onSubmit={submit}>
+                  <form className="grid gap-3 rounded-md border border-border bg-card p-4" onSubmit={submit}>
                     <label className="grid gap-1.5 text-sm font-medium text-foreground">
                       Carrera
                       <select className={selectClassName()} onChange={(event) => {
@@ -1792,7 +1792,7 @@ function ReviewSheet({
                         </select>
                       </label>
                     )}
-                    {fieldError && <p className="text-sm text-danger" role="alert">{fieldError}</p>}
+                    {fieldError && <p className="text-sm text-destructive" role="alert">{fieldError}</p>}
                     <Button className="mt-1 w-full sm:w-fit" disabled={saving} type="submit">
                       {saving ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <CheckCircle2 aria-hidden="true" />}
                       {saving ? "Guardando revisión…" : "Guardar revisión"}
@@ -1805,21 +1805,21 @@ function ReviewSheet({
                 <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="font-semibold text-foreground" id="duplicate-candidates-heading">Posibles duplicados ({detail.duplicateCandidateCount})</h3>
                   {detail.duplicateCandidateCount > detail.duplicateCandidatesLimit && (
-                    <span className="text-xs text-foreground-secondary">Mostrando {detail.duplicateCandidatesOffset + 1}–{candidatePageEnd}</span>
+                    <span className="text-xs text-muted-foreground">Mostrando {detail.duplicateCandidatesOffset + 1}–{candidatePageEnd}</span>
                   )}
                 </div>
                 {detail.duplicateCandidates.length === 0 ? (
-                  <p className="rounded-md border border-dashed border-border p-3 text-sm text-foreground-secondary">No hay posibles duplicados asociados a esta fila.</p>
+                  <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">No hay posibles duplicados asociados a esta fila.</p>
                 ) : (
                   <ul className="grid gap-2">
                     {detail.duplicateCandidates.map((candidate) => {
                       const name = fullName(candidate.peer.studentFirstName, candidate.peer.studentLastName);
                       const choice = duplicateChoices[candidate.candidateId] ?? "";
                       return (
-                        <li className="rounded-md border border-border bg-surface p-3" key={candidate.candidateId}>
+                        <li className="rounded-md border border-border bg-card p-3" key={candidate.candidateId}>
                           <p className="font-medium text-foreground">{name}</p>
-                          <p className="mt-1 text-sm text-foreground-secondary">{formatDate(candidate.peer.consultationDate)} · {candidate.peer.career ?? "Carrera sin resolver"} · {candidate.peer.tutor ?? "Tutor sin resolver"}</p>
-                          {candidate.peer.hasCanonical && <p className="mt-1 text-xs text-foreground-secondary">El registro relacionado ya está consolidado.</p>}
+                          <p className="mt-1 text-sm text-muted-foreground">{formatDate(candidate.peer.consultationDate)} · {candidate.peer.career ?? "Carrera sin resolver"} · {candidate.peer.tutor ?? "Tutor sin resolver"}</p>
+                          {candidate.peer.hasCanonical && <p className="mt-1 text-xs text-muted-foreground">El registro relacionado ya está consolidado.</p>}
                           <label className="mt-3 grid gap-1.5 text-sm font-medium text-foreground">
                             Decisión para el posible duplicado de {name}
                             <select
@@ -1849,7 +1849,7 @@ function ReviewSheet({
             </div>
           )}
         </div>
-        <footer className="flex justify-end border-t border-border bg-surface px-4 py-3 sm:px-6">
+        <footer className="flex justify-end border-t border-border bg-card px-4 py-3 sm:px-6">
           <Button onClick={onClose} type="button" variant="outline">Cerrar</Button>
         </footer>
       </div>

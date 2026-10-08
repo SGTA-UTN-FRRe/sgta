@@ -150,10 +150,10 @@ const hourActivityKinds = Object.keys(
 ) as HourActivityKind[];
 
 const selectClassName =
-  "h-10 w-full rounded-sm border border-border bg-surface px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "h-10 w-full rounded-sm border border-border bg-card px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 const textareaClassName =
-  "min-h-24 w-full resize-y rounded-sm border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs outline-none transition-colors placeholder:text-foreground-muted focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "min-h-24 w-full resize-y rounded-sm border border-border bg-card px-3 py-2 text-sm text-foreground shadow-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
   day: "numeric",
@@ -382,8 +382,8 @@ function FeedbackBanner({
       className={cn(
         "flex items-start gap-3 rounded-md border px-4 py-3 text-sm",
         feedback.kind === "error"
-          ? "border-danger/30 bg-danger-surface/60 text-danger"
-          : "border-success/30 bg-success-surface/60 text-success",
+          ? "border-destructive/30 bg-muted/60 text-destructive"
+          : "border-success/30 bg-muted/60 text-success",
       )}
       role={feedback.kind === "error" ? "alert" : "status"}
     >
@@ -435,7 +435,7 @@ function ReferenceStatusBadge({ status }: { status: "ACTIVE" | "INACTIVE" }) {
 
 function EmptyReferenceList({ children }: { children: ReactNode }) {
   return (
-    <p className="mt-6 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-foreground-secondary">
+    <p className="mt-6 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
       {children}
     </p>
   );
@@ -489,12 +489,12 @@ function CareerSection({
                 ? "Agregar carrera"
                 : `Editar carrera ${editingCareer.name}`
             }
-            className="rounded-md border border-border-subtle bg-surface-subtle/60 p-4"
+            className="rounded-md border border-border bg-muted/60 p-4"
             onSubmit={onSubmit}
           >
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
               <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-foreground-secondary">
+                <span className="text-xs font-semibold text-muted-foreground">
                   Nombre de la carrera
                 </span>
                 <Input
@@ -530,7 +530,7 @@ function CareerSection({
             <>
               <ul aria-label="Carreras registradas" className="mt-6 space-y-3 md:hidden">
                 {careers.map((career) => (
-                  <li className="rounded-md border border-border-subtle p-4" key={career.id}>
+                  <li className="rounded-md border border-border p-4" key={career.id}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="font-medium text-foreground">{career.name}</p>
@@ -561,7 +561,7 @@ function CareerSection({
                   </li>
                 ))}
               </ul>
-              <div className="mt-6 hidden overflow-x-auto rounded-md border border-border-subtle md:block">
+              <div className="mt-6 hidden overflow-x-auto rounded-md border border-border md:block">
                 <Table className="min-w-[38rem]">
                   <caption className="sr-only">Carreras registradas</caption>
                   <TableHeader>
@@ -676,12 +676,12 @@ function SubjectSection({
                 ? "Agregar materia"
                 : `Editar materia ${editingSubject.name}`
             }
-            className="rounded-md border border-border-subtle bg-surface-subtle/60 p-4"
+            className="rounded-md border border-border bg-muted/60 p-4"
             onSubmit={onSubmit}
           >
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
               <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-foreground-secondary">
+                <span className="text-xs font-semibold text-muted-foreground">
                   Nombre de la materia
                 </span>
                 <Input
@@ -693,7 +693,7 @@ function SubjectSection({
                 />
               </label>
               <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-foreground-secondary">
+                <span className="text-xs font-semibold text-muted-foreground">
                   Carrera
                 </span>
                 <select
@@ -749,11 +749,11 @@ function SubjectSection({
             <>
               <ul aria-label="Materias registradas" className="mt-6 space-y-3 md:hidden">
                 {subjects.map((subject) => (
-                  <li className="rounded-md border border-border-subtle p-4" key={subject.id}>
+                  <li className="rounded-md border border-border p-4" key={subject.id}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-medium text-foreground">{subject.name}</p>
-                        <p className="mt-1 text-sm text-foreground-secondary">{subject.careerName}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{subject.careerName}</p>
                         <div className="mt-2">
                           <ReferenceStatusBadge status={subject.status} />
                         </div>
@@ -781,7 +781,7 @@ function SubjectSection({
                   </li>
                 ))}
               </ul>
-              <div className="mt-6 hidden overflow-x-auto rounded-md border border-border-subtle md:block">
+              <div className="mt-6 hidden overflow-x-auto rounded-md border border-border md:block">
                 <Table className="min-w-[52rem]">
                   <caption className="sr-only">Materias registradas</caption>
                   <TableHeader>
@@ -796,7 +796,7 @@ function SubjectSection({
                     {subjects.map((subject) => (
                       <TableRow key={subject.id}>
                         <TableCell className="font-medium">{subject.name}</TableCell>
-                        <TableCell className="text-foreground-secondary">
+                        <TableCell className="text-muted-foreground">
                           {subject.careerName}
                         </TableCell>
                         <TableCell>
@@ -888,12 +888,12 @@ function ScholarshipSection({
                 ? "Agregar referencia de beca"
                 : `Editar referencia ${editingReference.type}`
             }
-            className="rounded-md border border-border-subtle bg-surface-subtle/60 p-4"
+            className="rounded-md border border-border bg-muted/60 p-4"
             onSubmit={onSubmit}
           >
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-foreground-secondary">
+                <span className="text-xs font-semibold text-muted-foreground">
                   Tipo de referencia
                 </span>
                 <Input
@@ -905,7 +905,7 @@ function ScholarshipSection({
                 />
               </label>
               <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-foreground-secondary">
+                <span className="text-xs font-semibold text-muted-foreground">
                   Horas requeridas conocidas (informativo)
                 </span>
                 <Input
@@ -919,7 +919,7 @@ function ScholarshipSection({
                 />
               </label>
               <label className="space-y-1.5 md:col-span-2">
-                <span className="text-xs font-semibold text-foreground-secondary">Notas</span>
+                <span className="text-xs font-semibold text-muted-foreground">Notas</span>
                 <textarea
                   className={textareaClassName}
                   disabled={disabled}
@@ -958,17 +958,17 @@ function ScholarshipSection({
                 className="mt-6 space-y-3 md:hidden"
               >
                 {references.map((reference) => (
-                  <li className="rounded-md border border-border-subtle p-4" key={reference.id}>
+                  <li className="rounded-md border border-border p-4" key={reference.id}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-medium text-foreground">{reference.type}</p>
-                        <p className="mt-1 text-sm text-foreground-secondary">
+                        <p className="mt-1 text-sm text-muted-foreground">
                           {reference.knownRequiredHours === null
                             ? "Horas requeridas: sin dato"
                             : `Horas requeridas conocidas: ${reference.knownRequiredHours}`}
                         </p>
                         {reference.notes !== null && (
-                          <p className="mt-1 text-sm text-foreground-muted">{reference.notes}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">{reference.notes}</p>
                         )}
                         <div className="mt-2">
                           <ReferenceStatusBadge status={reference.status} />
@@ -997,7 +997,7 @@ function ScholarshipSection({
                   </li>
                 ))}
               </ul>
-              <div className="mt-6 hidden overflow-x-auto rounded-md border border-border-subtle md:block">
+              <div className="mt-6 hidden overflow-x-auto rounded-md border border-border md:block">
                 <Table className="min-w-[64rem]">
                   <caption className="sr-only">Referencias de beca registradas</caption>
                   <TableHeader>
@@ -1013,12 +1013,12 @@ function ScholarshipSection({
                     {references.map((reference) => (
                       <TableRow key={reference.id}>
                         <TableCell className="font-medium">{reference.type}</TableCell>
-                        <TableCell className="text-foreground-secondary">
+                        <TableCell className="text-muted-foreground">
                           {reference.knownRequiredHours === null
                             ? "Sin dato"
                             : `${reference.knownRequiredHours} horas`}
                         </TableCell>
-                        <TableCell className="max-w-xs text-foreground-secondary">
+                        <TableCell className="max-w-xs text-muted-foreground">
                           {reference.notes ?? "Sin notas"}
                         </TableCell>
                         <TableCell>
@@ -1117,12 +1117,12 @@ function HourCategorySection({
                 ? "Agregar categoría de horas"
                 : `Editar categoría ${editingCategory.name}`
             }
-            className="rounded-md border border-border-subtle bg-surface-subtle/60 p-4"
+            className="rounded-md border border-border bg-muted/60 p-4"
             onSubmit={onSubmit}
           >
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
               <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-foreground-secondary">
+                <span className="text-xs font-semibold text-muted-foreground">
                   Nombre de categoría
                 </span>
                 <Input
@@ -1135,7 +1135,7 @@ function HourCategorySection({
                 />
               </label>
               <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-foreground-secondary">
+                <span className="text-xs font-semibold text-muted-foreground">
                   Origen de actividad (opcional)
                 </span>
                 <select
@@ -1180,11 +1180,11 @@ function HourCategorySection({
                 className="mt-6 space-y-3 md:hidden"
               >
                 {categories.map((category) => (
-                  <li className="rounded-md border border-border-subtle p-4" key={category.id}>
+                  <li className="rounded-md border border-border p-4" key={category.id}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-medium text-foreground">{category.name}</p>
-                        <p className="mt-1 text-sm text-foreground-secondary">
+                        <p className="mt-1 text-sm text-muted-foreground">
                           {hourActivityKindLabel(category.activityKind)}
                         </p>
                         <div className="mt-2">
@@ -1214,7 +1214,7 @@ function HourCategorySection({
                   </li>
                 ))}
               </ul>
-              <div className="mt-6 hidden overflow-x-auto rounded-md border border-border-subtle md:block">
+              <div className="mt-6 hidden overflow-x-auto rounded-md border border-border md:block">
                 <Table className="min-w-[54rem]">
                   <caption className="sr-only">Categorías de horas registradas</caption>
                   <TableHeader>
@@ -1229,7 +1229,7 @@ function HourCategorySection({
                     {categories.map((category) => (
                       <TableRow key={category.id}>
                         <TableCell className="font-medium">{category.name}</TableCell>
-                        <TableCell className="text-foreground-secondary">
+                        <TableCell className="text-muted-foreground">
                           {hourActivityKindLabel(category.activityKind)}
                         </TableCell>
                         <TableCell>
@@ -1780,7 +1780,7 @@ export function SettingsScreen({
         {state === "loading" && (
           <div
             aria-live="polite"
-            className="rounded-md border border-border-subtle bg-surface-subtle/60 px-4 py-3 text-sm text-foreground-secondary"
+            className="rounded-md border border-border bg-muted/60 px-4 py-3 text-sm text-muted-foreground"
             role="status"
           >
             Guardando cambios de configuración…
@@ -1805,7 +1805,7 @@ export function SettingsScreen({
             </CardHeader>
             <CardContent>
               {currentCycle === null ? (
-                <div className="flex items-start gap-3 rounded-md border border-warning/30 bg-warning-surface/60 p-4 text-sm text-foreground-secondary">
+                <div className="flex items-start gap-3 rounded-md border border-warning/30 bg-muted/60 p-4 text-sm text-muted-foreground">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
                   <p>
                     Todavía no hay un ciclo abierto. Crear uno para establecer el contexto de las operaciones administrativas.
@@ -1817,7 +1817,7 @@ export function SettingsScreen({
                     <h3 className="text-lg font-semibold tracking-tight text-foreground">
                       {currentCycle.name}
                     </h3>
-                    <p className="mt-1 text-sm text-foreground-secondary">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {formatCyclePeriod(currentCycle)}
                     </p>
                   </div>
@@ -1897,7 +1897,7 @@ export function SettingsScreen({
                 </div>
 
                 {currentCycle !== null && (
-                  <p className="text-sm text-foreground-secondary">
+                  <p className="text-sm text-muted-foreground">
                     Cerrar el ciclo actual para crear uno nuevo.
                   </p>
                 )}
@@ -2034,7 +2034,7 @@ export function SettingsScreen({
             </CardHeader>
             <CardContent>
               {cycles.length === 0 ? (
-                <p className="rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-foreground-secondary">
+                <p className="rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
                   Todavía no hay ciclos registrados.
                 </p>
               ) : (
@@ -2046,7 +2046,7 @@ export function SettingsScreen({
                     >
                       <div>
                         <p className="font-medium text-foreground">{cycle.name}</p>
-                        <p className="mt-1 text-sm text-foreground-secondary">
+                        <p className="mt-1 text-sm text-muted-foreground">
                           {formatCyclePeriod(cycle)}
                         </p>
                       </div>
@@ -2069,7 +2069,7 @@ export function SettingsScreen({
             aria-describedby="close-cycle-description"
             aria-labelledby="close-cycle-title"
             aria-modal="true"
-            className="w-full max-w-lg rounded-lg border border-border bg-surface p-6 shadow-dialog"
+            className="w-full max-w-lg rounded-lg border border-border bg-card p-6 shadow-lg"
             onKeyDown={(event) => {
               if (event.key === "Escape" && !isLoading) {
                 event.preventDefault();
@@ -2117,7 +2117,7 @@ export function SettingsScreen({
                   Confirmar cierre del ciclo
                 </h2>
                 <p
-                  className="mt-2 text-sm leading-relaxed text-foreground-secondary"
+                  className="mt-2 text-sm leading-relaxed text-muted-foreground"
                   id="close-cycle-description"
                 >
                   Se cerrará “{currentCycle.name}”. El historial permanecerá disponible y el próximo ciclo comenzará con saldo de horas cero.
