@@ -38,6 +38,10 @@ consultation journey uses a loopback HTTP fixture for the read-only Sheets
 values contract; it does not call Google. Unit/component tests do not require
 PostgreSQL or Docker.
 
+E2E server and browser contexts use the fixed business instant
+`2026-12-01T15:00:00.000Z`, before the seeded 2027 cycle. Seeded authentication
+session expiry continues to use the real wall clock.
+
 ## Run tests
 
 Install dependencies from the lockfile, then run the local command that mirrors

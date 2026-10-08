@@ -1,4 +1,5 @@
 import type { SafeAdministrativeCycle } from "@/features/cycles/cycle-service";
+import { getServerNow } from "@/config/clock";
 import { getArgentinaBusinessDate } from "@/shared/argentina-business-time";
 
 type OperationalCycleDates = Pick<
@@ -8,7 +9,7 @@ type OperationalCycleDates = Pick<
 
 export function resolveDefaultOperationalDate(
   cycle: OperationalCycleDates,
-  now?: Date,
+  now = getServerNow(),
 ) {
   const today = getArgentinaBusinessDate(now);
 

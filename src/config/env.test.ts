@@ -135,4 +135,34 @@ describe("server environment configuration", () => {
       }),
     ).toThrow("must be a loopback HTTP URL with an explicit port");
   });
+
+  it("accepts an offset-qualified E2E instant only in test or E2E mode", () => {
+    const fixedNow = "2026-12-01T18:00:00+03:00";
+
+    expect(
+      parseServerEnv({ NODE_ENV: "test", SGTA_E2E_NOW: fixedNow }).SGTA_E2E_NOW,
+    ).toBe(fixedNow);
+    expect(
+      parseServerEnv({
+        NODE_ENV: "development",
+        SGTA_E2E_MODE: "true",
+        SGTA_E2E_NOW: fixedNow,
+      }).SGTA_E2E_NOW,
+    ).toBe(fixedNow);
+  });
+
+  it("rejects an invalid or unauthorized E2E instant and treats empty as absent", () => {
+    const fixedNow = "2026-12-01T15:00:00.000Z";
+
+    expect(() =>
+      parseServerEnv({ NODE_ENV: "development", SGTA_E2E_NOW: fixedNow }),
+    ).toThrow("requires NODE_ENV=test or SGTA_E2E_MODE=true");
+    expect(() =>
+      parseServerEnv({ NODE_ENV: "test", SGTA_E2E_NOW: "tomorrow" }),
+    ).toThrow(EnvironmentValidationError);
+    expect(
+      parseServerEnv({ NODE_ENV: "development", SGTA_E2E_NOW: "" })
+        .SGTA_E2E_NOW,
+    ).toBeUndefined();
+  });
 });

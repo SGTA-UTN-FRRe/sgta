@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { addCalendarDays } from "@/shared/argentina-business-time";
+
 import type { ReportFilters } from "./report-types";
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -118,12 +120,6 @@ export function parseReportFilterInput(input: unknown): ParsedReportFilterInput 
   return result.data;
 }
 
-function addDays(date: string, days: number) {
-  const result = new Date(`${date}T00:00:00.000Z`);
-  result.setUTCDate(result.getUTCDate() + days);
-  return result.toISOString().slice(0, 10);
-}
-
 function inclusiveDays(fromDate: string, toDate: string) {
   const from = new Date(`${fromDate}T00:00:00.000Z`).getTime();
   const to = new Date(`${toDate}T00:00:00.000Z`).getTime();
@@ -154,7 +150,7 @@ export function resolveReportFilters(
   }
 
   if (inclusiveDays(fromDate, toDate) > maximumRangeDays) {
-    fromDate = addDays(toDate, -(maximumRangeDays - 1));
+    fromDate = addCalendarDays(toDate, -(maximumRangeDays - 1));
   }
 
   return { ...input, fromDate, toDate };

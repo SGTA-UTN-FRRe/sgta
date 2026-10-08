@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
@@ -18,6 +18,10 @@ import {
   tutorSelfServiceScheduleQuerySchema,
 } from "./tutor-self-service-validation";
 import { getArgentinaBusinessDate } from "@/shared/argentina-business-time";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 const cycle = {
   startDate: "2027-01-01",
@@ -96,6 +100,16 @@ describe("Tutor self-service read models", () => {
 
   it("derives both date and minute from the supplied instant", () => {
     expect(parseToday({ now: new Date("2027-04-06T01:30:00.000Z") })).toEqual({
+      date: "2027-04-05",
+      minuteOfDay: 22 * 60 + 30,
+    });
+  });
+
+  it("uses the configured server instant when deriving today's business date", () => {
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("SGTA_E2E_NOW", "2027-04-06T01:30:00.000Z");
+
+    expect(parseToday({})).toEqual({
       date: "2027-04-05",
       minuteOfDay: 22 * 60 + 30,
     });

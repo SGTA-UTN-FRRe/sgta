@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm";
 
 import type { Database } from "@/db/client-core";
+import { getServerNow } from "@/config/clock";
 import { formatFormalTutorNameSql } from "@/db/tutor-name";
 import {
   consultationImportRun,
@@ -26,7 +27,10 @@ import {
   getCurrentAdministrativeCycle,
   type SafeAdministrativeCycle,
 } from "@/features/cycles/cycle-service";
-import { getArgentinaBusinessDate } from "@/shared/argentina-business-time";
+import {
+  addCalendarDays,
+  getArgentinaBusinessDate,
+} from "@/shared/argentina-business-time";
 
 import type { DutyView } from "./admin-overview-types";
 
@@ -72,14 +76,8 @@ type AssignmentRow = {
   modality: string | null;
 };
 
-export function getAdminOverviewCurrentDate(now = new Date()) {
+export function getAdminOverviewCurrentDate(now = getServerNow()) {
   return getArgentinaBusinessDate(now);
-}
-
-function dateAfter(date: string, days: number) {
-  const value = new Date(`${date}T00:00:00.000Z`);
-  value.setUTCDate(value.getUTCDate() + days);
-  return value.toISOString().slice(0, 10);
 }
 
 function getIsoWeekday(date: string) {
@@ -208,7 +206,7 @@ function getDayLabel(date: string, today: string) {
     return "Hoy";
   }
 
-  if (date === dateAfter(today, 1)) {
+  if (date === addCalendarDays(today, 1)) {
     return "Mañana";
   }
 
@@ -230,7 +228,7 @@ async function getUpcomingDuties(
     return [];
   }
 
-  const lastDateCandidate = dateAfter(firstDate, upcomingDays - 1);
+  const lastDateCandidate = addCalendarDays(firstDate, upcomingDays - 1);
   const lastDate =
     lastDateCandidate < cycle.endDate ? lastDateCandidate : cycle.endDate;
   const planRows = await db
@@ -283,7 +281,7 @@ async function getUpcomingDuties(
   for (
     let date = firstDate;
     date <= lastDate;
-    date = dateAfter(date, 1)
+    date = addCalendarDays(date, 1)
   ) {
     const effectivePlan = chooseEffectivePlan(planRows, date);
     if (effectivePlan === undefined) {
@@ -322,7 +320,7 @@ async function getUpcomingDuties(
 
 export async function getAdminOverviewReadModel(
   db: Database,
-  now = new Date(),
+  now = getServerNow(),
 ): Promise<AdminOverviewReadModel> {
   const currentDate = getAdminOverviewCurrentDate(now);
   const cycle = await getCurrentAdministrativeCycle(db);

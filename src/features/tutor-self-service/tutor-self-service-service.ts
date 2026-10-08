@@ -4,6 +4,7 @@ import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database } from "@/db/client-core";
+import { getServerNow } from "@/config/clock";
 import { formatTutorName } from "@/shared/tutor-name";
 import {
   administrativeCycle,
@@ -34,7 +35,10 @@ import {
   dateOnlySchema,
   getIsoWeekday,
 } from "@/features/schedules/schedule-validation";
-import { getArgentinaDateTime } from "@/shared/argentina-business-time";
+import {
+  addCalendarDays,
+  getArgentinaDateTime,
+} from "@/shared/argentina-business-time";
 
 import {
   applicationUserIdSchema,
@@ -408,7 +412,7 @@ export function parseToday(options: TutorSelfServiceReadOptions) {
     };
   }
 
-  return getArgentinaDateTime(options.now ?? new Date());
+  return getArgentinaDateTime(options.now ?? getServerNow());
 }
 
 async function runQuery<T>(operation: () => Promise<T>) {
@@ -424,12 +428,6 @@ async function runQuery<T>(operation: () => Promise<T>) {
       "The Tutor self-service data could not be loaded.",
     );
   }
-}
-
-function addDays(date: string, days: number) {
-  const value = new Date(`${date}T00:00:00.000Z`);
-  value.setUTCDate(value.getUTCDate() + days);
-  return value.toISOString().slice(0, 10);
 }
 
 function isWithinCycle(date: string, cycle: Pick<CycleRow, "startDate" | "endDate">) {
@@ -470,12 +468,12 @@ export function resolveTutorSelfServiceScheduleWindow(
       mode: today < cycle.startDate ? "upcoming" : "current",
       anchorDate,
       startDate: anchorDate,
-      endDate: minDate(addDays(anchorDate, 6), cycle.endDate),
+      endDate: minDate(addCalendarDays(anchorDate, 6), cycle.endDate),
     };
   }
 
   const startDate = input.weekStart ?? input.date!;
-  const endDate = input.weekEnd ?? minDate(addDays(startDate, 6), cycle.endDate);
+  const endDate = input.weekEnd ?? minDate(addCalendarDays(startDate, 6), cycle.endDate);
 
   if (!isWithinCycle(startDate, cycle) || !isWithinCycle(endDate, cycle)) {
     throw new TutorSelfServiceError(
@@ -810,7 +808,7 @@ async function readScheduleForScope(
   for (
     let currentDate = window.startDate;
     currentDate <= window.endDate;
-    currentDate = addDays(currentDate, 1)
+    currentDate = addCalendarDays(currentDate, 1)
   ) {
     const plan = selectTutorSelfServiceEffectivePlan(plans, currentDate);
     const dayAssignments = selectTutorSelfServiceAssignmentsForDate(

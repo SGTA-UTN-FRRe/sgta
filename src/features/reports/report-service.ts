@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm";
 
 import type { Database } from "@/db/client-core";
+import { getServerNow } from "@/config/clock";
 import { formatFormalTutorNameSql } from "@/db/tutor-name";
 import {
   activity,
@@ -35,6 +36,10 @@ import {
   type SafeAdministrativeCycle,
 } from "@/features/cycles/cycle-service";
 import { getIsoWeekday } from "@/features/schedules/schedule-validation";
+import {
+  addCalendarDays,
+  getArgentinaBusinessDate,
+} from "@/shared/argentina-business-time";
 
 import {
   parseReportFilterInput,
@@ -61,7 +66,6 @@ import type {
   SubjectCoverageReport,
 } from "./report-types";
 
-const businessTimeZone = "America/Argentina/Buenos_Aires";
 const breakdownLimit = 50;
 const movementGroupLimit = 1_000;
 const modalityUnspecified = "UNSPECIFIED";
@@ -97,19 +101,6 @@ export class ReportServiceError extends Error {
     this.name = "ReportServiceError";
     this.code = code;
   }
-}
-
-function getCurrentDate(now: Date) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: businessTimeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const value = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value ?? "00";
-
-  return `${value("year")}-${value("month")}-${value("day")}`;
 }
 
 function countLimited<T>(rows: T[], limit = breakdownLimit): LimitedReportGroups<T> {
@@ -506,12 +497,6 @@ function chooseEffectivePlan(plans: SchedulePlanRow[], date: string) {
     )[0];
 }
 
-function addDays(date: string, days: number) {
-  const result = new Date(`${date}T00:00:00.000Z`);
-  result.setUTCDate(result.getUTCDate() + days);
-  return result.toISOString().slice(0, 10);
-}
-
 function getScheduleModalityCondition(modality: string | undefined) {
   if (modality === undefined) {
     return undefined;
@@ -646,7 +631,11 @@ async function getPlannedScheduleReport(
       ? filters.toDate
       : cycle.endDate;
 
-    for (let date = firstDate; date <= lastDate; date = addDays(date, 1)) {
+    for (
+      let date = firstDate;
+      date <= lastDate;
+      date = addCalendarDays(date, 1)
+    ) {
       const plan = chooseEffectivePlan(cyclePlans, date);
       if (plan === undefined) {
         continue;
@@ -822,12 +811,12 @@ async function getActivityReport(
 export async function getOperationalReport(
   db: Database,
   input: unknown,
-  now = new Date(),
+  now = getServerNow(),
 ): Promise<OperationalReport> {
   const parsedFilters = parseReportFilterInput(input);
   await validateFilterReferences(db, parsedFilters);
 
-  const currentDate = getCurrentDate(now);
+  const currentDate = getArgentinaBusinessDate(now);
   let currentCycle: SafeAdministrativeCycle | null = null;
   let currentCycleReadFailed = false;
   try {
