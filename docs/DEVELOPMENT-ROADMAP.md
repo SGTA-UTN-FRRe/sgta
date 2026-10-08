@@ -3,89 +3,35 @@ mode: decision
 status: active
 ---
 
-# SGTA - Development roadmap
+# SGTA — Development roadmap
 
 > Direction, phase sequencing, scope boundaries, and exit criteria.
 
 ## Objective
 
 Complete a supportable first release of SGTA for the Tutorias area at UTN FRRe.
-The roadmap moves from repository and interface alignment through workflow
-hardening, production readiness, and a controlled operational cutover.
+The remaining work moves from interface alignment through workflow hardening,
+production readiness, and a controlled operational cutover.
 
-**Current phase:** Repository and domain reset
+**Current phase:** UI engineering foundation
 
 ## Constraints
 
-- Protected pages and APIs enforce identity and role rules on the server.
-- Operational records remain cycle-aware, and closing a cycle preserves its
-  history.
-- Hour balances derive only from signed hour movements; corrections use
-  traceable reversals.
-- Absences remain explicit manual hour movements. SGTA has no attendance
-  tracking or duty-occurrence records.
-- Google Sheets remains a read-only consultation source; canonical reporting
-  uses SGTA records.
-- Scholarship references are informational. Formal scholarship certification
-  is outside the first release.
-- Each phase keeps `main` runnable and updates current-state documentation only
-  when repository evidence changes.
 - Browser journeys must use a fixed test date independent of wall-clock time before 2027-01-01.
-- Separately review major dependency updates before adoption; dependency
-  automation configuration does not establish compatibility or review approval.
+- Separately review major dependency updates before adoption and record compatibility evidence; automation configuration does not establish review approval.
+- The first release excludes attendance tracking and duty-occurrence records; absences remain manual hour movements.
+- The first release retains informational scholarship references and excludes formal scholarship certification.
 
 ## Phases
 
 | Phase | Outcome | Depends on |
 | --- | --- | --- |
-| Repository and domain reset | Remove attendance and occurrence behavior and align repository contracts and documentation with the current product. | None |
-| UI engineering foundation | Align design decisions with the product and make shared interface and browser-test foundations reliable. | Repository and domain reset |
+| UI engineering foundation | Align design decisions with the product and make shared interface and browser-test foundations reliable. | None |
 | Access and lifecycle | Complete controlled Tutor access and safe account and cycle lifecycle behavior. | UI engineering foundation |
 | Academic and scheduling workflows | Improve Tutor discovery, academic relationship visibility, and schedule planning. | UI engineering foundation |
 | Hours, consultations and reporting | Make consultation imports resilient and deliver complete, explainable operational outputs. | Access and lifecycle; Academic and scheduling workflows |
 | Production readiness | Establish production services, secure operations, and proven recovery. | Access and lifecycle; Hours, consultations and reporting |
 | Cutover, pilot and first release | Migrate validated data, prove operation with users, and complete maintainer handover. | Production readiness |
-
-## Phase: Repository and domain reset
-
-### Objective
-
-Remove the attendance domain and make repository guidance, current-state
-evidence, and shared decision documents describe the product that exists.
-
-### In scope
-
-- Remove attendance routes, services, movement origins, persistence, and
-  schedule-read occurrence writes while retaining manual hour movements.
-- Separate current-state project, architecture, development, deployment, and
-  testing documentation from approved design decisions.
-- Align agent guidance, repository skills, issue intake, and hygiene files with
-  the engineering-playbook.
-- Provide a local verification command and a CI guard against unresolved
-  template placeholders.
-- Retain a separate review of major dependency updates before adoption.
-
-### Out of scope
-
-- Rewriting the product visual direction or interface specification.
-- Introducing new operational product behavior.
-- Production data migration or live service cutover.
-
-### Exit criteria
-
-- No attendance route, service, API, schema object, or attendance-derived
-  movement remains; schedule reads do not materialize duty occurrences.
-- README and current-state documents match the source, tests, manifests,
-  runtime configuration, and CI; design documents have one canonical location
-  and working links.
-- Repository instructions, skills, issue forms, and hygiene files follow the
-  approved repository workflow.
-- Major dependency updates require a recorded compatibility review before
-  adoption; pending reviews remain separate follow-ups after repository reset.
-- The corrective repository-contract delivery passes the full local
-  `corepack pnpm verify` command and its required CI Gate. The original
-  attendance-removal and documentation-alignment CI results remain historical
-  evidence and do not prove verification of the corrective delivery.
 
 ## Phase: UI engineering foundation
 
@@ -125,6 +71,8 @@ shared UI code and browser verification reliable foundations for later work.
   before the deadline in Constraints.
 - E2E environment forwarding is enforced by an explicit allowlist; the runner
   rejects a missing production build and has validated execution limits.
+- README screenshots cover the views marked in UI-SPEC's README column and can
+  be regenerated from deterministic demo data with a documented Screenshots command.
 - The required lint, type, unit, integration, build, and browser checks pass.
 
 ## Phase: Access and lifecycle
@@ -139,13 +87,10 @@ understandable to the people who use it.
 - Provide protected Admin workflows to enable and disable Tutor access and
   maintain the link between an application identity and its Tutor record.
 - Prevent actions that would leave the application without an enabled Admin.
-- Make sign-out, session expiration, and the signed-in user's own profile
-  context clear across Admin and Tutor surfaces.
-- Enforce 12-hour session expiration and provide a read-only Tutor profile and
-  signed-in Admin user context.
-- Complete missing confirmations for account and cycle lifecycle actions.
-  Allow authorized reopening only of the most recently closed cycle, with
-  confirmation and audit, while preserving cycle history.
+- Make sign-out and session expiration clear across Admin and Tutor surfaces;
+  provide a read-only Tutor profile and signed-in Admin user context.
+- Complete missing confirmations for account and cycle lifecycle actions,
+  including authorized reopening with audit and preserved history.
 
 ### Out of scope
 
@@ -159,14 +104,13 @@ understandable to the people who use it.
   disable or demote the last enabled Admin.
 - Tutor reads remain owner-scoped, including profile and lifecycle context.
 - Sign-out and expired-session paths recover safely across protected pages and
-  APIs, including expiration after 12 hours.
+  APIs, including 12-hour expiration.
 - Tutors can read only their own profile; Admin surfaces expose the signed-in
   user's context. Account and cycle lifecycle confirmations cover the affected
   actions before mutation.
-- Cycle actions preserve historical records, reject writes to closed cycles,
-  and retain audit context.
-- Only the most recently closed cycle can be reopened; server authorization,
-  confirmation, historical preservation, and an audit record are verified.
+- Cycle actions reject writes to closed cycles; only the most recently closed
+  cycle can be reopened. Server authorization, confirmation, historical
+  preservation, and an audit record are verified.
 
 ## Phase: Academic and scheduling workflows
 
@@ -183,11 +127,10 @@ and maintain using cycle-aware canonical data.
   states.
 - Derive schedule views from the selected plan and its assignments rather than
   an arbitrary fixed time range.
-- Review data-model changes against validated institutional requirements before
-  they become part of a production migration.
-- Obtain approved institutional decisions on scholarship cardinality per
-  cycle, Admin-to-Tutor linkage, career and subject aliases, and global or
-  career-specific subject scope before implementing schema changes.
+- Review data-model changes against approved institutional decisions on
+  scholarship cardinality per cycle, Admin-to-Tutor linkage, career and subject
+  aliases, and global or career-specific subject scope before implementing schema
+  changes or including them in a production migration.
 
 ### Out of scope
 
@@ -203,11 +146,10 @@ and maintain using cycle-aware canonical data.
   creating a second source of truth.
 - Schedule views include the full configured range and preserve special-plan
   precedence without writing schedule data during reads.
-- Any schema change is supported by an approved domain decision, migration,
-  and isolated integration coverage.
 - Scholarship relationships per cycle, Admin-to-Tutor linkage, aliases, and
   subject scope each have an approved institutional decision before schema
-  implementation; proposed models do not substitute for that approval.
+  implementation. Any resulting schema change has a migration and isolated
+  integration coverage; proposed models do not substitute for approval.
 
 ## Phase: Hours, consultations and reporting
 
@@ -218,23 +160,20 @@ outputs complete and safe to share.
 
 ### In scope
 
-- Make consultation synchronization resilient to source growth and row changes
+- Make consultation synchronization resilient to source growth and row changes:
+  validate row/payload limits, incremental or paginated intake, row reordering/deletion
+  reconciliation, and execution duration against the deployment function limit,
   while preserving idempotency, review, and canonical history.
-- Validate import row and payload limits, incremental or paginated intake,
-  row reordering/deletion reconciliation, and execution duration against the
-  deployment function limit.
 - Obtain approved institutional decisions on optional student surname and
   supported consultation sources and participant-count models before schema
   changes. Validate source mappings and date interpretation before adoption.
-- Validate source data before cutover: mappings, dates, catalog completeness,
-  Tutor names and identity fields, activity history, and recess/vacation plans.
 - Provide complete filtered report exports in CSV and print-ready form with
   locale-aware formatting and formula-injection protection.
 - Document and test report count semantics so consultation totals are not
   confused with counts of unique people.
 - Preserve movement-derived balances and explicit reversal history.
-- Provide Tutor search in hour operations and use the product labels "Resta"
-  for debits and "Suma" for credits while preserving signed ledger semantics.
+- Provide Tutor search in hour operations and consistent product labels for
+  debit/credit movements while preserving signed ledger semantics.
 
 ### Out of scope
 
@@ -244,16 +183,12 @@ outputs complete and safe to share.
 
 ### Exit criteria
 
-- Repeated imports and source reconciliation do not silently duplicate or lose
-  canonical consultations; source outages leave reviewed history available.
-- Import tests cover approved row/payload limits, incremental or paginated
-  intake, and reordered or deleted source rows; measured execution duration
-  fits the deployment function limit.
+- Import tests cover approved row/payload limits, incremental or paginated intake,
+  and reordered or deleted source rows without silently duplicating or losing
+  canonical consultations. Measured duration fits the deployment function limit;
+  source outages leave reviewed history available.
 - Optional student surname, source support, and participant-count semantics
   have approved institutional decisions before schema implementation.
-- Pre-cutover validation records source mappings and date rules, catalog and
-  Tutor identity completeness, historical activity treatment, and recess plans;
-  unresolved exceptions block adoption of the affected data.
 - Exports contain every row allowed by the applied filters and safely encode
   user-controlled values.
 - Report totals have documented definitions, accessible alternatives, and no
@@ -312,6 +247,8 @@ the Tutorias team, and complete a maintainable first release.
 
 ### In scope
 
+- Validate source data before cutover: mappings, dates, catalog completeness,
+  Tutor names and identity fields, activity history, and recess/vacation plans.
 - Reconcile migrated Tutors, academic relationships, cycles, hour balances,
   schedules, and consultation history against approved source records.
 - Agree on cutover timing, go/no-go checks, abort criteria, and the transition
@@ -330,6 +267,9 @@ the Tutorias team, and complete a maintainable first release.
 
 ### Exit criteria
 
+- Pre-cutover validation records source mappings and date rules, catalog and
+  Tutor identity completeness, historical activity treatment, and recess plans;
+  unresolved exceptions block adoption of the affected data.
 - Migrated records and derived balances reconcile to the approved source
   evidence, with exceptions reviewed by the responsible Admin.
 - The pilot completes the main Admin operating loop and Tutor self-service
