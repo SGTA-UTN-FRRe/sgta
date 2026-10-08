@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, waitForElementToBeRemoved, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -543,22 +543,16 @@ describe("SchedulesScreen", () => {
     await user.click(within(editor).getByLabelText("Nombre"));
     await user.paste(createdPlan.name);
     expect(within(editor).getByLabelText("Nombre")).toHaveValue(createdPlan.name);
-    await user.click(within(editor).getByRole("button", { name: "Guardar plan" }));
-
-    await waitFor(
-      () => {
-        expect(
-          screen.queryByRole("dialog", { name: "Crear plan de horario" }),
-        ).not.toBeInTheDocument();
-      },
-      { timeout: 3_000 },
-    );
+    await Promise.all([
+      waitForElementToBeRemoved(editor),
+      user.click(within(editor).getByRole("button", { name: "Guardar plan" })),
+    ]);
     expect(screen.getAllByRole("status").some((element) =>
       element.textContent?.includes("Cambios guardados"),
     )).toBe(true);
     expect(screen.getAllByText(createdPlan.name)).not.toHaveLength(0);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-  }, 10_000);
+  });
 
   it("marks live conflicts and opens the conflicting assignment for recovery", async () => {
     const user = userEvent.setup();
