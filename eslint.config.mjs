@@ -71,6 +71,20 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  {
+    files: ["src/**/*.tsx"],
+    ignores: ["src/components/ui/**", "**/*.test.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "warn",
+        ...["button", "input", "select", "textarea", "dialog"].map((name) => ({
+          selector: `JSXOpeningElement[name.type='JSXIdentifier'][name.name='${name}']`,
+          message:
+            "Compose a primitive from src/components/ui instead of a raw interactive element.",
+        })),
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
