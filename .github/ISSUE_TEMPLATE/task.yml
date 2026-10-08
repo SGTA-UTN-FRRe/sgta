@@ -1,0 +1,49 @@
+name: Tarea
+description: Trabajo autónomo para un integrante del equipo
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Objetivo
+      description: Qué tiene que ser cierto al terminar y por qué importa.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto
+      description: Documentos, rutas, archivos o URL accesibles que deben consultarse primero.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos
+      description: "Pasos concretos. Para comprobaciones manuales: ruta, dato de entrada y resultado esperado en cada paso."
+    validations:
+      required: true
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Criterios de finalización
+      description: Resultados observables que permiten cerrar esta tarea.
+      value: "- [ ] "
+    validations:
+      required: true
+  - type: dropdown
+    id: deliver
+    attributes:
+      label: Entrega
+      options:
+        - Pull request que cierra esta tarea
+        - Comentario con los resultados
+        - Archivo o datos en la ubicación indicada en Pasos
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Fuera de alcance
+      description: Qué no debe cambiarse.
+    validations:
+      required: false

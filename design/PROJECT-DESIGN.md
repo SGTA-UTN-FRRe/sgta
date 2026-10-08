@@ -12,7 +12,7 @@ inherits_from: DESIGN-STANDARD.md
 
 > Product-specific visual, UX, and interaction direction for the Sistema de Gestion de Tutorias at UTN FRRe.
 
-# AI reading contract
+## AI reading contract
 
 Mode: **decision**.
 

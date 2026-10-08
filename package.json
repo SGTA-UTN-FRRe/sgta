@@ -12,6 +12,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "verify": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm test:integration && corepack pnpm build && corepack pnpm test:e2e",
     "auth:bootstrap-admin": "tsx --conditions=react-server scripts/bootstrap-admin.ts",
     "data:import": "tsx scripts/import-initial-data.ts",
     "data:verify": "tsx --conditions=react-server scripts/verify-initial-data.ts",

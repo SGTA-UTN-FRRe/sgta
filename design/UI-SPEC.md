@@ -14,7 +14,7 @@ inherits_from:
 
 > Authoritative shared specification for SGTA routes, layout, states, responsive behavior, interaction, and reusable product components.
 
-# AI reading contract
+## AI reading contract
 
 Mode: **decision**.
 

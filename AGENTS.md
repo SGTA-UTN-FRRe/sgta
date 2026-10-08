@@ -30,11 +30,11 @@ Do not infer repository workflow from task wording when an explicit rule or skil
 
 ## Language boundary
 
-Engineering artifacts are written in English, including repository documentation, code identifiers and technical comments, test names and technical fixtures, filenames, directory names, route segments, branch names, commit messages, pull request titles and descriptions, and squash merge text.
+La documentación del repositorio y los issues de GitHub, incluidos sus títulos y cuerpos, se redactan en español. La skill `delegate-task` y el formulario de tareas deben mantener ese idioma.
 
-User-facing SGTA product copy may remain Spanish. Product language does not change engineering language.
+La interfaz y los mensajes visibles para las personas usuarias de SGTA se redactan en español. La locale `es-AR` controla la localización y los formatos regionales, pero no habilita el voseo, el lunfardo ni los modismos coloquiales argentinos. Seguí `design/PROJECT-DESIGN.md` para la voz aprobada y `design/UI-SPEC.md` para el microcopy de cada vista.
 
-SGTA's product locale and writing register are separate. The `es-AR` locale controls Argentina-specific formatting and localization behavior; it does not authorize Rioplatense or colloquial Argentine writing. Follow `docs/PROJECT-DESIGN.md` for the approved writing voice and `docs/UI-SPEC.md` for concrete product microcopy.
+El código y los artefactos técnicos se escriben en inglés: identificadores, comentarios técnicos, nombres de pruebas y fixtures técnicos, archivos, directorios y segmentos de ruta. Las ramas, los mensajes de commit, los títulos y descripciones de PR, y el texto de squash también se escriben en inglés, según `$git-delivery`.
 
 ## Planning and delivery boundary
 
@@ -49,19 +49,27 @@ Use the installed skills for their owned procedures:
 - `$plan-implementation` turns roadmap or product intent into a decision-complete execution plan.
 - `$implement-task` implements one concrete approved task and verifies its boundaries.
 - `$git-delivery` creates outcome-oriented branch, commit, pull request, and squash-delivery text when requested.
+- `$delegate-task` turns an independently completable plan task or ad-hoc request into a self-contained issue for a teammate.
 
 Do not duplicate those procedures in project documentation.
+
+## Delegation
+
+- **Issue language:** Spanish.
+- **Tracker:** GitHub Project #1 owned by `SGTA-UTN-FRRe`.
+
+Delegation is optional. Mark a plan task `Delegable: yes` only when a teammate can complete it from the issue alone and no other task depends on it. Use `$delegate-task` or the Task issue form; the skill owns issue drafting and creation. Create an issue or add it to the project only when explicitly requested.
 
 ## Sources of truth
 
 ### Current state and evidence
 
-Current source code, tests, manifests, runtime configuration, and CI are the strongest evidence for implemented behavior. `README.md` and `docs/TESTING.md` are public current-state documentation and must not claim target behavior as a completed runtime capability.
+Current source code, tests, manifests, runtime configuration, and CI are the strongest evidence for implemented behavior. `README.md` and the current-state documents under `docs/` are public evidence and must not claim target behavior as a completed runtime capability.
 
 ### Approved target decisions
 
-- `docs/PROJECT-DESIGN.md` owns visual direction and canonical design tokens.
-- `docs/UI-SPEC.md` owns routes, states, interactions, responsive behavior, accessibility contracts, and product microcopy.
+- `design/PROJECT-DESIGN.md` owns visual direction and canonical design tokens.
+- `design/UI-SPEC.md` owns routes, states, interactions, responsive behavior, accessibility contracts, and product microcopy.
 - `docs/DEVELOPMENT-ROADMAP.md` owns planning outcomes and sequencing.
 
 Use existing decision documents instead of creating competing specifications. Update current-state documentation only when implementation makes a new fact true.
@@ -105,7 +113,10 @@ Keep route composition thin and place feature-specific behavior under a feature-
 - `tests/` - unit/component, integration, and Playwright scenarios;
 - `vitest.integration.config.ts` - isolated Node/Testcontainers test configuration;
 - `scripts/bootstrap-admin.ts` - operator-only first Admin provisioning command;
-- `docs/` - shared decisions and current testing contract;
+- `design/` - approved product visual direction and interface behavior specifications;
+- `docs/` - current-state documentation, testing contract, and development roadmap;
+- `.github/ISSUE_TEMPLATE/` - task intake and security reporting contact;
+- `SECURITY.md` - vulnerability disclosure policy;
 - `.github/workflows/ci.yml` - CI topology and `CI Gate`;
 - `.github/PULL_REQUEST_TEMPLATE.md` - pull request structure.
 
@@ -113,6 +124,7 @@ Keep route composition thin and place feature-specific behavior under a feature-
 
 | Task | Command |
 | --- | --- |
+| Verify (mirrors CI Gate) | `corepack pnpm verify` |
 | Install | `corepack pnpm install --frozen-lockfile` |
 | Dev | `corepack pnpm dev` |
 | Migration check | `corepack pnpm db:check` |
