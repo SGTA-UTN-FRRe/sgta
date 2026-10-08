@@ -15,7 +15,6 @@ test("closes a cycle and opens a successor without transferring balance", async 
   context,
   page,
 }) => {
-  test.setTimeout(120_000);
   const accessibilityViolations: string[] = [];
 
   const signedSessionToken = `${E2E_ADMIN_SESSION_TOKEN}.${await makeSignature(

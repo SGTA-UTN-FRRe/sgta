@@ -23,7 +23,6 @@ test.describe("authenticated Admin consultation workflow", () => {
     context,
     page,
   }) => {
-    test.setTimeout(120_000);
     const accessibilityViolations: string[] = [];
 
     const unauthenticatedList = await page.request.get("/api/admin/consultations");

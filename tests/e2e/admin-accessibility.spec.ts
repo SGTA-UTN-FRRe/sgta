@@ -43,7 +43,6 @@ const viewports = [
 
 test.describe("Admin accessibility and responsive layouts", () => {
   test("keeps every Admin route usable at supported widths", async ({ context, page }) => {
-    test.setTimeout(120_000);
     const accessibilityViolations: string[] = [];
     const signedSessionToken = `${E2E_ADMIN_SESSION_TOKEN}.${await makeSignature(
       E2E_ADMIN_SESSION_TOKEN,
