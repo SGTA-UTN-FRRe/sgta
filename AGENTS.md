@@ -30,11 +30,11 @@ Do not infer repository workflow from task wording when an explicit rule or skil
 
 ## Language boundary
 
-Engineering artifacts are written in English, including repository documentation, code identifiers and technical comments, test names and technical fixtures, filenames, directory names, route segments, branch names, commit messages, pull request titles and descriptions, and squash merge text.
+La documentación del repositorio y los issues de GitHub, incluidos sus títulos y cuerpos, se redactan en español. La skill `delegate-task` y el formulario de tareas deben mantener ese idioma.
 
-User-facing SGTA product copy may remain Spanish. Product language does not change engineering language.
+La interfaz y los mensajes visibles para las personas usuarias de SGTA se redactan en español. La locale `es-AR` controla la localización y los formatos regionales, pero no habilita el voseo, el lunfardo ni los modismos coloquiales argentinos. Seguí `design/PROJECT-DESIGN.md` para la voz aprobada y `design/UI-SPEC.md` para el microcopy de cada vista.
 
-SGTA's product locale and writing register are separate. The `es-AR` locale controls Argentina-specific formatting and localization behavior; it does not authorize Rioplatense or colloquial Argentine writing. Follow `design/PROJECT-DESIGN.md` for the approved writing voice and `design/UI-SPEC.md` for concrete product microcopy.
+El código y los artefactos técnicos se escriben en inglés: identificadores, comentarios técnicos, nombres de pruebas y fixtures técnicos, archivos, directorios y segmentos de ruta. Las ramas, los mensajes de commit, los títulos y descripciones de PR, y el texto de squash también se escriben en inglés, según `$git-delivery`.
 
 ## Planning and delivery boundary
 

@@ -29,6 +29,7 @@
 !.env.example
 
 # Personal agent configuration
+/.agents/
 CLAUDE.local.md
 .claude/settings.local.json
 
