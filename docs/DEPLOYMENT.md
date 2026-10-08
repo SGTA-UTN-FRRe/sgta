@@ -24,7 +24,7 @@ GitHub Actions -> CI verification (no deployment job)
 | Application database | Neon | Presentation PostgreSQL; use a pooled connection for the app and a direct connection to the same database for operator migrations. Branch and region are configured in the provider console, not in Git. |
 | Sign-in | Google OAuth through Better Auth | Accepts only enabled identities provisioned in SGTA. Public sign-up is disabled. |
 | Consultation source | Google Sheets | Read-only input to Admin import and review; the application does not write to the source. |
-| Verification | GitHub Actions | Runs the CI workflow for pull requests to `main` and pushes to `main`; the workflow does not deploy the application. |
+| Verification | GitHub Actions | Runs the CI workflow for pull requests to `main` and on manual dispatch; the workflow does not deploy the application. |
 
 Verify the presentation URL, Vercel project, and Neon branch in the provider
 console before release. `vercel.json` establishes repository build settings and
@@ -33,7 +33,7 @@ selection. Presentation data remains separate from the eventual production data.
 
 ## Release flow
 
-1. Review the application revision and wait for the repository CI checks to pass.
+1. Review the application revision and confirm that its pull request passed `CI Gate`.
 2. Load the intended Neon staging **direct** URL into the operator process as
    `DATABASE_URL`. Confirm the selected branch before writing.
 3. Run `corepack pnpm db:check`, then `corepack pnpm db:migrate`. Stop if either

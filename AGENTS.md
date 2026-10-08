@@ -62,6 +62,7 @@ Skills are optional personal tooling installed from the [engineering playbook](h
 
 - `$plan-implementation` turns roadmap or product intent into a decision-complete execution plan.
 - `$implement-task` implements one concrete approved task and verifies its boundaries.
+- `$write-tests` writes and repairs tests deterministically, including flaky-test triage.
 - `$git-delivery` creates outcome-oriented branches, commits, pull requests, and squash-delivery text when requested.
 - `$delegate-task` turns independently completable work into a self-contained issue for a teammate.
 
@@ -186,7 +187,10 @@ Ask the user before the following actions unless the current request or approved
 - Add integration or authorization checks only when the corresponding runtime boundary exists.
 - Use deterministic synthetic data; never commit secrets, credentials, personal data, production logs, or data exports.
 - Run the smallest relevant checks and use the CI contract documented in `docs/TESTING.md`.
-- Treat flaky tests as defects and never claim a check passed unless it actually ran successfully.
+- Never claim a check passed unless it actually ran successfully.
+- Timeouts are budgets set once in `playwright.config.ts`, `vitest.config.ts`, and `src/test/setup.ts`; never add per-test or per-wait overrides. A test that hits its budget has a cause to fix.
+- Browser tests import `test` from `tests/e2e/fixtures.ts`, which waits for `html[data-hydrated="true"]`; call `waitForHydration` after click-driven full navigations.
+- CI retries E2E tests once; a flaky warning is a defect to fix with `$write-tests`, not a pass.
 - Keep generated directories and artifacts out of manual edits.
 - Test the smallest correct boundary: unit, then integration, then E2E. Add or update tests for changed behavior when that boundary exists.
 - Run `corepack pnpm verify` before reporting runtime work as done; documentation-only deliveries may use the relevant template, lint, type, and diff checks, with the full `CI Gate` required before merge.

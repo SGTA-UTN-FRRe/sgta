@@ -12,6 +12,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Budget is set once here; tests must not override it.
+    testTimeout: 15_000,
     environment: "jsdom",
     globals: true,
     exclude: ["tests/e2e/**", "tests/integration/**", "node_modules/**"],

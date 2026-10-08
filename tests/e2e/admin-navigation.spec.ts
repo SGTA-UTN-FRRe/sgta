@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { makeSignature } from "better-auth/crypto";
 
 import {
@@ -17,7 +17,6 @@ for (const viewport of [
   { width: 1440, height: 1000, layout: "wide" },
 ]) {
   test(`follows Admin home and related tutor links at ${viewport.layout}`, async ({ context, page }, testInfo) => {
-    test.setTimeout(90_000);
     await addE2ESessionCookie(context, `${E2E_ADMIN_SESSION_TOKEN}.${await makeSignature(E2E_ADMIN_SESSION_TOKEN, E2E_AUTH_SECRET)}`);
     await page.setViewportSize(viewport);
     await page.emulateMedia({ reducedMotion: "reduce" });
