@@ -82,6 +82,11 @@ const optionalE2EMode = z.preprocess(
   z.literal("true").optional(),
 );
 
+const optionalE2ENow = z.preprocess(
+  emptyToUndefined,
+  z.iso.datetime({ offset: true }).optional(),
+);
+
 const optionalHostedDomain = z.preprocess(
   emptyToUndefined,
   z
@@ -114,6 +119,7 @@ const serverEnvSchema = z
     GOOGLE_SHEETS_PRIVATE_KEY: optionalNonEmptyString,
     GOOGLE_SHEETS_HEADER_MAP: optionalNonEmptyString,
     SGTA_E2E_MODE: optionalE2EMode,
+    SGTA_E2E_NOW: optionalE2ENow,
     SGTA_E2E_CONSULTATION_SOURCE_URL: optionalTestSourceUrl,
     TEST_DATABASE_URL: optionalPostgresUrl,
   })
@@ -137,6 +143,18 @@ const serverEnvSchema = z
       context.addIssue({
         code: "custom",
         path: ["SGTA_E2E_CONSULTATION_SOURCE_URL"],
+        message: "requires NODE_ENV=test or SGTA_E2E_MODE=true",
+      });
+    }
+
+    if (
+      value.SGTA_E2E_NOW !== undefined &&
+      value.NODE_ENV !== "test" &&
+      value.SGTA_E2E_MODE !== "true"
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["SGTA_E2E_NOW"],
         message: "requires NODE_ENV=test or SGTA_E2E_MODE=true",
       });
     }

@@ -1,6 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
 
 import { resolveDefaultOperationalDate } from "./schedule-date";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 const cycle = {
   startDate: "2027-04-01",
@@ -33,5 +39,12 @@ describe("resolveDefaultOperationalDate", () => {
         new Date("2027-05-01T03:00:00.000Z"),
       ),
     ).toBe(cycle.endDate);
+  });
+
+  it("uses the configured server instant when no date is supplied", () => {
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("SGTA_E2E_NOW", "2027-04-06T01:30:00.000Z");
+
+    expect(resolveDefaultOperationalDate(cycle)).toBe("2027-04-05");
   });
 });

@@ -82,6 +82,8 @@ schedule workspace is read-only.
 - Cycle membership scopes hour and schedule operations; cycle closure preserves history and blocks writes.
 - Hour balances derive from signed ledger movements, including reversal rows.
 - Consultation source access is read-only; canonical reporting remains local to PostgreSQL.
+- Server business dates use `getServerNow()` from `src/config/clock.ts` and the
+  shared Argentina date helpers in `src/shared/argentina-business-time.ts`.
 - Audit metadata is bounded and validated before persistence.
 
 ## Trade-offs
