@@ -1,4 +1,4 @@
-# SGTA - Development
+# SGTA — Development
 
 > Local setup, environment, and developer workflow.
 
@@ -80,11 +80,12 @@ generated SQL, and run `corepack pnpm db:check` before applying it with
 `corepack pnpm db:migrate`. Migration commands that write require a valid
 `DATABASE_URL`; generated migrations are not edited by hand.
 
-Initial registry data is private input under `local-docs/`. Inspect an import
-with `corepack pnpm data:import --dry-run` before applying it with
-`corepack pnpm data:import --apply --yes`. The importer requires an explicit
-database connection for writes. `corepack pnpm data:verify` can compare a
-loaded package with aggregate expected counts kept under `local-docs/`.
+The initial-data importer defaults to dry-run. Inspect its diagnostics with
+`corepack pnpm data:import` or `corepack pnpm data:import --dry-run` before writing
+with `corepack pnpm data:import --apply --yes`. Writes require an explicit database
+connection and an enabled Admin. Keep private registry input and aggregate
+expectations outside tracked files. `corepack pnpm data:verify --expected=<path>`
+compares a loaded package with the private expectations in a read-only transaction.
 
 ## Related documentation
 

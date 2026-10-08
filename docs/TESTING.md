@@ -1,4 +1,4 @@
-# SGTA - Testing
+# SGTA — Testing
 
 > Test strategy, layers, data, and how to run the project's checks.
 
@@ -8,6 +8,10 @@ SGTA uses unit/component tests for local behavior, PostgreSQL integration tests
 for persistence and transaction boundaries, and Playwright for critical browser
 journeys through the built application. Each layer uses deterministic test data;
 no suite uses production credentials or writes to production services.
+Coverage is diagnostic and has no enforced percentage threshold in
+[`vitest.config.ts`](../vitest.config.ts); use it to find
+unexamined behavior rather than as a release target. Flaky tests are defects:
+fix their causes instead of hiding failures with routine retries.
 
 ## Test layers
 
@@ -25,14 +29,9 @@ PostgreSQL databases. Integration tests apply the committed migrations twice to
 check rerunnability. Containers use available host ports and are removed after
 the suite. Docker is required locally for both boundaries.
 
-The populated migration-upgrade scenario creates a separate database inside the
-integration container. It applies committed migrations through 0010, seeds
-synthetic legacy origins and ledger history, then applies the full migration
-set twice. It verifies preserved balances, movements, activities, categories,
-audits, and planning records across attendance removal, and reverses a migrated
-debit through the current hour service. Its database and temporary migration
-folder are removed in cleanup; it does not use an operational connection or
-alter the shared fully migrated integration database.
+The [populated-upgrade scenario](../tests/integration/migration-upgrade.integration.test.ts) applies migrations through 0010, seeds synthetic legacy history, then applies the full set twice in a separate disposable database.
+It verifies preserved balances, movements, activities, categories, audits, planning records, and reversal through the current hour service.
+Cleanup removes the temporary database and migration folder; operational connections and the shared integration database are untouched.
 
 Fixtures are deterministic and synthetic. The E2E web-server wrapper seeds its
 database and sessions, then serves the built application with `next start`. The
@@ -85,7 +84,9 @@ Admin pages and navigation, Tutor owner-scoped reads, schedule plan switching
 and assignment editing, hour movement registration/reversal, consultation
 review, and cycle lifecycle. It runs with one worker because authenticated
 journeys share a mutable database. Accessibility scenarios scan supported Admin
-and Tutor layouts and representative states.
+and Tutor layouts and representative states. In [`playwright.config.ts`](../playwright.config.ts),
+the `cycle-lifecycle` project depends on `chromium` and runs last because its
+mutations close the shared cycle used by other journeys.
 
 The E2E server creates its own PostgreSQL container, Better Auth sessions, and
 synthetic records. It does not use `TEST_DATABASE_URL`, production Google
@@ -107,7 +108,9 @@ credentials, or a live consultation source.
 
 The workflow has no separate `Contract` or `Docker` gate. Docker is an execution
 prerequisite for database-backed suites. The repository's final aggregate check
-is `CI Gate`.
+is `CI Gate`. The [workflow](../.github/workflows/ci.yml) uploads
+`playwright-report/` and `test-results/` only when the E2E job fails, with seven-day
+retention; Playwright retains traces on failure.
 
 ## Related documentation
 
