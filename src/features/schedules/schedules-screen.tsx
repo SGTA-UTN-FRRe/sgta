@@ -190,8 +190,6 @@ const scheduleErrorMessages: Record<string, string> = {
   internal_server_error: "No se pudo guardar el cambio. Intentar nuevamente.",
   invalid_request: "Revisar los datos ingresados antes de guardar.",
   open_cycle_required: "Abrir un ciclo administrativo antes de gestionar horarios.",
-  plan_has_occurrences:
-    "El plan conserva ocurrencias históricas y no puede reducir su vigencia.",
   plan_not_found:
     "El plan ya no está disponible. Actualizar el horario e intentar nuevamente.",
   plan_validity_outside_cycle:

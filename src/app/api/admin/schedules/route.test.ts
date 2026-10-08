@@ -90,7 +90,7 @@ describe("Admin schedule workspace route", () => {
       eligibleTutors: [],
       conflicts: [],
       requestedDate: "2027-02-15",
-      effective: { date: "2027-02-15", plan: null, occurrences: [] },
+      effective: { date: "2027-02-15" },
     };
     mocks.requireApiRole.mockResolvedValue(admin);
     mocks.getDatabase.mockReturnValue(database);

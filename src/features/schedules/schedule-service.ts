@@ -6,12 +6,8 @@ import {
   desc,
   eq,
   gte,
-  gt,
-  inArray,
-  lt,
   lte,
   ne,
-  or,
   sql,
 } from "drizzle-orm";
 import { z } from "zod";
@@ -22,7 +18,6 @@ import { formatFormalTutorNameSql } from "@/db/tutor-name";
 import {
   administrativeCycle,
   career,
-  dutyOccurrence,
   scheduleAssignment,
   schedulePlan,
   tutor,
@@ -41,7 +36,6 @@ import {
   createScheduleAssignmentInputSchema,
   createSchedulePlanInputSchema,
   effectiveScheduleInputSchema,
-  getIsoWeekday,
   scheduleAssignmentListInputSchema,
   scheduleAssignmentStatusInputSchema,
   scheduleIdentifierSchema,
@@ -51,7 +45,6 @@ import {
   updateScheduleAssignmentInputSchema,
   updateSchedulePlanInputSchema,
   type ParsedCreateScheduleAssignmentInput,
-  type ParsedEffectiveScheduleInput,
   type ParsedScheduleAssignmentStatusInput,
   type ParsedSchedulePlanStatusInput,
   type ParsedUpdateScheduleAssignmentInput,
@@ -70,7 +63,6 @@ export const SCHEDULE_ERROR_CODES = {
   dateOutsideCycle: "date_outside_cycle",
   planNotFound: "plan_not_found",
   planValidityOutsideCycle: "plan_validity_outside_cycle",
-  planHasOccurrences: "plan_has_occurrences",
   regularPlanConflict: "regular_plan_conflict",
   specialPlanOverlap: "special_plan_overlap",
   assignmentNotFound: "assignment_not_found",
@@ -80,7 +72,6 @@ export const SCHEDULE_ERROR_CODES = {
   tutorNotInCycle: "tutor_not_in_cycle",
   assignmentConflict: "assignment_conflict",
   statusAlreadySet: "status_already_set",
-  occurrenceCreationFailed: "occurrence_creation_failed",
 } as const;
 
 export type ScheduleServiceErrorCode =
@@ -173,32 +164,6 @@ export type SafeScheduleConflict = {
   conflictingAssignmentIds: string[];
 };
 
-export type SafeRecoveryContext = {
-  markedForRecovery: boolean;
-  recognition: "EXPLICIT_ACTION_REQUIRED" | "NOT_APPLICABLE";
-};
-
-export type SafeDutyOccurrence = {
-  id: string;
-  cycleId: string;
-  planId: string;
-  assignmentId: string;
-  tutorId: string;
-  occurrenceDate: string;
-  startMinutes: number;
-  endMinutes: number;
-  kind: ScheduleAssignmentKind;
-  modality: string | null;
-  recovery: SafeRecoveryContext;
-  createdAt: string;
-};
-
-export type SafeEffectiveSchedule = {
-  cycle: SafeScheduleCycle;
-  plan: SafeSchedulePlan | null;
-  occurrences: SafeDutyOccurrence[];
-};
-
 export type SafeScheduleWorkspace = {
   currentCycle: SafeScheduleCycle;
   plans: SafeSchedulePlan[];
@@ -209,8 +174,6 @@ export type SafeScheduleWorkspace = {
   requestedDate: string | null;
   effective: {
     date: string;
-    plan: SafeSchedulePlan | null;
-    occurrences: SafeDutyOccurrence[];
   };
 };
 
@@ -258,20 +221,6 @@ type AssignmentRow = {
   updatedAt: Date;
 };
 
-type OccurrenceRow = {
-  id: string;
-  cycleId: string;
-  planId: string;
-  assignmentId: string;
-  tutorId: string;
-  occurrenceDate: string;
-  startMinutes: number;
-  endMinutes: number;
-  kind: ScheduleAssignmentKind;
-  modality: string | null;
-  createdAt: Date;
-};
-
 const cycleSelection = {
   id: administrativeCycle.id,
   name: administrativeCycle.name,
@@ -307,20 +256,6 @@ const assignmentSelection = {
   status: scheduleAssignment.status,
   createdAt: scheduleAssignment.createdAt,
   updatedAt: scheduleAssignment.updatedAt,
-};
-
-const occurrenceSelection = {
-  id: dutyOccurrence.id,
-  cycleId: dutyOccurrence.cycleId,
-  planId: dutyOccurrence.planId,
-  assignmentId: dutyOccurrence.assignmentId,
-  tutorId: dutyOccurrence.tutorId,
-  occurrenceDate: dutyOccurrence.occurrenceDate,
-  startMinutes: dutyOccurrence.startMinutes,
-  endMinutes: dutyOccurrence.endMinutes,
-  kind: dutyOccurrence.kind,
-  modality: dutyOccurrence.modality,
-  createdAt: dutyOccurrence.createdAt,
 };
 
 function toIso(value: Date) {
@@ -361,30 +296,6 @@ function toSafeAssignment(row: AssignmentRow): SafeScheduleAssignment {
     status: row.status,
     createdAt: toIso(row.createdAt),
     updatedAt: toIso(row.updatedAt),
-  };
-}
-
-function toSafeOccurrence(row: OccurrenceRow): SafeDutyOccurrence {
-  const markedForRecovery = row.kind === "RECOVERY";
-
-  return {
-    id: row.id,
-    cycleId: row.cycleId,
-    planId: row.planId,
-    assignmentId: row.assignmentId,
-    tutorId: row.tutorId,
-    occurrenceDate: row.occurrenceDate,
-    startMinutes: row.startMinutes,
-    endMinutes: row.endMinutes,
-    kind: row.kind,
-    modality: row.modality,
-    recovery: {
-      markedForRecovery,
-      recognition: markedForRecovery
-        ? "EXPLICIT_ACTION_REQUIRED"
-        : "NOT_APPLICABLE",
-    },
-    createdAt: toIso(row.createdAt),
   };
 }
 
@@ -437,12 +348,6 @@ export function mapScheduleMutationError(error: unknown): ScheduleServiceError {
       );
     }
 
-    if (constraintName.includes("duty_occurrence_assignment_date")) {
-      return new ScheduleServiceError(
-        SCHEDULE_ERROR_CODES.occurrenceCreationFailed,
-        "The duty occurrence already exists for this assignment and date.",
-      );
-    }
   }
 
   if (code === "23503") {
@@ -784,41 +689,6 @@ async function assertPlanCanBeActive(
           conflictingPlanIds: overlaps.map((overlap) => overlap.id),
           validFrom: plan.validFrom,
           validTo: plan.validTo,
-        },
-      },
-    );
-  }
-}
-
-async function assertPlanHasNoHistoricalOccurrences(
-  db: SelectDatabase,
-  planId: string,
-  validFrom: string,
-  validTo: string,
-) {
-  const [occurrence] = await db
-    .select({ id: dutyOccurrence.id, occurrenceDate: dutyOccurrence.occurrenceDate })
-    .from(dutyOccurrence)
-    .where(
-      and(
-        eq(dutyOccurrence.planId, planId),
-        or(
-          lt(dutyOccurrence.occurrenceDate, validFrom),
-          gt(dutyOccurrence.occurrenceDate, validTo),
-        ),
-      ),
-    )
-    .limit(1);
-
-  if (occurrence !== undefined) {
-    throw new ScheduleServiceError(
-      SCHEDULE_ERROR_CODES.planHasOccurrences,
-      "The plan validity cannot exclude a recorded duty occurrence.",
-      {
-        details: {
-          planId,
-          occurrenceId: occurrence.id,
-          occurrenceDate: occurrence.occurrenceDate,
         },
       },
     );
@@ -1178,171 +1048,6 @@ async function listEligibleScheduleTutors(
   }));
 }
 
-async function getOccurrenceRows(
-  db: SelectDatabase,
-  assignmentIds: string[],
-  date: string,
-) {
-  if (assignmentIds.length === 0) {
-    return [] as OccurrenceRow[];
-  }
-
-  return db
-    .select(occurrenceSelection)
-    .from(dutyOccurrence)
-    .where(
-      and(
-        inArray(dutyOccurrence.assignmentId, assignmentIds),
-        eq(dutyOccurrence.occurrenceDate, date),
-      ),
-    )
-    .orderBy(asc(dutyOccurrence.startMinutes), asc(dutyOccurrence.id));
-}
-
-async function lockAssignments(
-  db: MutationDatabase,
-  assignmentIds: string[],
-) {
-  if (assignmentIds.length === 0) {
-    return;
-  }
-
-  await db.execute(
-    sql`SELECT id FROM "schedule_assignment" WHERE id IN (${sql.join(
-      assignmentIds.map((id) => sql`${id}`),
-      sql`, `,
-    )}) FOR UPDATE`,
-  );
-}
-
-async function materializeEffectiveSchedule(
-  db: MutationDatabase,
-  input: ParsedEffectiveScheduleInput,
-  context: ScheduleMutationContext,
-): Promise<SafeEffectiveSchedule> {
-  const actor = await requireActor(db, context.actorId);
-  const cycle = await requireOpenCycle(db, input.cycleId, true);
-  assertDateWithinCycle(input.date, cycle);
-
-  const effectivePlan = await findEffectivePlan(db, input.cycleId, input.date);
-  if (effectivePlan === undefined) {
-    return {
-      cycle: toSafeCycle(cycle),
-      plan: null,
-      occurrences: [],
-    };
-  }
-
-  const weekday = getIsoWeekday(input.date);
-  const assignments = await db
-    .select({
-      id: scheduleAssignment.id,
-      tutorId: scheduleAssignment.tutorId,
-      pattern: scheduleAssignment.pattern,
-      weekday: scheduleAssignment.weekday,
-      assignmentDate: scheduleAssignment.assignmentDate,
-      startMinutes: scheduleAssignment.startMinutes,
-      endMinutes: scheduleAssignment.endMinutes,
-      kind: scheduleAssignment.kind,
-      modality: scheduleAssignment.modality,
-    })
-    .from(scheduleAssignment)
-    .where(
-      and(
-        eq(scheduleAssignment.planId, effectivePlan.id),
-        eq(scheduleAssignment.status, "ACTIVE"),
-        or(
-          and(
-            eq(scheduleAssignment.pattern, "WEEKDAY"),
-            eq(scheduleAssignment.weekday, weekday),
-          ),
-          and(
-            eq(scheduleAssignment.pattern, "DATE"),
-            eq(scheduleAssignment.assignmentDate, input.date),
-          ),
-        ),
-      ),
-    )
-    .orderBy(asc(scheduleAssignment.startMinutes), asc(scheduleAssignment.id));
-
-  await lockAssignments(
-    db,
-    assignments.map((assignment) => assignment.id),
-  );
-
-  const existingOccurrences = await getOccurrenceRows(
-    db,
-    assignments.map((assignment) => assignment.id),
-    input.date,
-  );
-  const existingByAssignmentId = new Map(
-    existingOccurrences.map((occurrence) => [occurrence.assignmentId, occurrence]),
-  );
-
-  const createdOccurrences: OccurrenceRow[] = [];
-  for (const assignment of assignments) {
-    if (existingByAssignmentId.has(assignment.id)) {
-      continue;
-    }
-
-    const [created] = await db
-      .insert(dutyOccurrence)
-      .values({
-        cycleId: input.cycleId,
-        planId: effectivePlan.id,
-        assignmentId: assignment.id,
-        tutorId: assignment.tutorId,
-        occurrenceDate: input.date,
-        startMinutes: assignment.startMinutes,
-        endMinutes: assignment.endMinutes,
-        kind: assignment.kind,
-        modality: assignment.modality,
-      })
-      .returning(occurrenceSelection);
-
-    if (created === undefined) {
-      throw new ScheduleServiceError(
-        SCHEDULE_ERROR_CODES.occurrenceCreationFailed,
-        "The duty occurrence could not be persisted.",
-        { details: { assignmentId: assignment.id, date: input.date } },
-      );
-    }
-
-    createdOccurrences.push(created);
-
-    await recordAuditEvent(db, {
-      actorId: actor.id,
-      action: "schedule_occurrence.created",
-      entityType: "duty_occurrence",
-      entityId: created.id,
-      metadata: {
-        cycleId: input.cycleId,
-        planId: effectivePlan.id,
-        assignmentId: assignment.id,
-        occurrenceDate: input.date,
-        kind: assignment.kind,
-      },
-      requestId: context.requestId ?? null,
-      ipAddress: context.ipAddress ?? null,
-    });
-  }
-
-  const occurrences = assignments
-    .map((assignment) => existingByAssignmentId.get(assignment.id) ??
-      createdOccurrences.find((occurrence) => occurrence.assignmentId === assignment.id))
-    .filter((occurrence): occurrence is OccurrenceRow => occurrence !== undefined)
-    .sort(
-      (left, right) =>
-        left.startMinutes - right.startMinutes || left.id.localeCompare(right.id),
-    );
-
-  return {
-    cycle: toSafeCycle(cycle),
-    plan: toSafePlan(effectivePlan),
-    occurrences: occurrences.map(toSafeOccurrence),
-  };
-}
-
 export function parseCreateSchedulePlanInput(input: unknown) {
   return parseServiceInput(createSchedulePlanInputSchema, input);
 }
@@ -1383,13 +1088,13 @@ export async function getScheduleWorkspace(
   const parsed: ParsedScheduleWorkspaceInput = parseScheduleWorkspaceInput(input);
   assertActorProvided(context.actorId);
 
-  return runMutation(db, async (transaction) => {
-    await requireActor(transaction, context.actorId);
+  return runQuery(async () => {
+    await requireActor(db, context.actorId);
 
     const cycle =
       parsed.cycleId === undefined
-        ? await getOpenCycle(transaction)
-        : await requireOpenCycle(transaction, parsed.cycleId);
+        ? await getOpenCycle(db)
+        : await requireOpenCycle(db, parsed.cycleId);
 
     if (cycle === undefined) {
       throw new ScheduleServiceError(
@@ -1401,7 +1106,7 @@ export async function getScheduleWorkspace(
     const requestedDate = parsed.date ?? cycle.startDate;
     assertDateWithinCycle(requestedDate, cycle);
 
-    const planRows = await transaction
+    const planRows = await db
       .select(planSelection)
       .from(schedulePlan)
       .where(eq(schedulePlan.cycleId, cycle.id))
@@ -1421,15 +1126,7 @@ export async function getScheduleWorkspace(
       );
     }
 
-    const effective = await materializeEffectiveSchedule(
-      transaction,
-      { cycleId: cycle.id, date: requestedDate },
-      context,
-    );
-    const effectivePlanRow =
-      effective.plan === null
-        ? undefined
-        : planRows.find((plan) => plan.id === effective.plan?.id);
+    const effectivePlanRow = await findEffectivePlan(db, cycle.id, requestedDate);
     const fallbackPlanRow = planRows.find((plan) => plan.status === "ACTIVE") ?? planRows[0];
     const selectedPlanRowForResponse =
       selectedPlanRow ?? effectivePlanRow ?? fallbackPlanRow;
@@ -1442,7 +1139,7 @@ export async function getScheduleWorkspace(
       selectedPlan === null
         ? []
         : (
-            await transaction
+            await db
               .select(assignmentSelection)
               .from(scheduleAssignment)
               .innerJoin(tutor, eq(scheduleAssignment.tutorId, tutor.id))
@@ -1460,7 +1157,7 @@ export async function getScheduleWorkspace(
       plans,
       selectedPlan,
       assignments,
-      eligibleTutors: await listEligibleScheduleTutors(transaction, cycle.id),
+      eligibleTutors: await listEligibleScheduleTutors(db, cycle.id),
       conflicts: getSafeScheduleConflicts(
         assignments,
         selectedPlanRowForResponse ?? null,
@@ -1468,8 +1165,6 @@ export async function getScheduleWorkspace(
       requestedDate: parsed.date ?? null,
       effective: {
         date: requestedDate,
-        plan: effective.plan,
-        occurrences: effective.occurrences,
       },
     };
   });
@@ -1591,13 +1286,6 @@ export async function updateSchedulePlan(
     const validFrom = parsed.validFrom ?? existing.validFrom;
     const validTo = parsed.validTo ?? existing.validTo;
     assertPlanValidityWithinCycle(validFrom, validTo, cycle);
-    await assertPlanHasNoHistoricalOccurrences(
-      transaction,
-      existing.id,
-      validFrom,
-      validTo,
-    );
-
     const candidate = {
       id: existing.id,
       cycleId: existing.cycleId,
@@ -1907,7 +1595,7 @@ export async function updateScheduleAssignment(
       action: "schedule_assignment.updated",
       entityType: "schedule_assignment",
       entityId: updated.id,
-      metadata: { changedFields, occurrenceHistoryPreserved: true },
+      metadata: { changedFields },
       requestId: context.requestId ?? null,
       ipAddress: context.ipAddress ?? null,
     });
@@ -1988,55 +1676,3 @@ export async function transitionScheduleAssignmentStatus(
 }
 
 export const setScheduleAssignmentStatus = transitionScheduleAssignmentStatus;
-
-export async function resolveEffectiveSchedule(
-  db: Database,
-  input: unknown,
-  context: ScheduleMutationContext = {},
-): Promise<SafeEffectiveSchedule> {
-  const parsed = parseEffectiveScheduleInput(input);
-  assertActorProvided(context.actorId);
-
-  return runMutation(db, (transaction) =>
-    materializeEffectiveSchedule(transaction, parsed, context),
-  );
-}
-
-export async function resolveEffectiveScheduleInTransaction(
-  db: ScheduleMutationDatabase,
-  input: ParsedEffectiveScheduleInput,
-  context: ScheduleMutationContext,
-): Promise<SafeEffectiveSchedule> {
-  return materializeEffectiveSchedule(db, input, context);
-}
-
-export async function readHistoricalEffectiveScheduleInTransaction(
-  db: ScheduleMutationDatabase,
-  input: ParsedEffectiveScheduleInput,
-): Promise<SafeEffectiveSchedule> {
-  const cycle = await requireCycle(db, input.cycleId);
-  assertDateWithinCycle(input.date, cycle);
-
-  const occurrences = await db
-    .select(occurrenceSelection)
-    .from(dutyOccurrence)
-    .where(
-      and(
-        eq(dutyOccurrence.cycleId, input.cycleId),
-        eq(dutyOccurrence.occurrenceDate, input.date),
-      ),
-    )
-    .orderBy(asc(dutyOccurrence.startMinutes), asc(dutyOccurrence.id));
-
-  const planRow =
-    occurrences[0] === undefined
-      ? undefined
-      : await getPlan(db, occurrences[0].planId);
-  const plan = planRow === undefined ? null : toSafePlan(planRow);
-
-  return {
-    cycle: toSafeCycle(cycle),
-    plan,
-    occurrences: occurrences.map(toSafeOccurrence),
-  };
-}

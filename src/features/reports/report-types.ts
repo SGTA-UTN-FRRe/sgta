@@ -72,15 +72,6 @@ export interface PlannedScheduleReport {
   byTutor: LimitedReportGroups<ScheduleTutorReport>;
 }
 
-export interface AttendanceReport {
-  dueOccurrences: number;
-  present: number;
-  absent: number;
-  pending: number;
-  registered: number;
-  registrationRatePercent: number | null;
-}
-
 export interface CurrentBalanceReport {
   cycleId: string;
   cycleName: string;
@@ -127,7 +118,6 @@ export interface OperationalReport {
   activeTutors: ReportSection<ActiveTutorReport>;
   subjectCoverage: ReportSection<SubjectCoverageReport>;
   plannedSchedules: ReportSection<PlannedScheduleReport>;
-  attendance: ReportSection<AttendanceReport>;
   currentBalances: ReportSection<CurrentBalanceReport>;
   movements: ReportSection<MovementReport>;
   activities: ReportSection<ActivityReport>;

@@ -24,11 +24,6 @@ const adminRoutes = [
     title: "Horarios",
     action: "Nuevo plan",
   },
-  {
-    path: `/admin/schedules/attendance?cycleId=${E2E_CYCLE_ID}&date=2027-01-18`,
-    title: "Asistencia",
-    action: /Presente para Curie, Marie/,
-  },
   { path: "/admin/hours", title: "Horas", action: "Registrar movimiento" },
   {
     path: `/admin/hours/movements?cycleId=${E2E_CYCLE_ID}&tutorId=${E2E_PRIMARY_TUTOR_ID}`,

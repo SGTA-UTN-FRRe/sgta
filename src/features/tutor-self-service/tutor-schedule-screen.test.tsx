@@ -27,7 +27,7 @@ describe("TutorScheduleScreen", () => {
     const layout = screen.getByRole("list", { name: "Vista semanal de guardias" });
     expect(layout).toHaveAttribute("data-layout", "schedule-day-list-week");
     expect(layout.className).toContain("md:grid-cols-7");
-    expect(screen.queryByRole("button", { name: /editar|eliminar|asistencia|revertir/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /editar|eliminar|revertir/i })).not.toBeInTheDocument();
   });
 
   it("exposes loading, empty, required-action, and error states", () => {

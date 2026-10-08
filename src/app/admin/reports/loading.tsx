@@ -10,7 +10,7 @@ export default function AdminReportsLoading() {
       role="status"
     >
       <PageHeader
-        description="Consultar demanda, cobertura, asistencia y movimientos a partir de registros consolidados."
+        description="Consultar demanda, cobertura y movimientos a partir de registros consolidados."
         title="Reportes"
       />
       <Card>

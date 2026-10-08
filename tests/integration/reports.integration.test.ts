@@ -4,13 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   activity,
   administrativeCycle,
-  attendanceRecord,
   auditEvent,
   career,
   consultation,
   consultationImportRun,
   consultationStaging,
-  dutyOccurrence,
   hourCategory,
   hourMovement,
   scheduleAssignment,
@@ -44,8 +42,6 @@ async function resetDatabase() {
       "consultation_import_run",
       "hour_movement",
       "activity",
-      "attendance_record",
-      "duty_occurrence",
       "schedule_assignment",
       "schedule_plan",
       "hour_category",
@@ -501,47 +497,6 @@ async function createReportFixtures() {
     ),
   };
 
-  async function createOccurrence(
-    date: string,
-    assignment: typeof assignments.sep18,
-    status: "PRESENT" | "ABSENT" | "PENDING" | null,
-  ) {
-    const [created] = await database
-      .insert(dutyOccurrence)
-      .values({
-        cycleId: openCycleRecord.id,
-        planId: assignment.planId,
-        assignmentId: assignment.id,
-        tutorId: assignment.tutorId,
-        occurrenceDate: date,
-        startMinutes: assignment.startMinutes,
-        endMinutes: assignment.endMinutes,
-        kind: assignment.kind,
-        modality: assignment.modality,
-      })
-      .returning();
-    const occurrence = requireCreated(created, `Occurrence ${date}`);
-    if (status !== null) {
-      await database.insert(attendanceRecord).values({
-        occurrenceId: occurrence.id,
-        status,
-        actorId: admin.id,
-      });
-    }
-    return occurrence;
-  }
-
-  const occurrences = {
-    sep18: await createOccurrence("2026-09-18", assignments.sep18, "PRESENT"),
-    sep19: await createOccurrence(
-      "2026-09-19",
-      assignments.sep19SpecialDuty,
-      "ABSENT",
-    ),
-    sep20: await createOccurrence("2026-09-20", assignments.sep20, "PENDING"),
-    sep21: await createOccurrence("2026-09-21", assignments.sep21, null),
-  };
-
   const activityRows: Array<{
     id: string;
     kind: "MEETING" | "WORKSHOP" | "EXTRAORDINARY" | "RECOVERY";
@@ -668,7 +623,6 @@ async function createReportFixtures() {
     },
     tutors: { owing: owingTutor, positive: positiveTutor, zero: zeroTutor, inactive: inactiveTutor, historical: historicalTutor },
     assignments,
-    occurrences,
     activities: activityRows,
     movements: { ...movements, reversedDebit },
   };
@@ -756,17 +710,6 @@ describe("PostgreSQL reporting integration", () => {
         ],
       },
     });
-    expect(report.attendance).toEqual({
-      status: "ready",
-      data: {
-        dueOccurrences: 4,
-        present: 1,
-        absent: 1,
-        pending: 2,
-        registered: 2,
-        registrationRatePercent: 50,
-      },
-    });
     expect(report.currentBalances).toMatchObject({
       status: "ready",
       data: { totalTutors: 3, owes: 1, current: 2 },
@@ -810,10 +753,6 @@ describe("PostgreSQL reporting integration", () => {
 
     expect(overview.cycle).toMatchObject({ id: fixture.openCycle.id, name: "Open report cycle" });
     if (overview.cycle === null) throw new Error("The overview cycle should be available.");
-    expect(overview.pendingAttendance).toEqual({
-      status: "ready",
-      value: { count: 2, firstDate: "2026-09-20" },
-    });
     expect(overview.negativeBalances).toEqual({ status: "ready", value: 1 });
     expect(overview.consultationReviews).toEqual({ status: "ready", value: 1 });
     expect(overview.consultationSource).toEqual({
@@ -861,10 +800,6 @@ describe("PostgreSQL reporting integration", () => {
       status: "ready",
       data: { totalOccurrences: 1, totalMinutes: 60 },
     });
-    expect(filtered.attendance).toMatchObject({
-      status: "ready",
-      data: { dueOccurrences: 1, present: 1, absent: 0, pending: 0 },
-    });
     expect(filtered.currentBalances).toMatchObject({
       status: "ready",
       data: { totalTutors: 1, owes: 1, current: 0 },
@@ -890,10 +825,6 @@ describe("PostgreSQL reporting integration", () => {
     expect(unspecified.plannedSchedules).toMatchObject({
       status: "ready",
       data: { totalOccurrences: 1, totalMinutes: 45 },
-    });
-    expect(unspecified.attendance).toMatchObject({
-      status: "ready",
-      data: { dueOccurrences: 1, pending: 1, registrationRatePercent: 0 },
     });
 
     const subjectOnly = await getOperationalReport(
@@ -957,9 +888,6 @@ describe("PostgreSQL reporting integration", () => {
     );
     expect(empty.consultationDemand).toMatchObject({ status: "ready", data: { total: 0 } });
     expect(empty.plannedSchedules).toMatchObject({ status: "ready", data: { totalOccurrences: 0 } });
-    expect(empty.attendance).toMatchObject({ status: "ready", data: { dueOccurrences: 0 } });
-    expect(empty.attendance.status === "ready" && empty.attendance.data.registrationRatePercent)
-      .toBeNull();
     expect(empty.activities).toMatchObject({ status: "ready", data: { totalActivities: 0 } });
 
     await database

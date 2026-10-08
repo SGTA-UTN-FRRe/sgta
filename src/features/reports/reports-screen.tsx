@@ -551,47 +551,10 @@ function CoverageSection({
         </p>
       ) : (
         <SectionState
-          description="La asistencia y las guardias programadas continúan disponibles."
+          description="Las demás métricas operativas siguen disponibles."
           retryHref={retryHref}
           title="No se pudo cargar la cobertura"
         />
-      )}
-    </ReportCard>
-  );
-}
-
-function AttendanceSection({
-  section,
-  retryHref,
-}: {
-  section: OperationalReport["attendance"];
-  retryHref: string;
-}) {
-  return (
-    <ReportCard
-      title="Registro de asistencia"
-      description="Período, tutor y modalidad. Cuenta guardias vencidas; el porcentaje indica registro, no presencia."
-    >
-      {section.status !== "ready" ? (
-        <SectionState
-          description="Las demás métricas operativas siguen disponibles."
-          retryHref={retryHref}
-          title="No se pudo cargar la asistencia"
-        />
-      ) : (
-        <div className="space-y-4">
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <InlineMetric label="Vencidas" value={section.data.dueOccurrences} />
-            <InlineMetric label="Presentes" value={section.data.present} />
-            <InlineMetric label="Ausentes" value={section.data.absent} />
-            <InlineMetric label="Pendientes" value={section.data.pending} />
-          </dl>
-          {section.data.registrationRatePercent !== null && (
-            <p className="text-sm text-foreground-secondary">
-              Registradas: {percentFormatter.format(section.data.registrationRatePercent)} %
-            </p>
-          )}
-        </div>
       )}
     </ReportCard>
   );
@@ -672,7 +635,7 @@ function PlannedSchedulesSection({
   );
 }
 
-function CoverageAndAttendance({
+function CoverageAndSchedules({
   report,
   retryHref,
 }: {
@@ -682,19 +645,16 @@ function CoverageAndAttendance({
   return (
     <section aria-labelledby="coverage-heading" className="space-y-4">
       <SectionHeading
-        description="La cobertura y los saldos muestran el estado actual del ciclo abierto; la programación y la asistencia corresponden al período seleccionado."
+        description="La cobertura y los saldos muestran el estado actual del ciclo abierto; la programación corresponde al período seleccionado."
         id="coverage-heading"
-        title="Cobertura y asistencia"
+        title="Cobertura"
       />
-      <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-4">
         <CoverageSection report={report} retryHref={retryHref} />
-        <AttendanceSection section={report.attendance} retryHref={retryHref} />
-        <div className="xl:col-span-2">
-          <PlannedSchedulesSection
-            retryHref={retryHref}
-            section={report.plannedSchedules}
-          />
-        </div>
+        <PlannedSchedulesSection
+          retryHref={retryHref}
+          section={report.plannedSchedules}
+        />
       </div>
     </section>
   );
@@ -902,7 +862,6 @@ function isPeriodEmpty(report: OperationalReport) {
   if (
     report.consultationDemand.status !== "ready" ||
     report.plannedSchedules.status !== "ready" ||
-    report.attendance.status !== "ready" ||
     report.movements.status !== "ready" ||
     report.activities.status !== "ready"
   ) {
@@ -912,7 +871,6 @@ function isPeriodEmpty(report: OperationalReport) {
   return (
     report.consultationDemand.data.total === 0 &&
     report.plannedSchedules.data.totalOccurrences === 0 &&
-    report.attendance.data.dueOccurrences === 0 &&
     report.movements.data.creditCount + report.movements.data.debitCount === 0 &&
     report.activities.data.totalActivities === 0
   );
@@ -934,7 +892,7 @@ export function ReportsScreen({
   return (
     <div className="space-y-6 pb-8">
       <PageHeader
-        description="Consultar demanda, cobertura, asistencia y movimientos a partir de registros consolidados."
+        description="Consultar demanda, cobertura y movimientos a partir de registros consolidados."
         title="Reportes"
       />
 
@@ -1032,7 +990,7 @@ export function ReportsScreen({
           )}
 
           <DemandSection retryHref={retryHref} section={report.consultationDemand} />
-          <CoverageAndAttendance report={report} retryHref={retryHref} />
+          <CoverageAndSchedules report={report} retryHref={retryHref} />
           <HoursAndActivities report={report} retryHref={retryHref} />
         </>
       )}

@@ -42,7 +42,6 @@ Technical names remain implementation details.
 | `Tutor` | Tutor |
 | `HourLedger` | Horas / Crédito de horas |
 | `HourMovement` | Movimiento |
-| `AttendanceRecord` | Asistencia |
 | `Consultation` | Consulta |
 | `SchedulePlan` | Horario / Plan de horario |
 | `AdministrativeCycle` | Ciclo |
@@ -208,7 +207,6 @@ Offline-first behavior is not part of the first release.
 | `/admin/tutors` | Tutores | Admin | Manage tutors and academic assignments | P0 |
 | `/admin/tutors/subjects` | Materias | Admin | Inspect derived subject coverage | P1 |
 | `/admin/schedules` | Horarios | Admin | Manage regular and special schedule plans | P0 |
-| `/admin/schedules/attendance` | Asistencia | Admin | Register attendance by duty occurrence | P0 |
 | `/admin/hours` | Horas | Admin | Understand balances and register movements | P0 |
 | `/admin/hours/movements` | Movimientos | Admin | Inspect and reverse hour history | P0 |
 | `/admin/consultations` | Consultas | Admin | Import, review, classify, and inspect consultations | P0 |
@@ -572,10 +570,10 @@ PageHeader
 Current cycle context
 
 Necesita atención
-+-------------------+ +-------------------+ +-------------------+
-| Asistencia        | | Horas             | | Consultas         |
-| pendiente         | | saldo negativo    | | por revisar       |
-+-------------------+ +-------------------+ +-------------------+
++-------------------+ +-------------------+
+| Horas             | | Consultas         |
+| saldo negativo    | | por revisar       |
++-------------------+ +-------------------+
 
 Hoy / Proximamente
 operational list
@@ -596,7 +594,6 @@ Compact:
 #### Data requirements
 
 - current open cycle;
-- pending attendance count/list;
 - negative balance count/list;
 - consultations requiring review;
 - upcoming duty context.
@@ -607,28 +604,6 @@ Optional:
 
 Do not load vanity totals merely because they exist.
 
-#### Pending attendance definition
-
-An occurrence is pending attention when it belongs to the open cycle, its
-scheduled end instant is at or before the current time in
-`America/Argentina/Buenos_Aires`, and its attendance is `PENDING` or has not yet
-received an `AttendanceRecord`. An occurrence for today is not due until its
-scheduled end time. Future and in-progress occurrences remain in the Today /
-Próximamente list and do not appear in the pending-attendance count.
-
-The count and linked list use the same rule. Recording either `PRESENT` or
-`ABSENT` clears the attendance attention item; a separate absence debit decision
-does not keep attendance pending. Closed-cycle occurrences are historical and
-do not appear as actionable overview items.
-
-The negative-balance count/list uses active Tutors with membership in the open
-cycle and a movement-derived signed balance below zero. Zero and positive
-balances are not negative; reversal movements participate with their recorded
-direction. The consultation-review count is the number of staging records in
-`PENDING_REVIEW`, including rows with pending classification; `READY`,
-`CONSOLIDATED`, and `DUPLICATE` rows are not in this attention count. A source
-outage does not remove locally stored review records.
-
 #### Interactions
 
 Attention item click:
@@ -637,7 +612,7 @@ Attention item click:
 
 External consultation source failure:
 
-- does not block internal attendance/hour/schedule information.
+- does not block internal hour and schedule information.
 
 #### States
 
@@ -1181,13 +1156,6 @@ Assignment:
 - modality/type when relevant;
 - subject context only when scheduling rules require it.
 
-Duty occurrence:
-
-- stable occurrence identity;
-- effective date/time;
-- tutor;
-- source assignment/plan.
-
 #### Interaction: Create/Edit assignment
 
 Use a side sheet or dialog depending on form complexity.
@@ -1271,128 +1239,6 @@ Within that cycle:
 - [ ] Compact day/list mode is usable.
 - [ ] Assignment conflicts explain recovery.
 - [ ] UI preserves the Golden Screen quality contract.
-
-### View: Asistencia
-
-#### Overview
-
-```text
-Route: /admin/schedules/attendance
-Access: Admin
-Priority: P0
-Primary user: Admin
-Related workflow: Attendance and absence debit
-```
-
-The default date is today in Argentina, clamped to the open cycle.
-
-**Purpose:** Record what happened for scheduled duty occurrences quickly.
-
-**User goal:** Mark Present/Falta and, when appropriate, confirm the corresponding absence debit.
-
-**Success condition:** Attendance is recorded and hour balance changes only after explicit administrative confirmation.
-
-#### Information hierarchy
-
-1. date and schedule context;
-2. occurrence list;
-3. Present/Falta controls;
-4. pending debit confirmation.
-
-**Primary action:** row-level attendance actions rather than a page-level CTA.
-
-#### Layout
-
-```text
-Asistencia
-[Fecha] [Plan/turno context]
-
-Tutor                  Horario       Estado
-Guillermo Husak        08:00-10:00  [Presente] [Falta]
-...
-```
-
-Compact:
-
-- one occurrence per structured row;
-- Present/Falta targets remain touch-friendly.
-
-#### Data requirements
-
-- duty occurrence;
-- tutor identity;
-- scheduled interval;
-- current attendance state;
-- existing linked hour movement when applicable.
-- active hour categories eligible for an absence debit;
-- active recovery category and origin context for recovery-marked occurrences.
-
-#### Interaction: Present
-
-- records `PRESENT`;
-- does not create an hour movement.
-
-#### Interaction: Falta
-
-- records/sets attendance intent;
-- calculates proposed minutes from the occurrence duration;
-- requires an explicitly selected active non-recovery hour category for a debit;
-- allows recognized debit minutes to be adjusted within the occurrence duration;
-- Admin confirms or adjusts recognized debit;
-- debit movement is created only after confirmation.
-
-If the debit confirmation is cancelled:
-
-- `ABSENT` remains recorded because Attendance represents what occurred;
-- no HourMovement is created;
-- the UI makes the absence-without-debit state explicit;
-- Admin may create the debit later from the same attendance context when the business decision is made.
-
-For a recovery-marked occurrence, attendance does not create credit implicitly.
-The row exposes an explicit `Reconocer recuperación` action, which requires an
-active recovery category and shows the linked origin after success.
-
-#### Correction
-
-Attendance correction is explicit and auditable.
-
-If a linked hour movement already exists, the correction flow explains how the movement is reversed/adjusted.
-
-#### States
-
-Default, Loading, Empty, Error, Success, Required action, and the explicit
-absence-without-debit state are reachable. Recovery-marked occurrences expose
-an explicit recognition action until a recovery origin is linked.
-
-Required action examples:
-
-- no effective schedule for selected date;
-- no open cycle.
-
-#### Accessibility
-
-- status controls have full accessible names;
-- keyboard action order follows row order;
-- confirmation dialog explains tutor, date, duration, and effect.
-
-#### Microcopy
-
-| Element | Copy |
-|---|---|
-| Page title | Asistencia |
-| Present | Presente |
-| Absent | Falta |
-| Debit dialog title | Confirmar débito por inasistencia |
-| Absence without debit | Falta registrada sin débito |
-| Debit category label | Categoría de horas |
-| Recovery action | Reconocer recuperación |
-
-#### Acceptance criteria
-
-- [ ] Present never creates hour credit.
-- [ ] Falta never changes balance without confirmation.
-- [ ] Correcting attendance remains traceable.
-- [ ] Compact interaction is practical for repeated marking.
 
 ### View: Consultas
 
@@ -1586,7 +1432,7 @@ Related workflow: Operational reporting
 
 **Purpose:** Answer administrative questions from canonical SGTA data.
 
-**User goal:** Filter a period and understand demand, coverage, attendance, and hour status.
+**User goal:** Filter a period and understand demand, schedule coverage, and hour status.
 
 **Success condition:** Reports are derived, explainable, accessible, and do not require manual spreadsheet reconstruction.
 
@@ -1595,7 +1441,7 @@ Related workflow: Operational reporting
 1. global filters;
 2. concise useful summary;
 3. demand breakdown;
-4. coverage and attendance;
+4. schedule coverage;
 5. hour and activity breakdown.
 
 **Primary action:** None by default.
@@ -1612,7 +1458,7 @@ Demanda
 [visualization if useful]
 [detailed/ranked table]
 
-Cobertura y asistencia
+Cobertura
 
 Horas y actividades
 ```
@@ -1635,7 +1481,6 @@ Operational:
 - active tutors;
 - subject coverage;
 - planned schedule coverage;
-- attendance;
 - current balance state;
 - movements;
 - activities.
@@ -1689,22 +1534,12 @@ Operational measures use these definitions:
   snapshot, not a historical coverage reconstruction. When no cycle is open,
   show that coverage is unavailable rather than deriving it from an older
   cycle.
-- **Guardias programadas:** count effective planned occurrences and sum their
-  scheduled minutes in the selected period, using the effective plan and
-  regular/special precedence defined by Horarios for each date. Separate
-  ordinary and recovery-marked occurrences by kind. This describes scheduled
-  supply; the data model has no required-capacity denominator, so do not label
-  it as a percentage of unmet or fulfilled demand.
-- **Registro de asistencia:** count `PRESENT`, `ABSENT`, and pending due
-  occurrences for the selected period. Attendance status counts and the
-  registration rate include due occurrences only; future and not-yet-ended
-  occurrences appear only in Guardias programadas. The rate numerator is due
-  occurrences marked `PRESENT` or `ABSENT`; the denominator is all due
-  occurrences (`PRESENT`, `ABSENT`, and `PENDING`, including an occurrence with
-  no attendance row). An occurrence is due at or after its scheduled end time
-  in Argentina local time. When the denominator is zero, show counts and omit
-  the rate. This is a recording-completion rate, not a presence or performance
-  rate.
+- **Guardias programadas:** count effective planned schedule entries and sum
+  their scheduled minutes for each date in the selected period, using the
+  effective plan and regular/special precedence defined by Horarios. Separate
+  ordinary and recovery-marked schedule entries by kind. This describes
+  scheduled supply; the data model has no required-capacity denominator, so do
+  not label it as a percentage of unmet or fulfilled demand.
 - **Estado de saldos actual:** count active Tutors with membership in the open
   cycle by the existing derived states: `owes` for a signed balance below zero
   and `current` for zero or a positive balance. Balances are derived from all
@@ -1736,12 +1571,12 @@ it; unrelated sections are not silently reinterpreted by a filter.
 | Consultation demand | Yes | Yes | Yes, `SUBJECT` only | Yes | Yes | Breakdown only |
 | Active tutor count | No | Yes | No | Yes | No | No |
 | Subject coverage snapshot | No | Yes | Yes | Yes | No | No |
-| Planned schedule and attendance | Yes | No | No | Yes | Yes | No |
+| Planned schedule | Yes | No | No | Yes | Yes | No |
 | Current balance snapshot | No | Yes | No | Yes | No | No |
 | Movements and activities | Yes | No | No | Yes | No | No |
 
-Career and Subject are not applied retroactively to schedule, attendance,
-movement, or activity history: those records do not preserve historical
+Career and Subject are not applied retroactively to schedule, movement, or
+activity history: those records do not preserve historical
 Career/Subject assignments. For the active-tutor and balance snapshots, Career
 uses the Tutor's current primary Career; subject coverage uses the Career linked
 to each Subject. A Tutor filter on Activities selects distinct Activity
@@ -1798,10 +1633,8 @@ Degraded:
 - [ ] Every metric derives from canonical data.
 - [ ] Period defaults, inclusive date boundaries, supported range, and URL
   parameters are deterministic.
-- [ ] Pending attendance is due only after the occurrence end time and never
-  includes future or in-progress duties.
-- [ ] Coverage, attendance, balance, movement, and activity values follow the
-  definitions above; no unsupported coverage or presence rate is implied.
+- [ ] Schedule coverage, balance, movement, and activity values follow the
+  definitions above; no unsupported coverage rate is implied.
 - [ ] Each filter affects only the sections listed in Filter scope.
 - [ ] No persisted manual report result becomes a source of truth.
 - [ ] No causal academic claim is implied.
@@ -2021,7 +1854,6 @@ Acceptance criteria:
 | Admin overview | Default, Loading, Empty, Error, Degraded, Required action | Internal sections remain usable when one source fails |
 | Tutores | Default, Loading, Empty, Search empty, Error, Success, Required action | Add tutor, retry, clear filters, resolve prerequisite |
 | Horarios | Default, Loading, Empty, Error, Success, Required action, Conflict | Create/open plan, correct conflict |
-| Asistencia | Default, Loading, Empty, Error, Success, Required action | Preserve selected date/context on retry |
 | Horas | Default, Loading, Empty, Search empty, Error, Success, Required action | Preserve valid transaction input when safe |
 | Consultas | Default, Loading, Empty, Search empty, Error, Unavailable, Degraded, Success | Existing canonical data remains available |
 | Reportes | Default, Loading, Empty, Error, Degraded | Prefer section-level degradation |
@@ -2037,7 +1869,6 @@ Acceptance criteria:
 | Tutores | Structured rows/cards | Reduced table | Full table | Replace + Reflow |
 | Materias | Disclosure list | Compact table | Expandable table | Replace + Reflow |
 | Horarios | Day/list editor | Reduced multi-day | Full week grid | Replace |
-| Asistencia | Touch-first list | Hybrid | Compact table/list | Reflow |
 | Horas | Balance list + full-height transaction | Table + sheet/dialog | Full table + dialog | Reflow |
 | Consultas | Stacked filters/rows | Reduced table | Full table + review sheet | Reflow + Collapse |
 | Reportes | Stacked sections | Mixed columns | Wide composition | Reflow |

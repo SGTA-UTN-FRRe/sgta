@@ -40,7 +40,7 @@ Transform the current SGTA scaffold into a coherent operational product for Tuto
 
 - high-quality tutor and academic administration;
 - traceable hour accounting;
-- strong scheduling and attendance UX;
+- strong schedule-planning UX;
 - polished tutor self-service;
 - safe consultation intake;
 - useful reporting;
@@ -96,7 +96,7 @@ Therefore the project continues from the scaffold rather than restarting from ze
 | 4 | Persistence, identity, authorization, cycle, and audit foundation | P0 | Complete |
 | 5 | Tutor and academic operations | P0 | Complete |
 | 6 | Hour ledger, activities, and recovery | P0 | Complete |
-| 7 | Scheduling and attendance | P0 | Planned |
+| 7 | Schedule planning | P0 | Complete |
 | 8 | Tutor self-service | P0 | Complete |
 | 9 | Consultation intake and data curation | P0 | Complete |
 | 10 | Admin overview and reporting | P0 | Planned |
@@ -393,7 +393,7 @@ No direct mutable balance exists.
 - [x] Direction, category, duration, date, and selected tutors are explicit before confirmation.
 - [x] UI quality matches the Golden Screen contract.
 
-### Phase 7 - Scheduling and attendance
+### Phase 7 - Schedule planning
 
 - **Priority:** P0
 - **Status:** Complete
@@ -401,7 +401,7 @@ No direct mutable balance exists.
 
 #### Objective
 
-Replace schedule spreadsheet editing with a structured planner and connect effective duty occurrences to fast attendance.
+Replace schedule spreadsheet editing with a structured planner for regular and special plans.
 
 #### Locked scheduling rule
 
@@ -419,17 +419,11 @@ Within that cycle:
 
 - SchedulePlan;
 - ScheduleAssignment;
-- stable DutyOccurrence identity;
 - regular and special plans;
 - plan switching;
 - schedule workspace;
 - form-based editing;
 - drag/resize only as progressive enhancement;
-- AttendanceRecord;
-- Present/Falta;
-- absence debit proposal;
-- Admin confirmation;
-- persisted ABSENT state even when the debit proposal is cancelled;
 - recovery scheduling integration;
 - audit;
 - critical real-stack E2E.
@@ -439,9 +433,6 @@ Within that cycle:
 - [x] Special plans never destroy the regular plan.
 - [x] Ambiguous overlapping special plans are prevented.
 - [x] Schedule is complete without drag-and-drop.
-- [x] Present never changes hour balance.
-- [x] Falta remains recorded even when the proposed debit is cancelled.
-- [x] Falta never changes balance without Admin confirmation.
 - [x] Compact day/list mode is usable.
 - [x] Critical E2E passes.
 
@@ -540,7 +531,6 @@ Turn daily operation into useful attention states and reports without decorative
 Admin overview:
 
 - current cycle;
-- pending attendance;
 - negative balances;
 - consultations requiring review;
 - today/upcoming schedule.
@@ -552,7 +542,6 @@ Reports:
 - subject/career/tutor/modality/stage breakdown;
 - temporal demand;
 - operational coverage;
-- attendance;
 - balance state;
 - activities.
 

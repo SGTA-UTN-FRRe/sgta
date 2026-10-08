@@ -181,7 +181,6 @@ test.describe("UI smoke journeys", () => {
       "/admin/hours",
       "/admin/hours/movements",
       "/admin/schedules",
-      "/admin/schedules/attendance",
       "/admin/consultations",
       "/admin/reports",
     ]) {

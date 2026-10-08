@@ -97,8 +97,6 @@ function createWorkspace(
     currentCycle: cycle,
     effective: {
       date: "2026-09-14",
-      occurrences: [],
-      plan: regularPlan,
     },
     eligibleTutors: tutors,
     conflicts: [],
@@ -310,7 +308,7 @@ describe("SchedulesScreen", () => {
     });
     const specialWorkspace = createWorkspace({
       assignments: [],
-      effective: { date: "2026-09-21", occurrences: [], plan: activeSpecialPlan },
+      effective: { date: "2026-09-21" },
       plans: [regularPlan, activeSpecialPlan],
       requestedDate: "2026-09-21",
       selectedPlan: activeSpecialPlan,
@@ -503,7 +501,7 @@ describe("SchedulesScreen", () => {
     const user = userEvent.setup();
     const emptyWorkspace = createWorkspace({
       assignments: [],
-      effective: { date: "2026-09-14", occurrences: [], plan: null },
+      effective: { date: "2026-09-14" },
       plans: [],
       selectedPlan: null,
     });
@@ -515,7 +513,7 @@ describe("SchedulesScreen", () => {
     };
     const savedWorkspace = createWorkspace({
       assignments: [],
-      effective: { date: "2026-09-14", occurrences: [], plan: createdPlan },
+      effective: { date: "2026-09-14" },
       plans: [createdPlan],
       selectedPlan: createdPlan,
     });
@@ -602,7 +600,7 @@ describe("SchedulesScreen", () => {
         state="no-plan"
         workspace={createWorkspace({
           assignments: [],
-          effective: { date: "2026-09-14", occurrences: [], plan: null },
+          effective: { date: "2026-09-14" },
           plans: [],
           selectedPlan: null,
         })}

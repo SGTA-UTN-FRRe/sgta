@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml/badge.svg)](https://github.com/SGTA-UTN-FRRe/sgta/actions/workflows/ci.yml)
 
-> Current repository status: an executable Next.js application with a live Admin overview and reports, tutor self-service, academic, hour-accounting, scheduling, attendance, and consultation-intake workflows, the SGTA UI, and a secure platform foundation.
+> Current repository status: an executable Next.js application with a live Admin overview and reports, tutor self-service, academic, hour-accounting, schedule-planning, and consultation-intake workflows, the SGTA UI, and a secure platform foundation.
 
-SGTA is the operational workspace for the Tutorias area at UTN FRRe. The repository currently contains the application shell, protected role-based navigation, PostgreSQL persistence, provisioned Google-only authentication, AdministrativeCycle lifecycle controls, the live Admin overview and canonical operational reports, Tutor self-service, Admin tutor and academic catalog workflows, hour accounting, scheduling, attendance, consultation intake, safe audit events, and shared UI components. Production workflows remain deferred.
+SGTA is the operational workspace for the Tutorias area at UTN FRRe. The repository currently contains the application shell, protected role-based navigation, PostgreSQL persistence, provisioned Google-only authentication, AdministrativeCycle lifecycle controls, the live Admin overview and canonical operational reports, Tutor self-service, Admin tutor and academic catalog workflows, hour accounting, schedule planning, consultation intake, safe audit events, and shared UI components. Production workflows remain deferred.
 
 ## Current state
 
@@ -15,14 +15,14 @@ The current runtime provides:
 - session sign-out from the Admin and Tutor navigation and `/forbidden`, with pending/error feedback and a return to `/login`;
 - structural Admin and Tutor route-loading skeletons, safe segment-error recovery that preserves navigation, and a branded missing-page state;
 - Admin route surfaces for the overview, live tutor and Materias workflows, schedules, hours, consultations, reports, and configuration;
-- a live `/admin` overview with current-cycle context, actionable attendance, balance, and consultation attention, today's and upcoming duties, and deliberate consultation-source degradation;
-- read-only `/admin/reports` with shareable period and dimension filters, canonical consultation demand, current-cycle coverage and balances, planned attendance, movements, and activities;
+- a live `/admin` overview with current-cycle context, actionable balance and consultation attention, today's and upcoming duties, and deliberate consultation-source degradation;
+- read-only `/admin/reports` with shareable period and dimension filters, canonical consultation demand, current-cycle coverage and balances, planned schedules, movements, and activities;
 - live Admin tutor management at `/admin/tutors`, including search/filter, create/edit, academic relationships, current-cycle membership, and non-destructive inactivation/reactivation;
 - derived current-cycle Materias coverage at `/admin/tutors/subjects`, reconstructed from canonical Subject, TutorSubject, Tutor, and TutorCycleMembership rows;
 - low-frequency Career, Subject, and scholarship-reference maintenance from `/admin/settings`, with active/inactive lifecycle controls and no hard deletion;
 - live Admin hour accounting at `/admin/hours`, including derived balances, individual and atomic bulk movements, activity/recovery origins, and immutable reversal workflows;
 - Admin movement history at `/admin/hours/movements` plus hour-category maintenance under `/admin/settings`;
-- live Admin schedule planning and attendance workflows at `/admin/schedules` and `/admin/schedules/attendance`, with regular/special plans, stable duty occurrences, cycle-aware history, and protected APIs for plan, assignment, attendance, debit, correction, and recovery operations;
+- live Admin schedule planning and assignment editing at `/admin/schedules`, with regular/special plans, cycle-aware history, and protected plan and assignment APIs;
 - live Admin consultation intake at `/admin/consultations`, with read-only Google Sheets import, idempotent staging, explicit anomaly and duplicate review, canonical classification, and preserved records when the source is unavailable;
 - Tutor self-service at `/tutor`, `/tutor/schedule`, and `/tutor/hours`, with owner-scoped subjects, cycle and scholarship context, effective schedule, signed balance, and movement history;
 - responsive Admin and Tutor navigation shells;
@@ -31,9 +31,9 @@ The current runtime provides:
 - cycle administration at `/admin/settings`, including current-cycle context, explicit close confirmation, preserved history, and recovery states;
 - append-only audit recording for provisioning, session creation, cycle creation/close, and consultation import/review with bounded non-sensitive metadata;
 - shared components for navigation, page headers, empty states, status badges, Faro branding, buttons, cards, inputs, and tables;
-- unit/component tests, protected route coverage, isolated PostgreSQL/Testcontainers integration tests, and Playwright coverage for unauthenticated protection plus authenticated Tutor self-service and Admin overview/reporting, tutor/Materias, scheduling/attendance, hour-accounting, and consultation journeys across supported viewports.
+- unit/component tests, protected route coverage, isolated PostgreSQL/Testcontainers integration tests, and Playwright coverage for unauthenticated protection plus authenticated Tutor self-service and Admin overview/reporting, tutor/Materias, schedule planning, hour-accounting, and consultation journeys across supported viewports.
 
-The Admin overview and reports read current canonical operational data on the server. Reports use URL-backed filters and do not persist results or query the consultation source; a source outage leaves consolidated consultation reporting available. Consultation Sheets access remains a server-only, read-only boundary; Admin curation controls staging and canonical records, while source failures leave canonical history available. The Admin schedule page supports protected regular/special plan creation, switching, assignment editing, lifecycle changes, conflict feedback, stable occurrence materialization, and responsive live refreshes. Attendance supports date-scoped occurrence marking, explicit active-category absence debit decisions, persisted absence-without-debit state, traceable correction, recovery recognition, and historical reads after cycle close. Tutor self-service pages are live read-only views backed by server-side owner resolution for the current cycle, scholarship reference, effective schedule, signed balance, and movement history. Protected Tutor, Materias, Settings, consultation, and API surfaces require the server-side identity and role boundary when authentication is configured.
+The Admin overview and reports read current canonical operational data on the server. Reports use URL-backed filters and do not persist results or query the consultation source; a source outage leaves consolidated consultation reporting available. Consultation Sheets access remains a server-only, read-only boundary; Admin curation controls staging and canonical records, while source failures leave canonical history available. The Admin schedule page supports protected regular/special plan creation, switching, assignment editing, lifecycle changes, conflict feedback, and responsive live refreshes. Tutor self-service pages are live read-only views backed by server-side owner resolution for the current cycle, scholarship reference, effective schedule, signed balance, and movement history. Protected Tutor, Materias, Settings, consultation, and API surfaces require the server-side identity and role boundary when authentication is configured.
 
 ## Not implemented in the current runtime
 
@@ -73,7 +73,7 @@ Server session and role boundary
    └──► Drizzle / PostgreSQL (src/db/)
 ```
 
-The `src/auth/` directory owns server-side authentication and authorization plus a client-only Better Auth client for sign-in and sign-out. `src/db/` is an active server-only persistence boundary. `src/features/` contains the implemented Admin overview and reporting, cycle/settings, Tutor self-service and academic, scheduling/attendance, hour-accounting, and consultation-intake slices plus reserved locations for later domain verticals. Client components receive safe display data and do not own authorization or role decisions.
+The `src/auth/` directory owns server-side authentication and authorization plus a client-only Better Auth client for sign-in and sign-out. `src/db/` is an active server-only persistence boundary. `src/features/` contains the implemented Admin overview and reporting, cycle/settings, Tutor self-service and academic, scheduling, hour-accounting, and consultation-intake slices plus reserved locations for later domain verticals. Client components receive safe display data and do not own authorization or role decisions.
 
 ## Current routes
 
@@ -85,7 +85,6 @@ The `src/auth/` directory owns server-side authentication and authorization plus
 | `/admin/tutors` | Admin-protected live tutor management and academic relationship workflow. |
 | `/admin/tutors/subjects` | Admin-protected derived Materias coverage for the open cycle. |
 | `/admin/schedules` | Admin-protected live schedule planning and editing for cycle plans and assignments. |
-| `/admin/schedules/attendance` | Admin-protected live attendance marking, explicit debit decisions, correction, and recovery recognition. |
 | `/admin/hours` | Admin-protected live hour balances and movement registration. |
 | `/admin/hours/movements` | Admin-protected movement history and reversal workflow. |
 | `/admin/consultations` | Admin-protected consultation import, review, classification, filtering, and canonical history. |
@@ -102,7 +101,7 @@ The `src/auth/` directory owns server-side authentication and authorization plus
 | `/api/admin/tutors` and `/api/admin/tutors/...` | Admin-protected tutor CRUD, status, and current-cycle academic relationship handlers. |
 | `/api/admin/tutors/subjects` | Admin-protected derived Materias coverage handler. |
 | `/api/admin/hours` and `/api/admin/hours/...` | Admin-protected hour balances, movement registration, movement history, and reversal handlers. |
-| `/api/admin/schedules` and `/api/admin/schedules/...` | Admin-protected schedule workspace, plan, assignment, attendance, debit, correction, and recovery handlers. |
+| `/api/admin/schedules` and `/api/admin/schedules/...` | Admin-protected schedule workspace, plan, and assignment handlers. |
 | `/api/admin/consultations` | Admin-protected consultation workspace and canonical records. |
 | `/api/admin/consultations/import` | Admin-protected on-demand read-only source import and staging summary. |
 | `/api/admin/consultations/review/[stagingId]` | Admin-protected consultation staging review and consolidation. |
@@ -119,7 +118,7 @@ The `src/auth/` directory owns server-side authentication and authorization plus
 | `src/components/ui/` | Local low-level UI primitives used by the application. |
 | `src/mocks/` | Synthetic development data used by the current screen implementations. |
 | `src/shared/` | Shared navigation, branding, page, state, and utility components. |
-| `src/features/` | Cycle/settings, Tutor self-service and academic, scheduling/attendance, hour-accounting, and consultation-intake implementations, plus future vertical slices. |
+| `src/features/` | Cycle/settings, Tutor self-service and academic, scheduling, hour-accounting, and consultation-intake implementations, plus future vertical slices. |
 | `src/auth/` | Better Auth configuration, identity policy, provisioning, and server authorization. |
 | `src/db/` | Drizzle schema, audit validation/recording, PostgreSQL client, and migrations boundary. |
 | `drizzle/` | Committed Drizzle migration artifacts. |
@@ -249,7 +248,7 @@ balances, and consultation report totals by cycle and calendar year. It reports
 valid dates outside the configured cycles separately and exits nonzero on a
 mismatch. The command uses a read-only transaction, prints aggregate counts
 without tutor names or individual balances, and needs no Google credentials.
-Use it immediately after loading: subsequent attendance or hour movements can
+Use it immediately after loading: subsequent hour movements can
 legitimately change balances from their opening values. Correct source or
 mapping discrepancies and re-import through the established workflow.
 

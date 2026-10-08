@@ -41,12 +41,6 @@ import { GET as getAdminTutorSubjects } from "@/app/api/admin/tutors/subjects/ro
 import { GET as getTutorHours } from "@/app/api/tutor/hours/route";
 import { GET as getTutorSchedule } from "@/app/api/tutor/schedule/route";
 import { GET as getTutorSummary } from "@/app/api/tutor/summary/route";
-import { GET as getAdminScheduleWorkspace } from "@/app/api/admin/schedules/route";
-import { GET as getAdminAttendanceCollection } from "@/app/api/admin/schedules/attendance/route";
-import {
-  GET as getAdminAttendanceOccurrence,
-  POST as postAdminAttendance,
-} from "@/app/api/admin/schedules/attendance/[occurrenceId]/route";
 import AdminLayout from "@/app/admin/layout";
 import { GET as getAdminCareerDetail, PATCH as patchAdminCareerDetail } from "@/app/api/admin/settings/careers/[careerId]/route";
 import { PATCH as patchAdminCareerStatus } from "@/app/api/admin/settings/careers/[careerId]/status/route";
@@ -72,14 +66,12 @@ import {
   account,
   activity,
   administrativeCycle,
-  attendanceRecord,
   auditEvent,
   career,
   consultation,
   consultationDuplicateCandidate,
   consultationImportRun,
   consultationStaging,
-  dutyOccurrence,
   hourCategory,
   hourMovement,
   scholarshipReference,
@@ -129,25 +121,14 @@ import {
 import {
   createScheduleAssignment,
   createSchedulePlan,
+  getScheduleWorkspace,
   listScheduleAssignments,
   listSchedulePlans,
   resolveEffectivePlan,
-  resolveEffectiveSchedule,
   SCHEDULE_ERROR_CODES,
   transitionSchedulePlanStatus,
   updateScheduleAssignment,
 } from "@/features/schedules/schedule-service";
-import {
-  ATTENDANCE_ERROR_CODES,
-  cancelAbsenceDebit,
-  confirmAbsenceDebit,
-  correctAttendance,
-  getAttendanceOccurrence,
-  listAttendanceForDate,
-  recognizeScheduledRecovery,
-  reopenAbsenceDebit,
-  setAttendanceStatus,
-} from "@/features/schedules/attendance-service";
 import {
   getTutorSelfServiceHours,
   getTutorSelfServiceSchedule,
@@ -187,7 +168,7 @@ const authEnvironment = {
 
 async function resetDatabase() {
   await getIntegrationDatabase().execute(
-    sql`TRUNCATE TABLE "consultation_duplicate_candidate", "consultation", "consultation_staging", "consultation_import_run", "hour_movement", "activity", "attendance_record", "duty_occurrence", "schedule_assignment", "schedule_plan", "hour_category", "tutor_cycle_membership", "tutor_subject", "tutor", "scholarship_reference", "subject", "career", "audit_event", "session", "account", "verification", "administrative_cycle", "user" CASCADE`,
+    sql`TRUNCATE TABLE "consultation_duplicate_candidate", "consultation", "consultation_staging", "consultation_import_run", "hour_movement", "activity", "schedule_assignment", "schedule_plan", "hour_category", "tutor_cycle_membership", "tutor_subject", "tutor", "scholarship_reference", "subject", "career", "audit_event", "session", "account", "verification", "administrative_cycle", "user" CASCADE`,
   );
 }
 
@@ -384,7 +365,7 @@ describe("PostgreSQL foundation integration", () => {
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
-          AND table_name IN ('user', 'session', 'account', 'verification', 'administrative_cycle', 'audit_event', 'career', 'subject', 'scholarship_reference', 'tutor', 'tutor_subject', 'tutor_cycle_membership', 'schedule_plan', 'schedule_assignment', 'duty_occurrence', 'attendance_record', 'hour_category', 'activity', 'hour_movement', 'consultation_import_run', 'consultation_staging', 'consultation', 'consultation_duplicate_candidate')
+          AND table_name IN ('user', 'session', 'account', 'verification', 'administrative_cycle', 'audit_event', 'career', 'subject', 'scholarship_reference', 'tutor', 'tutor_subject', 'tutor_cycle_membership', 'schedule_plan', 'schedule_assignment', 'hour_category', 'activity', 'hour_movement', 'consultation_import_run', 'consultation_staging', 'consultation', 'consultation_duplicate_candidate')
         ORDER BY table_name
       `),
     );
@@ -401,10 +382,7 @@ describe("PostgreSQL foundation integration", () => {
         WHERE schemaname = 'public'
           AND indexname IN (
             'activity_cycle_date_idx',
-            'activity_duty_occurrence_idx',
             'activity_kind_idx',
-            'attendance_record_occurrence_unique',
-            'attendance_record_status_idx',
             'career_normalized_name_unique',
             'consultation_date_idx',
             'consultation_classification_date_idx',
@@ -427,13 +405,9 @@ describe("PostgreSQL foundation integration", () => {
             'consultation_staging_tutor_idx',
             'consultation_staging_subject_idx',
             'consultation_staging_duplicate_resolution_idx',
-            'duty_occurrence_assignment_date_unique',
-            'duty_occurrence_cycle_date_idx',
-            'duty_occurrence_tutor_date_idx',
             'hour_category_normalized_name_unique',
             'hour_category_status_idx',
             'hour_movement_activity_idx',
-            'hour_movement_attendance_idx',
             'hour_movement_category_idx',
             'hour_movement_cycle_tutor_date_idx',
             'hour_movement_movement_date_idx',
@@ -465,16 +439,8 @@ describe("PostgreSQL foundation integration", () => {
           conname IN (
             'activity_actor_id_user_id_fk',
             'activity_cycle_id_administrative_cycle_id_fk',
-            'activity_duty_occurrence_id_duty_occurrence_id_fk',
-            'attendance_record_actor_id_user_id_fk',
-            'attendance_record_occurrence_id_duty_occurrence_id_fk',
-            'duty_occurrence_assignment_id_schedule_assignment_id_fk',
-            'duty_occurrence_cycle_id_administrative_cycle_id_fk',
-            'duty_occurrence_plan_id_schedule_plan_id_fk',
-            'duty_occurrence_tutor_id_tutor_id_fk',
             'hour_movement_activity_id_activity_id_fk',
             'hour_movement_actor_id_user_id_fk',
-            'hour_movement_attendance_record_id_attendance_record_id_fk',
             'hour_movement_category_id_hour_category_id_fk',
             'hour_movement_cycle_id_administrative_cycle_id_fk',
             'hour_movement_reversal_of_movement_id_hour_movement_id_fk',
@@ -509,8 +475,6 @@ describe("PostgreSQL foundation integration", () => {
           AND conname IN (
             'activity_duration_minutes_positive_check',
             'activity_note_not_blank_check',
-            'attendance_record_proposed_debit_minutes_check',
-            'attendance_record_recognized_debit_minutes_check',
             'career_name_not_blank_check',
             'career_normalized_name_not_blank_check',
             'career_normalized_name_check',
@@ -540,8 +504,6 @@ describe("PostgreSQL foundation integration", () => {
             'hour_movement_duration_minutes_positive_check',
             'hour_movement_note_not_blank_check',
             'hour_movement_not_self_reversal_check',
-            'duty_occurrence_modality_not_blank_check',
-            'duty_occurrence_time_range_check',
             'schedule_assignment_modality_not_blank_check',
             'schedule_assignment_pattern_check',
             'schedule_assignment_time_range_check',
@@ -569,7 +531,7 @@ describe("PostgreSQL foundation integration", () => {
         SELECT type.typname, enum.enumlabel
         FROM pg_type AS type
         JOIN pg_enum AS enum ON enum.enumtypid = type.oid
-        WHERE type.typname IN ('user_role', 'administrative_cycle_status', 'record_status', 'hour_movement_direction', 'activity_kind', 'schedule_plan_kind', 'schedule_assignment_pattern', 'schedule_assignment_kind', 'attendance_status', 'attendance_debit_status', 'consultation_source_provider', 'consultation_classification', 'consultation_staging_status', 'consultation_import_run_status', 'consultation_duplicate_decision', 'consultation_anomaly_code')
+        WHERE type.typname IN ('user_role', 'administrative_cycle_status', 'record_status', 'hour_movement_direction', 'activity_kind', 'schedule_plan_kind', 'schedule_assignment_pattern', 'schedule_assignment_kind', 'consultation_source_provider', 'consultation_classification', 'consultation_staging_status', 'consultation_import_run_status', 'consultation_duplicate_decision', 'consultation_anomaly_code')
         ORDER BY type.typname, enum.enumsortorder
       `),
     );
@@ -579,14 +541,12 @@ describe("PostgreSQL foundation integration", () => {
       "account",
       "activity",
       "administrative_cycle",
-      "attendance_record",
       "audit_event",
       "career",
       "consultation",
       "consultation_duplicate_candidate",
       "consultation_import_run",
       "consultation_staging",
-      "duty_occurrence",
       "hour_category",
       "hour_movement",
       "schedule_assignment",
@@ -600,7 +560,7 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("11");
+    expect(migrations[0]?.migration_count).toBe("13");
     expect(enumValues).toEqual([
       { typname: "activity_kind", enumlabel: "MEETING" },
       { typname: "activity_kind", enumlabel: "WORKSHOP" },
@@ -608,13 +568,6 @@ describe("PostgreSQL foundation integration", () => {
       { typname: "activity_kind", enumlabel: "RECOVERY" },
       { typname: "administrative_cycle_status", enumlabel: "OPEN" },
       { typname: "administrative_cycle_status", enumlabel: "CLOSED" },
-      { typname: "attendance_debit_status", enumlabel: "NOT_PROPOSED" },
-      { typname: "attendance_debit_status", enumlabel: "PROPOSED" },
-      { typname: "attendance_debit_status", enumlabel: "CANCELLED" },
-      { typname: "attendance_debit_status", enumlabel: "CONFIRMED" },
-      { typname: "attendance_status", enumlabel: "PENDING" },
-      { typname: "attendance_status", enumlabel: "PRESENT" },
-      { typname: "attendance_status", enumlabel: "ABSENT" },
       { typname: "consultation_anomaly_code", enumlabel: "MISSING_SOURCE_ROW_KEY" },
       { typname: "consultation_anomaly_code", enumlabel: "MISSING_CAREER" },
       { typname: "consultation_anomaly_code", enumlabel: "UNRESOLVED_CAREER" },
@@ -660,10 +613,7 @@ describe("PostgreSQL foundation integration", () => {
     ]);
     expect(indexes.map((row) => row.indexname)).toEqual([
       "activity_cycle_date_idx",
-      "activity_duty_occurrence_idx",
       "activity_kind_idx",
-      "attendance_record_occurrence_unique",
-      "attendance_record_status_idx",
       "career_normalized_name_unique",
       "consultation_career_date_idx",
       "consultation_classification_date_idx",
@@ -686,13 +636,9 @@ describe("PostgreSQL foundation integration", () => {
       "consultation_staging_unique",
       "consultation_subject_date_idx",
       "consultation_tutor_date_idx",
-      "duty_occurrence_assignment_date_unique",
-      "duty_occurrence_cycle_date_idx",
-      "duty_occurrence_tutor_date_idx",
       "hour_category_normalized_name_unique",
       "hour_category_status_idx",
       "hour_movement_activity_idx",
-      "hour_movement_attendance_idx",
       "hour_movement_category_idx",
       "hour_movement_cycle_tutor_date_idx",
       "hour_movement_movement_date_idx",
@@ -715,16 +661,8 @@ describe("PostgreSQL foundation integration", () => {
     expect(foreignKeys.map((row) => row.conname)).toEqual([
       "activity_actor_id_user_id_fk",
       "activity_cycle_id_administrative_cycle_id_fk",
-      "activity_duty_occurrence_id_duty_occurrence_id_fk",
-      "attendance_record_actor_id_user_id_fk",
-      "attendance_record_occurrence_id_duty_occurrence_id_fk",
-      "duty_occurrence_assignment_id_schedule_assignment_id_fk",
-      "duty_occurrence_cycle_id_administrative_cycle_id_fk",
-      "duty_occurrence_plan_id_schedule_plan_id_fk",
-      "duty_occurrence_tutor_id_tutor_id_fk",
       "hour_movement_activity_id_activity_id_fk",
       "hour_movement_actor_id_user_id_fk",
-      "hour_movement_attendance_record_id_attendance_record_id_fk",
       "hour_movement_category_id_hour_category_id_fk",
       "hour_movement_cycle_id_administrative_cycle_id_fk",
       "hour_movement_reversal_of_movement_id_hour_movement_id_fk",
@@ -771,8 +709,6 @@ describe("PostgreSQL foundation integration", () => {
     expect(checks.map((row) => row.conname)).toEqual([
       "activity_duration_minutes_positive_check",
       "activity_note_not_blank_check",
-      "attendance_record_proposed_debit_minutes_check",
-      "attendance_record_recognized_debit_minutes_check",
       "career_name_not_blank_check",
       "career_normalized_name_check",
       "career_normalized_name_not_blank_check",
@@ -796,8 +732,6 @@ describe("PostgreSQL foundation integration", () => {
       "consultation_staging_classification_subject_check",
       "consultation_staging_review_state_check",
       "consultation_staging_review_version_check",
-      "duty_occurrence_modality_not_blank_check",
-      "duty_occurrence_time_range_check",
       "hour_category_name_not_blank_check",
       "hour_category_normalized_name_check",
       "hour_category_normalized_name_not_blank_check",
@@ -1924,9 +1858,8 @@ describe("PostgreSQL foundation integration", () => {
     });
   });
 
-  it("persists schedule and attendance facts with structural constraints", async () => {
+  it("persists schedule configuration with structural constraints", async () => {
     const database = getIntegrationDatabase();
-    const { admin } = await seedIdentities();
     const [createdCareer] = await database
       .insert(career)
       .values({ name: "Computer Science", normalizedName: "computer science" })
@@ -1964,52 +1897,15 @@ describe("PostgreSQL foundation integration", () => {
         validTo: "2027-12-31",
       })
       .returning({ id: schedulePlan.id });
-    const [createdAssignment] = await database
-      .insert(scheduleAssignment)
-      .values({
-        planId: createdPlan!.id,
-        tutorId: createdTutor!.id,
-        pattern: "WEEKDAY",
-        weekday: 1,
-        startMinutes: 480,
-        endMinutes: 600,
-        kind: "DUTY",
-        modality: "Room 204",
-      })
-      .returning({ id: scheduleAssignment.id });
-    const [createdOccurrence] = await database
-      .insert(dutyOccurrence)
-      .values({
-        cycleId: createdCycle!.id,
-        planId: createdPlan!.id,
-        assignmentId: createdAssignment!.id,
-        tutorId: createdTutor!.id,
-        occurrenceDate: "2027-01-04",
-        startMinutes: 480,
-        endMinutes: 600,
-        kind: "DUTY",
-        modality: "Room 204",
-      })
-      .returning({ id: dutyOccurrence.id });
-    const [createdAttendance] = await database
-      .insert(attendanceRecord)
-      .values({
-        occurrenceId: createdOccurrence!.id,
-        status: "ABSENT",
-        debitStatus: "CANCELLED",
-        proposedDebitMinutes: 120,
-        actorId: admin.id,
-      })
-      .returning({
-        status: attendanceRecord.status,
-        debitStatus: attendanceRecord.debitStatus,
-        proposedDebitMinutes: attendanceRecord.proposedDebitMinutes,
-      });
-
-    expect(createdAttendance).toEqual({
-      status: "ABSENT",
-      debitStatus: "CANCELLED",
-      proposedDebitMinutes: 120,
+    await database.insert(scheduleAssignment).values({
+      planId: createdPlan!.id,
+      tutorId: createdTutor!.id,
+      pattern: "WEEKDAY",
+      weekday: 1,
+      startMinutes: 480,
+      endMinutes: 600,
+      kind: "DUTY",
+      modality: "Room 204",
     });
 
     await expect(
@@ -2060,40 +1956,11 @@ describe("PostgreSQL foundation integration", () => {
       }),
     ).rejects.toMatchObject({ cause: { code: "23503" } });
     await expect(
-      database.insert(dutyOccurrence).values({
-        cycleId: createdCycle!.id,
-        planId: createdPlan!.id,
-        assignmentId: createdAssignment!.id,
-        tutorId: createdTutor!.id,
-        occurrenceDate: "2027-01-04",
-        startMinutes: 480,
-        endMinutes: 600,
-        kind: "DUTY",
-      }),
-    ).rejects.toMatchObject({ cause: { code: "23505" } });
-    await expect(
-      database.insert(attendanceRecord).values({
-        occurrenceId: createdOccurrence!.id,
-        status: "PENDING",
-        debitStatus: "NOT_PROPOSED",
-        proposedDebitMinutes: -1,
-        actorId: admin.id,
-      }),
-    ).rejects.toMatchObject({ cause: { code: "23514" } });
-    await expect(
-      database.insert(attendanceRecord).values({
-        occurrenceId: createdOccurrence!.id,
-        status: "PRESENT",
-        debitStatus: "NOT_PROPOSED",
-        actorId: admin.id,
-      }),
-    ).rejects.toMatchObject({ cause: { code: "23505" } });
-    await expect(
       database.delete(schedulePlan).where(eq(schedulePlan.id, createdPlan!.id)),
     ).rejects.toMatchObject({ cause: { code: "23503" } });
   });
 
-  it("resolves effective plans, preserves plan history, and materializes stable occurrences", async () => {
+  it("resolves effective plans and reads the schedule workspace without writes", async () => {
     const database = getIntegrationDatabase();
     const { admin } = await seedIdentities();
     const [createdCareer] = await database
@@ -2188,43 +2055,34 @@ describe("PostgreSQL foundation integration", () => {
       }),
     ).resolves.toMatchObject({ id: special.id, kind: "SPECIAL" });
 
-    const regularSchedule = await resolveEffectiveSchedule(
-      database,
-      { cycleId: createdCycle!.id, date: "2027-03-01" },
-      context,
-    );
-    const regularOccurrence = regularSchedule.occurrences[0];
-    expect(regularOccurrence).toMatchObject({
-      assignmentId: regularAssignment.id,
-      planId: regular.id,
-      startMinutes: 480,
-    });
-
-    const specialSchedule = await resolveEffectiveSchedule(
+    const plansBeforeWorkspace = await database
+      .select({ id: schedulePlan.id })
+      .from(schedulePlan);
+    const assignmentsBeforeWorkspace = await database
+      .select({ id: scheduleAssignment.id })
+      .from(scheduleAssignment);
+    const auditEventsBeforeWorkspace = await database
+      .select({ id: auditEvent.id })
+      .from(auditEvent);
+    const specialWorkspace = await getScheduleWorkspace(
       database,
       { cycleId: createdCycle!.id, date: "2027-03-08" },
       context,
     );
-    expect(specialSchedule).toMatchObject({
-      plan: { id: special.id, kind: "SPECIAL" },
-    });
-    expect(specialSchedule.occurrences[0]).toMatchObject({
-      assignmentId: specialAssignment.id,
-      kind: "RECOVERY",
-      recovery: {
-        markedForRecovery: true,
-        recognition: "EXPLICIT_ACTION_REQUIRED",
-      },
-    });
-
-    const repeatedSpecialSchedule = await resolveEffectiveSchedule(
-      database,
-      { cycleId: createdCycle!.id, date: "2027-03-08" },
-      context,
+    expect(specialWorkspace.effective).toEqual({ date: "2027-03-08" });
+    expect(specialWorkspace.selectedPlan).toMatchObject({ id: special.id, kind: "SPECIAL" });
+    expect(specialWorkspace.assignments).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: specialAssignment.id })]),
     );
-    expect(repeatedSpecialSchedule.occurrences[0]?.id).toBe(
-      specialSchedule.occurrences[0]?.id,
-    );
+    await expect(
+      database.select({ id: schedulePlan.id }).from(schedulePlan),
+    ).resolves.toEqual(plansBeforeWorkspace);
+    await expect(
+      database.select({ id: scheduleAssignment.id }).from(scheduleAssignment),
+    ).resolves.toEqual(assignmentsBeforeWorkspace);
+    await expect(
+      database.select({ id: auditEvent.id }).from(auditEvent),
+    ).resolves.toEqual(auditEventsBeforeWorkspace);
 
     await transitionSchedulePlanStatus(
       database,
@@ -2232,12 +2090,12 @@ describe("PostgreSQL foundation integration", () => {
       { status: "INACTIVE" },
       context,
     );
-    const fallbackSchedule = await resolveEffectiveSchedule(
+    const fallbackWorkspace = await getScheduleWorkspace(
       database,
       { cycleId: createdCycle!.id, date: "2027-03-08" },
       context,
     );
-    expect(fallbackSchedule.plan).toMatchObject({
+    expect(fallbackWorkspace.selectedPlan).toMatchObject({
       id: regular.id,
       kind: "REGULAR",
     });
@@ -2255,17 +2113,16 @@ describe("PostgreSQL foundation integration", () => {
       },
       context,
     );
-    const preservedHistory = await resolveEffectiveSchedule(
+    const updatedWorkspace = await getScheduleWorkspace(
       database,
       { cycleId: createdCycle!.id, date: "2027-03-01" },
       context,
     );
-    expect(preservedHistory.occurrences[0]).toMatchObject({
-      id: regularOccurrence?.id,
-      assignmentId: regularAssignment.id,
-      startMinutes: 480,
-      endMinutes: 600,
-    });
+    expect(updatedWorkspace.assignments).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: regularAssignment.id, startMinutes: 540, endMinutes: 660 }),
+      ]),
+    );
 
     await expect(
       listSchedulePlans(database, { cycleId: createdCycle!.id }),
@@ -2287,503 +2144,11 @@ describe("PostgreSQL foundation integration", () => {
       await database.execute(sql`
         SELECT action
         FROM "audit_event"
-        WHERE entity_type IN ('schedule_plan', 'schedule_assignment', 'duty_occurrence')
+        WHERE entity_type IN ('schedule_plan', 'schedule_assignment')
       `),
     );
     expect(auditRows.some((row) => row.action === "schedule_plan.created")).toBe(true);
     expect(auditRows.some((row) => row.action === "schedule_assignment.created")).toBe(true);
-    expect(auditRows.some((row) => row.action === "schedule_occurrence.created")).toBe(true);
-  });
-
-  it("keeps attendance decisions explicit and links confirmed absence debits", async () => {
-    const database = getIntegrationDatabase();
-    const { admin } = await seedIdentities();
-    const [createdCareer] = await database
-      .insert(career)
-      .values({ name: "Attendance Engineering", normalizedName: "attendance engineering" })
-      .returning({ id: career.id });
-    const [createdCycle] = await database
-      .insert(administrativeCycle)
-      .values({
-        name: "Attendance Cycle 2027",
-        startDate: "2027-01-01",
-        endDate: "2027-12-31",
-        status: "OPEN",
-      })
-      .returning({ id: administrativeCycle.id });
-    const [createdTutor] = await database
-      .insert(tutor)
-      .values({
-        firstName: "Attendance",
-        lastName: "Tutor",
-        primaryCareerId: createdCareer!.id,
-      })
-      .returning({ id: tutor.id });
-
-    await database.insert(tutorCycleMembership).values({
-      tutorId: createdTutor!.id,
-      cycleId: createdCycle!.id,
-    });
-
-    const context = { actorId: admin.id };
-    const plan = await createSchedulePlan(
-      database,
-      {
-        cycleId: createdCycle!.id,
-        name: "Attendance 2027",
-        kind: "REGULAR",
-        validFrom: "2027-01-01",
-        validTo: "2027-12-31",
-      },
-      context,
-    );
-    await createScheduleAssignment(
-      database,
-      {
-        planId: plan.id,
-        tutorId: createdTutor!.id,
-        pattern: "DATE",
-        assignmentDate: "2027-03-01",
-        startMinutes: 480,
-        endMinutes: 600,
-        kind: "DUTY",
-      },
-      context,
-    );
-    await createScheduleAssignment(
-      database,
-      {
-        planId: plan.id,
-        tutorId: createdTutor!.id,
-        pattern: "DATE",
-        assignmentDate: "2027-03-02",
-        startMinutes: 600,
-        endMinutes: 720,
-        kind: "DUTY",
-      },
-      context,
-    );
-    const debitCategory = await createHourCategory(
-      database,
-      { name: "Attendance debit" },
-      context,
-    );
-
-    const firstDate = await listAttendanceForDate(
-      database,
-      { cycleId: createdCycle!.id, date: "2027-03-01" },
-      context,
-    );
-    const firstOccurrence = firstDate.occurrences[0]!.occurrence;
-    expect(firstDate.occurrences[0]!.attendance).toMatchObject({
-      status: "PENDING",
-      debitStatus: "NOT_PROPOSED",
-      proposedDebitMinutes: null,
-    });
-
-    const movementCount = async () =>
-      database
-        .select({ id: hourMovement.id })
-        .from(hourMovement)
-        .where(eq(hourMovement.tutorId, createdTutor!.id));
-
-    await expect(movementCount()).resolves.toHaveLength(0);
-    const present = await setAttendanceStatus(
-      database,
-      firstOccurrence.id,
-      { status: "PRESENT" },
-      context,
-    );
-    expect(present).toMatchObject({
-      attendance: {
-        attendance: {
-          status: "PRESENT",
-          debitStatus: "NOT_PROPOSED",
-        },
-      },
-      movement: null,
-      reversal: null,
-    });
-    await expect(movementCount()).resolves.toHaveLength(0);
-
-    const absence = await correctAttendance(
-      database,
-      firstOccurrence.id,
-      { status: "ABSENT" },
-      context,
-    );
-    expect(absence.attendance.attendance).toMatchObject({
-      status: "ABSENT",
-      debitStatus: "PROPOSED",
-      proposedDebitMinutes: 120,
-      recognizedDebitMinutes: null,
-    });
-    await expect(movementCount()).resolves.toHaveLength(0);
-
-    const cancelled = await cancelAbsenceDebit(
-      database,
-      firstOccurrence.id,
-      {},
-      context,
-    );
-    expect(cancelled.attendance.attendance).toMatchObject({
-      status: "ABSENT",
-      debitStatus: "CANCELLED",
-      proposedDebitMinutes: 120,
-    });
-    await expect(movementCount()).resolves.toHaveLength(0);
-
-    const confirmed = await confirmAbsenceDebit(
-      database,
-      firstOccurrence.id,
-      { categoryId: debitCategory.id, note: "Confirmed after cancellation" },
-      context,
-    );
-    expect(confirmed).toMatchObject({
-      attendance: {
-        attendance: {
-          status: "ABSENT",
-          debitStatus: "CONFIRMED",
-          recognizedDebitMinutes: 120,
-        },
-      },
-      movement: {
-        direction: "DEBIT",
-        durationMinutes: 120,
-      },
-    });
-    await expect(movementCount()).resolves.toHaveLength(1);
-    await expect(
-      confirmAbsenceDebit(
-        database,
-        firstOccurrence.id,
-        { categoryId: debitCategory.id },
-        context,
-      ),
-    ).rejects.toMatchObject({ code: ATTENDANCE_ERROR_CODES.debitAlreadyConfirmed });
-
-    const correctedPresent = await correctAttendance(
-      database,
-      firstOccurrence.id,
-      { status: "PRESENT" },
-      context,
-    );
-    expect(correctedPresent.reversal).toMatchObject({
-      original: { direction: "DEBIT", durationMinutes: 120 },
-      reversal: { direction: "CREDIT", durationMinutes: 120 },
-    });
-    await expect(movementCount()).resolves.toHaveLength(2);
-
-    await correctAttendance(
-      database,
-      firstOccurrence.id,
-      { status: "ABSENT" },
-      context,
-    );
-    const adjusted = await confirmAbsenceDebit(
-      database,
-      firstOccurrence.id,
-      { categoryId: debitCategory.id, debitMinutes: 90 },
-      context,
-    );
-    expect(adjusted.movement).toMatchObject({
-      direction: "DEBIT",
-      durationMinutes: 90,
-    });
-    await expect(movementCount()).resolves.toHaveLength(3);
-
-    const linkedMovements = await database
-      .select({
-        id: hourMovement.id,
-        direction: hourMovement.direction,
-        durationMinutes: hourMovement.durationMinutes,
-        reversalOfMovementId: hourMovement.reversalOfMovementId,
-      })
-      .from(hourMovement)
-      .where(eq(hourMovement.attendanceRecordId, confirmed.attendance.attendance.id));
-    expect(linkedMovements).toHaveLength(3);
-    expect(linkedMovements).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ direction: "DEBIT", durationMinutes: 120 }),
-        expect.objectContaining({ direction: "CREDIT", durationMinutes: 120 }),
-        expect.objectContaining({ direction: "DEBIT", durationMinutes: 90 }),
-      ]),
-    );
-
-    const secondDate = await listAttendanceForDate(
-      database,
-      { cycleId: createdCycle!.id, date: "2027-03-02" },
-      context,
-    );
-    const secondOccurrence = secondDate.occurrences[0]!.occurrence;
-    await setAttendanceStatus(
-      database,
-      secondOccurrence.id,
-      { status: "ABSENT" },
-      context,
-    );
-    await cancelAbsenceDebit(database, secondOccurrence.id, {}, context);
-    const reopened = await reopenAbsenceDebit(
-      database,
-      secondOccurrence.id,
-      {},
-      context,
-    );
-    expect(reopened.attendance.attendance).toMatchObject({
-      status: "ABSENT",
-      debitStatus: "PROPOSED",
-      proposedDebitMinutes: 120,
-    });
-
-    const attendanceEvents = getRows<{ action: string }>(
-      await database.execute(sql`
-        SELECT action
-        FROM "audit_event"
-        WHERE entity_type = 'attendance_record'
-      `),
-    );
-    expect(attendanceEvents.map((event) => event.action)).toEqual(
-      expect.arrayContaining([
-        "attendance_record.created",
-        "attendance_record.status_changed",
-        "attendance_record.debit_cancelled",
-        "attendance_record.debit_confirmed",
-        "attendance_record.debit_reopened",
-        "attendance_record.corrected",
-      ]),
-    );
-  });
-
-  it("recognizes scheduled recovery explicitly and rolls back failed attendance writes", async () => {
-    const database = getIntegrationDatabase();
-    const { admin } = await seedIdentities();
-    const [createdCareer] = await database
-      .insert(career)
-      .values({ name: "Recovery Engineering", normalizedName: "recovery engineering" })
-      .returning({ id: career.id });
-    const [createdCycle] = await database
-      .insert(administrativeCycle)
-      .values({
-        name: "Recovery Cycle 2027",
-        startDate: "2027-01-01",
-        endDate: "2027-12-31",
-        status: "OPEN",
-      })
-      .returning({ id: administrativeCycle.id });
-    const [createdTutor] = await database
-      .insert(tutor)
-      .values({
-        firstName: "Recovery",
-        lastName: "Tutor",
-        primaryCareerId: createdCareer!.id,
-      })
-      .returning({ id: tutor.id });
-
-    await database.insert(tutorCycleMembership).values({
-      tutorId: createdTutor!.id,
-      cycleId: createdCycle!.id,
-    });
-
-    const context = { actorId: admin.id };
-    const regularPlan = await createSchedulePlan(
-      database,
-      {
-        cycleId: createdCycle!.id,
-        name: "Recovery Duty 2027",
-        kind: "REGULAR",
-        validFrom: "2027-01-01",
-        validTo: "2027-12-31",
-      },
-      context,
-    );
-    await createScheduleAssignment(
-      database,
-      {
-        planId: regularPlan.id,
-        tutorId: createdTutor!.id,
-        pattern: "DATE",
-        assignmentDate: "2027-03-04",
-        startMinutes: 480,
-        endMinutes: 600,
-        kind: "DUTY",
-      },
-      context,
-    );
-    const recoveryPlan = await createSchedulePlan(
-      database,
-      {
-        cycleId: createdCycle!.id,
-        name: "Recovery Duties",
-        kind: "SPECIAL",
-        validFrom: "2027-03-03",
-        validTo: "2027-03-03",
-      },
-      context,
-    );
-    await createScheduleAssignment(
-      database,
-      {
-        planId: recoveryPlan.id,
-        tutorId: createdTutor!.id,
-        pattern: "DATE",
-        assignmentDate: "2027-03-03",
-        startMinutes: 600,
-        endMinutes: 660,
-        kind: "RECOVERY",
-      },
-      context,
-    );
-    const recoveryCategory = await createHourCategory(
-      database,
-      { name: "Scheduled recovery", activityKind: "RECOVERY" },
-      context,
-    );
-    const debitCategory = await createHourCategory(
-      database,
-      { name: "Recovery rollback debit" },
-      context,
-    );
-
-    const recoveryDate = await listAttendanceForDate(
-      database,
-      { cycleId: createdCycle!.id, date: "2027-03-03" },
-      context,
-    );
-    const recoveryOccurrence = recoveryDate.occurrences[0]!.occurrence;
-    const recognition = await recognizeScheduledRecovery(
-      database,
-      recoveryOccurrence.id,
-      { categoryId: recoveryCategory.id, note: "Scheduled recovery" },
-      context,
-    );
-    expect(recognition.movement).toMatchObject({
-      direction: "CREDIT",
-      durationMinutes: 60,
-      origin: { kind: "RECOVERY" },
-    });
-
-    const [recoveryActivity] = await database
-      .select({
-        id: activity.id,
-        kind: activity.kind,
-        dutyOccurrenceId: activity.dutyOccurrenceId,
-      })
-      .from(activity)
-      .where(eq(activity.dutyOccurrenceId, recoveryOccurrence.id));
-    expect(recoveryActivity).toEqual({
-      id: expect.any(String),
-      kind: "RECOVERY",
-      dutyOccurrenceId: recoveryOccurrence.id,
-    });
-    const recoveryMovements = await database
-      .select({
-        id: hourMovement.id,
-        activityId: hourMovement.activityId,
-        attendanceRecordId: hourMovement.attendanceRecordId,
-      })
-      .from(hourMovement)
-      .where(eq(hourMovement.activityId, recoveryActivity!.id));
-    expect(recoveryMovements).toEqual([
-      {
-        id: expect.any(String),
-        activityId: recoveryActivity!.id,
-        attendanceRecordId: null,
-      },
-    ]);
-
-    await setAttendanceStatus(
-      database,
-      recoveryOccurrence.id,
-      { status: "PRESENT" },
-      context,
-    );
-    await expect(
-      database
-        .select({ id: hourMovement.id })
-        .from(hourMovement)
-        .where(eq(hourMovement.activityId, recoveryActivity!.id)),
-    ).resolves.toHaveLength(1);
-    await expect(
-      recognizeScheduledRecovery(
-        database,
-        recoveryOccurrence.id,
-        { categoryId: recoveryCategory.id },
-        context,
-      ),
-    ).rejects.toMatchObject({
-      code: ATTENDANCE_ERROR_CODES.recoveryAlreadyRecognized,
-    });
-
-    const dutyDate = await listAttendanceForDate(
-      database,
-      { cycleId: createdCycle!.id, date: "2027-03-04" },
-      context,
-    );
-    const dutyOccurrence = dutyDate.occurrences[0]!.occurrence;
-    await setAttendanceStatus(
-      database,
-      dutyOccurrence.id,
-      { status: "ABSENT" },
-      context,
-    );
-    await expect(
-      confirmAbsenceDebit(
-        database,
-        dutyOccurrence.id,
-        { categoryId: debitCategory.id },
-        { ...context, requestId: "x".repeat(256) },
-      ),
-    ).rejects.toMatchObject({ code: ATTENDANCE_ERROR_CODES.transactionFailed });
-    const [afterRollback] = await database
-      .select({
-        status: attendanceRecord.status,
-        debitStatus: attendanceRecord.debitStatus,
-        recognizedDebitMinutes: attendanceRecord.recognizedDebitMinutes,
-      })
-      .from(attendanceRecord)
-      .where(eq(attendanceRecord.occurrenceId, dutyOccurrence.id));
-    expect(afterRollback).toEqual({
-      status: "ABSENT",
-      debitStatus: "PROPOSED",
-      recognizedDebitMinutes: null,
-    });
-    await expect(
-      database
-        .select({ id: hourMovement.id })
-        .from(hourMovement)
-        .where(eq(hourMovement.attendanceRecordId, dutyDate.occurrences[0]!.attendance.id)),
-    ).resolves.toHaveLength(0);
-
-    await closeAdministrativeCycle(database, createdCycle!.id, context);
-    const historicalDate = await listAttendanceForDate(
-      database,
-      { cycleId: createdCycle!.id, date: "2027-03-04" },
-      context,
-    );
-    expect(historicalDate).toMatchObject({
-      cycle: { id: createdCycle!.id, status: "CLOSED" },
-      plan: { id: regularPlan.id },
-      occurrences: [
-        {
-          occurrence: { id: dutyOccurrence.id },
-          attendance: { status: "ABSENT", debitStatus: "PROPOSED" },
-        },
-      ],
-    });
-    await expect(
-      getAttendanceOccurrence(database, dutyOccurrence.id, context),
-    ).resolves.toMatchObject({
-      occurrence: { id: dutyOccurrence.id },
-      attendance: { status: "ABSENT", debitStatus: "PROPOSED" },
-    });
-    await expect(
-      setAttendanceStatus(
-        database,
-        dutyOccurrence.id,
-        { status: "PRESENT" },
-        context,
-      ),
-    ).rejects.toMatchObject({ code: ATTENDANCE_ERROR_CODES.cycleNotOpen });
   });
 
   it("serializes special-plan overlap and enforces assignment eligibility and conflicts", async () => {
@@ -4082,154 +3447,6 @@ describe("PostgreSQL foundation integration", () => {
     expect(tutorCycleResponse.status).toBe(403);
   });
 
-  it("serves real schedule and attendance DTOs only through the Admin boundary", async () => {
-    const database = getIntegrationDatabase();
-    const { admin, tutor: tutorIdentity } = await seedIdentities();
-    const [createdCareer] = await database
-      .insert(career)
-      .values({ name: "Route Engineering", normalizedName: "route engineering" })
-      .returning({ id: career.id });
-    const [createdCycle] = await database
-      .insert(administrativeCycle)
-      .values({
-        name: "Route Schedule Cycle 2027",
-        startDate: "2027-01-01",
-        endDate: "2027-12-31",
-        status: "OPEN",
-      })
-      .returning({ id: administrativeCycle.id });
-    const [createdTutor] = await database
-      .insert(tutor)
-      .values({
-        firstName: "Route",
-        lastName: "Tutor",
-        primaryCareerId: createdCareer!.id,
-      })
-      .returning({ id: tutor.id });
-
-    await database.insert(tutorCycleMembership).values({
-      tutorId: createdTutor!.id,
-      cycleId: createdCycle!.id,
-    });
-
-    const context = { actorId: admin.id };
-    const plan = await createSchedulePlan(
-      database,
-      {
-        cycleId: createdCycle!.id,
-        name: "Route Regular 2027",
-        kind: "REGULAR",
-        validFrom: "2027-01-01",
-        validTo: "2027-12-31",
-      },
-      context,
-    );
-    await createScheduleAssignment(
-      database,
-      {
-        planId: plan.id,
-        tutorId: createdTutor!.id,
-        pattern: "DATE",
-        assignmentDate: "2027-04-05",
-        startMinutes: 480,
-        endMinutes: 600,
-        kind: "DUTY",
-        modality: "Route room",
-      },
-      context,
-    );
-
-    authMocks.getSession.mockResolvedValue(null);
-    const unauthenticatedSchedule = await getAdminScheduleWorkspace(
-      new Request(
-        `http://localhost/api/admin/schedules?cycleId=${createdCycle!.id}&date=2027-04-05`,
-      ),
-    );
-    expect(unauthenticatedSchedule.status).toBe(401);
-
-    authMocks.getSession.mockResolvedValue({
-      user: { id: tutorIdentity.id, role: "ADMIN" },
-    });
-    const forbiddenAttendance = await getAdminAttendanceCollection(
-      new Request(
-        `http://localhost/api/admin/schedules/attendance?cycleId=${createdCycle!.id}&date=2027-04-05`,
-      ),
-    );
-    expect(forbiddenAttendance.status).toBe(403);
-
-    authMocks.getSession.mockResolvedValue({
-      user: { id: admin.id, role: "ADMIN" },
-    });
-    const scheduleResponse = await getAdminScheduleWorkspace(
-      new Request(
-        `http://localhost/api/admin/schedules?cycleId=${createdCycle!.id}&date=2027-04-05`,
-      ),
-    );
-    expect(scheduleResponse.status).toBe(200);
-    const scheduleBody = (await scheduleResponse.json()) as {
-      currentCycle: { id: string };
-      selectedPlan: { id: string };
-      assignments: Array<{ tutorName: string }>;
-      effective: { occurrences: Array<{ id: string }> };
-    };
-    expect(scheduleBody).toMatchObject({
-      currentCycle: { id: createdCycle!.id },
-      selectedPlan: { id: plan.id },
-      assignments: [expect.objectContaining({ tutorName: "Tutor, Route" })],
-    });
-    expect(scheduleBody.effective.occurrences).toHaveLength(1);
-    expect(JSON.stringify(scheduleBody)).not.toContain("admin.integration");
-
-    const attendanceResponse = await getAdminAttendanceCollection(
-      new Request(
-        `http://localhost/api/admin/schedules/attendance?cycleId=${createdCycle!.id}&date=2027-04-05`,
-      ),
-    );
-    expect(attendanceResponse.status).toBe(200);
-    const attendanceBody = (await attendanceResponse.json()) as {
-      occurrences: Array<{
-        occurrence: { id: string };
-        tutor: { formalName: string };
-        attendance: { status: string; debitStatus: string };
-      }>;
-    };
-    expect(attendanceBody).toMatchObject({
-      date: "2027-04-05",
-      occurrences: [
-        {
-          tutor: { formalName: "Tutor, Route" },
-          attendance: { status: "PENDING", debitStatus: "NOT_PROPOSED" },
-        },
-      ],
-    });
-    expect(JSON.stringify(attendanceBody)).not.toContain("admin.integration");
-
-    const occurrenceId = attendanceBody.occurrences[0]!.occurrence.id;
-    const occurrenceResponse = await getAdminAttendanceOccurrence(
-      new Request(
-        `http://localhost/api/admin/schedules/attendance/${occurrenceId}`,
-      ),
-      { params: Promise.resolve({ occurrenceId }) },
-    );
-    expect(occurrenceResponse.status).toBe(200);
-
-    const presentResponse = await postAdminAttendance(
-      makeJsonRequest(
-        `http://localhost/api/admin/schedules/attendance/${occurrenceId}`,
-        "POST",
-        { operation: "PRESENT" },
-      ),
-      { params: Promise.resolve({ occurrenceId }) },
-    );
-    expect(presentResponse.status).toBe(200);
-    await expect(presentResponse.json()).resolves.toMatchObject({
-      attendance: {
-        attendance: { status: "PRESENT", debitStatus: "NOT_PROPOSED" },
-      },
-      movement: null,
-    });
-  });
-
   it("enforces Admin authorization on tutor and catalog route handlers", async () => {
     const { admin, tutor } = await seedIdentities();
 
@@ -5445,8 +4662,8 @@ describe("PostgreSQL foundation integration", () => {
     });
 
     const beforeCounts = await Promise.all([
-      database.select({ id: dutyOccurrence.id }).from(dutyOccurrence),
-      database.select({ id: attendanceRecord.id }).from(attendanceRecord),
+      database.select({ id: schedulePlan.id }).from(schedulePlan),
+      database.select({ id: scheduleAssignment.id }).from(scheduleAssignment),
       database.select({ id: hourMovement.id }).from(hourMovement),
       database.select({ id: activity.id }).from(activity),
       database.select({ id: auditEvent.id }).from(auditEvent),
@@ -5639,8 +4856,8 @@ describe("PostgreSQL foundation integration", () => {
     ).resolves.toMatchObject({ status: 403 });
 
     const afterCounts = await Promise.all([
-      database.select({ id: dutyOccurrence.id }).from(dutyOccurrence),
-      database.select({ id: attendanceRecord.id }).from(attendanceRecord),
+      database.select({ id: schedulePlan.id }).from(schedulePlan),
+      database.select({ id: scheduleAssignment.id }).from(scheduleAssignment),
       database.select({ id: hourMovement.id }).from(hourMovement),
       database.select({ id: activity.id }).from(activity),
       database.select({ id: auditEvent.id }).from(auditEvent),

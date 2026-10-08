@@ -22,11 +22,8 @@ describe("AdminOverviewScreen", () => {
       screen.getByRole("heading", { level: 2, name: "Necesita atención" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Asistencia pendiente/i }),
-    ).toHaveAttribute("href", data.attention[0].href);
-    expect(
       screen.getByRole("link", { name: /Consultas por revisar/i }),
-    ).toHaveAttribute("href", data.attention[2].href);
+    ).toHaveAttribute("href", data.attention[1].href);
     expect(
       screen.getByRole("heading", { level: 2, name: "Hoy" }),
     ).toBeInTheDocument();
@@ -55,7 +52,7 @@ describe("AdminOverviewScreen", () => {
       "/admin/consultations",
     );
     expect(screen.getByText(data.attention[0].label)).toBeInTheDocument();
-    expect(screen.getByText(data.attention[2].label)).toBeInTheDocument();
+    expect(screen.getByText(data.attention[1].label)).toBeInTheDocument();
     expect(screen.getByText(data.upcomingDuties[0].tutor)).toBeInTheDocument();
   });
 

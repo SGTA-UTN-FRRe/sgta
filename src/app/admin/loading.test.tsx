@@ -5,7 +5,6 @@ import AdminLoading from "./loading";
 import TutorsLoading from "./tutors/loading";
 import SubjectsLoading from "./tutors/subjects/loading";
 import SchedulesLoading from "./schedules/loading";
-import AttendanceLoading from "./schedules/attendance/loading";
 import HoursLoading from "./hours/loading";
 import MovementsLoading from "./hours/movements/loading";
 import ConsultationsLoading from "./consultations/loading";
@@ -16,7 +15,6 @@ it.each([
   ["tutors", TutorsLoading],
   ["subjects", SubjectsLoading],
   ["schedules", SchedulesLoading],
-  ["attendance", AttendanceLoading],
   ["hours", HoursLoading],
   ["movements", MovementsLoading],
   ["consultations", ConsultationsLoading],

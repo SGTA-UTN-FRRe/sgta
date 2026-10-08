@@ -9,9 +9,7 @@ import {
   gte,
   inArray,
   isNull,
-  lt,
   lte,
-  or,
   sql,
   type SQL,
 } from "drizzle-orm";
@@ -21,10 +19,8 @@ import { formatFormalTutorNameSql } from "@/db/tutor-name";
 import {
   activity,
   administrativeCycle,
-  attendanceRecord,
   career,
   consultation,
-  dutyOccurrence,
   hourCategory,
   hourMovement,
   scheduleAssignment,
@@ -49,7 +45,6 @@ import {
 import type {
   ActivityGroup,
   ActivityReport,
-  AttendanceReport,
   ConsultationDemandReport,
   CurrentBalanceReport,
   LimitedReportGroups,
@@ -115,19 +110,6 @@ function getCurrentDate(now: Date) {
     parts.find((part) => part.type === type)?.value ?? "00";
 
   return `${value("year")}-${value("month")}-${value("day")}`;
-}
-
-function getMinuteOfDay(now: Date) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: businessTimeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(now);
-  const value = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((part) => part.type === type)?.value ?? "0");
-
-  return value("hour") * 60 + value("minute");
 }
 
 function countLimited<T>(rows: T[], limit = breakdownLimit): LimitedReportGroups<T> {
@@ -486,68 +468,6 @@ async function getCurrentBalanceReport(
     totalTutors: result?.totalTutors ?? 0,
     owes: groupCount(result?.owes),
     current: groupCount(result?.current),
-  };
-}
-
-async function getAttendanceReport(
-  db: Database,
-  filters: ReportFilters,
-  now: Date,
-): Promise<AttendanceReport> {
-  const currentDate = getCurrentDate(now);
-  const minuteOfDay = getMinuteOfDay(now);
-  const conditions: SQL[] = [
-    gte(dutyOccurrence.occurrenceDate, filters.fromDate),
-    lte(dutyOccurrence.occurrenceDate, filters.toDate),
-    or(
-      lt(dutyOccurrence.occurrenceDate, currentDate),
-      and(
-        eq(dutyOccurrence.occurrenceDate, currentDate),
-        lte(dutyOccurrence.endMinutes, minuteOfDay),
-      ),
-    )!,
-  ];
-  if (filters.tutorId !== undefined) {
-    conditions.push(eq(dutyOccurrence.tutorId, filters.tutorId));
-  }
-  if (filters.modality !== undefined) {
-    conditions.push(
-      filters.modality === modalityUnspecified
-        ? isNull(dutyOccurrence.modality)
-        : eq(dutyOccurrence.modality, filters.modality),
-    );
-  }
-
-  const [result] = await db
-    .select({
-      dueOccurrences: count(),
-      present: sql<number>`count(*) filter (where ${attendanceRecord.status} = ${"PRESENT"})`,
-      absent: sql<number>`count(*) filter (where ${attendanceRecord.status} = ${"ABSENT"})`,
-      pending: sql<number>`count(*) filter (where ${attendanceRecord.id} is null or ${attendanceRecord.status} = ${"PENDING"})`,
-    })
-    .from(dutyOccurrence)
-    .leftJoin(
-      attendanceRecord,
-      eq(attendanceRecord.occurrenceId, dutyOccurrence.id),
-    )
-    .where(and(...conditions));
-
-  const present = groupCount(result?.present);
-  const absent = groupCount(result?.absent);
-  const pending = groupCount(result?.pending);
-  const dueOccurrences = result?.dueOccurrences ?? 0;
-  const registered = present + absent;
-
-  return {
-    dueOccurrences,
-    present,
-    absent,
-    pending,
-    registered,
-    registrationRatePercent:
-      dueOccurrences === 0
-        ? null
-        : Math.round((registered / dueOccurrences) * 10_000) / 100,
   };
 }
 
@@ -949,7 +869,6 @@ export async function getOperationalReport(
     activeTutors,
     subjectCoverage,
     plannedSchedules,
-    attendance,
     currentBalances,
     movements,
     activities,
@@ -960,7 +879,6 @@ export async function getOperationalReport(
       ? Promise.resolve(noCycleSection<SubjectCoverageReport>())
       : capture(getSubjectCoverage(db, currentCycle, filters)),
     capture(getPlannedScheduleReport(db, filters)),
-    capture(getAttendanceReport(db, filters, now)),
     currentCycle === null || currentCycleReadFailed
       ? Promise.resolve(noCycleSection<CurrentBalanceReport>())
       : capture(getCurrentBalanceReport(db, currentCycle, filters)),
@@ -975,7 +893,6 @@ export async function getOperationalReport(
     activeTutors,
     subjectCoverage,
     plannedSchedules,
-    attendance,
     currentBalances,
     movements,
     activities,

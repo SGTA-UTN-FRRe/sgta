@@ -56,14 +56,6 @@ function createReport(): OperationalReport {
       ],
       byTutor: { items: [], truncated: false },
     }),
-    attendance: ready({
-      dueOccurrences: 4,
-      present: 1,
-      absent: 1,
-      pending: 2,
-      registered: 2,
-      registrationRatePercent: 50,
-    }),
     currentBalances: ready({
       cycleId: "cycle-1",
       cycleName: "2026",
@@ -132,14 +124,6 @@ function createEmptyReport(): OperationalReport {
       ],
       byTutor: { items: [], truncated: false },
     }),
-    attendance: ready({
-      dueOccurrences: 0,
-      present: 0,
-      absent: 0,
-      pending: 0,
-      registered: 0,
-      registrationRatePercent: null,
-    }),
     movements: ready({
       creditCount: 0,
       debitCount: 0,
@@ -193,9 +177,9 @@ describe("ReportsScreen", () => {
       "/admin/reports",
     );
     expect(screen.getByRole("heading", { level: 2, name: "Demanda" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "Cobertura y asistencia" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Cobertura" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Horas y actividades" })).toBeInTheDocument();
-    expect(screen.getByText("La cobertura y los saldos muestran el estado actual del ciclo abierto; la programación y la asistencia corresponden al período seleccionado.")).toBeInTheDocument();
+    expect(screen.getByText("La cobertura y los saldos muestran el estado actual del ciclo abierto; la programación corresponde al período seleccionado.")).toBeInTheDocument();
     expect(screen.getAllByText("21/09/2026")).not.toHaveLength(0);
     expect(screen.getByText("5 · 21 h 39 min")).toBeInTheDocument();
 
@@ -255,7 +239,7 @@ describe("ReportsScreen", () => {
     expect(screen.getByText("Carga parcial")).toBeInTheDocument();
     expect(screen.getByText("No se pudo cargar la demanda de consultas")).toBeInTheDocument();
     expect(screen.getByText("No se pudieron cargar los movimientos")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "Cobertura y asistencia" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Cobertura" })).toBeInTheDocument();
     expect(screen.getByText(/Estado actual .*2026 .*filtros de carrera, materia y tutor/)).toBeInTheDocument();
   });
 });

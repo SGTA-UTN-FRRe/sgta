@@ -34,7 +34,7 @@ Rules:
 
 SGTA is the internal operational workspace for Tutorias at UTN FRRe.
 
-It centralizes tutor administration, schedules, attendance, hour accounting, consultation intake, and operational reporting while preserving human administrative judgment and traceability.
+It centralizes tutor administration, schedules, hour accounting, consultation intake, and operational reporting while preserving human administrative judgment and traceability.
 
 The interface must make repeated administrative work feel clear, humane, fast, and contemporary without losing institutional seriousness.
 
@@ -42,7 +42,7 @@ The interface must make repeated administrative work feel clear, humane, fast, a
 
 Primary users:
 
-- **Admin:** works frequently with lists, schedule grids, attendance, hour movements, consultation review, and reports.
+- **Admin:** works frequently with lists, schedule grids, hour movements, consultation review, and reports.
 - **Tutor:** checks personal schedule, subjects, and hour status occasionally and expects immediate, readable answers.
 
 Environment:
@@ -56,7 +56,7 @@ Environment:
 ### 1.3 Core workflows
 
 1. Manage tutors, careers, subjects, and cycle context.
-2. Build regular and special schedules and register attendance.
+2. Build regular and special schedules and record agreed hour changes in the movement ledger.
 3. Understand and modify hour status through traceable movements.
 4. Import, review, classify, and report student consultations.
 5. Let tutors inspect their own schedule and hour history.
@@ -164,7 +164,6 @@ Prefer action labels that work naturally as neutral interface commands, especial
 - `Agregar tutor`
 - `Guardar cambios`
 - `Registrar movimiento`
-- `Marcar asistencia`
 - `Actualizar consultas`
 - `Crear horario especial`
 - `Cerrar ciclo`
@@ -588,7 +587,7 @@ It is never the main visual attraction.
 - Rainbow charts.
 - Low-contrast muted text.
 - Orange used as warning or danger.
-- Color-only balance or attendance state.
+- Color-only balance or status state.
 - Tiny icon-only row actions without names or tooltips.
 - Separate manually maintained subject coverage data.
 - A standalone QR module duplicating Consultation Intake.

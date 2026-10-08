@@ -54,15 +54,15 @@ test.describe("authenticated Admin hour operations", () => {
     const exceptionTutor = movementDialog.getByRole("checkbox", {
       name: "Seleccionar a Hopper, Grace",
     });
-    const attendanceTutor = movementDialog.getByRole("checkbox", {
+    const selectedTutor = movementDialog.getByRole("checkbox", {
       name: "Seleccionar a Curie, Marie",
     });
 
     await setCheckboxWithKeyboard(page, exceptionTutor, false);
-    await setCheckboxWithKeyboard(page, attendanceTutor, false);
+    await setCheckboxWithKeyboard(page, selectedTutor, false);
     await setCheckboxWithKeyboard(page, selectAll, true);
     await setCheckboxWithKeyboard(page, exceptionTutor, false);
-    await setCheckboxWithKeyboard(page, attendanceTutor, false);
+    await setCheckboxWithKeyboard(page, selectedTutor, false);
     await expect(selectAll).not.toBeChecked();
     await expect(
       movementDialog.getByRole("checkbox", {
@@ -70,7 +70,7 @@ test.describe("authenticated Admin hour operations", () => {
       }),
     ).toBeChecked();
     await expect(exceptionTutor).not.toBeChecked();
-    await expect(attendanceTutor).not.toBeChecked();
+    await expect(selectedTutor).not.toBeChecked();
 
     await selectWithKeyboard(page, movementDialog.getByLabel("Categoría"), E2E_MEETING_CATEGORY_ID);
     await movementDialog.getByLabel("Nota").fill("E2E meeting credit");
