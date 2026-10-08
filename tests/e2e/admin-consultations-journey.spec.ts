@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, waitForHydration } from "./fixtures";
 import { makeSignature } from "better-auth/crypto";
 
 import {
@@ -295,6 +295,7 @@ test.describe("authenticated Admin consultation workflow", () => {
     await expect(page).toHaveURL(/subjectId=/);
     await expect(page).toHaveURL(/tutorId=/);
     await expect(page).toHaveURL(/modality=Remote/);
+    await waitForHydration(page);
     const reportFilters = page.locator('form[action="/admin/reports"]');
     await expect(reportFilters.getByLabel("Materia")).toHaveValue(
       "33333333-3333-4333-8333-333333333333",
