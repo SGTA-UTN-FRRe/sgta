@@ -2,8 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 
-import { loginScreenData } from "@/mocks/login.mock";
-
+import { loginScreenData } from "./login-copy";
 import { LoginScreen } from "./login-screen";
 
 const authMocks = vi.hoisted(() => ({

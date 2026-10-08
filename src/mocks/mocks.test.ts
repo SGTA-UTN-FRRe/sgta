@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { adminOverviewScreenData, adminOverviewStateFixtures } from "./admin-overview.mock";
+import { adminOverviewScreenData } from "./admin-overview.mock";
 import { hoursScreenData, hoursStateFixtures } from "./hours.mock";
-import { loginScreenData, loginStateFixtures } from "./login.mock";
+import { loginStateFixtures } from "./login.mock";
 import { schedulesScreenData, schedulesStateFixtures } from "./schedules.mock";
+import { adminOverviewStateCopy } from "@/features/admin-overview/admin-overview-copy";
+import { loginScreenData } from "@/app/login/login-copy";
 import {
   tutorsScreenData,
   tutorsStateFixtures,
@@ -19,7 +21,7 @@ const screenData = {
 
 const stateData = {
   login: loginStateFixtures,
-  adminOverview: adminOverviewStateFixtures,
+  adminOverview: adminOverviewStateCopy,
   tutors: tutorsStateFixtures,
   hours: hoursStateFixtures,
   schedules: schedulesStateFixtures,

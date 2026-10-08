@@ -28,7 +28,7 @@ Browser
 | `src/features/` | Feature screens, validation, APIs, and domain services | Each workflow stays in its feature vertical. |
 | `src/shared/` and `src/components/ui/` | Product-wide components and low-level UI primitives | Feature-specific rules stay out of shared UI. |
 | `src/db/` | PostgreSQL client, Drizzle schema, migrations, and audit handling | Database access is server-only. |
-| `src/mocks/` | Synthetic fixture data, copy, types, and screen states | Login and Admin overview still import these modules in production code; separation is pending. |
+| `src/mocks/` | Synthetic fixture data, copy, types, and screen states | Test-only fixtures; ESLint rejects production imports. |
 | `src/config/` | Environment parsing and validation | Validates server settings at the configuration boundary. |
 | `scripts/` | Admin bootstrap, initial-data import/verification, query audit, and template checks | Operator writes require an explicit target and command; query audit uses disposable PostgreSQL. |
 | `drizzle/` | Generated SQL migrations and journal | Committed artifacts consumed by migration tooling. |
@@ -49,11 +49,6 @@ intended routes and interaction behavior.
 | `/api/admin/*` | Users, Tutors and subject coverage, cycles, schedules/plans/assignments, hours/movements/reversals, consultation import/review/bulk actions, settings catalogs. | Server-authorized Admin. |
 | `/api/tutor/*` | Summary, schedule, hours. | Server-authorized, owner-scoped Tutor. |
 | `/api/auth/*` | Better Auth catch-all handler for sign-in, sessions, and sign-out. | Better Auth and provisioned identity policy. |
-
-Login's page and screen import login fixture data/types; the Admin overview screen
-imports fixture modules for presentation copy, types, and states even though its
-operational data comes from its service. These imports remain a current limitation,
-owned by the [Design system foundation](DEVELOPMENT-ROADMAP.md#phase-design-system-foundation).
 
 ## Data and persistence
 

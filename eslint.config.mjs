@@ -6,6 +6,23 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/mocks/**", "**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/mocks", "@/mocks/*"],
+              message: "Production code must not import test fixtures from src/mocks.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["tests/e2e/**/*.ts"],
     ignores: ["tests/e2e/fixtures.ts"],
     rules: {
