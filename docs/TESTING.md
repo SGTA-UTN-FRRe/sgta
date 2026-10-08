@@ -42,6 +42,11 @@ E2E server and browser contexts use the fixed business instant
 `2026-12-01T15:00:00.000Z`, before the seeded 2027 cycle. Seeded authentication
 session expiry continues to use the real wall clock.
 
+Before starting fixtures or containers, the E2E server requires the production
+build marker at `.next/BUILD_ID`. The application receives only allowlisted host
+environment values plus explicit E2E configuration; host database URLs and
+credentials are not passed through.
+
 ## Run tests
 
 Install dependencies from the lockfile, then run the local command that mirrors
@@ -109,7 +114,7 @@ Timeouts are shared budgets rather than per-test or per-wait overrides:
 
 | Configuration | Budget |
 | --- | --- |
-| `playwright.config.ts` | Test: 60 s; assertion: 15 s; action: 10 s; navigation: 30 s; web-server startup: 120 s. |
+| `playwright.config.ts` | Test: 60 s; assertion: 15 s; action: 10 s; navigation: 30 s; web-server startup: 120 s; global run: 10 min. |
 | `vitest.config.ts` | Unit/component test: 15 s. |
 | `src/test/setup.ts` | Testing Library async utilities: 5 s. |
 

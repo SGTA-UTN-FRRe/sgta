@@ -16,7 +16,7 @@ export default defineConfig({
     testTimeout: 15_000,
     environment: "jsdom",
     globals: true,
-    exclude: ["tests/e2e/**", "tests/integration/**", "node_modules/**"],
+    exclude: ["tests/e2e/**/*.spec.ts", "tests/integration/**", "node_modules/**"],
     setupFiles: ["./src/test/setup.ts"],
   },
 });
