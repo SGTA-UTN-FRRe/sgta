@@ -25,6 +25,15 @@ PostgreSQL databases. Integration tests apply the committed migrations twice to
 check rerunnability. Containers use available host ports and are removed after
 the suite. Docker is required locally for both boundaries.
 
+The populated migration-upgrade scenario creates a separate database inside the
+integration container. It applies committed migrations through 0010, seeds
+synthetic legacy origins and ledger history, then applies the full migration
+set twice. It verifies preserved balances, movements, activities, categories,
+audits, and planning records across attendance removal, and reverses a migrated
+debit through the current hour service. Its database and temporary migration
+folder are removed in cleanup; it does not use an operational connection or
+alter the shared fully migrated integration database.
+
 Fixtures are deterministic and synthetic. The E2E web-server wrapper seeds its
 database and sessions, then serves the built application with `next start`. The
 consultation journey uses a loopback HTTP fixture for the read-only Sheets
