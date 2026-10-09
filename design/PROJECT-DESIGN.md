@@ -52,7 +52,7 @@ Language selects copy; locale formats dates and numbers; register sets tone, pro
 ## Visual rules
 
 - Surfaces: cool gray canvas and white panels at one level. Use layout, typography, and dividers to group content; never nest panels or add a panel around empty content. Muted and accent surfaces are neutral gray, never pastel or tinted.
-- Typography: page and section headings use Source Serif 4 at weight 600; all other text uses Manrope. Body text is 14px, with no text below 12px. Roles and classes are listed below. Comparable numbers use `tabular-nums`.
+- Typography: page and section headings use Bricolage Grotesque, loaded at 700 and 800 so every heading renders bold with a solid, characterful silhouette; all other text uses Figtree, a sturdy and clear sans with tabular figures. Names and key values use weight 700. Body text is 14px, with no text below 12px. Roles and classes are listed below. Comparable numbers use `tabular-nums`.
 - Color as data: saturated career colors identify careers, with an abbreviation on each colored element and the full name in legends and tooltips. Career colors never express status. Recovery adds `bg-hatch` and `Recuperación`; conflicts add a destructive icon and `Conflicto`. Color is never the only cue.
 - Actions: navy ink is the primary action and selected state for buttons, navigation, days, and segments. Institutional blue is for links, focus, and information. Faro orange is brand-only, limited to the signature mark.
 - Status: neutral pills with a saturated dot and icon; success, warning, danger, info, and neutral semantics. Do not use orange for warnings or career colors for status.
@@ -122,19 +122,19 @@ The input boundary was darkened from the target `#8C97A8` to `#8994A5` before co
   --sidebar-border: oklch(0.924 0.008 260.732);
   --sidebar-ring: oklch(0.526 0.137 248.289);
   --sidebar-marker: oklch(0.740 0.164 64.503);
-  --career-blue: oklch(0.546 0.215 262.881);
+  --career-blue: oklch(0.555 0.233 264.000);
   --career-blue-foreground: oklch(1.000 0.000 0.000);
-  --career-emerald: oklch(0.696 0.149 162.480);
+  --career-emerald: oklch(0.720 0.158 160.000);
   --career-emerald-foreground: oklch(0.320 0.059 263.759);
-  --career-violet: oklch(0.541 0.247 293.009);
+  --career-violet: oklch(0.550 0.270 296.000);
   --career-violet-foreground: oklch(1.000 0.000 0.000);
-  --career-yellow: oklch(0.861 0.173 91.936);
+  --career-yellow: oklch(0.870 0.173 93.000);
   --career-yellow-foreground: oklch(0.320 0.059 263.759);
-  --career-cyan: oklch(0.715 0.126 215.221);
+  --career-cyan: oklch(0.740 0.132 222.000);
   --career-cyan-foreground: oklch(0.320 0.059 263.759);
-  --career-magenta: oklch(0.525 0.199 3.958);
+  --career-magenta: oklch(0.565 0.222 352.000);
   --career-magenta-foreground: oklch(1.000 0.000 0.000);
-  --career-lime: oklch(0.768 0.204 130.850);
+  --career-lime: oklch(0.790 0.212 132.000);
   --career-lime-foreground: oklch(0.320 0.059 263.759);
   --career-graphite: oklch(0.446 0.037 257.281);
   --career-graphite-foreground: oklch(1.000 0.000 0.000);
@@ -248,13 +248,13 @@ The input boundary was darkened from the target `#8C97A8` to `#8994A5` before co
 | `--warning-foreground` | `--warning` | 5.23:1 | 4.5:1 |
 | `--info-foreground` | `--info` | 5.35:1 | 4.5:1 |
 | `--sidebar-primary-foreground` | `--sidebar-primary` | 12.75:1 | 4.5:1 |
-| `--career-blue-foreground` | `--career-blue` | 5.17:1 | 4.5:1 |
-| `--career-emerald-foreground` | `--career-emerald` | 5.03:1 | 4.5:1 |
-| `--career-violet-foreground` | `--career-violet` | 5.71:1 | 4.5:1 |
-| `--career-yellow-foreground` | `--career-yellow` | 8.34:1 | 4.5:1 |
-| `--career-cyan-foreground` | `--career-cyan` | 5.25:1 | 4.5:1 |
-| `--career-magenta-foreground` | `--career-magenta` | 6.03:1 | 4.5:1 |
-| `--career-lime-foreground` | `--career-lime` | 6.45:1 | 4.5:1 |
+| `--career-blue-foreground` | `--career-blue` | 5.03:1 | 4.5:1 |
+| `--career-emerald-foreground` | `--career-emerald` | 5.50:1 | 4.5:1 |
+| `--career-violet-foreground` | `--career-violet` | 5.61:1 | 4.5:1 |
+| `--career-yellow-foreground` | `--career-yellow` | 8.59:1 | 4.5:1 |
+| `--career-cyan-foreground` | `--career-cyan` | 5.73:1 | 4.5:1 |
+| `--career-magenta-foreground` | `--career-magenta` | 5.16:1 | 4.5:1 |
+| `--career-lime-foreground` | `--career-lime` | 6.98:1 | 4.5:1 |
 | `--career-graphite-foreground` | `--career-graphite` | 7.56:1 | 4.5:1 |
 | `--primary-foreground` | `--primary-hover` | 15.03:1 | 4.5:1 |
 | `--link` | `--card` | 5.35:1 | 4.5:1 |
@@ -287,8 +287,8 @@ Career slots are blue (Azul), emerald (Esmeralda), violet (Violeta), yellow (Ama
 
 | Font role | Family and fallback | Weights | Token / class |
 | --- | --- | --- | --- |
-| UI | Manrope, ui-sans-serif, system-ui, sans-serif | 400–800 | `--font-ui` / `font-sans` |
-| Heading | Source Serif 4, ui-serif, Georgia, serif | 600 | `--font-heading` / `font-display` |
+| UI | Figtree, ui-sans-serif, system-ui, sans-serif | 400–800 | `--font-ui` / `font-sans` |
+| Heading | Bricolage Grotesque, ui-sans-serif, system-ui, sans-serif | 700–800 (`font-semibold` resolves to 700) | `--font-heading` / `font-display` |
 
 Fonts are self-hosted by `next/font/google` and their variable classes are attached to the root layout. Native system fallbacks are provided by Next.js font optimization.
 
