@@ -35,6 +35,9 @@ import type {
   SafeScholarshipReference,
   SafeSubject,
 } from "@/features/tutors/tutor-service";
+import { CAREER_COLOR_LABELS, type CareerColor } from "@/shared/career-color";
+import { CareerBadge } from "@/shared/components/career-badge";
+import { CareerColorField } from "./career-color-field";
 import { PageHeader } from "@/shared/components/page-header";
 import { StatusBadge, type StatusBadgeVariant } from "@/shared/components/status-badge";
 import { cn } from "@/shared/utils";
@@ -61,6 +64,7 @@ type CycleForm = {
 };
 
 type CareerForm = {
+  color?: CareerColor;
   id: string | null;
   name: string;
 };
@@ -448,6 +452,7 @@ function CareerSection({
   onCancel,
   onEdit,
   onNameChange,
+  onColorChange,
   onStatusChange,
   onSubmit,
 }: {
@@ -457,6 +462,7 @@ function CareerSection({
   onCancel: () => void;
   onEdit: (career: SafeCareer) => void;
   onNameChange: (name: string) => void;
+  onColorChange: (color: CareerColor) => void;
   onStatusChange: (career: SafeCareer) => void;
   onSubmit: SubmitHandler;
 }) {
@@ -492,7 +498,7 @@ function CareerSection({
             className="rounded-md border border-border bg-muted/60 p-4"
             onSubmit={onSubmit}
           >
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <div className="grid gap-4">
               <label className="space-y-1.5">
                 <span className="text-xs font-semibold text-muted-foreground">
                   Nombre de la carrera
@@ -505,6 +511,13 @@ function CareerSection({
                   value={form.name}
                 />
               </label>
+              <CareerColorField
+                disabled={disabled}
+                mode={editingCareer === null ? "create" : "edit"}
+                name={form.name}
+                value={form.color}
+                onChange={onColorChange}
+              />
               <div className="flex flex-wrap gap-2">
                 <Button disabled={disabled} size="sm" type="submit">
                   {editingCareer === null ? "Agregar carrera" : "Guardar cambios"}
@@ -534,6 +547,12 @@ function CareerSection({
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="font-medium text-foreground">{career.name}</p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <CareerBadge name={career.name} color={career.color} size="sm" />
+                          <span className="text-sm text-muted-foreground">
+                            {CAREER_COLOR_LABELS[career.color]}
+                          </span>
+                        </div>
                         <div className="mt-2">
                           <ReferenceStatusBadge status={career.status} />
                         </div>
@@ -567,6 +586,7 @@ function CareerSection({
                   <TableHeader>
                     <TableRow>
                       <TableHead scope="col">Carrera</TableHead>
+                      <TableHead scope="col">Color</TableHead>
                       <TableHead scope="col">Estado</TableHead>
                       <TableHead scope="col">Acciones</TableHead>
                     </TableRow>
@@ -575,6 +595,14 @@ function CareerSection({
                     {careers.map((career) => (
                       <TableRow key={career.id}>
                         <TableCell className="font-medium">{career.name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <CareerBadge name={career.name} color={career.color} size="sm" />
+                            <span className="text-sm text-muted-foreground">
+                              {CAREER_COLOR_LABELS[career.color]}
+                            </span>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <ReferenceStatusBadge status={career.status} />
                         </TableCell>
@@ -1455,7 +1483,7 @@ export function SettingsScreen({
     await runSettingsAction(
       async () => {
         const response = await requestJson<{ career?: SafeCareer }>(endpoint, {
-          body: JSON.stringify({ name: careerForm.name }),
+          body: JSON.stringify({ name: careerForm.name, color: careerForm.color }),
           method: careerId === null ? "POST" : "PATCH",
         });
 
@@ -1915,12 +1943,13 @@ export function SettingsScreen({
             careers={careers}
             disabled={isLoading}
             form={careerForm}
+            onColorChange={(color) => setCareerForm((previous) => ({ ...previous, color }))}
             onCancel={() => {
               setCareerForm(EMPTY_CAREER_FORM);
               updateStateForEditing();
             }}
             onEdit={(career) => {
-              setCareerForm({ id: career.id, name: career.name });
+              setCareerForm({ id: career.id, name: career.name, color: career.color });
               updateStateForEditing();
             }}
             onNameChange={(name) =>

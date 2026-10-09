@@ -655,7 +655,7 @@ function TutorActionsMenu({
           role="menu"
         >
           <button
-            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted"
             onClick={(event) =>
               onOpenSheet("view", tutor, menuButtonRef.current ?? event.currentTarget)
             }
@@ -666,7 +666,7 @@ function TutorActionsMenu({
             Ver detalle
           </button>
           <button
-            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted"
             onClick={(event) =>
               onOpenSheet("edit", tutor, menuButtonRef.current ?? event.currentTarget)
             }
@@ -677,7 +677,7 @@ function TutorActionsMenu({
             Editar
           </button>
           <button
-            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted"
             onClick={(event) =>
               onOpenSheet("view", tutor, menuButtonRef.current ?? event.currentTarget)
             }
@@ -688,7 +688,7 @@ function TutorActionsMenu({
             Ver materias
           </button>
           <button
-            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus-visible:bg-muted"
             onClick={() => {
               onToggle(null);
               const trigger =

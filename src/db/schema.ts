@@ -1,3 +1,5 @@
+import { CAREER_COLORS } from "../shared/career-color";
+
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -16,6 +18,8 @@ import {
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { SafeAuditMetadata } from "./audit-validation";
+
+export const careerColorEnum = pgEnum("career_color", CAREER_COLORS);
 
 export const userRoleEnum = pgEnum("user_role", ["ADMIN", "TUTOR"]);
 
@@ -237,6 +241,7 @@ export const administrativeCycle = pgTable(
 export const career = pgTable(
   "career",
   {
+    color: careerColorEnum("color").notNull().default("BLUE"),
     id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
     normalizedName: text("normalized_name").notNull(),

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CAREER_COLORS } from "@/shared/career-color";
 
 import type { RecordStatus } from "@/db/schema";
 
@@ -208,23 +209,27 @@ export const tutorSearchFiltersSchema = z
   })
   .strict();
 
+export const careerColorSchema = z.enum(CAREER_COLORS);
+
 export const createCareerInputSchema = z
   .object({
+    color: careerColorSchema.optional(),
     name: requiredText(MAX_NAME_LENGTH),
   })
   .strict();
 
 export const updateCareerInputSchema = z
   .object({
+    color: careerColorSchema.optional(),
     name: requiredText(MAX_NAME_LENGTH).optional(),
   })
   .strict()
   .superRefine((input, context) => {
-    if (input.name === undefined) {
+    if (input.name === undefined && input.color === undefined) {
       context.addIssue({
         code: "custom",
         path: [],
-        message: "name is required",
+        message: "at least one career field is required",
       });
     }
   });

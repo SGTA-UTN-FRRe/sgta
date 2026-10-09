@@ -1,0 +1,2 @@
+CREATE TYPE "public"."career_color" AS ENUM('BLUE', 'EMERALD', 'VIOLET', 'YELLOW', 'CYAN', 'MAGENTA', 'LIME', 'GRAPHITE');--> statement-breakpoint
+ALTER TABLE "career" ADD COLUMN "color" "career_color" DEFAULT 'BLUE' NOT NULL;

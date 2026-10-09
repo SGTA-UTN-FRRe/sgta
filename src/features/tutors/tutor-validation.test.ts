@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   createTutorInputSchema,
+  createCareerInputSchema,
+  updateCareerInputSchema,
   normalizeInstitutionalIdentifier,
   normalizeName,
   parseCreateTutorInput,
@@ -116,5 +118,21 @@ describe("tutor validation boundary", () => {
     });
 
     expect(() => parseTutorSearchFilters({ limit: 201 })).toThrow();
+  });
+});
+
+
+describe("career color validation", () => {
+  it("accepts optional palette colors and color-only edits", () => {
+    expect(createCareerInputSchema.parse({ name: "Systems" })).toEqual({ name: "Systems" });
+    expect(createCareerInputSchema.parse({ name: "Systems", color: "CYAN" })).toMatchObject({ color: "CYAN" });
+    expect(updateCareerInputSchema.parse({ color: "LIME" })).toEqual({ color: "LIME" });
+  });
+  it("rejects arbitrary colors, null, and empty edits", () => {
+    for (const color of ["ORANGE", "blue", "#2563EB", null]) {
+      expect(createCareerInputSchema.safeParse({ name: "Systems", color }).success).toBe(false);
+      expect(updateCareerInputSchema.safeParse({ color }).success).toBe(false);
+    }
+    expect(updateCareerInputSchema.safeParse({}).success).toBe(false);
   });
 });

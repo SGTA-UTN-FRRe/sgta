@@ -115,6 +115,7 @@ import {
   transitionScholarshipReferenceStatus,
   transitionSubjectStatus,
   transitionTutorStatus,
+  updateCareer,
   updateScholarshipReference,
   updateTutor,
 } from "@/features/tutors/tutor-service";
@@ -358,6 +359,52 @@ beforeEach(async () => {
 });
 
 describe("PostgreSQL foundation integration", () => {
+  it("allocates least-used active career colors, preserves explicit choices, and audits color edits", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const context = { actorId: admin.id };
+    const blue = await createCareer(database, { name: "First Career" }, context);
+    expect(blue.color).toBe("BLUE");
+    const inactive = await createCareer(database, { name: "Inactive Career", color: "EMERALD" }, context);
+    await transitionCareerStatus(database, inactive.id, { status: "INACTIVE" }, context);
+    const emerald = await createCareer(database, { name: "Second Career" }, context);
+    expect(emerald.color).toBe("EMERALD");
+    const chosen = await createCareer(database, { name: "Chosen Career", color: "GRAPHITE" }, context);
+    expect(chosen.color).toBe("GRAPHITE");
+    const changed = await updateCareer(database, blue.id, { color: "MAGENTA" }, context);
+    expect(changed).toMatchObject({ name: blue.name, color: "MAGENTA" });
+    const renamed = await updateCareer(database, blue.id, { name: "Renamed Career" }, context);
+    expect(renamed).toMatchObject({ color: "MAGENTA" });
+    await updateCareer(database, blue.id, { name: "Renamed Career", color: "MAGENTA" }, context);
+    const audits = await database.select().from(auditEvent).where(and(eq(auditEvent.entityId, blue.id), eq(auditEvent.action, "career.updated")));
+    expect(audits).toEqual(expect.arrayContaining([
+      expect.objectContaining({ metadata: { changedFields: ["color"], previousColor: "BLUE", color: "MAGENTA" } }),
+      expect.objectContaining({ metadata: { changedFields: ["name"] } }),
+      expect.objectContaining({ metadata: { changedFields: [] } }),
+    ]));
+    const cycle = await createAdministrativeCycle(database, { name: "Color Cycle", startDate: "2027-01-01", endDate: "2027-12-31" }, context);
+    const tutorRecord = await createTutor(database, { firstName: "Synthetic", primaryCareerId: blue.id, cycleId: cycle.id }, context);
+    expect((await getScheduleWorkspace(database, {}, context)).eligibleTutors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: tutorRecord.id, careerName: renamed.name, careerColor: "MAGENTA" }),
+    ]));
+  });
+
+  it("rejects invalid career colors on both Admin mutation routes without persisting changes", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    authMocks.getSession.mockResolvedValue({ user: { id: admin.id } });
+    const existing = await createCareer(database, { name: "API Career", color: "CYAN" }, { actorId: admin.id });
+    const responses = [
+      await postAdminCareers(makeJsonRequest("http://localhost/api/admin/settings/careers", "POST", { name: "Invalid Career", color: "ORANGE" })),
+      await patchAdminCareerDetail(makeJsonRequest("http://localhost/api/admin/settings/careers/detail", "PATCH", { color: "ORANGE" }), { params: Promise.resolve({ careerId: existing.id }) }),
+    ];
+    for (const response of responses) {
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({ error: "invalid_request", issues: [expect.objectContaining({ path: ["color"] })] });
+    }
+    expect(await database.select({ name: career.name, color: career.color }).from(career)).toEqual([{ name: "API Career", color: "CYAN" }]);
+  });
+
   it("applies the pinned migration to the isolated container and reruns it safely", async () => {
     const database = getIntegrationDatabase();
     const tables = getRows<{ table_name: string }>(
@@ -560,7 +607,7 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("13");
+    expect(migrations[0]?.migration_count).toBe("15");
     expect(enumValues).toEqual([
       { typname: "activity_kind", enumlabel: "MEETING" },
       { typname: "activity_kind", enumlabel: "WORKSHOP" },
@@ -2149,6 +2196,87 @@ describe("PostgreSQL foundation integration", () => {
     );
     expect(auditRows.some((row) => row.action === "schedule_plan.created")).toBe(true);
     expect(auditRows.some((row) => row.action === "schedule_assignment.created")).toBe(true);
+  });
+
+  it("returns the Tutor's career on assignments after the Tutor is deactivated", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Chemical Engineering", normalizedName: "chemical engineering", color: "CYAN" })
+      .returning({ id: career.id });
+    const [createdCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "Schedule Careers 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+        status: "OPEN",
+      })
+      .returning({ id: administrativeCycle.id });
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Rosalind",
+        lastName: "Franklin",
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id });
+    await database.insert(tutorCycleMembership).values({
+      tutorId: createdTutor!.id,
+      cycleId: createdCycle!.id,
+    });
+
+    const context = { actorId: admin.id };
+    const plan = await createSchedulePlan(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        name: "Regular 2027",
+        kind: "REGULAR",
+        validFrom: "2027-01-01",
+        validTo: "2027-12-31",
+      },
+      context,
+    );
+    const assignment = await createScheduleAssignment(
+      database,
+      {
+        planId: plan.id,
+        tutorId: createdTutor!.id,
+        pattern: "WEEKDAY",
+        weekday: 1,
+        startMinutes: 480,
+        endMinutes: 600,
+        kind: "DUTY",
+        modality: "Room 204",
+      },
+      context,
+    );
+    const careerFields = {
+      careerName: "Chemical Engineering",
+      careerColor: "CYAN",
+    };
+    expect(assignment).toMatchObject(careerFields);
+
+    await transitionTutorStatus(
+      database,
+      createdTutor!.id,
+      { status: "INACTIVE" },
+      context,
+    );
+    const workspace = await getScheduleWorkspace(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-01" },
+      context,
+    );
+    expect(workspace.selectedPlan).toMatchObject({ id: plan.id });
+    expect(workspace.assignments).toEqual([
+      expect.objectContaining({ id: assignment.id, ...careerFields }),
+    ]);
+    await expect(
+      listScheduleAssignments(database, { planId: plan.id }),
+    ).resolves.toEqual([expect.objectContaining({ id: assignment.id, ...careerFields })]);
   });
 
   it("serializes special-plan overlap and enforces assignment eligibility and conflicts", async () => {

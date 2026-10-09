@@ -10,18 +10,21 @@ const cycle = {
 };
 
 const systemsCareer = {
+  color: "BLUE" as const,
   id: "22222222-2222-4222-8222-222222222222",
   name: "Ingeniería en Sistemas de Información",
   status: "ACTIVE" as const,
 };
 
 const mechanicsCareer = {
+  color: "BLUE" as const,
   id: "55555555-5555-4555-8555-555555555555",
   name: "Ingeniería Electromecánica",
   status: "ACTIVE" as const,
 };
 
 const chemistryCareer = {
+  color: "BLUE" as const,
   id: "66666666-6666-4666-8666-666666666666",
   name: "Ingeniería Química",
   status: "ACTIVE" as const,
@@ -34,6 +37,7 @@ function createTutor(
     lastName: string | null;
     institutionalIdentifier: string | null;
     career: {
+      color: import("@/shared/career-color").CareerColor;
       id: string;
       name: string;
       status: "ACTIVE" | "INACTIVE";

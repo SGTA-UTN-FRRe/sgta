@@ -1860,7 +1860,7 @@ function PlansArchiveDialog({
                       >
                         <button
                           aria-pressed={isSelected}
-                          className="w-full text-left focus-visible:outline-none"
+                          className="w-full text-left"
                           onClick={() => setSelectedArchivedPlanId(plan.id)}
                           type="button"
                         >

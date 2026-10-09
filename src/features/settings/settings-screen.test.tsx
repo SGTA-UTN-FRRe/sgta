@@ -34,12 +34,14 @@ const historicalCycle: SafeAdministrativeCycle = {
 };
 
 const activeCareer: SafeCareer = {
+  color: "BLUE",
   id: "career-1",
   name: "Ingeniería en Sistemas",
   status: "ACTIVE",
 };
 
 const inactiveCareer: SafeCareer = {
+  color: "BLUE",
   id: "career-2",
   name: "Ingeniería Industrial",
   status: "INACTIVE",
@@ -121,6 +123,12 @@ describe("SettingsScreen", () => {
     expect(screen.getByText(/no certifica cumplimiento/i)).toBeInTheDocument();
     expect(screen.getAllByText("Inactiva")).not.toHaveLength(0);
     expect(screen.queryByRole("button", { name: /eliminar|borrar/i })).not.toBeInTheDocument();
+    const careerCards = screen.getByRole("list", { name: "Carreras registradas" });
+    expect(within(careerCards).getAllByText("Azul")).toHaveLength(2);
+    const careerColorHeader = screen.getByRole("columnheader", { name: "Color" });
+    const careerTable = careerColorHeader.closest("table");
+    expect(careerTable).not.toBeNull();
+    expect(within(careerTable!).getAllByText("Azul")).toHaveLength(2);
     expect(
       screen.getAllByRole("button", { name: "Activar carrera Ingeniería Industrial" }),
     ).toHaveLength(2);
@@ -129,6 +137,7 @@ describe("SettingsScreen", () => {
   it("creates a career through the protected reference API", async () => {
     const user = userEvent.setup();
     const createdCareer: SafeCareer = {
+  color: "BLUE",
       id: "career-3",
       name: "Ciencias Económicas",
       status: "ACTIVE",
@@ -153,6 +162,20 @@ describe("SettingsScreen", () => {
       }),
     );
     expect(screen.getAllByText(createdCareer.name)).not.toHaveLength(0);
+  });
+
+  it("loads and submits a career color edit", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValue(Response.json({ career: { ...activeCareer, color: "VIOLET" } }));
+    render(<SettingsScreen currentCycle={null} cycles={[]} careers={[activeCareer]} />);
+    await user.click(screen.getAllByRole("button", { name: `Editar carrera ${activeCareer.name}` })[0]);
+    expect(screen.getByRole("radio", { name: "Azul" })).toBeChecked();
+    await user.click(screen.getByRole("radio", { name: "Violeta" }));
+    await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(`/api/admin/settings/careers/${activeCareer.id}`, expect.objectContaining({
+      method: "PATCH", body: JSON.stringify({ name: activeCareer.name, color: "VIOLET" }),
+    })));
+    expect(await screen.findByRole("status")).toHaveTextContent("La carrera se actualizó correctamente.");
   });
 
   it("preserves career input and explains duplicate conflicts", async () => {

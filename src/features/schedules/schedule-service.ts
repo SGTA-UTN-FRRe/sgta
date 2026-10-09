@@ -29,6 +29,7 @@ import {
   type ScheduleAssignmentPattern,
   type SchedulePlanKind,
 } from "@/db/schema";
+import type { CareerColor } from "@/shared/career-color";
 import { formatTutorName } from "@/shared/tutor-name";
 
 import {
@@ -140,6 +141,8 @@ export type SafeScheduleAssignment = {
   planId: string;
   tutorId: string;
   tutorName: string;
+  careerName: string;
+  careerColor: CareerColor;
   pattern: ScheduleAssignmentPattern;
   weekday: number | null;
   assignmentDate: string | null;
@@ -156,6 +159,7 @@ export type SafeScheduleTutor = {
   id: string;
   formalName: string;
   careerName: string;
+  careerColor: CareerColor;
   status: RecordStatus;
 };
 
@@ -209,6 +213,8 @@ type AssignmentRow = {
   planId: string;
   tutorId: string;
   tutorName: string;
+  careerName: string;
+  careerColor: CareerColor;
   pattern: ScheduleAssignmentPattern;
   weekday: number | null;
   assignmentDate: string | null;
@@ -246,6 +252,8 @@ const assignmentSelection = {
   planId: scheduleAssignment.planId,
   tutorId: scheduleAssignment.tutorId,
   tutorName: formatFormalTutorNameSql(tutor.lastName, tutor.firstName),
+  careerName: career.name,
+  careerColor: career.color,
   pattern: scheduleAssignment.pattern,
   weekday: scheduleAssignment.weekday,
   assignmentDate: scheduleAssignment.assignmentDate,
@@ -286,6 +294,8 @@ function toSafeAssignment(row: AssignmentRow): SafeScheduleAssignment {
     planId: row.planId,
     tutorId: row.tutorId,
     tutorName: row.tutorName,
+    careerName: row.careerName,
+    careerColor: row.careerColor,
     pattern: row.pattern,
     weekday: row.weekday,
     assignmentDate: row.assignmentDate,
@@ -872,6 +882,7 @@ async function getAssignment(
     .select(assignmentSelection)
     .from(scheduleAssignment)
     .innerJoin(tutor, eq(scheduleAssignment.tutorId, tutor.id))
+    .innerJoin(career, eq(tutor.primaryCareerId, career.id))
     .where(eq(scheduleAssignment.id, assignmentId))
     .limit(1);
 
@@ -1026,6 +1037,7 @@ async function listEligibleScheduleTutors(
       firstName: tutor.firstName,
       lastName: tutor.lastName,
       careerName: career.name,
+      careerColor: career.color,
       status: tutor.status,
     })
     .from(tutor)
@@ -1044,6 +1056,7 @@ async function listEligibleScheduleTutors(
     id: row.id,
     formalName: formatTutorName(row),
     careerName: row.careerName,
+    careerColor: row.careerColor,
     status: row.status,
   }));
 }
@@ -1143,6 +1156,7 @@ export async function getScheduleWorkspace(
               .select(assignmentSelection)
               .from(scheduleAssignment)
               .innerJoin(tutor, eq(scheduleAssignment.tutorId, tutor.id))
+              .innerJoin(career, eq(tutor.primaryCareerId, career.id))
               .where(eq(scheduleAssignment.planId, selectedPlan.id))
               .orderBy(
                 asc(scheduleAssignment.status),
@@ -1432,6 +1446,7 @@ export async function listScheduleAssignments(
       .select(assignmentSelection)
       .from(scheduleAssignment)
       .innerJoin(tutor, eq(scheduleAssignment.tutorId, tutor.id))
+      .innerJoin(career, eq(tutor.primaryCareerId, career.id))
       .where(and(...conditions))
       .orderBy(
         asc(scheduleAssignment.status),

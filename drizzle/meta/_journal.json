@@ -92,6 +92,20 @@
       "when": 1791360443738,
       "tag": "0012_left_stone_men",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791501436897,
+      "tag": "0013_steady_the_watchers",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791501439072,
+      "tag": "0014_backfill-career-colors",
+      "breakpoints": true
     }
   ]
 }
