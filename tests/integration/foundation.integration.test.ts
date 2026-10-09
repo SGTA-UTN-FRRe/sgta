@@ -2192,6 +2192,87 @@ describe("PostgreSQL foundation integration", () => {
     expect(auditRows.some((row) => row.action === "schedule_assignment.created")).toBe(true);
   });
 
+  it("returns the Tutor's career on assignments after the Tutor is deactivated", async () => {
+    const database = getIntegrationDatabase();
+    const { admin } = await seedIdentities();
+    const [createdCareer] = await database
+      .insert(career)
+      .values({ name: "Chemical Engineering", normalizedName: "chemical engineering", color: "CYAN" })
+      .returning({ id: career.id });
+    const [createdCycle] = await database
+      .insert(administrativeCycle)
+      .values({
+        name: "Schedule Careers 2027",
+        startDate: "2027-01-01",
+        endDate: "2027-12-31",
+        status: "OPEN",
+      })
+      .returning({ id: administrativeCycle.id });
+    const [createdTutor] = await database
+      .insert(tutor)
+      .values({
+        firstName: "Rosalind",
+        lastName: "Franklin",
+        primaryCareerId: createdCareer!.id,
+      })
+      .returning({ id: tutor.id });
+    await database.insert(tutorCycleMembership).values({
+      tutorId: createdTutor!.id,
+      cycleId: createdCycle!.id,
+    });
+
+    const context = { actorId: admin.id };
+    const plan = await createSchedulePlan(
+      database,
+      {
+        cycleId: createdCycle!.id,
+        name: "Regular 2027",
+        kind: "REGULAR",
+        validFrom: "2027-01-01",
+        validTo: "2027-12-31",
+      },
+      context,
+    );
+    const assignment = await createScheduleAssignment(
+      database,
+      {
+        planId: plan.id,
+        tutorId: createdTutor!.id,
+        pattern: "WEEKDAY",
+        weekday: 1,
+        startMinutes: 480,
+        endMinutes: 600,
+        kind: "DUTY",
+        modality: "Room 204",
+      },
+      context,
+    );
+    const careerFields = {
+      careerName: "Chemical Engineering",
+      careerColor: "CYAN",
+    };
+    expect(assignment).toMatchObject(careerFields);
+
+    await transitionTutorStatus(
+      database,
+      createdTutor!.id,
+      { status: "INACTIVE" },
+      context,
+    );
+    const workspace = await getScheduleWorkspace(
+      database,
+      { cycleId: createdCycle!.id, date: "2027-03-01" },
+      context,
+    );
+    expect(workspace.selectedPlan).toMatchObject({ id: plan.id });
+    expect(workspace.assignments).toEqual([
+      expect.objectContaining({ id: assignment.id, ...careerFields }),
+    ]);
+    await expect(
+      listScheduleAssignments(database, { planId: plan.id }),
+    ).resolves.toEqual([expect.objectContaining({ id: assignment.id, ...careerFields })]);
+  });
+
   it("serializes special-plan overlap and enforces assignment eligibility and conflicts", async () => {
     const database = getIntegrationDatabase();
     const { admin } = await seedIdentities();

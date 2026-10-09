@@ -60,6 +60,8 @@ const tutors = [
 
 const mondayAssignment: SafeScheduleAssignment = {
   assignmentDate: null,
+  careerColor: tutors[0].careerColor,
+  careerName: tutors[0].careerName,
   createdAt: "2026-08-02T12:00:00.000Z",
   endMinutes: 600,
   id: "66666666-6666-4666-8666-666666666666",
@@ -77,6 +79,8 @@ const mondayAssignment: SafeScheduleAssignment = {
 
 const tuesdayAssignment: SafeScheduleAssignment = {
   assignmentDate: null,
+  careerColor: tutors[1].careerColor,
+  careerName: tutors[1].careerName,
   createdAt: "2026-08-02T12:00:00.000Z",
   endMinutes: 720,
   id: "77777777-7777-4777-8777-777777777777",
