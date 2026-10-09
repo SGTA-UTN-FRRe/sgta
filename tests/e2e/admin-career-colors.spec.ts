@@ -52,3 +52,28 @@ test("career colors support keyboard selection and visible control boundaries", 
     }
   }
 });
+
+test("text inputs render the input boundary and the invalid border over base styles", async ({ context, page }) => {
+  await addE2ESessionCookie(context,
+    `${E2E_ADMIN_SESSION_TOKEN}.${await makeSignature(E2E_ADMIN_SESSION_TOKEN, E2E_AUTH_SECRET)}`);
+  await page.goto("/admin/settings");
+  const section = page.locator('section[aria-labelledby="career-settings-title"]');
+  const name = section.getByRole("textbox", { name: "Nombre de la carrera" });
+  const borderAgainstToken = (token: string) => name.evaluate((element, property) => {
+    const probe = document.createElement("span");
+    probe.hidden = true;
+    probe.style.color = getComputedStyle(element).getPropertyValue(property).trim();
+    document.body.append(probe);
+    try {
+      return { actual: getComputedStyle(element).borderTopColor, expected: getComputedStyle(probe).color };
+    } finally {
+      probe.remove();
+    }
+  }, token);
+
+  const boundary = await borderAgainstToken("--input");
+  expect(boundary.actual).toBe(boundary.expected);
+  await name.evaluate((element) => element.setAttribute("aria-invalid", "true"));
+  const invalid = await borderAgainstToken("--destructive");
+  expect(invalid.actual).toBe(invalid.expected);
+});

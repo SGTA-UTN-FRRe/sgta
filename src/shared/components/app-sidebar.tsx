@@ -226,7 +226,7 @@ export function AppSidebar({ variant, user }: AppSidebarProps) {
         data-active={active ? "true" : "false"}
         className={cn(
           "relative flex min-h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors",
-          "focus-visible:z-10 focus-visible:outline-none",
+          "focus-visible:z-10",
           active
             ? "bg-sidebar-primary font-semibold text-sidebar-primary-foreground"
             : "text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",

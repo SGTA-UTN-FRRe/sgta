@@ -5,12 +5,11 @@ type KeyboardSelectTarget = string | { label: string };
 
 export async function expectFocusOutline(locator: Locator) {
   await expect(locator).toBeFocused();
-  await expect(locator).toHaveCSS("outline-style", "solid");
-  await expect(locator).toHaveCSS("outline-width", "2px");
-  await expect(locator).toHaveCSS("outline-offset", "2px");
-  // Resolve both colors in the browser: custom properties retain LAB percentage
-  // syntax while computed colors serialize it differently. Poll also observes
-  // completion of the control's outline-color transition.
+  // Controls show either the base outline (2px solid --ring, offset 2px) or the
+  // primitive ring (a box-shadow in the --ring color). Resolve the ring color in
+  // the browser: custom properties retain their authored syntax while computed
+  // colors serialize differently. Poll also observes completion of the control's
+  // outline-color and box-shadow transitions.
   await expect.poll(() => locator.evaluate((element) => {
     const styles = getComputedStyle(element);
     const ring = styles.getPropertyValue("--ring").trim();
@@ -20,11 +19,17 @@ export async function expectFocusOutline(locator: Locator) {
     document.body.append(probe);
     try {
       const expected = getComputedStyle(probe).color;
+      const outline = styles.outlineStyle === "solid"
+        && styles.outlineWidth === "2px"
+        && styles.outlineOffset === "2px"
+        && styles.outlineColor === expected;
+      const primitiveRing = styles.boxShadow.includes(expected);
       return {
         valid: CSS.supports("color", ring),
-        actual: styles.outlineColor,
+        outline: `${styles.outlineStyle} ${styles.outlineWidth} ${styles.outlineOffset} ${styles.outlineColor}`,
+        boxShadow: styles.boxShadow,
         expected,
-        matches: styles.outlineColor === expected,
+        matches: outline || primitiveRing,
       };
     } finally {
       probe.remove();

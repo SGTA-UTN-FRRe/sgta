@@ -19,7 +19,7 @@ export function CareerColorField({ name, value, onChange, disabled = false }: {
         className="grid grid-cols-2 gap-2 sm:grid-cols-4" disabled={disabled} value={value ?? ""}
         onValueChange={(color) => onChange(color as CareerColor)}>
         {CAREER_COLORS.map((color) => (
-          <label key={color} htmlFor={`${id}-${color}`} className="grid min-h-11 min-w-0 cursor-pointer grid-cols-2 items-center gap-2 rounded-md border border-input! bg-card p-2 text-sm has-[[data-state=checked]]:border-primary! has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-primary">
+          <label key={color} htmlFor={`${id}-${color}`} className="grid min-h-11 min-w-0 cursor-pointer grid-cols-2 items-center gap-2 rounded-md border border-input bg-card p-2 text-sm has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-primary">
             <RadioGroupItem id={`${id}-${color}`} value={color} aria-label={CAREER_COLOR_LABELS[color]} />
             <span aria-hidden="true"><CareerBadge name={name.trim() || "Carrera"} color={color} size="sm" /></span>
             <span className="col-span-2">{CAREER_COLOR_LABELS[color]}</span>
