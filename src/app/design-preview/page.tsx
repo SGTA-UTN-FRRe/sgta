@@ -98,7 +98,7 @@ export default function DesignPreviewPage() {
         <div className="grid gap-6 border-y border-border/70 py-5 md:grid-cols-2">
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
-              Títulos · Source Serif 4
+              Títulos · Bricolage Grotesque
             </p>
             <p className="font-display text-display font-semibold leading-tight text-foreground">
               Gestión académica
@@ -109,7 +109,7 @@ export default function DesignPreviewPage() {
           </div>
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
-              Interfaz · Manrope
+              Interfaz · Figtree
             </p>
             <p className="text-base leading-relaxed text-foreground">
               Texto de apoyo con información clara para las tareas de Tutorías.

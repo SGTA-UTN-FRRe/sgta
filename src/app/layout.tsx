@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Manrope, Source_Serif_4 } from "next/font/google";
+import { Bricolage_Grotesque, Figtree } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,7 +8,7 @@ import { HydrationMarker } from "@/shared/hydration-marker";
 
 import "./globals.css";
 
-const manrope = Manrope({
+const figtree = Figtree({
   variable: "--font-ui",
   weight: ["400", "500", "600", "700", "800"],
   fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
@@ -16,10 +16,11 @@ const manrope = Manrope({
   display: "swap",
 });
 
-const sourceSerif = Source_Serif_4({
+// Loaded at 700 and 800 only, so `font-semibold` headings resolve to the bold cut.
+const bricolageGrotesque = Bricolage_Grotesque({
   variable: "--font-heading",
-  weight: "600",
-  fallback: ["ui-serif", "Georgia", "serif"],
+  weight: ["700", "800"],
+  fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
   subsets: ["latin"],
   display: "swap",
 });
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="es" className={`${manrope.variable} ${sourceSerif.variable} h-full`}>
+    <html lang="es" className={`${figtree.variable} ${bricolageGrotesque.variable} h-full`}>
       <body className="flex min-h-full flex-col font-sans antialiased">
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster />
