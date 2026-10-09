@@ -26,7 +26,7 @@ Browser
 | `src/app/` | Route composition, layouts, metadata, loading, and error states | Keeps feature behavior in `src/features/`. |
 | `src/auth/` | Better Auth configuration, identity provisioning, sessions, and server authorization | Client code does not make authorization decisions. |
 | `src/features/` | Feature screens, validation, APIs, and domain services | Each workflow stays in its feature vertical. |
-| `src/shared/` and `src/components/ui/` | Product-wide components and low-level UI primitives | Feature-specific rules stay out of shared UI. |
+| `src/shared/` and `src/components/ui/` | Product-wide components, including the role application shell in `src/shared/components/app-shell.tsx`, and low-level UI primitives | Feature-specific rules stay out of shared UI. |
 | `src/db/` | PostgreSQL client, Drizzle schema, migrations, and audit handling | Database access is server-only. |
 | `src/mocks/` | Synthetic fixture data, copy, types, and screen states | Test-only fixtures; ESLint rejects production imports. |
 | `src/config/` | Environment parsing and validation | Validates server settings at the configuration boundary. |

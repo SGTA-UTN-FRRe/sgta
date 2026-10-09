@@ -55,7 +55,10 @@ sign-up.
 ## Design preview
 
 While running `corepack pnpm dev`, open `/design-preview` to inspect the design
-tokens and shared UI components. The route returns 404 in a production build.
+tokens, primitives, application shell, and shared product patterns. The interactive
+examples cover career visibility, search and filters, responsive tables, field
+feedback, confirmation and pending states, and route loading and errors.
+The route returns 404 in a production build.
 
 ## UI lint rules
 

@@ -21,6 +21,8 @@ export interface PageHeaderProps {
   breadcrumbs?: BreadcrumbItem[];
   /** Single slot for the view's dominant action, such as a primary button. */
   action?: ReactNode;
+  /** Quiet actions next to the dominant action. */
+  secondaryActions?: ReactNode;
   /** Additional container classes. */
   className?: string;
 }
@@ -36,11 +38,12 @@ export function PageHeader({
   description,
   breadcrumbs,
   action,
+  secondaryActions,
   className,
 }: PageHeaderProps) {
   return (
     <header className={cn("w-full space-y-3 pb-6 border-b border-border/70", className)} data-slot="page-header">
-      {breadcrumbs && breadcrumbs.length > 0 && (
+      {breadcrumbs && breadcrumbs.length > 1 && (
         <nav aria-label="Migas de pan" className="flex items-center text-xs text-muted-foreground">
           <ol className="flex flex-wrap items-center gap-1.5">
             {breadcrumbs.map((item, index) => {
@@ -80,7 +83,7 @@ export function PageHeader({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h1
-            className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
+            className="font-display text-2xl font-semibold text-foreground md:text-title"
             id={titleId}
             tabIndex={-1}
           >
@@ -93,8 +96,9 @@ export function PageHeader({
           )}
         </div>
 
-        {action && (
-          <div className="flex shrink-0 items-center gap-2 self-start sm:self-center" data-slot="page-header-action">
+        {(action || secondaryActions) && (
+          <div className="flex flex-wrap shrink-0 items-center gap-2 self-start sm:self-center [&_[data-slot=button]]:h-11 [&_a]:h-11" data-slot="page-header-action">
+            {secondaryActions}
             {action}
           </div>
         )}

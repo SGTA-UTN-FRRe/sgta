@@ -14,6 +14,7 @@ import {
 
 import { cn } from "@/shared/utils";
 import { ICON_STROKE_WIDTH } from "@/shared/constants";
+import { Badge } from "@/components/ui/badge";
 
 export type StatusBadgeVariant =
   | "success"
@@ -41,14 +42,6 @@ const DEFAULT_ICONS: Record<StatusBadgeVariant, ComponentType<{ className?: stri
   danger: XCircle,
   info: Info,
   neutral: Clock,
-};
-
-const VARIANT_STYLES: Record<StatusBadgeVariant, string> = {
-  success: "border-success/30 bg-muted text-success",
-  warning: "border-warning/30 bg-muted text-warning",
-  danger: "border-destructive/30 bg-muted text-destructive",
-  info: "border-info/30 bg-muted text-info",
-  neutral: "border-border bg-secondary text-secondary-foreground",
 };
 
 /**
@@ -102,18 +95,14 @@ export function StatusBadge({
   };
 
   return (
-    <span
+    <Badge
       data-slot="status-badge"
-      data-variant={variant}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
-        VARIANT_STYLES[variant],
-        className,
-      )}
+      variant={variant}
+      className={cn(className)}
       {...props}
     >
       {renderIcon()}
       <span>{content}</span>
-    </span>
+    </Badge>
   );
 }
