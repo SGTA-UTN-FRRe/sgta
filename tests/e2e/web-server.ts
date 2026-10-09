@@ -326,7 +326,7 @@ async function seedDatabase() {
       startMinutes: 480,
       endMinutes: 540,
       kind: "DUTY",
-      modality: "Regular room",
+      modality: "IN_PERSON",
       status: "ACTIVE",
     },
     {
@@ -338,7 +338,7 @@ async function seedDatabase() {
       startMinutes: 600,
       endMinutes: 660,
       kind: "DUTY",
-      modality: "Secondary room",
+      modality: "VIRTUAL",
       status: "ACTIVE",
     },
     {
@@ -350,7 +350,7 @@ async function seedDatabase() {
       startMinutes: 600,
       endMinutes: 720,
       kind: "DUTY",
-      modality: "Tutor special room",
+      modality: "IN_PERSON",
       status: "ACTIVE",
     },
     {
@@ -362,7 +362,7 @@ async function seedDatabase() {
       startMinutes: 600,
       endMinutes: 720,
       kind: "DUTY",
-      modality: "Schedule room",
+      modality: "IN_PERSON",
       status: "ACTIVE",
     },
   ]);

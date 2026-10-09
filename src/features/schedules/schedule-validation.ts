@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { SCHEDULE_MODALITIES } from "@/shared/schedule-modality";
+
 const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
 
 export function isValidDateOnly(value: string) {
@@ -26,15 +28,7 @@ export const dateOnlySchema = z
 export const scheduleIdentifierSchema = z.string().trim().uuid();
 
 const planNameSchema = z.string().trim().min(1).max(200);
-const modalitySchema = z.preprocess(
-  (value) =>
-    value === null || value === undefined
-      ? value
-      : typeof value === "string"
-        ? value.trim()
-        : value,
-  z.string().min(1).max(200).nullable().optional(),
-);
+const modalitySchema = z.enum(SCHEDULE_MODALITIES).optional().default("IN_PERSON");
 
 const planKindSchema = z.enum(["REGULAR", "SPECIAL"]);
 const recordStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);

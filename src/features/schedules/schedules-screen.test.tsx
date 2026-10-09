@@ -45,6 +45,7 @@ const tutors = [
   {
     careerColor: "BLUE" as const,
     careerName: "Tecnicatura Universitaria en Programación",
+    displayName: "Marina",
     formalName: "Benítez, Marina",
     id: "44444444-4444-4444-8444-444444444444",
     status: "ACTIVE" as const,
@@ -52,6 +53,7 @@ const tutors = [
   {
     careerColor: "BLUE" as const,
     careerName: "Ingeniería en Sistemas de Información",
+    displayName: "Tomás",
     formalName: "Acosta, Tomás",
     id: "55555555-5555-4555-8555-555555555555",
     status: "ACTIVE" as const,
@@ -66,13 +68,14 @@ const mondayAssignment: SafeScheduleAssignment = {
   endMinutes: 600,
   id: "66666666-6666-4666-8666-666666666666",
   kind: "DUTY",
-  modality: "Presencial · Aula 204",
+  modality: "IN_PERSON",
   pattern: "WEEKDAY",
   planId: regularPlan.id,
   startMinutes: 480,
   status: "ACTIVE",
   tutorId: tutors[0].id,
   tutorName: tutors[0].formalName,
+  tutorDisplayName: tutors[0].displayName,
   updatedAt: "2026-08-02T12:00:00.000Z",
   weekday: 1,
 };
@@ -85,13 +88,14 @@ const tuesdayAssignment: SafeScheduleAssignment = {
   endMinutes: 720,
   id: "77777777-7777-4777-8777-777777777777",
   kind: "DUTY",
-  modality: "Remota",
+  modality: "VIRTUAL",
   pattern: "WEEKDAY",
   planId: regularPlan.id,
   startMinutes: 600,
   status: "ACTIVE",
   tutorId: tutors[1].id,
   tutorName: tutors[1].formalName,
+  tutorDisplayName: tutors[1].displayName,
   updatedAt: "2026-08-02T12:00:00.000Z",
   weekday: 2,
 };
@@ -352,6 +356,7 @@ describe("SchedulesScreen", () => {
       id: "88888888-8888-4888-8888-888888888888",
       tutorId: tutors[1].id,
       tutorName: tutors[1].formalName,
+      tutorDisplayName: tutors[1].displayName,
     };
     const updatedWorkspace = createWorkspace({
       assignments: [...workspace.assignments, createdAssignment],

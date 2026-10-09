@@ -233,12 +233,17 @@ it("preserves populated ledger history and reversal capability across the remova
     expect(before.audit_event).toHaveLength(4);
 
     await migrate(db, { migrationsFolder });
+    // Legacy free-text modality ("Presencial") normalizes to the enum; all other history is unchanged.
+    const upgraded: typeof before = {
+      ...before,
+      schedule_assignment: before.schedule_assignment.map((row) => ({ ...row, modality: "IN_PERSON" })),
+    };
     const backfilled = (await pool.query("SELECT color FROM career ORDER BY normalized_name, id")).rows;
     expect(backfilled.map(({ color }) => color)).toEqual(Array.from({ length: 10 }, (_, index) => CAREER_COLORS[index % CAREER_COLORS.length]));
-    expect(await retainedHistory(pool)).toEqual(before);
+    expect(await retainedHistory(pool)).toEqual(upgraded);
     expect(await signedBalance(pool)).toBe(30);
     await migrate(db, { migrationsFolder });
-    expect(await retainedHistory(pool)).toEqual(before);
+    expect(await retainedHistory(pool)).toEqual(upgraded);
     expect((await pool.query("SELECT color FROM career ORDER BY normalized_name, id")).rows).toEqual(backfilled);
     expect(await signedBalance(pool)).toBe(30);
 
@@ -290,7 +295,7 @@ it("preserves populated ledger history and reversal capability across the remova
     ]);
     const afterReversal = await retainedHistory(pool);
     const { hour_movement: movementsAfter, audit_event: auditsAfter, ...unchangedAfter } = afterReversal;
-    const { hour_movement: movementsBefore, audit_event: auditsBefore, ...unchangedBefore } = before;
+    const { hour_movement: movementsBefore, audit_event: auditsBefore, ...unchangedBefore } = upgraded;
     expect(unchangedAfter).toEqual(unchangedBefore);
     expect(movementsAfter).toHaveLength(5);
     expect(movementsAfter?.filter(({ id }) => id !== reversed.reversal.id)).toEqual(movementsBefore);

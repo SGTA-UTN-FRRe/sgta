@@ -33,6 +33,7 @@ import {
 } from "@/shared/argentina-business-time";
 
 import type { DutyView } from "./admin-overview-types";
+import { SCHEDULE_MODALITY_LABELS, type ScheduleModality } from "@/shared/schedule-modality";
 
 const upcomingDays = 7;
 
@@ -73,7 +74,7 @@ type AssignmentRow = {
   assignmentDate: string | null;
   startMinutes: number;
   endMinutes: number;
-  modality: string | null;
+  modality: ScheduleModality;
 };
 
 export function getAdminOverviewCurrentDate(now = getServerNow()) {
@@ -310,7 +311,7 @@ async function getUpcomingDuties(
         dayLabel: getDayLabel(date, today),
         time: `${formatMinutes(assignment.startMinutes)} — ${formatMinutes(assignment.endMinutes)}`,
         tutor: assignment.tutorName,
-        modality: assignment.modality ?? "No indicada",
+        modality: SCHEDULE_MODALITY_LABELS[assignment.modality],
       });
     });
   }

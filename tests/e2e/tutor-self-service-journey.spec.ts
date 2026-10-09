@@ -80,7 +80,7 @@ test.describe("authenticated Tutor self-service", () => {
           assignments: [
             expect.objectContaining({
               endMinutes: 720,
-              modality: "Tutor special room",
+              modality: "Presencial",
               startMinutes: 600,
             }),
           ],
@@ -167,7 +167,7 @@ test.describe("authenticated Tutor self-service", () => {
       ).toBeVisible();
       await expect(page.getByText("Plan Especial", { exact: true })).toBeVisible();
       await expect(page.getByText("10:00 a 12:00", { exact: true })).toBeVisible();
-      await expect(page.getByText("Tutor special room", { exact: true })).toBeVisible();
+      await expect(page.getByText("Presencial", { exact: true })).toBeVisible();
       await expect(
         page.locator('[data-layout="schedule-day-list-week"]'),
       ).toBeVisible();

@@ -84,7 +84,7 @@ Operational measures use these definitions:
 
 ## Filter scope
 
-The URL-backed filters are `fromDate`, `toDate`, `careerId`, `subjectId`, `tutorId`, and `modality`. Academic stage is a consultation breakdown in this release, not a filter control. The reserved `modality=UNSPECIFIED` value selects records without a recorded Modality; other Modality values match the stored value.
+The URL-backed filters are `fromDate`, `toDate`, `careerId`, `subjectId`, `tutorId`, and `modality`. Academic stage is a consultation breakdown in this release, not a filter control. The reserved `modality=UNSPECIFIED` value selects consultations without a recorded Modality; other Modality values match the stored consultation value. Schedule assignments always record `Presencial` or `Virtual` and match by that label, so `UNSPECIFIED` selects no schedule assignment.
 
 Each section identifies when it is a current snapshot and which filters affect it; unrelated sections are not silently reinterpreted by a filter.
 
