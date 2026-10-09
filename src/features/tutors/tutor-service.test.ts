@@ -1,6 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const auditMocks = vi.hoisted(() => ({ recordAuditEvent: vi.fn() }));
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/db/audit-core", () => ({ recordAuditEvent: auditMocks.recordAuditEvent }));
 
 import type { Database } from "@/db/client-core";
 
@@ -9,6 +12,7 @@ import {
   TUTOR_ERROR_CODES,
   TutorServiceError,
   transitionTutorStatus,
+  updateCareer,
   updateTutor,
 } from "./tutor-service";
 
@@ -22,6 +26,30 @@ const validTutorInput = {
 
 function asDatabase(value: unknown) {
   return value as Database;
+}
+
+const existingCareer = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "Computer Science",
+  color: "BLUE" as const,
+  status: "ACTIVE" as const,
+};
+
+function createCareerDatabase() {
+  const limit = vi.fn().mockResolvedValue([existingCareer]);
+  const where = vi.fn().mockReturnValue({ limit });
+  const from = vi.fn().mockReturnValue({ where });
+  const select = vi.fn().mockReturnValue({ from });
+  const updateWhere = vi.fn().mockResolvedValue(undefined);
+  const set = vi.fn().mockReturnValue({ where: updateWhere });
+  const update = vi.fn().mockReturnValue({ set });
+  const transactionClient = { select, update };
+  const transaction = vi.fn(
+    async (operation: (transaction: unknown) => Promise<unknown>) =>
+      operation(transactionClient),
+  );
+
+  return { database: asDatabase({ transaction }) };
 }
 
 describe("Tutor service boundary", () => {
@@ -79,5 +107,43 @@ describe("Tutor service boundary", () => {
       code: TUTOR_ERROR_CODES.careerSubjectMismatch,
       details: { subjectId: "subject-1", careerId: "career-1" },
     });
+  });
+});
+
+describe("career update audit fields", () => {
+  beforeEach(() => {
+    auditMocks.recordAuditEvent.mockReset();
+  });
+
+  it("records only the career name when renaming", async () => {
+    const { database } = createCareerDatabase();
+
+    await updateCareer(database, existingCareer.id, { name: "Computer Engineering" });
+
+    expect(auditMocks.recordAuditEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "career.updated",
+        metadata: { changedFields: ["name"] },
+      }),
+    );
+  });
+
+  it("records the previous and current color when changing only the color", async () => {
+    const { database } = createCareerDatabase();
+
+    await updateCareer(database, existingCareer.id, { color: "MAGENTA" });
+
+    expect(auditMocks.recordAuditEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "career.updated",
+        metadata: {
+          changedFields: ["color"],
+          previousColor: "BLUE",
+          color: "MAGENTA",
+        },
+      }),
+    );
   });
 });

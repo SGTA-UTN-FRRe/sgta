@@ -373,13 +373,19 @@ describe("PostgreSQL foundation integration", () => {
     expect(chosen.color).toBe("GRAPHITE");
     const changed = await updateCareer(database, blue.id, { color: "MAGENTA" }, context);
     expect(changed).toMatchObject({ name: blue.name, color: "MAGENTA" });
-    expect(await updateCareer(database, blue.id, { name: "Renamed Career" }, context)).toMatchObject({ color: "MAGENTA" });
+    const renamed = await updateCareer(database, blue.id, { name: "Renamed Career" }, context);
+    expect(renamed).toMatchObject({ color: "MAGENTA" });
+    await updateCareer(database, blue.id, { name: "Renamed Career", color: "MAGENTA" }, context);
     const audits = await database.select().from(auditEvent).where(and(eq(auditEvent.entityId, blue.id), eq(auditEvent.action, "career.updated")));
-    expect(audits).toEqual(expect.arrayContaining([expect.objectContaining({ metadata: { changedFields: ["color"], color: "MAGENTA" } })]));
+    expect(audits).toEqual(expect.arrayContaining([
+      expect.objectContaining({ metadata: { changedFields: ["color"], previousColor: "BLUE", color: "MAGENTA" } }),
+      expect.objectContaining({ metadata: { changedFields: ["name"] } }),
+      expect.objectContaining({ metadata: { changedFields: [] } }),
+    ]));
     const cycle = await createAdministrativeCycle(database, { name: "Color Cycle", startDate: "2027-01-01", endDate: "2027-12-31" }, context);
     const tutorRecord = await createTutor(database, { firstName: "Synthetic", primaryCareerId: blue.id, cycleId: cycle.id }, context);
     expect((await getScheduleWorkspace(database, {}, context)).eligibleTutors).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: tutorRecord.id, careerName: "Renamed Career", careerColor: "MAGENTA" }),
+      expect.objectContaining({ id: tutorRecord.id, careerName: renamed.name, careerColor: "MAGENTA" }),
     ]));
   });
 

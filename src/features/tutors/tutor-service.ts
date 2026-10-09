@@ -1939,6 +1939,7 @@ export async function createCareer(
       ? await transaction.select({ color: career.color }).from(career)
           .where(eq(career.status, "ACTIVE"))
       : [];
+    // Best-effort allocation: concurrent creates may share a color; Admins can change it in Configuración.
     const color = parsed.color ?? getLeastUsedCareerColor(activeColors.map((row) => row.color));
     const [created] = await transaction
       .insert(career)
@@ -1992,10 +1993,15 @@ export async function updateCareer(
     }
 
     const displayName = cleanDisplayText(parsed.name ?? existing.name);
+    const color = parsed.color ?? existing.color;
+    const changedFields = [
+      ...(displayName === existing.name ? [] : ["name"]),
+      ...(color === existing.color ? [] : ["color"]),
+    ];
     await transaction
       .update(career)
       .set({
-        color: parsed.color ?? existing.color,
+        color,
         name: displayName,
         normalizedName: normalizeName(displayName),
         updatedAt: new Date(),
@@ -2008,11 +2014,10 @@ export async function updateCareer(
       entityType: "career",
       entityId: parsedCareerId,
       metadata: {
-        changedFields: [
-          ...(parsed.name === undefined ? [] : ["name"]),
-          ...(parsed.color === undefined ? [] : ["color"]),
-        ],
-        ...(parsed.color === undefined ? {} : { color: parsed.color }),
+        changedFields,
+        ...(color === existing.color
+          ? {}
+          : { previousColor: existing.color, color }),
       },
       requestId: context.requestId ?? null,
       ipAddress: context.ipAddress ?? null,
