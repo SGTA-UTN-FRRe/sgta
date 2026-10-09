@@ -33,9 +33,11 @@ operational cutover.
 | Design system foundation | Re-express the approved direction as tokens, primitives, shared patterns, and one reference screen approved from screenshots; make verification foundations deterministic. | None |
 | Interface migration | Move every existing view onto the design system and publish reproducible README screenshots. | Design system foundation |
 | Access and lifecycle | Complete controlled Tutor access and safe account and cycle lifecycle behavior. | Interface migration |
-| Academic and scheduling workflows | Improve Tutor discovery, academic relationship visibility, and schedule planning. | Interface migration |
-| Hours, consultations and reporting | Make consultation imports resilient and deliver complete, explainable operational outputs. | Access and lifecycle; Academic and scheduling workflows |
-| Production readiness | Establish production services, secure operations, and proven recovery. | Access and lifecycle; Hours, consultations and reporting |
+| Academic workflows | Improve Tutor discovery and academic relationship visibility. | Interface migration |
+| Operational calendars | Plan office and event calendars week by week from a permanent base, and publish them as shareable images and documents. | Interface migration |
+| Hours, consultations and reporting | Make consultation imports resilient and deliver complete, explainable operational outputs. | Access and lifecycle; Academic workflows |
+| Academic agenda | Publish support classes (GETs) and exam dates with delegated management. | Access and lifecycle; Operational calendars |
+| Production readiness | Establish production services, secure operations, and proven recovery. | Access and lifecycle; Hours, consultations and reporting; Operational calendars; Academic agenda |
 | Cutover, pilot and first release | Migrate validated data, prove operation with users, and complete maintainer handover. | Production readiness |
 
 ## Phase: Design system foundation
@@ -53,8 +55,8 @@ verification are deterministic foundations for later work.
   classify each finding as a design-system or a view-level problem.
 - Rewrite the project design in the current template while preserving the
   approved brand colors, the Faro identity, Branded Product expression,
-  Operational density, and the neutral Spanish voice, and adding a serif
-  heading face, neutral surfaces without pastel tints, navy ink actions, and a
+  Operational density, and the neutral Spanish voice, and adding a friendlier
+  sans-serif heading face, neutral surfaces without pastel tints, navy ink actions, and a
   saturated career palette. Register tokens as `oklch()` values with shadcn
   semantic names plus product extensions for navigation, brand surfaces, and
   status pairs, and remove the link to the retired design standard.
@@ -76,8 +78,15 @@ verification are deterministic foundations for later work.
 - Add a lint rule that rejects raw `button`, `input`, `select`, `textarea`, and
   `dialog` elements outside `src/components/ui/`, starting at warning level.
 - Rebuild Horarios at full fidelity as the reference screen for later
-  migrations, with assignments colored and labeled by the Tutor's career and a
-  career legend that filters the grid.
+  migrations: a weekly matrix of who is present each hour as the primary view
+  and career-colored blocks as the alternative, both labeled by the Tutor's
+  career and preferred display name; a career legend that filters both views;
+  discreet coverage indicators against a target of two in-person Tutors per
+  open hour, with opening hours inferred from the assignments; and a visible
+  range derived from the plan's assignments.
+- Replace the free-text assignment modality with a per-assignment `Presencial`
+  or `Virtual` choice, migrate existing values, and mark virtual assignments
+  with a secondary indicator that keeps the career color primary.
 - Let Admins assign a palette color to each career in Configuración, migrate
   existing careers, and validate the color on the server.
 - Restructure the UI specification in the current template: global rules,
@@ -94,8 +103,10 @@ verification are deterministic foundations for later work.
 
 - Migrating views other than Horarios.
 - A dark color scheme.
-- New domain capabilities other than the career color, or changes to
-  hour-accounting rules.
+- New domain capabilities other than the career color and the assignment
+  modality, or changes to hour-accounting rules.
+- Configured opening hours, weekly planning, events, export, and drag and drop
+  (Operational calendars).
 - Production hosting, data migration, and external service cutover.
 
 ### Exit criteria
@@ -107,8 +118,11 @@ verification are deterministic foundations for later work.
   automated check.
 - The raw-element lint rule flags a fixture containing each restricted element
   and passes primitives and pages that compose them.
-- Horarios uses only primitives, shared patterns, and registered tokens, and
-  passes the screenshot review in Constraints.
+- Horarios uses only primitives, shared patterns, and registered tokens, passes
+  the screenshot review in Constraints, and is approved by the user from
+  screenshots.
+- Every schedule assignment has an in-person or virtual modality validated by
+  the server, and existing values are migrated.
 - Every career has a palette color: existing careers are migrated, new careers
   receive one, and the server rejects values outside the palette.
 - Token, primitive, and shell changes add no new Blocking or Major finding to
@@ -183,12 +197,21 @@ understandable to the people who use it.
   provide a read-only Tutor profile and signed-in Admin user context.
 - Complete missing confirmations for account and cycle lifecycle actions,
   including authorized reopening with audit and preserved history.
+- Implement the approved hour transition between cycles: when a new cycle
+  starts, accumulated positive balances reset to zero and pending negative
+  balances carry forward, recorded as auditable movements so balances stay
+  movement-derived, with a controlled way to correct or revert a mistaken
+  closing. Today closing a cycle only changes its status and every balance of
+  the next cycle starts from zero, so pending negative hours are lost; this
+  must be corrected before cycle closing is used in production.
+- Grant scoped permissions (for example, managing one agenda) without general
+  Admin rights, for the Academic agenda phase.
 
 ### Out of scope
 
 - Public registration, password-based sign-in, or access to another Tutor's
   profile.
-- Automatic hour transfer or formal scholarship decisions at cycle changes.
+- Formal scholarship decisions at cycle changes.
 
 ### Exit criteria
 
@@ -203,13 +226,18 @@ understandable to the people who use it.
 - Cycle actions reject writes to closed cycles; only the most recently closed
   cycle can be reopened. Server authorization, confirmation, historical
   preservation, and an audit record are verified.
+- Starting a new cycle resets positive balances and carries negative balances
+  forward through auditable movements; a mistaken closing can be corrected
+  without losing history.
+- Scoped permissions are enforced on the server and grant no Admin access
+  beyond their scope.
 
-## Phase: Academic and scheduling workflows
+## Phase: Academic workflows
 
 ### Objective
 
-Make academic relationships and schedule planning easier to find, understand,
-and maintain using cycle-aware canonical data.
+Make academic relationships easier to find, understand, and maintain using
+cycle-aware canonical data.
 
 ### In scope
 
@@ -217,8 +245,6 @@ and maintain using cycle-aware canonical data.
   availability.
 - Keep Tutor subject relationships visible in the relevant list and detail
   states.
-- Derive schedule views from the selected plan and its assignments rather than
-  an arbitrary fixed time range.
 - Review data-model changes against approved institutional decisions on
   scholarship cardinality per cycle, Admin-to-Tutor linkage, career and subject
   aliases, and global or career-specific subject scope before implementing schema
@@ -236,12 +262,67 @@ and maintain using cycle-aware canonical data.
   results remain correct for regular and effective special plans.
 - Tutor academic relationships are visible in compact and wide layouts without
   creating a second source of truth.
-- Schedule views include the full configured range and preserve special-plan
-  precedence without writing schedule data during reads.
 - Scholarship relationships per cycle, Admin-to-Tutor linkage, aliases, and
   subject scope each have an approved institutional decision before schema
   implementation. Any resulting schema change has a migration and isolated
   integration coverage; proposed models do not substitute for approval.
+
+## Phase: Operational calendars
+
+### Objective
+
+Let the person who organizes the guards plan office and event calendars week by
+week without destroying a permanent base, see coverage at a glance, and publish
+each calendar in a form that is clearly better than the spreadsheets shared
+today.
+
+### In scope
+
+- Multiple calendars, such as the office and each extraordinary event, managed
+  by the same Admin, selected with tabs or a selector, each with its own plans.
+  Events can span several weeks and include Saturdays and Sundays. Assignment
+  conflicts are validated per Tutor across calendars, so a Tutor can serve in
+  the office and at an event when the times are compatible.
+- Weekly planning on top of a permanent base: changes for one dated week
+  (additions, moves, removals, absences, and recoveries) never modify the base,
+  and `Restablecer semana` discards only that week's changes. Schedule data
+  never creates or deletes hour movements.
+- Configured opening hours per calendar and day, replacing the hours inferred
+  from assignments, and a configurable coverage target (two in-person Tutors by
+  default) that warns without blocking.
+- Export each calendar for a chosen period (a working week, or an event range
+  with weekends) as a PNG optimized for messaging apps and as a PDF, from a
+  dedicated presentation layout with full display names, career colors and
+  legend, modality, and coverage. The PNG dependency is approved.
+- Drag and drop in the matrix to move assignments between days and hours, with
+  server validation and the form edit kept as the equivalent path.
+- Filters by modality and activity type where they improve reading.
+- Keep regular plans attached to administrative cycles: each semester starts
+  with the Tutors' habitual recurring schedule as its regular plan, weekly
+  adjustments (absences, changes, recoveries, coverage) apply on top of it, and
+  a new semester may set a new habitual schedule. Schedule planning and the
+  hour-accounting closing share the cycle period but stay separate
+  responsibilities: closing a cycle never edits plans, and plan changes never
+  create hour movements.
+
+### Out of scope
+
+- Attendance recording or automatic hour movements derived from schedules.
+- Academic agenda content (GETs and exams).
+
+### Exit criteria
+
+- Office and event calendars coexist, are selected without losing context, and
+  each validates conflicts per Tutor across calendars.
+- A week can be changed and restored without altering the base plan or any
+  hour movement, verified by integration tests.
+- Coverage uses configured opening hours and the coverage target, and its
+  indicators pass the screenshot review without dominating the calendar.
+- PNG and PDF exports render every assignment of the chosen calendar and period
+  with full names and the career legend, stay legible at phone width, and
+  are verified by automated checks.
+- Drag and drop and the keyboard or form alternative produce the same validated
+  result.
 
 ## Phase: Hours, consultations and reporting
 
@@ -289,6 +370,38 @@ outputs complete and safe to share.
 - Tutor search finds the intended hour-operation targets, and "Resta" / "Suma"
   labels correspond to debit/credit movements without changing balances or
   reversal behavior.
+
+## Phase: Academic agenda
+
+### Objective
+
+Give Tutors and students one reliable place to consult support classes (GETs)
+and upcoming exams, maintained by the people responsible for them.
+
+### In scope
+
+- GETs: weekly or extraordinary support classes with subject, responsible
+  Tutor, date, time, place, topic, and participant count, optionally related to
+  an upcoming exam. GETs and exams are distinct records.
+- Exams: midterms, make-up exams, finals, and entry-course evaluations,
+  associated with subjects or careers.
+- Delegated management through the scoped permissions from Access and
+  lifecycle, without a new global role.
+- An agenda section within Horarios, with distinct views for GETs and exams,
+  reusing the calendar components.
+- `GETs de la semana` and `Próximos exámenes` (next 7 to 14 days) on Inicio.
+
+### Out of scope
+
+- Student registration, attendance, or grades.
+- Synchronizing official academic calendars from external systems.
+
+### Exit criteria
+
+- Delegated managers can maintain only the agenda content their permission
+  covers, verified on the server.
+- GETs and exams are listed, filtered, and related without being merged, and
+  Inicio shows the weekly GETs and upcoming exams with correct date windows.
 
 ## Phase: Production readiness
 
