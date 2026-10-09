@@ -4,8 +4,9 @@ export const SCHEDULE_GRID_START_MINUTES = 8 * 60;
 export const SCHEDULE_GRID_END_MINUTES = 20 * 60;
 export const SCHEDULE_GRID_HOUR_HEIGHT_REM = 4;
 export const SCHEDULE_GRID_MIN_BLOCK_HEIGHT_REM = 2;
-export const SCHEDULE_GRID_MIN_DAY_WIDTH_REM = 10;
-export const SCHEDULE_GRID_MIN_LANE_WIDTH_REM = 7.25;
+export const SCHEDULE_GRID_MIN_DAY_WIDTH_REM = 7;
+export const SCHEDULE_GRID_TIME_RAIL_WIDTH_REM = 3.5;
+export const SCHEDULE_GRID_MIN_LANE_WIDTH_REM = 3.5;
 
 type ScheduleAssignmentLayoutInput = Pick<
   SafeScheduleAssignment,
@@ -22,6 +23,28 @@ export type LaidOutScheduleAssignment<
   laneCount: number;
   top: number;
 };
+
+/** Visible grid range in minutes since midnight, on whole hours. */
+export type ScheduleGridRange = { endMinutes: number; startMinutes: number };
+
+export const DEFAULT_SCHEDULE_GRID_RANGE: ScheduleGridRange = {
+  endMinutes: SCHEDULE_GRID_END_MINUTES,
+  startMinutes: SCHEDULE_GRID_START_MINUTES,
+};
+
+/** Smallest whole-hour range that contains every assignment, or the default range when empty. */
+export function getScheduleGridRange(
+  assignments: readonly Pick<SafeScheduleAssignment, "endMinutes" | "startMinutes">[],
+): ScheduleGridRange {
+  if (assignments.length === 0) {
+    return DEFAULT_SCHEDULE_GRID_RANGE;
+  }
+
+  return {
+    endMinutes: Math.ceil(Math.max(...assignments.map((item) => item.endMinutes)) / 60) * 60,
+    startMinutes: Math.floor(Math.min(...assignments.map((item) => item.startMinutes)) / 60) * 60,
+  };
+}
 
 type PositionedAssignment<T extends ScheduleAssignmentLayoutInput> = {
   assignment: T;
@@ -44,16 +67,14 @@ function compareAssignments<T extends ScheduleAssignmentLayoutInput>(
 
 function positionAssignment<T extends ScheduleAssignmentLayoutInput>(
   assignment: T,
+  range: ScheduleGridRange,
 ): PositionedAssignment<T> {
-  const visibleStart = Math.max(
-    assignment.startMinutes,
-    SCHEDULE_GRID_START_MINUTES,
-  );
-  const visibleEnd = Math.min(assignment.endMinutes, SCHEDULE_GRID_END_MINUTES);
+  const visibleStart = Math.max(assignment.startMinutes, range.startMinutes);
+  const visibleEnd = Math.min(assignment.endMinutes, range.endMinutes);
   const durationMinutes = assignment.endMinutes - assignment.startMinutes;
   const visibleDurationMinutes = Math.max(0, visibleEnd - visibleStart);
   const top =
-    ((visibleStart - SCHEDULE_GRID_START_MINUTES) / 60) *
+    ((visibleStart - range.startMinutes) / 60) *
     SCHEDULE_GRID_HOUR_HEIGHT_REM;
   const durationHeight =
     (visibleDurationMinutes / 60) * SCHEDULE_GRID_HOUR_HEIGHT_REM;
@@ -96,9 +117,10 @@ function layoutCluster<T extends ScheduleAssignmentLayoutInput>(
 
 export function layoutDayAssignments<T extends ScheduleAssignmentLayoutInput>(
   assignments: readonly T[],
+  range: ScheduleGridRange = DEFAULT_SCHEDULE_GRID_RANGE,
 ): LaidOutScheduleAssignment<T>[] {
   const positioned = assignments
-    .map(positionAssignment)
+    .map((assignment) => positionAssignment(assignment, range))
     .sort((left, right) => compareAssignments(left.assignment, right.assignment));
   const result: LaidOutScheduleAssignment<T>[] = [];
   let cluster: PositionedAssignment<T>[] = [];

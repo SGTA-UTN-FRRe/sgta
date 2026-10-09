@@ -11,18 +11,18 @@ import ConsultationsLoading from "./consultations/loading";
 import SettingsLoading from "./settings/loading";
 
 it.each([
-  ["overview", AdminLoading],
-  ["tutors", TutorsLoading],
-  ["subjects", SubjectsLoading],
-  ["schedules", SchedulesLoading],
-  ["hours", HoursLoading],
-  ["movements", MovementsLoading],
-  ["consultations", ConsultationsLoading],
-  ["settings", SettingsLoading],
-] as const)("announces loading for Admin %s without exposing placeholder content", (_, Loading) => {
+  ["overview", AdminLoading, "Cargando sección"],
+  ["tutors", TutorsLoading, "Cargando sección"],
+  ["subjects", SubjectsLoading, "Cargando sección"],
+  ["schedules", SchedulesLoading, "Cargando horarios"],
+  ["hours", HoursLoading, "Cargando sección"],
+  ["movements", MovementsLoading, "Cargando sección"],
+  ["consultations", ConsultationsLoading, "Cargando sección"],
+  ["settings", SettingsLoading, "Cargando sección"],
+] as const)("announces loading for Admin %s without exposing placeholder content", (_, Loading, name) => {
   render(<Loading />);
 
-  expect(screen.getByRole("status", { name: "Cargando sección" })).toHaveAttribute("aria-busy", "true");
+  expect(screen.getByRole("status", { name })).toHaveAttribute("aria-busy", "true");
   expect(screen.queryByRole("heading")).not.toBeInTheDocument();
   expect(screen.queryByRole("button")).not.toBeInTheDocument();
 });
