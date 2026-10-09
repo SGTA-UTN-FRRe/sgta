@@ -6,15 +6,19 @@ import { CareerBadge } from "@/shared/components/career-badge";
 import { FormField } from "@/shared/components/form-field";
 import { CAREER_COLORS, CAREER_COLOR_LABELS, type CareerColor } from "@/shared/career-color";
 
-export function CareerColorField({ name, value, onChange, disabled = false }: {
+export function CareerColorField({ name, value, mode, onChange, disabled = false }: {
   name: string;
   value?: CareerColor;
+  mode: "create" | "edit";
   onChange: (color: CareerColor) => void;
   disabled?: boolean;
 }) {
   const id = useId();
+  const description = mode === "create"
+    ? "Identifica a los tutores de esta carrera en la grilla de horarios. Si no se elige un color, se asigna automáticamente el menos usado."
+    : "Identifica a los tutores de esta carrera en la grilla de horarios.";
   return (
-    <FormField id={id} label="Color en Horarios" description="Identifica a los tutores de esta carrera en la grilla de horarios.">
+    <FormField id={id} label="Color en Horarios" description={description}>
       <RadioGroup aria-labelledby={`${id}-label`} aria-describedby={`${id}-description`}
         className="grid grid-cols-2 gap-2 sm:grid-cols-4" disabled={disabled} value={value ?? ""}
         onValueChange={(color) => onChange(color as CareerColor)}>

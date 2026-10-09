@@ -123,6 +123,12 @@ describe("SettingsScreen", () => {
     expect(screen.getByText(/no certifica cumplimiento/i)).toBeInTheDocument();
     expect(screen.getAllByText("Inactiva")).not.toHaveLength(0);
     expect(screen.queryByRole("button", { name: /eliminar|borrar/i })).not.toBeInTheDocument();
+    const careerCards = screen.getByRole("list", { name: "Carreras registradas" });
+    expect(within(careerCards).getAllByText("Azul")).toHaveLength(2);
+    const careerColorHeader = screen.getByRole("columnheader", { name: "Color" });
+    const careerTable = careerColorHeader.closest("table");
+    expect(careerTable).not.toBeNull();
+    expect(within(careerTable!).getAllByText("Azul")).toHaveLength(2);
     expect(
       screen.getAllByRole("button", { name: "Activar carrera Ingeniería Industrial" }),
     ).toHaveLength(2);

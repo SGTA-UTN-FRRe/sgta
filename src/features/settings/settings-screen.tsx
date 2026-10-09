@@ -35,7 +35,7 @@ import type {
   SafeScholarshipReference,
   SafeSubject,
 } from "@/features/tutors/tutor-service";
-import type { CareerColor } from "@/shared/career-color";
+import { CAREER_COLOR_LABELS, type CareerColor } from "@/shared/career-color";
 import { CareerBadge } from "@/shared/components/career-badge";
 import { CareerColorField } from "./career-color-field";
 import { PageHeader } from "@/shared/components/page-header";
@@ -511,7 +511,13 @@ function CareerSection({
                   value={form.name}
                 />
               </label>
-              <CareerColorField disabled={disabled} name={form.name} value={form.color} onChange={onColorChange} />
+              <CareerColorField
+                disabled={disabled}
+                mode={editingCareer === null ? "create" : "edit"}
+                name={form.name}
+                value={form.color}
+                onChange={onColorChange}
+              />
               <div className="flex flex-wrap gap-2">
                 <Button disabled={disabled} size="sm" type="submit">
                   {editingCareer === null ? "Agregar carrera" : "Guardar cambios"}
@@ -541,7 +547,12 @@ function CareerSection({
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="font-medium text-foreground">{career.name}</p>
-                        <div className="mt-2"><CareerBadge name={career.name} color={career.color} size="sm" /></div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <CareerBadge name={career.name} color={career.color} size="sm" />
+                          <span className="text-sm text-muted-foreground">
+                            {CAREER_COLOR_LABELS[career.color]}
+                          </span>
+                        </div>
                         <div className="mt-2">
                           <ReferenceStatusBadge status={career.status} />
                         </div>
@@ -584,7 +595,14 @@ function CareerSection({
                     {careers.map((career) => (
                       <TableRow key={career.id}>
                         <TableCell className="font-medium">{career.name}</TableCell>
-                        <TableCell><CareerBadge name={career.name} color={career.color} size="sm" /></TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <CareerBadge name={career.name} color={career.color} size="sm" />
+                            <span className="text-sm text-muted-foreground">
+                              {CAREER_COLOR_LABELS[career.color]}
+                            </span>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <ReferenceStatusBadge status={career.status} />
                         </TableCell>
