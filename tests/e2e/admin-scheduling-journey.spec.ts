@@ -7,7 +7,7 @@ import {
   E2E_AUTH_SECRET,
   E2E_CYCLE_ID,
 } from "./e2e-test-data";
-import { activateWithKeyboard } from "./keyboard-helpers";
+import { activateWithKeyboard, selectWithKeyboard } from "./keyboard-helpers";
 import { addE2ESessionCookie } from "./session-cookie";
 
 const scheduleDate = "2027-01-18";
@@ -64,9 +64,11 @@ test.describe("authenticated Admin schedule planning", () => {
     const assignmentDialog = page.getByRole("dialog", {
       name: "Editar asignación",
     });
-    await assignmentDialog
-      .getByLabel("Modalidad")
-      .fill("Schedule room updated");
+    await selectWithKeyboard(
+      page,
+      assignmentDialog.getByLabel("Modalidad"),
+      "VIRTUAL",
+    );
     await activateWithKeyboard(
       page,
       assignmentDialog.getByRole("button", { name: "Guardar asignación" }),

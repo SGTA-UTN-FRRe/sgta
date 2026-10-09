@@ -14,7 +14,7 @@ import { z } from "zod";
 
 import { recordAuditEvent } from "@/db/audit-core";
 import type { Database } from "@/db/client-core";
-import { formatFormalTutorNameSql } from "@/db/tutor-name";
+import { formatFormalTutorNameSql, formatInformalTutorNameSql } from "@/db/tutor-name";
 import {
   administrativeCycle,
   career,
@@ -30,6 +30,7 @@ import {
   type SchedulePlanKind,
 } from "@/db/schema";
 import type { CareerColor } from "@/shared/career-color";
+import type { ScheduleModality } from "@/shared/schedule-modality";
 import { formatTutorName } from "@/shared/tutor-name";
 
 import {
@@ -140,7 +141,10 @@ export type SafeScheduleAssignment = {
   id: string;
   planId: string;
   tutorId: string;
+  /** Formal `Apellido, Nombre`, kept for identification and disambiguation. */
   tutorName: string;
+  /** Preferred display name, falling back to the first name. */
+  tutorDisplayName: string;
   careerName: string;
   careerColor: CareerColor;
   pattern: ScheduleAssignmentPattern;
@@ -149,7 +153,7 @@ export type SafeScheduleAssignment = {
   startMinutes: number;
   endMinutes: number;
   kind: ScheduleAssignmentKind;
-  modality: string | null;
+  modality: ScheduleModality;
   status: RecordStatus;
   createdAt: string;
   updatedAt: string;
@@ -158,6 +162,7 @@ export type SafeScheduleAssignment = {
 export type SafeScheduleTutor = {
   id: string;
   formalName: string;
+  displayName: string;
   careerName: string;
   careerColor: CareerColor;
   status: RecordStatus;
@@ -213,6 +218,7 @@ type AssignmentRow = {
   planId: string;
   tutorId: string;
   tutorName: string;
+  tutorDisplayName: string;
   careerName: string;
   careerColor: CareerColor;
   pattern: ScheduleAssignmentPattern;
@@ -221,7 +227,7 @@ type AssignmentRow = {
   startMinutes: number;
   endMinutes: number;
   kind: ScheduleAssignmentKind;
-  modality: string | null;
+  modality: ScheduleModality;
   status: RecordStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -252,6 +258,7 @@ const assignmentSelection = {
   planId: scheduleAssignment.planId,
   tutorId: scheduleAssignment.tutorId,
   tutorName: formatFormalTutorNameSql(tutor.lastName, tutor.firstName),
+  tutorDisplayName: formatInformalTutorNameSql(tutor.preferredDisplayName, tutor.firstName),
   careerName: career.name,
   careerColor: career.color,
   pattern: scheduleAssignment.pattern,
@@ -294,6 +301,7 @@ function toSafeAssignment(row: AssignmentRow): SafeScheduleAssignment {
     planId: row.planId,
     tutorId: row.tutorId,
     tutorName: row.tutorName,
+    tutorDisplayName: row.tutorDisplayName,
     careerName: row.careerName,
     careerColor: row.careerColor,
     pattern: row.pattern,
@@ -1036,6 +1044,7 @@ async function listEligibleScheduleTutors(
       id: tutor.id,
       firstName: tutor.firstName,
       lastName: tutor.lastName,
+      preferredDisplayName: tutor.preferredDisplayName,
       careerName: career.name,
       careerColor: career.color,
       status: tutor.status,
@@ -1055,6 +1064,7 @@ async function listEligibleScheduleTutors(
   return rows.map((row) => ({
     id: row.id,
     formalName: formatTutorName(row),
+    displayName: formatTutorName(row, "informal"),
     careerName: row.careerName,
     careerColor: row.careerColor,
     status: row.status,
@@ -1478,7 +1488,7 @@ export async function createScheduleAssignment(
       ...parsed,
       weekday: parsed.weekday ?? null,
       assignmentDate: parsed.assignmentDate ?? null,
-      modality: parsed.modality ?? null,
+      modality: parsed.modality,
       status: "ACTIVE" as const,
     };
     await assertNoAssignmentConflicts(transaction, plan, candidate);
@@ -1494,7 +1504,7 @@ export async function createScheduleAssignment(
         startMinutes: parsed.startMinutes,
         endMinutes: parsed.endMinutes,
         kind: parsed.kind,
-        modality: parsed.modality ?? null,
+        modality: parsed.modality,
         status: "ACTIVE",
       })
       .returning({ id: scheduleAssignment.id });
@@ -1579,7 +1589,7 @@ export async function updateScheduleAssignment(
     }
     if (candidate.endMinutes !== existing.endMinutes) changedFields.push("endMinutes");
     if (parsed.kind !== existing.kind) changedFields.push("kind");
-    if ((parsed.modality ?? null) !== existing.modality) changedFields.push("modality");
+    if (parsed.modality !== existing.modality) changedFields.push("modality");
 
     const [updated] = await transaction
       .update(scheduleAssignment)
@@ -1591,7 +1601,7 @@ export async function updateScheduleAssignment(
         startMinutes: parsed.startMinutes,
         endMinutes: parsed.endMinutes,
         kind: parsed.kind,
-        modality: parsed.modality ?? null,
+        modality: parsed.modality,
         updatedAt: new Date(),
       })
       .where(eq(scheduleAssignment.id, existing.id))

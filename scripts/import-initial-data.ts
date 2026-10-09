@@ -41,6 +41,7 @@ import {
   tutorIdSchema,
   tutorSubjectAssignmentsSchema,
 } from "../src/features/tutors/tutor-validation";
+import { normalizeScheduleModality } from "../src/shared/schedule-modality";
 
 const IMPORT_NAMESPACE = "8d07178c-9b8a-5e15-a826-3344c4a9242f";
 const DEFAULT_INPUT_DIRECTORY = path.resolve("local-docs/keep/data/build/m1");
@@ -719,7 +720,7 @@ function prepareImport(source: SourcePackage, issues: string[]): PreparedImport 
           startMinutes,
           endMinutes,
           kind,
-          modality,
+          modality: normalizeScheduleModality(modality),
         }),
       );
       if (parsed !== undefined) {
@@ -735,7 +736,7 @@ function prepareImport(source: SourcePackage, issues: string[]): PreparedImport 
             startMinutes: parsed.startMinutes,
             endMinutes: parsed.endMinutes,
             kind: parsed.kind,
-            modality: parsed.modality ?? null,
+            modality: parsed.modality,
             status,
           },
         });

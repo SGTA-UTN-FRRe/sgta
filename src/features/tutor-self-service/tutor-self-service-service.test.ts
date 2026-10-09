@@ -246,7 +246,7 @@ describe("Tutor self-service read models", () => {
         startMinutes: 720,
         endMinutes: 780,
         kind: "DUTY" as const,
-        modality: "Online",
+        modality: "VIRTUAL" as const,
       },
       {
         id: "early",
@@ -257,7 +257,7 @@ describe("Tutor self-service read models", () => {
         startMinutes: 600,
         endMinutes: 660,
         kind: "DUTY" as const,
-        modality: null,
+        modality: "IN_PERSON" as const,
       },
       {
         id: "other-day",
@@ -268,7 +268,7 @@ describe("Tutor self-service read models", () => {
         startMinutes: 480,
         endMinutes: 540,
         kind: "DUTY" as const,
-        modality: null,
+        modality: "IN_PERSON" as const,
       },
     ];
 

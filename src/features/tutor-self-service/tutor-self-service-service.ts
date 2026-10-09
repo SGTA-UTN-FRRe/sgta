@@ -47,6 +47,7 @@ import {
   type TutorSelfServiceHoursQuery,
   type TutorSelfServiceScheduleQuery,
 } from "./tutor-self-service-validation";
+import { SCHEDULE_MODALITY_LABELS, type ScheduleModality } from "@/shared/schedule-modality";
 
 export const TUTOR_SELF_SERVICE_ERROR_CODES = {
   validationError: "validation_error",
@@ -263,7 +264,7 @@ type AssignmentRow = {
   startMinutes: number;
   endMinutes: number;
   kind: ScheduleAssignmentKind;
-  modality: string | null;
+  modality: ScheduleModality;
 };
 
 type MovementRow = {
@@ -825,7 +826,7 @@ async function readScheduleForScope(
       startMinutes: assignment.startMinutes,
       endMinutes: assignment.endMinutes,
       kind: assignment.kind,
-      modality: assignment.modality,
+      modality: SCHEDULE_MODALITY_LABELS[assignment.modality],
     }));
 
     days.push({

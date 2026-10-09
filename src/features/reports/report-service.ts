@@ -17,6 +17,7 @@ import {
 import type { Database } from "@/db/client-core";
 import { getServerNow } from "@/config/clock";
 import { formatFormalTutorNameSql } from "@/db/tutor-name";
+import { SCHEDULE_MODALITIES, SCHEDULE_MODALITY_LABELS } from "@/shared/schedule-modality";
 import {
   activity,
   administrativeCycle,
@@ -497,13 +498,17 @@ function chooseEffectivePlan(plans: SchedulePlanRow[], date: string) {
     )[0];
 }
 
+// The modality filter is shared with consultations, so schedule assignments match by their Spanish label.
 function getScheduleModalityCondition(modality: string | undefined) {
   if (modality === undefined) {
     return undefined;
   }
-  return modality === modalityUnspecified
-    ? isNull(scheduleAssignment.modality)
-    : eq(scheduleAssignment.modality, modality);
+  const scheduleModality = SCHEDULE_MODALITIES.find(
+    (value) => SCHEDULE_MODALITY_LABELS[value] === modality,
+  );
+  return scheduleModality === undefined
+    ? sql`false`
+    : eq(scheduleAssignment.modality, scheduleModality);
 }
 
 function emptyScheduleReport(): PlannedScheduleReport {
@@ -925,15 +930,17 @@ export async function getReportFilterOptions(
       db
         .selectDistinct({ modality: scheduleAssignment.modality })
         .from(scheduleAssignment)
-        .where(sql`${scheduleAssignment.modality} is not null`)
         .orderBy(asc(scheduleAssignment.modality)),
     ]);
 
   const modalities = new Set<string>();
-  for (const row of [...consultationModalities, ...scheduleModalities]) {
+  for (const row of consultationModalities) {
     if (row.modality !== null) {
       modalities.add(row.modality);
     }
+  }
+  for (const row of scheduleModalities) {
+    modalities.add(SCHEDULE_MODALITY_LABELS[row.modality]);
   }
 
   return {

@@ -413,7 +413,7 @@ async function createReportFixtures() {
     kind: "DUTY" | "RECOVERY",
     startMinutes: number,
     endMinutes: number,
-    modality: string | null,
+    modality: "IN_PERSON" | "VIRTUAL",
   ) {
     const [created] = await database
       .insert(scheduleAssignment)
@@ -439,7 +439,7 @@ async function createReportFixtures() {
       "DUTY",
       480,
       540,
-      "Virtual",
+      "VIRTUAL",
     ),
     sep19Regular: await createAssignment(
       regular.id,
@@ -448,7 +448,7 @@ async function createReportFixtures() {
       "DUTY",
       480,
       540,
-      "Virtual",
+      "VIRTUAL",
     ),
     sep20: await createAssignment(
       regular.id,
@@ -457,7 +457,7 @@ async function createReportFixtures() {
       "DUTY",
       480,
       525,
-      null,
+      "IN_PERSON",
     ),
     sep21: await createAssignment(
       regular.id,
@@ -466,7 +466,7 @@ async function createReportFixtures() {
       "DUTY",
       480,
       510,
-      "Virtual",
+      "VIRTUAL",
     ),
     sep19SpecialDuty: await createAssignment(
       special.id,
@@ -475,7 +475,7 @@ async function createReportFixtures() {
       "DUTY",
       600,
       630,
-      "On campus",
+      "IN_PERSON",
     ),
     sep19SpecialRecovery: await createAssignment(
       special.id,
@@ -484,7 +484,7 @@ async function createReportFixtures() {
       "RECOVERY",
       660,
       680,
-      "Online",
+      "VIRTUAL",
     ),
     upcoming: await createAssignment(
       upcoming.id,
@@ -493,7 +493,7 @@ async function createReportFixtures() {
       "DUTY",
       480,
       540,
-      "Virtual",
+      "VIRTUAL",
     ),
   };
 
@@ -749,7 +749,7 @@ describe("PostgreSQL reporting integration", () => {
       expect.arrayContaining([fixture.subjects.inactive.id, fixture.subjects.inactiveCareer.id]),
     );
     expect(options.tutors.map((item) => item.id)).toContain(fixture.tutors.inactive.id);
-    expect(options.modalities).toEqual(expect.arrayContaining(["Virtual", "On campus", "Online"]));
+    expect(options.modalities).toEqual(expect.arrayContaining(["Virtual", "On campus", "Presencial"]));
 
     expect(overview.cycle).toMatchObject({ id: fixture.openCycle.id, name: "Open report cycle" });
     if (overview.cycle === null) throw new Error("The overview cycle should be available.");
@@ -822,7 +822,18 @@ describe("PostgreSQL reporting integration", () => {
       status: "ready",
       data: { total: 0, subjectTotal: 0, generalTotal: 0 },
     });
+    // Every schedule assignment has a modality, so the unspecified filter matches none.
     expect(unspecified.plannedSchedules).toMatchObject({
+      status: "ready",
+      data: { totalOccurrences: 0, totalMinutes: 0 },
+    });
+
+    const inPerson = await getOperationalReport(
+      database,
+      { fromDate: "2026-09-20", toDate: "2026-09-20", modality: "Presencial" },
+      reportNow,
+    );
+    expect(inPerson.plannedSchedules).toMatchObject({
       status: "ready",
       data: { totalOccurrences: 1, totalMinutes: 45 },
     });

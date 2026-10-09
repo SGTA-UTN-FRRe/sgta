@@ -551,7 +551,6 @@ describe("PostgreSQL foundation integration", () => {
             'hour_movement_duration_minutes_positive_check',
             'hour_movement_note_not_blank_check',
             'hour_movement_not_self_reversal_check',
-            'schedule_assignment_modality_not_blank_check',
             'schedule_assignment_pattern_check',
             'schedule_assignment_time_range_check',
             'schedule_assignment_weekday_check',
@@ -578,7 +577,7 @@ describe("PostgreSQL foundation integration", () => {
         SELECT type.typname, enum.enumlabel
         FROM pg_type AS type
         JOIN pg_enum AS enum ON enum.enumtypid = type.oid
-        WHERE type.typname IN ('user_role', 'administrative_cycle_status', 'record_status', 'hour_movement_direction', 'activity_kind', 'schedule_plan_kind', 'schedule_assignment_pattern', 'schedule_assignment_kind', 'consultation_source_provider', 'consultation_classification', 'consultation_staging_status', 'consultation_import_run_status', 'consultation_duplicate_decision', 'consultation_anomaly_code')
+        WHERE type.typname IN ('user_role', 'administrative_cycle_status', 'record_status', 'hour_movement_direction', 'activity_kind', 'schedule_plan_kind', 'schedule_assignment_pattern', 'schedule_assignment_kind', 'schedule_modality', 'consultation_source_provider', 'consultation_classification', 'consultation_staging_status', 'consultation_import_run_status', 'consultation_duplicate_decision', 'consultation_anomaly_code')
         ORDER BY type.typname, enum.enumsortorder
       `),
     );
@@ -607,7 +606,7 @@ describe("PostgreSQL foundation integration", () => {
       "user",
       "verification",
     ]);
-    expect(migrations[0]?.migration_count).toBe("15");
+    expect(migrations[0]?.migration_count).toBe("17");
     expect(enumValues).toEqual([
       { typname: "activity_kind", enumlabel: "MEETING" },
       { typname: "activity_kind", enumlabel: "WORKSHOP" },
@@ -653,6 +652,8 @@ describe("PostgreSQL foundation integration", () => {
       { typname: "schedule_assignment_kind", enumlabel: "RECOVERY" },
       { typname: "schedule_assignment_pattern", enumlabel: "WEEKDAY" },
       { typname: "schedule_assignment_pattern", enumlabel: "DATE" },
+      { typname: "schedule_modality", enumlabel: "IN_PERSON" },
+      { typname: "schedule_modality", enumlabel: "VIRTUAL" },
       { typname: "schedule_plan_kind", enumlabel: "REGULAR" },
       { typname: "schedule_plan_kind", enumlabel: "SPECIAL" },
       { typname: "user_role", enumlabel: "ADMIN" },
@@ -785,7 +786,6 @@ describe("PostgreSQL foundation integration", () => {
       "hour_movement_duration_minutes_positive_check",
       "hour_movement_not_self_reversal_check",
       "hour_movement_note_not_blank_check",
-      "schedule_assignment_modality_not_blank_check",
       "schedule_assignment_pattern_check",
       "schedule_assignment_time_range_check",
       "schedule_assignment_weekday_check",
@@ -1952,7 +1952,7 @@ describe("PostgreSQL foundation integration", () => {
       startMinutes: 480,
       endMinutes: 600,
       kind: "DUTY",
-      modality: "Room 204",
+      modality: "IN_PERSON",
     });
 
     await expect(
@@ -2059,7 +2059,7 @@ describe("PostgreSQL foundation integration", () => {
         startMinutes: 480,
         endMinutes: 600,
         kind: "DUTY",
-        modality: "Room 204",
+        modality: "IN_PERSON",
       },
       context,
     );
@@ -2084,7 +2084,7 @@ describe("PostgreSQL foundation integration", () => {
         startMinutes: 600,
         endMinutes: 720,
         kind: "RECOVERY",
-        modality: "Room 305",
+        modality: "VIRTUAL",
       },
       context,
     );
@@ -2156,7 +2156,7 @@ describe("PostgreSQL foundation integration", () => {
         startMinutes: 540,
         endMinutes: 660,
         kind: "DUTY",
-        modality: "Room 204 updated",
+        modality: "VIRTUAL",
       },
       context,
     );
@@ -2249,7 +2249,7 @@ describe("PostgreSQL foundation integration", () => {
         startMinutes: 480,
         endMinutes: 600,
         kind: "DUTY",
-        modality: "Room 204",
+        modality: "IN_PERSON",
       },
       context,
     );
@@ -4701,7 +4701,7 @@ describe("PostgreSQL foundation integration", () => {
         startMinutes: 480,
         endMinutes: 600,
         kind: "DUTY",
-        modality: "In-person",
+        modality: "IN_PERSON",
       },
       auditContext,
     );
@@ -4715,7 +4715,7 @@ describe("PostgreSQL foundation integration", () => {
         startMinutes: 840,
         endMinutes: 960,
         kind: "DUTY",
-        modality: "Online",
+        modality: "VIRTUAL",
       },
       auditContext,
     );
@@ -4729,7 +4729,7 @@ describe("PostgreSQL foundation integration", () => {
         startMinutes: 600,
         endMinutes: 720,
         kind: "DUTY",
-        modality: "Special room",
+        modality: "IN_PERSON",
       },
       auditContext,
     );

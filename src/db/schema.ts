@@ -1,4 +1,5 @@
 import { CAREER_COLORS } from "../shared/career-color";
+import { SCHEDULE_MODALITIES } from "../shared/schedule-modality";
 
 import { sql } from "drizzle-orm";
 import {
@@ -54,6 +55,8 @@ export const scheduleAssignmentPatternEnum = pgEnum(
   "schedule_assignment_pattern",
   ["WEEKDAY", "DATE"],
 );
+
+export const scheduleModalityEnum = pgEnum("schedule_modality", SCHEDULE_MODALITIES);
 
 export const scheduleAssignmentKindEnum = pgEnum("schedule_assignment_kind", [
   "DUTY",
@@ -520,7 +523,7 @@ export const scheduleAssignment = pgTable(
     startMinutes: integer("start_minutes").notNull(),
     endMinutes: integer("end_minutes").notNull(),
     kind: scheduleAssignmentKindEnum("kind").notNull().default("DUTY"),
-    modality: text("modality"),
+    modality: scheduleModalityEnum("modality").notNull().default("IN_PERSON"),
     status: recordStatusEnum("status").notNull().default("ACTIVE"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -545,10 +548,6 @@ export const scheduleAssignment = pgTable(
     check(
       "schedule_assignment_time_range_check",
       sql`${table.startMinutes} >= 0 AND ${table.startMinutes} < 1440 AND ${table.endMinutes} > 0 AND ${table.endMinutes} <= 1440 AND ${table.startMinutes} < ${table.endMinutes}`,
-    ),
-    check(
-      "schedule_assignment_modality_not_blank_check",
-      sql`${table.modality} IS NULL OR length(trim(${table.modality})) > 0`,
     ),
     index("schedule_assignment_plan_status_idx").on(
       table.planId,

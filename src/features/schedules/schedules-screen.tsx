@@ -31,6 +31,8 @@ import {
 
 import { buttonVariants, Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { SCHEDULE_MODALITIES, SCHEDULE_MODALITY_LABELS } from "@/shared/schedule-modality";
 import type {
   SafeScheduleAssignment,
   SafeSchedulePlan,
@@ -83,7 +85,7 @@ type AssignmentDraft = {
   assignmentDate: string | null;
   endMinutes: number;
   kind: SafeScheduleAssignment["kind"];
-  modality: string | null;
+  modality: SafeScheduleAssignment["modality"];
   pattern: SafeScheduleAssignment["pattern"];
   startMinutes: number;
   tutorId: string;
@@ -744,7 +746,7 @@ function ScheduleBlock({
             </span>
           </span>
           <span className="mt-1 w-full truncate text-[11px] text-muted-foreground">
-            {assignment.modality ?? "Sin modalidad"}
+            {SCHEDULE_MODALITY_LABELS[assignment.modality]}
           </span>
           <span className="mt-auto flex flex-wrap gap-1">
             {hasRecoveryStatus && (
@@ -1050,7 +1052,7 @@ function CompactSchedule({
                     {assignment.start} — {assignment.end}
                   </span>
                   <span className="mt-1 block truncate text-xs text-muted-foreground">
-                    {assignment.modality ?? "Sin modalidad"}
+                    {SCHEDULE_MODALITY_LABELS[assignment.modality]}
                   </span>
                 </span>
                 <span className="flex shrink-0 flex-col items-end gap-2">
@@ -1289,7 +1291,7 @@ function AssignmentEditor({
   const [start, setStart] = useState(formatMinutes(assignment?.startMinutes ?? 8 * 60));
   const [end, setEnd] = useState(formatMinutes(assignment?.endMinutes ?? 10 * 60));
   const [kind, setKind] = useState<SafeScheduleAssignment["kind"]>(assignment?.kind ?? "DUTY");
-  const [modality, setModality] = useState(assignment?.modality ?? "");
+  const [modality, setModality] = useState<SafeScheduleAssignment["modality"]>(assignment?.modality ?? "IN_PERSON");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
@@ -1347,7 +1349,7 @@ function AssignmentEditor({
           assignmentDate: pattern === "DATE" ? assignmentDate : null,
           endMinutes,
           kind,
-          modality: modality.trim() || null,
+          modality,
           pattern,
           startMinutes,
           tutorId,
@@ -1556,7 +1558,12 @@ function AssignmentEditor({
               <label className="text-sm font-bold text-foreground" htmlFor="assignment-modality">
                 Modalidad
               </label>
-              <Input disabled={saving || changingStatus} id="assignment-modality" onChange={(event) => setModality(event.target.value)} value={modality} />
+              <NativeSelect disabled={saving || changingStatus} id="assignment-modality"
+                onChange={(event) => setModality(event.target.value as SafeScheduleAssignment["modality"])} value={modality}>
+                {SCHEDULE_MODALITIES.map((value) => (
+                  <NativeSelectOption key={value} value={value}>{SCHEDULE_MODALITY_LABELS[value]}</NativeSelectOption>
+                ))}
+              </NativeSelect>
             </div>
 
             <section aria-labelledby="assignment-summary-heading" className="rounded-md border border-info/30 bg-muted/60 p-4">
