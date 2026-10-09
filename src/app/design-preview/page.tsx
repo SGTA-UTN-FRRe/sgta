@@ -25,6 +25,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { AdminSidebar, TutorTopBar } from "@/shared/components/app-shell";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageContainer } from "@/shared/components/page-container";
 import { PageHeader } from "@/shared/components/page-header";
@@ -414,6 +415,42 @@ export default function DesignPreviewPage() {
             </div>
           </CardContent>
         </Card>
+      </section>
+
+      <section aria-labelledby="shell-heading" className="space-y-4">
+        <div className="space-y-1">
+          <h2
+            className="font-display text-xl font-semibold text-foreground"
+            id="shell-heading"
+          >
+            Estructura de la aplicación
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Barra lateral de administración expandida y en riel, y barra superior del tutor.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-start gap-6">
+          <div className="h-160 w-sidebar overflow-hidden rounded-xl border border-border shadow-xs">
+            <AdminSidebar
+              currentPath="/admin/schedules"
+              layout="expanded"
+              user={{ name: "Camila Pérez", role: "ADMIN" }}
+            />
+          </div>
+          <div className="h-160 w-sidebar-rail overflow-hidden rounded-xl border border-border shadow-xs">
+            <AdminSidebar
+              currentPath="/admin/schedules"
+              layout="rail"
+              user={{ name: "Camila Pérez", role: "ADMIN" }}
+            />
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-border shadow-xs">
+          <TutorTopBar
+            currentPath="/tutor/schedule"
+            user={{ name: "Julián Ramírez", role: "TUTOR" }}
+          />
+        </div>
       </section>
 
       <section aria-labelledby="table-heading" className="space-y-4">

@@ -47,10 +47,13 @@ function SheetContent({
   className,
   children,
   side = "right",
+  size = "dialog",
   showCloseButton = true,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
+  /** Width of a side sheet: `dialog` for editors, `nav` for Compact navigation. */
+  size?: "dialog" | "nav";
   showCloseButton?: boolean;
 }) {
   return (
@@ -58,12 +61,15 @@ function SheetContent({
       <SheetOverlay />
       <SheetPrimitive.Content
         data-slot="sheet-content"
+        data-size={size}
         className={cn(
-          "fixed z-overlay flex flex-col gap-4 rounded-xl bg-popover text-popover-foreground shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:animate-in data-[state=open]:duration-200",
+          "fixed z-overlay flex flex-col gap-4 overflow-y-auto rounded-xl bg-popover text-popover-foreground shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:animate-in data-[state=open]:duration-200",
           side === "right" &&
-            "inset-y-0 right-0 h-full w-full max-w-dialog border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-dialog",
+            "inset-y-0 right-0 h-full border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
           side === "left" &&
-            "inset-y-0 left-0 h-full w-full max-w-dialog border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-dialog",
+            "inset-y-0 left-0 h-full border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
+          (side === "right" || side === "left") &&
+            (size === "nav" ? "w-sidebar max-w-full" : "w-full max-w-dialog"),
           side === "top" &&
             "inset-x-0 top-0 h-auto border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
           side === "bottom" &&

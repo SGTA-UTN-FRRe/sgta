@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 
 import { requireRole } from "@/auth/authorization";
-import { AppSidebar } from "@/shared/components/app-sidebar";
-import { PageContainer } from "@/shared/components/page-container";
+import { AppShell } from "@/shared/components/app-shell";
 
 export default async function AdminLayout({
   children,
@@ -12,26 +11,8 @@ export default async function AdminLayout({
   const user = await requireRole("ADMIN");
 
   return (
-    <div className="flex min-h-svh bg-background">
-      <AppSidebar
-        variant="admin"
-        user={{ name: user.name, role: user.role }}
-      />
-      <div className="min-w-0 flex-1">
-        <a
-          href="#admin-main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-60 focus:rounded-md focus:bg-card focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-foreground focus:shadow-xs"
-        >
-          Saltar al contenido principal
-        </a>
-        <PageContainer
-          as="main"
-          id="admin-main-content"
-          className="min-h-svh pt-20 md:pt-6"
-        >
-          {children}
-        </PageContainer>
-      </div>
-    </div>
+    <AppShell role="admin" user={{ name: user.name, role: user.role }}>
+      {children}
+    </AppShell>
   );
 }

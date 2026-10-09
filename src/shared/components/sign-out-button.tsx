@@ -8,19 +8,10 @@ import { authClient } from "@/auth/auth-client";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { cn } from "@/shared/utils";
 
-interface SignOutButtonProps {
-  variant?: ButtonProps["variant"];
-  className?: string;
-  labelClassName?: string;
-  errorClassName?: string;
-}
+export const SIGN_OUT_ERROR_MESSAGE = "No se pudo cerrar la sesión. Intentar nuevamente.";
 
-export function SignOutButton({
-  variant = "ghost",
-  className,
-  labelClassName,
-  errorClassName,
-}: SignOutButtonProps) {
+/** Ends the session, then returns to `/login`; failures keep the user on the page. */
+export function useSignOut() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -49,6 +40,32 @@ export function SignOutButton({
     router.refresh();
   }
 
+  return { pending, failed, label, signOut };
+}
+
+export function SignOutIcon({ pending }: { pending: boolean }) {
+  return pending ? (
+    <LoaderCircle className="animate-spin" aria-hidden="true" />
+  ) : (
+    <LogOut aria-hidden="true" />
+  );
+}
+
+interface SignOutButtonProps {
+  variant?: ButtonProps["variant"];
+  className?: string;
+  labelClassName?: string;
+  errorClassName?: string;
+}
+
+export function SignOutButton({
+  variant = "ghost",
+  className,
+  labelClassName,
+  errorClassName,
+}: SignOutButtonProps) {
+  const { pending, failed, label, signOut } = useSignOut();
+
   return (
     <div className="relative min-w-0">
       <Button
@@ -61,11 +78,7 @@ export function SignOutButton({
         disabled={pending}
         onClick={() => void signOut()}
       >
-        {pending ? (
-          <LoaderCircle className="animate-spin" aria-hidden="true" />
-        ) : (
-          <LogOut aria-hidden="true" />
-        )}
+        <SignOutIcon pending={pending} />
         <span className={cn("truncate", labelClassName)}>{label}</span>
       </Button>
       {failed && (
@@ -73,7 +86,7 @@ export function SignOutButton({
           role="alert"
           className={cn("mt-2 wrap-break-word text-sm text-destructive", errorClassName)}
         >
-          No se pudo cerrar la sesión. Intentar nuevamente.
+          {SIGN_OUT_ERROR_MESSAGE}
         </p>
       )}
     </div>

@@ -10,8 +10,8 @@ export interface PageContainerProps<T extends ElementType = "div"> {
 }
 
 /**
- * Base page container with canonical alignment, institutional max width, and
- * exact responsive gutters:
+ * Base page container: left-aligned content inside the page max width with
+ * the responsive gutters:
  * - Mobile: 1rem (px-4)
  * - Tablet: 1.5rem (md:px-6)
  * - Desktop: 2rem (lg:px-8)
@@ -28,7 +28,7 @@ export function PageContainer<T extends ElementType = "div">({
     <Component
       data-slot="page-container"
       className={cn(
-        "mx-auto w-full max-w-page px-4 py-6 sm:py-8 md:px-6 lg:px-8",
+        "w-full max-w-page px-4 py-6 sm:py-8 md:px-6 lg:px-8",
         className,
       )}
       {...props}

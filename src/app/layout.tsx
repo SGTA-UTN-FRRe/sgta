@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Manrope, Source_Serif_4 } from "next/font/google";
 
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { HydrationMarker } from "@/shared/hydration-marker";
 
 import "./globals.css";
@@ -31,7 +33,8 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="es" className={`${manrope.variable} ${sourceSerif.variable} h-full`}>
       <body className="flex min-h-full flex-col font-sans antialiased">
-        {children}
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster />
         <HydrationMarker />
       </body>
     </html>

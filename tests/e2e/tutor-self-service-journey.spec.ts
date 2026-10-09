@@ -134,18 +134,17 @@ test.describe("authenticated Tutor self-service", () => {
       await expect(page.getByText(/\+\d{2}:\d{2}/).first()).toBeVisible();
       await expect(page.getByRole("link", { name: "Tutores", exact: true })).toHaveCount(0);
       await expect(page.getByRole("link", { name: "Configuración", exact: true })).toHaveCount(0);
-      if (viewport.name === "Compact") {
-        await page.getByRole("button", { name: "Abrir navegación" }).click();
-        await expect(page.getByRole("dialog").getByRole("button", { name: "Cerrar sesión" })).toBeVisible();
-        await page.keyboard.press("Escape");
-      } else {
-        const signOut = page.getByRole("button", { name: "Cerrar sesión" });
-        await expect(signOut).toBeVisible();
-        await expect(signOut).toHaveAttribute("title", "Cerrar sesión");
-        if (viewport.name === "Medium") {
-          await expect(signOut.locator("span")).toBeHidden();
-        }
-      }
+      await expect(
+        page
+          .getByRole("navigation", { name: "Navegación del tutor" })
+          .getByRole("link", { name: "Mi resumen" }),
+      ).toHaveAttribute("aria-current", "page");
+      await page.getByRole("button", { name: /^Cuenta de / }).click();
+      await expect(
+        page.getByRole("menu").getByRole("menuitem", { name: "Cerrar sesión" }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("menu")).toBeHidden();
       await expect(
         page.getByRole("button", { name: /registrar|editar|revertir/i }),
       ).toHaveCount(0);
@@ -218,27 +217,20 @@ test.describe("authenticated Tutor self-service", () => {
     await page.setViewportSize({ height: 844, width: 390 });
     await page.goto("/tutor");
 
-    const trigger = page.getByRole("button", { name: "Abrir navegación" });
-    await page.keyboard.press("Tab");
-    await expect(trigger).toBeFocused();
-    await expectFocusOutline(trigger);
     const skipLink = page.getByRole("link", {
       name: "Saltar al contenido principal",
     });
     await page.keyboard.press("Tab");
     await expect(skipLink).toBeFocused();
-    await page.keyboard.press("Shift+Tab");
-    await expect(trigger).toBeFocused();
-
-    await page.keyboard.press("Enter");
-    const dialog = page.getByRole("dialog", { name: "Navegación del tutor" });
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Cerrar navegación" })).toBeFocused();
+    await expectFocusOutline(skipLink);
+    const navigation = page.getByRole("navigation", { name: "Navegación del tutor" });
+    const account = page.getByRole("button", { name: /^Cuenta de / });
     await page.keyboard.press("Tab");
+    await expect(page.getByRole("link", { name: "Tutorías UTN FRRe - inicio" })).toBeFocused();
     await page.keyboard.press("Tab");
-    await expect(
-      dialog.getByRole("link", { name: "Mi horario" }),
-    ).toBeFocused();
+    await expect(navigation.getByRole("link", { name: "Mi resumen" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(navigation.getByRole("link", { name: "Mi horario" })).toBeFocused();
     await page.keyboard.press("Enter");
 
     await expect(
@@ -263,33 +255,23 @@ test.describe("authenticated Tutor self-service", () => {
     await expectFocusOutline(scheduleTitle);
 
     await page.keyboard.press("Shift+Tab");
-    await expect(skipLink).toBeFocused();
+    await expect(account).toBeFocused();
     await page.keyboard.press("Shift+Tab");
-    await expect(trigger).toBeFocused();
-    await page.keyboard.press("Enter");
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
-    await expect(
-      dialog.getByRole("link", { name: "Mis horas" }),
-    ).toBeFocused();
+    await expect(navigation.getByRole("link", { name: "Mis horas" })).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(
       page.getByRole("heading", { level: 1, name: "Mis horas" }),
     ).toBeFocused();
 
     await page.keyboard.press("Shift+Tab");
-    await expect(skipLink).toBeFocused();
+    await expect(account).toBeFocused();
     await page.keyboard.press("Shift+Tab");
-    await expect(trigger).toBeFocused();
-    await page.keyboard.press("Enter");
-    await page.keyboard.press("Tab");
-    await expect(
-      dialog.getByRole("link", { name: "Mi resumen" }),
-    ).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Shift+Tab");
+    const summaryLink = navigation.getByRole("link", { name: "Mi resumen" });
+    await expect(summaryLink).toBeFocused();
 
     await page.emulateMedia({ reducedMotion: "reduce" });
-    const summaryLink = dialog.getByRole("link", { name: "Mi resumen" });
     const transitionDurations = await summaryLink.evaluate((element) =>
       getComputedStyle(element)
         .transitionDuration.split(",")
@@ -297,18 +279,19 @@ test.describe("authenticated Tutor self-service", () => {
     );
     expect(transitionDurations.every((duration) => duration <= 0.001)).toBe(true);
 
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await expect(account).toBeFocused();
+    await page.keyboard.press("Enter");
+    const menu = page.getByRole("menu");
+    const signOut = menu.getByRole("menuitem", { name: "Cerrar sesión" });
+    await expect(signOut).toBeFocused();
     await page.keyboard.press("Escape");
-    await expect(dialog).toBeHidden();
-    await expect(trigger).toBeFocused();
+    await expect(menu).toBeHidden();
+    await expect(account).toBeFocused();
 
     await page.keyboard.press("Enter");
-    const signOut = dialog.getByRole("button", { name: "Cerrar sesión" });
-    await page.keyboard.press("Shift+Tab");
-    await page.keyboard.press("Shift+Tab");
-    await expect(signOut).toBeFocused();
-    await page.keyboard.press("Tab");
-    await expect(dialog.getByRole("link", { name: "Tutorias UTN FRRe - inicio" })).toBeFocused();
-    await page.keyboard.press("Shift+Tab");
     await expect(signOut).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/login$/);
