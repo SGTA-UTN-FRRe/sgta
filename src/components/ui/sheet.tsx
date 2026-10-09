@@ -52,8 +52,8 @@ function SheetContent({
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
-  /** Width of a side sheet: `dialog` for editors, `nav` for Compact navigation. */
-  size?: "dialog" | "nav";
+  /** Width of a side sheet: `dialog` for editors, `wide` for read-only previews, `nav` for Compact navigation. */
+  size?: "dialog" | "wide" | "nav";
   showCloseButton?: boolean;
 }) {
   return (
@@ -69,7 +69,11 @@ function SheetContent({
           side === "left" &&
             "inset-y-0 left-0 h-full border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
           (side === "right" || side === "left") &&
-            (size === "nav" ? "w-sidebar max-w-full" : "w-full max-w-dialog"),
+            (size === "nav"
+              ? "w-sidebar max-w-full"
+              : size === "wide"
+                ? "w-full max-w-dialog-wide"
+                : "w-full max-w-dialog"),
           side === "top" &&
             "inset-x-0 top-0 h-auto border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
           side === "bottom" &&

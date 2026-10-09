@@ -51,9 +51,12 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  compactLayout = "centered",
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
+  /** `fullscreen` makes form dialogs full height below the Medium breakpoint. */
+  compactLayout?: "centered" | "fullscreen";
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
@@ -62,6 +65,8 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           "fixed top-1/2 left-1/2 z-overlay grid max-h-dvh overflow-y-auto w-11/12 max-w-dialog -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border bg-popover text-popover-foreground p-6 shadow-lg duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-dialog",
+          compactLayout === "fullscreen" &&
+            "max-md:inset-0 max-md:h-dvh max-md:w-full max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:content-start max-md:rounded-none",
           className,
         )}
         {...props}
