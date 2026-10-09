@@ -72,10 +72,7 @@ test.describe("Admin accessibility and responsive layouts", () => {
         }
 
         if (route.title === "Horarios" && viewport.name === "compact") {
-          await expect(
-            page.getByRole("heading", { level: 2, name: "Editor por día" }),
-          ).toBeVisible();
-          const daySelector = page.getByRole("group", { name: "Días del plan" });
+          const daySelector = page.getByRole("radiogroup", { name: "Días del plan" });
           await expect(daySelector).toBeVisible();
           const daySelectorBounds = await daySelector.boundingBox();
           expect(daySelectorBounds).not.toBeNull();
@@ -85,6 +82,10 @@ test.describe("Admin accessibility and responsive layouts", () => {
         }
 
         if (route.title === "Horarios" && viewport.name === "wide") {
+          await expect(
+            page.getByRole("table", { name: "Matriz semanal" }),
+          ).toBeVisible();
+          await page.getByRole("radio", { name: "Bloques" }).click();
           const layout = await page
             .getByRole("group", { name: "Grilla semanal" })
             .evaluate((grid) => {

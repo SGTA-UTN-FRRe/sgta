@@ -7,7 +7,7 @@ import {
   E2E_AUTH_SECRET,
   E2E_CYCLE_ID,
 } from "./e2e-test-data";
-import { activateWithKeyboard, selectWithKeyboard } from "./keyboard-helpers";
+import { activateWithKeyboard, focusWithKeyboard, selectWithKeyboard } from "./keyboard-helpers";
 import { addE2ESessionCookie } from "./session-cookie";
 
 const scheduleDate = "2027-01-18";
@@ -57,9 +57,12 @@ test.describe("authenticated Admin schedule planning", () => {
 
     await activateWithKeyboard(
       page,
-      page.getByLabel("Grilla semanal").getByRole("button", {
-        name: "Curie, Marie, LUN, 10:00 a 12:00",
-      }),
+      page
+        .getByRole("table", { name: "Matriz semanal" })
+        .getByRole("button", {
+          name: "Curie, Marie, Computer Science, lunes, 10:00 a 12:00",
+        })
+        .first(),
     );
     const assignmentDialog = page.getByRole("dialog", {
       name: "Editar asignación",
@@ -74,8 +77,26 @@ test.describe("authenticated Admin schedule planning", () => {
       assignmentDialog.getByRole("button", { name: "Guardar asignación" }),
     );
     await expect(
-      page.getByRole("status").filter({ hasText: "Cambios guardados" }),
+      page
+        .getByRole("region", { name: "Notificaciones" })
+        .getByText("Cambios guardados"),
     ).toBeVisible();
     await expect(assignmentDialog).not.toBeVisible();
+  });
+
+  test("keeps Compact assignment keyboard focus above the action footer", async ({ context, page }) => {
+    await signInAdmin(context);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/admin/schedules?cycleId=${E2E_CYCLE_ID}&date=${scheduleDate}`);
+    await activateWithKeyboard(page, page.getByRole("button", { name: "Agregar asignación", exact: true }));
+    const editor = page.getByRole("dialog", { name: "Nueva asignación" });
+    const modality = editor.getByLabel("Modalidad");
+    await focusWithKeyboard(page, modality);
+    const unobscured = await modality.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      const hit = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+      return hit !== null && element.contains(hit);
+    });
+    expect(unobscured).toBe(true);
   });
 });
