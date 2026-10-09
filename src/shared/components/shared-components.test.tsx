@@ -74,28 +74,29 @@ describe("Shared UI Primitives (SGTA)", () => {
       const { rerender } = render(<StatusBadge variant="success">Activo</StatusBadge>);
       expect(screen.getByText("Activo")).toBeInTheDocument();
       let badge = screen.getByText("Activo").parentElement;
-      expect(badge).toHaveClass("text-success");
+      expect(badge).toHaveAttribute("data-variant", "success");
+      expect(badge).toHaveClass("text-foreground");
       expect(badge?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
 
       rerender(<StatusBadge variant="warning">Pendiente</StatusBadge>);
       expect(screen.getByText("Pendiente")).toBeInTheDocument();
       badge = screen.getByText("Pendiente").parentElement;
-      expect(badge).toHaveClass("text-warning");
+      expect(badge).toHaveAttribute("data-variant", "warning");
 
       rerender(<StatusBadge variant="danger">Falta</StatusBadge>);
       expect(screen.getByText("Falta")).toBeInTheDocument();
       badge = screen.getByText("Falta").parentElement;
-      expect(badge).toHaveClass("text-destructive");
+      expect(badge).toHaveAttribute("data-variant", "danger");
 
       rerender(<StatusBadge variant="info">En curso</StatusBadge>);
       expect(screen.getByText("En curso")).toBeInTheDocument();
       badge = screen.getByText("En curso").parentElement;
-      expect(badge).toHaveClass("text-info");
+      expect(badge).toHaveAttribute("data-variant", "info");
 
       rerender(<StatusBadge variant="neutral">Borrador</StatusBadge>);
       expect(screen.getByText("Borrador")).toBeInTheDocument();
       badge = screen.getByText("Borrador").parentElement;
-      expect(badge).toHaveClass("text-secondary-foreground");
+      expect(badge).toHaveAttribute("data-variant", "neutral");
 
     });
 
@@ -121,7 +122,7 @@ describe("Shared UI Primitives (SGTA)", () => {
   });
 
   describe("EmptyState", () => {
-    it("renders title, description and geometric Faro illustration by default", () => {
+    it("renders compact copy without a decorative illustration", () => {
       render(
         <EmptyState
           title="Todo en orden"
@@ -134,7 +135,7 @@ describe("Shared UI Primitives (SGTA)", () => {
       expect(
         screen.getByText("No hay guardias pendientes para el día de hoy."),
       ).toBeInTheDocument();
-      expect(screen.getByTestId("faro-illustration")).toBeInTheDocument();
+      expect(screen.queryByTestId("faro-illustration")).not.toBeInTheDocument();
     });
 
     it("renders optional contextual resolution action button", () => {
@@ -149,7 +150,7 @@ describe("Shared UI Primitives (SGTA)", () => {
       expect(screen.getByRole("button", { name: "Cargar Tutor" })).toBeInTheDocument();
     });
 
-    it("supports custom illustration replacement", () => {
+    it("keeps illustration props compatible while omitting decoration", () => {
       render(
         <EmptyState
           title="Sin datos"
@@ -157,7 +158,7 @@ describe("Shared UI Primitives (SGTA)", () => {
         />,
       );
 
-      expect(screen.getByTestId("custom-art")).toBeInTheDocument();
+      expect(screen.queryByTestId("custom-art")).not.toBeInTheDocument();
       expect(screen.queryByTestId("faro-illustration")).not.toBeInTheDocument();
     });
   });

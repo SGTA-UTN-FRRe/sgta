@@ -33,6 +33,7 @@ import { StatusBadge } from "@/shared/components/status-badge";
 import { getCareerAbbreviation } from "@/shared/career-abbreviation";
 
 import { careerPalette, colorTokens } from "./design-tokens";
+import { ProductPatternsPreview } from "./product-patterns-preview";
 
 export const metadata: Metadata = {
   title: "Vista previa del diseño | SGTA",
@@ -531,6 +532,7 @@ export default function DesignPreviewPage() {
           title="Sin resultados para el período"
         />
       </section>
+      <ProductPatternsPreview />
     </PageContainer>
   );
 }
