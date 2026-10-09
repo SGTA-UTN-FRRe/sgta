@@ -17,13 +17,15 @@ export interface ConfirmationDialogProps {
   /** The owner closes the controlled dialog after a successful operation. */
   onConfirm: () => void;
   confirmLabel?: string;
+  /** Confirm label while the operation is pending. */
+  pendingLabel?: string;
   pending?: boolean;
   destructive?: boolean;
 }
 
 export function ConfirmationDialog({
   title, description, summary, trigger, open, onOpenChange, onConfirm,
-  confirmLabel = "Confirmar", pending = false, destructive = false,
+  confirmLabel = "Confirmar", pendingLabel = "Confirmando…", pending = false, destructive = false,
 }: ConfirmationDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(next) => { if (!pending) onOpenChange(next); }}>
@@ -48,7 +50,7 @@ export function ConfirmationDialog({
               if (!pending) onConfirm();
             }}
           >
-            {pending ? "Confirmando…" : confirmLabel}
+            {pending ? pendingLabel : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -106,25 +106,28 @@ describe("FilterBar", () => {
 describe("CareerLegend", () => {
   const careers: LegendCareer[] = [{ id: "systems", name: "Ingeniería en Sistemas de Información", color: "BLUE" }, { id: "chemical", name: "Ingeniería Química", color: "EMERALD" }];
   function Legend() {
-    const [visible, setVisible] = useState(careers.map(({ id }) => id));
-    return <CareerLegend careers={careers} visibleCareerIds={visible} onVisibleCareerIdsChange={setVisible} />;
+    const [selected, setSelected] = useState<string[]>([]);
+    const visible = selected.length === 0 ? careers.length : selected.length;
+    return <CareerLegend careers={careers} selectedCareerIds={selected} onSelectedCareerIdsChange={setSelected}
+      summary={`Mostrando ${visible} de ${careers.length} asignaciones`} />;
   }
-  it("toggles careers with the keyboard and restores all careers", async () => {
+  it("filters careers with the keyboard and clears the filter", async () => {
     const user = userEvent.setup();
     render(<Legend />);
     const systems = screen.getByRole("button", { name: careers[0].name });
     expect(systems).toHaveTextContent("ISI");
-    expect(systems).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Mostrar todas" })).toBeDisabled();
+    expect(systems).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByRole("button", { name: "Mostrar todas" })).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Mostrando 2 de 2 asignaciones");
     systems.focus();
     await user.keyboard(" ");
-    expect(systems).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("status")).toHaveTextContent("Mostrando 1 de 2 carreras");
-    await user.click(screen.getByRole("button", { name: careers[1].name }));
-    expect(screen.getByRole("status")).toHaveTextContent("Mostrando 0 de 2 carreras");
-    await user.click(screen.getByRole("button", { name: "Mostrar todas" }));
     expect(systems).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("status")).toHaveTextContent("Mostrando 2 de 2 carreras");
+    expect(screen.getByRole("status")).toHaveTextContent("Mostrando 1 de 2 asignaciones");
+    await user.click(screen.getByRole("button", { name: careers[1].name }));
+    expect(screen.getByRole("status")).toHaveTextContent("Mostrando 2 de 2 asignaciones");
+    await user.click(screen.getByRole("button", { name: "Mostrar todas" }));
+    expect(systems).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByRole("button", { name: "Mostrar todas" })).not.toBeInTheDocument();
   });
 });
 

@@ -23,6 +23,8 @@ export interface PageHeaderProps {
   action?: ReactNode;
   /** Quiet actions next to the dominant action. */
   secondaryActions?: ReactNode;
+  /** Keep the actions below the title until Wide, for views with several header actions. */
+  actionsBelowUntilWide?: boolean;
   /** Additional container classes. */
   className?: string;
 }
@@ -39,6 +41,7 @@ export function PageHeader({
   breadcrumbs,
   action,
   secondaryActions,
+  actionsBelowUntilWide = false,
   className,
 }: PageHeaderProps) {
   return (
@@ -80,10 +83,17 @@ export function PageHeader({
         </nav>
       )}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={cn(
+          "flex flex-col gap-4",
+          actionsBelowUntilWide
+            ? "lg:flex-row lg:items-center lg:justify-between"
+            : "sm:flex-row sm:items-center sm:justify-between",
+        )}
+      >
         <div className="space-y-1">
           <h1
-            className="font-display text-2xl font-semibold text-foreground md:text-title"
+            className="font-display text-2xl font-semibold tracking-tight text-foreground md:text-title"
             id={titleId}
             tabIndex={-1}
           >
@@ -97,7 +107,13 @@ export function PageHeader({
         </div>
 
         {(action || secondaryActions) && (
-          <div className="flex flex-wrap shrink-0 items-center gap-2 self-start sm:self-center [&_[data-slot=button]]:h-11 [&_a]:h-11" data-slot="page-header-action">
+          <div
+            className={cn(
+              "flex flex-wrap shrink-0 items-center gap-2 self-start [&_[data-slot=button]]:h-11 [&_a]:h-11",
+              actionsBelowUntilWide ? "lg:self-center" : "sm:self-center",
+            )}
+            data-slot="page-header-action"
+          >
             {secondaryActions}
             {action}
           </div>

@@ -17,13 +17,19 @@ const buttonVariants = cva(
         ghost: "text-foreground hover:bg-muted",
         destructive:
           "bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90",
+        "destructive-outline":
+          "border border-border bg-card text-destructive shadow-xs hover:bg-muted",
         link: "text-link underline-offset-4 hover:underline",
+        /** A pressable content surface, such as a schedule block, whose composer sets the fill and layout. */
+        surface:
+          "justify-start rounded-md text-left font-normal whitespace-normal",
       },
       size: {
         default: "h-10 px-4 py-2",
         sm: "h-8 px-3 text-xs",
         lg: "h-11 px-6 text-base",
         icon: "size-10 max-md:min-w-11",
+        content: "h-auto p-0",
       },
     },
     defaultVariants: { variant: "default", size: "default" },
