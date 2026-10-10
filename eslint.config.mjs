@@ -2,6 +2,20 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
+const rawInteractiveElementNames = ["button", "input", "select", "textarea", "dialog"];
+const rawInteractiveElementMessage =
+  "Compose a primitive from src/components/ui instead of a raw interactive element.";
+const designValueMessage =
+  "Use a registered design token instead of an arbitrary color, radius, shadow, font, type-size, tracking, or layering value.";
+const arbitraryDesignValuePattern = String.raw`(^|\s)([a-z0-9-]+:)*-?(text|bg|border|ring|outline|fill|stroke|shadow|rounded|font|tracking|leading|z|from|via|to|decoration|divide|placeholder|caret|accent)(-[a-z]+)?-\[`;
+const numericLayerPattern = String.raw`(^|\s)([a-z0-9-]+:)*-?z-[0-9]`;
+const designValueSelectors = [
+  `Literal[value=/${arbitraryDesignValuePattern}/]`,
+  `TemplateElement[value.raw=/${arbitraryDesignValuePattern}/]`,
+  `Literal[value=/${numericLayerPattern}/]`,
+  `TemplateElement[value.raw=/${numericLayerPattern}/]`,
+].map((selector) => ({ selector, message: designValueMessage }));
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -72,16 +86,16 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["src/**/*.tsx"],
-    ignores: ["src/components/ui/**", "**/*.test.tsx"],
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/components/ui/**", "src/mocks/**", "**/*.test.{ts,tsx}"],
     rules: {
       "no-restricted-syntax": [
         "warn",
-        ...["button", "input", "select", "textarea", "dialog"].map((name) => ({
+        ...rawInteractiveElementNames.map((name) => ({
           selector: `JSXOpeningElement[name.type='JSXIdentifier'][name.name='${name}']`,
-          message:
-            "Compose a primitive from src/components/ui instead of a raw interactive element.",
+          message: rawInteractiveElementMessage,
         })),
+        ...designValueSelectors,
       ],
     },
   },
