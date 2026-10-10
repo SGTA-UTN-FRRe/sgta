@@ -1,20 +1,6 @@
-import path from "node:path";
-import { spawn } from "node:child_process";
+import type { Database } from "../../src/db/client-core";
+import { runApplicationServer } from "../support/application-server";
 
-import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from "@testcontainers/postgresql";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-
-import {
-  createDatabaseHandle,
-  type DatabaseHandle,
-} from "../../src/db/client-core";
-import {
-  assertProductionBuild,
-  buildE2EApplicationEnv,
-} from "./application-env";
 import {
   activity,
   administrativeCycle,
@@ -37,7 +23,6 @@ import {
   E2E_ADMIN_SIGN_OUT_SESSION_TOKEN,
   E2E_TUTOR_SIGN_OUT_SESSION_TOKEN,
   E2E_FORBIDDEN_SIGN_OUT_SESSION_TOKEN,
-  E2E_AUTH_SECRET,
   E2E_CAREER_ID,
   E2E_CYCLE_ID,
   E2E_FIXED_NOW,
@@ -62,24 +47,8 @@ import {
   E2E_TUTOR_USER_ID,
   E2E_UNLINKED_TUTOR_USER_ID,
 } from "./e2e-test-data";
-import { startConsultationSourceFixture, type StartedConsultationSourceFixture } from "./consultation-source-fixture";
 
-const POSTGRES_IMAGE = "postgres:16.4-alpine";
-const E2E_DATABASE_NAME = "sgta_e2e";
-const E2E_DATABASE_USER = "sgta_e2e";
-const E2E_DATABASE_PASSWORD = "sgta_e2e_password";
-let container: StartedPostgreSqlContainer | undefined;
-let databaseHandle: DatabaseHandle | undefined;
-let consultationSourceFixture: StartedConsultationSourceFixture | undefined;
-let serverProcess: ReturnType<typeof spawn> | undefined;
-let shuttingDown = false;
-
-async function seedDatabase() {
-  if (databaseHandle === undefined) {
-    throw new Error("The E2E database is not ready.");
-  }
-
-  const database = databaseHandle.db;
+async function seedDatabase(database: Database) {
   const [admin] = await database
     .insert(user)
     .values({
@@ -404,116 +373,4 @@ async function seedDatabase() {
   ]);
 }
 
-async function closeDatabase() {
-  const currentHandle = databaseHandle;
-  const currentContainer = container;
-  const currentSourceFixture = consultationSourceFixture;
-  databaseHandle = undefined;
-  container = undefined;
-  consultationSourceFixture = undefined;
-
-  let cleanupError: unknown;
-  try {
-    await currentHandle?.close();
-  } catch (error) {
-    cleanupError = error;
-  }
-  try {
-    await currentContainer?.stop();
-  } catch (error) {
-    cleanupError ??= error;
-  }
-  try {
-    await currentSourceFixture?.close();
-  } catch (error) {
-    cleanupError ??= error;
-  }
-  if (cleanupError !== undefined) throw cleanupError;
-}
-
-async function shutdown(exitCode: number) {
-  if (shuttingDown) {
-    return;
-  }
-
-  shuttingDown = true;
-
-  if (serverProcess !== undefined && serverProcess.exitCode === null) {
-    serverProcess.kill("SIGTERM");
-  }
-
-  await closeDatabase();
-  process.exit(exitCode);
-}
-
-async function main() {
-  assertProductionBuild(process.cwd());
-
-  consultationSourceFixture = await startConsultationSourceFixture();
-  container = await new PostgreSqlContainer(POSTGRES_IMAGE)
-    .withDatabase(E2E_DATABASE_NAME)
-    .withUsername(E2E_DATABASE_USER)
-    .withPassword(E2E_DATABASE_PASSWORD)
-    .start();
-
-  databaseHandle = createDatabaseHandle({
-    connectionString: container.getConnectionUri(),
-    max: 5,
-    connectionTimeoutMillis: 10_000,
-  });
-
-  const migrationsFolder = path.resolve(process.cwd(), "drizzle");
-  await migrate(databaseHandle.db, { migrationsFolder });
-  await migrate(databaseHandle.db, { migrationsFolder });
-  await seedDatabase();
-
-  const nextBin = path.resolve(
-    process.cwd(),
-    "node_modules/next/dist/bin/next",
-  );
-  const nextProcess = spawn(process.execPath, [nextBin, "start"], {
-    env: buildE2EApplicationEnv(process.env, {
-      NODE_ENV: "production",
-      SGTA_E2E_MODE: "true",
-      SGTA_E2E_NOW: E2E_FIXED_NOW,
-      DATABASE_URL: container.getConnectionUri(),
-      BETTER_AUTH_URL: "http://localhost:3000",
-      BETTER_AUTH_SECRET: E2E_AUTH_SECRET,
-      GOOGLE_CLIENT_ID: "e2e-google-client-id",
-      GOOGLE_CLIENT_SECRET: "e2e-google-client-secret",
-      GOOGLE_SHEETS_SPREADSHEET_ID: "e2e_consultation_source",
-      GOOGLE_SHEETS_RANGE: "Consultations!A:I",
-      GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: "consultation-reader@example.test",
-      GOOGLE_SHEETS_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----e2e-only-not-a-credential-----END PRIVATE KEY-----",
-      GOOGLE_SHEETS_HEADER_MAP: JSON.stringify({
-        career: "Career",
-        studentFirstName: "Student first name",
-        studentLastName: "Student last name",
-        consultationDate: "Consultation date",
-        tutor: "Tutor",
-        academicStage: "Academic stage",
-        modality: "Modality",
-        topic: "Topic",
-        contact: "Contact",
-      }),
-      SGTA_E2E_CONSULTATION_SOURCE_URL: consultationSourceFixture.apiBaseUrl,
-      NEXT_TELEMETRY_DISABLED: "1",
-      PORT: "3000",
-    }),
-    stdio: "inherit",
-  });
-  serverProcess = nextProcess;
-
-  nextProcess.once("exit", (code) => {
-    void shutdown(code ?? 1);
-  });
-
-  process.once("SIGINT", () => void shutdown(130));
-  process.once("SIGTERM", () => void shutdown(143));
-}
-
-void main().catch(async (error: unknown) => {
-  console.error(error);
-  await closeDatabase();
-  process.exit(1);
-});
+void runApplicationServer({ now: E2E_FIXED_NOW, seed: seedDatabase });

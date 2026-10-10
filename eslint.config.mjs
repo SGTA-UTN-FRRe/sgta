@@ -37,7 +37,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["tests/e2e/**/*.ts"],
+    files: ["tests/e2e/**/*.ts", "tests/screenshots/**/*.ts"],
     ignores: ["tests/e2e/fixtures.ts"],
     rules: {
       "no-restricted-imports": [
