@@ -164,6 +164,8 @@ Keep route composition thin and place feature-specific behavior under its owner 
 | Unit/component tests | `corepack pnpm test` |
 | PostgreSQL integration tests | `corepack pnpm test:integration` |
 | E2E | `corepack pnpm test:e2e` |
+| Screenshots (README images) | `corepack pnpm screenshots` |
+| Review screenshots (every view, three widths) | `corepack pnpm screenshots:review` |
 | Production build | `corepack pnpm build` |
 
 The E2E browser may require `corepack pnpm exec playwright install chromium` once per environment.

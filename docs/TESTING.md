@@ -155,6 +155,42 @@ is `CI Gate`. The [workflow](../.github/workflows/ci.yml) uploads
 E2E run, with seven-day retention. Its JSON report supplies flaky-test warning
 annotations and job-summary entries; Playwright retains traces on failure.
 
+## Screenshots
+
+Screenshot commands use a separate synthetic Spanish demo seed in a disposable
+PostgreSQL database. The application and browser share the fixed instant
+`2026-09-16T15:00:00.000Z` (12:00 in Argentina); record IDs and displayed timestamps
+are deterministic. Demo accounts use `@example.test` addresses. Authentication
+sessions expire relative to the real clock so captures remain usable later.
+
+Build first with `corepack pnpm build`. Docker and Playwright Chromium are required,
+as for E2E. Both commands reuse the E2E production server lifecycle, migration
+checks, environment allowlist, hydration fixture, and execution budgets:
+
+```bash
+corepack pnpm screenshots:review
+corepack pnpm screenshots
+```
+
+`screenshots:review` captures all 14 routes from the UI specification at 390×844,
+768×1024, and 1440×900 in light mode with reduced motion. Its 42 full-page PNGs
+are written to `test-results/review-screenshots/<slug>/<width>.png`. Select a view
+with `corepack pnpm screenshots:review --grep schedules`.
+
+`screenshots` writes five 1440×900 viewport images to `docs/screenshots/`:
+`login.png`, `admin-overview.png`, `schedules.png`, `hours.png`, and
+`tutor-summary.png`. These are generated on demand; the initial publication waits
+until the listed views have been migrated. No pixel comparison runs in CI because
+font rasterization differs between machines. On the same machine, compare SHA-256
+hashes from consecutive review runs to check reproducibility.
+
+Before repeating a database-backed command, allow its disposable containers to
+finish shutting down. On Windows, Playwright stops the server process tree and
+Testcontainers completes cleanup asynchronously. Starting another run during
+that cleanup can reuse a retiring Ryuk container and lose the new database.
+With no other Testcontainers run active, `docker ps --filter
+label=org.testcontainers.ryuk=true` shows whether that cleanup is still pending.
+
 ## Related documentation
 
 - [Development setup](DEVELOPMENT.md)

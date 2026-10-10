@@ -12,6 +12,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "screenshots": "playwright test --config playwright.screenshots.config.ts --project readme",
+    "screenshots:review": "playwright test --config playwright.screenshots.config.ts --project review",
     "check:templates": "node scripts/check-template-placeholders.mjs",
     "verify": "corepack pnpm check:templates && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm test:integration && corepack pnpm build && corepack pnpm test:e2e",
     "auth:bootstrap-admin": "tsx --conditions=react-server scripts/bootstrap-admin.ts",
