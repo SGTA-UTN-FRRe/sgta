@@ -83,7 +83,10 @@ export function DataTable<T>({
       <ul aria-label={label} className="divide-y divide-border md:hidden">
         {rows.map((row) => (
           <li key={getRowKey(row)} className="space-y-3 py-3">
-            <div className="text-sm font-semibold">{identityColumn.cell(row)}</div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 text-sm font-semibold">{identityColumn.cell(row)}</div>
+              {rowActions && <div className="flex shrink-0 flex-wrap justify-end gap-2">{rowActions(row)}</div>}
+            </div>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
               {columns.map((column) => (
                 <div key={column.id} className={cn("min-w-0 space-y-1", column.compactClassName)}>
@@ -92,7 +95,6 @@ export function DataTable<T>({
                 </div>
               ))}
             </dl>
-            {rowActions && <div className="flex flex-wrap gap-2">{rowActions(row)}</div>}
           </li>
         ))}
       </ul>
