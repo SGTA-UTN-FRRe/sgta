@@ -1,27 +1,11 @@
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  CalendarDays,
-  CircleAlert,
-  Clock3,
-  Settings2,
-  TriangleAlert,
-} from "lucide-react";
-import type { ReactNode } from "react";
+import { ArrowUpRight, CalendarDays } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DataTable, EmptyState, PageHeader, StatusBadge, SystemState, type StatusBadgeVariant } from "@/shared/components";
 import { adminOverviewStateCopy } from "./admin-overview-copy";
-import type {
-  AdminOverviewState,
-  AdminOverviewStateCopy,
-  AdminOverviewScreenData,
-  AttentionItem,
-  AttentionTone,
-} from "@/features/admin-overview/admin-overview-types";
-import { EmptyState } from "@/shared/components/empty-state";
-import { PageHeader } from "@/shared/components/page-header";
-import { StatusBadge, type StatusBadgeVariant } from "@/shared/components/status-badge";
-import { cn } from "@/shared/utils";
+import type { AdminOverviewScreenData, AdminOverviewState, AttentionTone, OverviewFailure } from "./admin-overview-types";
 
 export interface AdminOverviewScreenProps {
   data: AdminOverviewScreenData;
@@ -29,504 +13,120 @@ export interface AdminOverviewScreenProps {
 }
 
 const dateContextFormatter = new Intl.DateTimeFormat("es-AR", {
-  day: "numeric",
-  month: "long",
-  timeZone: "UTC",
-  weekday: "long",
-  year: "numeric",
+  day: "numeric", month: "long", timeZone: "UTC", weekday: "long", year: "numeric",
 });
-
 const shortDateFormatter = new Intl.DateTimeFormat("es-AR", {
-  day: "2-digit",
-  month: "2-digit",
-  timeZone: "UTC",
+  day: "2-digit", month: "2-digit", timeZone: "UTC",
 });
-
 const attentionVariants: Record<AttentionTone, StatusBadgeVariant> = {
-  danger: "danger",
-  info: "info",
-  warning: "warning",
+  danger: "danger", info: "info", warning: "warning",
 };
 
-const noticeStyles = {
-  danger: {
-    icon: "text-destructive",
-    surface: "border-destructive/30 bg-muted/60",
-  },
-  info: {
-    icon: "text-info",
-    surface: "border-info/30 bg-muted/60",
-  },
-  warning: {
-    icon: "text-warning",
-    surface: "border-warning/30 bg-muted/60",
-  },
-} as const;
-
-type NoticeTone = keyof typeof noticeStyles;
-
-function getStateData(
-  state: AdminOverviewState,
-): AdminOverviewStateCopy | undefined {
-  if (state === "default") {
-    return undefined;
-  }
-
-  return adminOverviewStateCopy.find(
-    (stateData) => stateData.state === state,
-  );
+function OverviewActionLink({ href, label, accessibleName }: { href: string; label: string; accessibleName?: string }) {
+  return <Button asChild variant="ghost">
+    <Link href={href} aria-label={accessibleName}>{label}<ArrowUpRight aria-hidden="true" /></Link>
+  </Button>;
 }
 
-function formatDateContext(date: string) {
-  const label = dateContextFormatter.format(new Date(`${date}T00:00:00Z`));
-  return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
-}
-
-function formatShortDate(date: string) {
-  return shortDateFormatter.format(new Date(`${date}T00:00:00Z`));
-}
-
-function CycleContext({
-  data,
-  isRequired,
-  isLoading,
-}: {
-  data: AdminOverviewScreenData;
-  isRequired: boolean;
-  isLoading: boolean;
-}) {
-  if (isLoading) {
-    return (
-      <span
-        aria-label="Cargando ciclo y fecha"
-        className="flex flex-wrap items-center gap-2"
-      >
-        <span className="sr-only">Cargando ciclo y fecha</span>
-        <span className="h-4 w-44 animate-pulse rounded-sm bg-muted" />
-        <span className="h-4 w-32 animate-pulse rounded-sm bg-muted" />
-        <span className="h-5 w-24 animate-pulse rounded-full bg-muted" />
-      </span>
-    );
+function CycleContext({ data, state }: { data: AdminOverviewScreenData; state: AdminOverviewState }) {
+  if (state === "loading") {
+    return <span aria-label="Cargando ciclo y fecha" className="flex flex-wrap items-center gap-2">
+      <span className="sr-only">Cargando ciclo y fecha</span>
+      <span aria-hidden="true" className="h-4 w-44 animate-pulse rounded-sm bg-muted" />
+      <span aria-hidden="true" className="h-4 w-32 animate-pulse rounded-sm bg-muted" />
+    </span>;
   }
-
-  if (isRequired) {
-    return (
-      <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <StatusBadge label="Ciclo requerido" variant="warning" />
-        <span className="text-sm text-muted-foreground">
-          No hay un ciclo abierto para operar.
-        </span>
-      </span>
-    );
+  if (state === "required-action" || data.cycle === null) {
+    return <span className="flex flex-wrap items-center gap-2">
+      <StatusBadge label={state === "required-action" ? "Ciclo requerido" : "Ciclo no disponible"} variant={state === "required-action" ? "warning" : "danger"} />
+      <span>{state === "required-action" ? "No hay un ciclo abierto para operar." : "No se pudo consultar el ciclo administrativo vigente."}</span>
+    </span>;
   }
-
-  if (data.cycle === null) {
-    return (
-      <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <StatusBadge label="Ciclo no disponible" variant="danger" />
-        <span className="text-sm text-muted-foreground">
-          No se pudo consultar el ciclo administrativo vigente.
-        </span>
-      </span>
-    );
-  }
-
-  return (
-    <span className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
-      <span className="font-semibold text-foreground">{data.cycle.name}</span>
-      <span aria-hidden="true" className="text-muted-foreground">
-        ·
-      </span>
-      <span>{data.cycle.period}</span>
-      <span aria-hidden="true" className="text-muted-foreground">
-        ·
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <CalendarDays aria-hidden="true" className="h-4 w-4" />
-        <time dateTime={data.currentDate}>
-          {formatDateContext(data.currentDate)}
-        </time>
-      </span>
-      <StatusBadge
-        label={data.cycle.statusLabel}
-        variant={data.cycle.status === "open" ? "success" : "neutral"}
-      />
+  const date = dateContextFormatter.format(new Date(`${data.currentDate}T00:00:00Z`));
+  return <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
+    <span className="font-semibold text-foreground">{data.cycle.name}</span>
+    <span>{data.cycle.period}</span>
+    <span className="inline-flex items-center gap-1.5">
+      <CalendarDays aria-hidden="true" className="size-4" />
+      <time dateTime={data.currentDate}>{date.charAt(0).toUpperCase() + date.slice(1)}</time>
     </span>
-  );
+    <StatusBadge label={data.cycle.statusLabel} variant={data.cycle.status === "open" ? "success" : "neutral"} />
+  </span>;
 }
 
-function OverviewActionLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}
-      href={href}
-    >
-      {label}
-      <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" />
-    </Link>
-  );
+function FailureState({ failure }: { failure: OverviewFailure }) {
+  return <SystemState variant="error" title={failure.title} description={failure.description}
+    action={<OverviewActionLink href={failure.actionHref} label={failure.actionLabel} />} />;
 }
 
-function OverviewNotice({
-  actionHref,
-  actionLabel,
-  description,
-  icon,
-  title,
-  tone,
-}: {
-  actionHref?: string;
-  actionLabel?: string;
-  description: string;
-  icon: ReactNode;
-  title: string;
-  tone: NoticeTone;
-}) {
-  const role = tone === "danger" ? "alert" : "status";
-  const styles = noticeStyles[tone];
-
-  return (
-    <div
-      aria-live={role === "alert" ? "assertive" : "polite"}
-      className={cn(
-        "flex h-full min-h-[12rem] flex-col justify-between gap-5 rounded-md border p-5",
-        styles.surface,
-      )}
-      role={role}
-    >
-      <div className="flex items-start gap-3">
-        <span className={cn("mt-0.5 shrink-0", styles.icon)}>{icon}</span>
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            {description}
-          </p>
-        </div>
-      </div>
-
-      {actionHref && actionLabel && (
-        <div>
-          <OverviewActionLink href={actionHref} label={actionLabel} />
-        </div>
-      )}
+function AttentionSection({ data, state }: AdminOverviewScreenProps & { state: AdminOverviewState }) {
+  const stateData = adminOverviewStateCopy.find((item) => item.state === state);
+  const empty = <EmptyState title={data.emptyAttentionLabel}
+    description="La operación del ciclo está al día. Las nuevas tareas aparecerán aquí cuando requieran seguimiento." />;
+  return <section aria-labelledby="attention-heading" className="space-y-4">
+    <div className="space-y-1">
+      <h2 id="attention-heading" className="font-display text-xl font-semibold">Necesita atención</h2>
+      <p className="text-sm text-muted-foreground">Lo que requiere una decisión o seguimiento administrativo.</p>
     </div>
-  );
-}
-
-function AttentionCard({
-  description,
-  href,
-  label,
-  count,
-  tone,
-}: AttentionItem) {
-  return (
-    <Link
-      className="group flex min-h-[12rem] flex-col justify-between rounded-md border border-border bg-card p-5 shadow-xs transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
-      href={href}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <StatusBadge label={label} variant={attentionVariants[tone]} />
-        <ArrowUpRight
-          aria-hidden="true"
-          className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover:text-link"
-        />
-      </div>
-
-      <div className="mt-6">
-        <p className="font-sans text-3xl font-extrabold tabular-nums text-foreground">
-          {count}
-        </p>
-        <p className="mt-1 max-w-sm text-sm leading-6 text-muted-foreground">
-          {description}
-        </p>
-      </div>
-
-      <span className="mt-5 text-sm font-semibold text-link transition-colors group-hover:text-link">
-        Ver detalle
-      </span>
-    </Link>
-  );
-}
-
-function AttentionSkeletons() {
-  return (
-    <div
-      aria-label="Cargando atención"
-      aria-live="polite"
-      className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
-      role="status"
-    >
+    {state === "loading" && <div role="status" aria-label="Cargando atención" aria-busy="true" className="grid gap-3 md:grid-cols-2">
       <span className="sr-only">Cargando atención</span>
-      {["one", "two", "three"].map((key) => (
-        <div
-          className="min-h-[12rem] rounded-md border border-border bg-card p-5"
-          data-slot="admin-overview-attention-skeleton"
-          key={key}
-        >
-          <div className="h-6 w-36 animate-pulse rounded-full bg-muted" />
-          <div className="mt-8 h-9 w-12 animate-pulse rounded-sm bg-muted" />
-          <div className="mt-3 h-4 w-full animate-pulse rounded-sm bg-muted" />
-          <div className="mt-2 h-4 w-2/3 animate-pulse rounded-sm bg-muted" />
-        </div>
-      ))}
-    </div>
-  );
+      {["one", "two"].map((id) => <Skeleton key={id} className="h-24 w-full" />)}
+    </div>}
+    {state === "empty" && empty}
+    {(state === "error" || state === "required-action") && stateData && <SystemState
+      variant={state} title={stateData.title} description={stateData.description}
+      action={stateData.actionLabel && <OverviewActionLink href={state === "error" ? "/admin" : "/admin/settings"} label={stateData.actionLabel} />} />}
+    {(state === "default" || state === "degraded") && <>
+      {data.attention.length > 0 && <ul aria-label="Necesita atención" className="grid gap-3 md:grid-cols-2">
+        {data.attention.map((item) => <li key={item.id}>
+          <Link href={item.href} className="flex h-full items-center gap-4 rounded-xl border border-border bg-card p-3 text-sm transition-colors hover:bg-muted md:p-4">
+            <span className="text-2xl font-bold tabular-nums">{item.count}</span>
+            <span className="min-w-0 flex-1 space-y-2">
+              <StatusBadge label={item.label} variant={attentionVariants[item.tone]} />
+              <span className="block text-muted-foreground">{item.description}</span>
+              <span className="block font-semibold text-link">Ver detalle</span>
+            </span>
+            <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-link" />
+          </Link>
+        </li>)}
+      </ul>}
+      {(data.attentionFailures ?? []).map((failure) => <FailureState key={failure.id} failure={failure} />)}
+      {state === "degraded" && stateData && <SystemState variant="degraded" title={stateData.title}
+        description={stateData.description} action={stateData.actionLabel && <OverviewActionLink href="/admin/consultations" label={stateData.actionLabel} />} />}
+      {data.attention.length === 0 && (data.attentionFailures ?? []).length === 0 && empty}
+    </>}
+  </section>;
 }
 
-function AttentionSection({
-  data,
-  state,
-}: {
-  data: AdminOverviewScreenData;
-  state: AdminOverviewState;
-}) {
-  const stateData = getStateData(state);
-
-  return (
-    <section aria-labelledby="attention-heading">
-      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground" id="attention-heading">
-            Necesita atención
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Lo que requiere una decisión o seguimiento administrativo.
-          </p>
-        </div>
+function UpcomingSection({ data, loading }: { data: AdminOverviewScreenData; loading: boolean }) {
+  return <section aria-labelledby="upcoming-heading" className="space-y-4">
+    <div className="flex flex-wrap items-end justify-between gap-2">
+      <div className="space-y-1">
+        <h2 id="upcoming-heading" className="font-display text-xl font-semibold">Hoy</h2>
+        <p className="text-sm text-muted-foreground">Guardias de hoy y próximamente, en orden cronológico.</p>
       </div>
-
-      {state === "loading" && <AttentionSkeletons />}
-
-      {state === "empty" && (
-        <EmptyState
-          className="min-h-[14rem]"
-          description="La operación del ciclo está al día. Las nuevas tareas aparecerán aquí cuando requieran seguimiento."
-        title={data.emptyAttentionLabel}
-        />
-      )}
-
-      {state === "error" && stateData && (
-        <OverviewNotice
-          actionHref="/admin"
-          actionLabel={stateData.actionLabel}
-          description={stateData.description}
-          icon={<CircleAlert aria-hidden="true" className="h-5 w-5" />}
-          title={stateData.title}
-          tone="danger"
-        />
-      )}
-
-      {state === "required-action" && stateData && (
-        <OverviewNotice
-          actionHref="/admin/settings"
-          actionLabel={stateData.actionLabel}
-          description={stateData.description}
-          icon={<Settings2 aria-hidden="true" className="h-5 w-5" />}
-          title={stateData.title}
-          tone="warning"
-        />
-      )}
-
-      {(state === "default" || state === "degraded") && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.attention.map((item) => (
-            <AttentionCard key={item.id} {...item} />
-          ))}
-
-          {(data.attentionFailures ?? []).map((failure) => (
-            <OverviewNotice
-              actionHref={failure.actionHref}
-              actionLabel={failure.actionLabel}
-              description={failure.description}
-              icon={<CircleAlert aria-hidden="true" className="h-5 w-5" />}
-              key={failure.id}
-              title={failure.title}
-              tone="danger"
-            />
-          ))}
-
-          {state === "degraded" && stateData && (
-            <OverviewNotice
-              actionHref="/admin/consultations"
-              actionLabel={stateData.actionLabel}
-              description={stateData.description}
-              icon={<TriangleAlert aria-hidden="true" className="h-5 w-5" />}
-              title={stateData.title}
-              tone="warning"
-            />
-          )}
-
-          {data.attention.length === 0 &&
-            (data.attentionFailures ?? []).length === 0 &&
-            state === "degraded" && (
-              <EmptyState
-                className="min-h-[14rem]"
-                description="La operación del ciclo está al día. Las nuevas tareas aparecerán aquí cuando requieran seguimiento."
-                title={data.emptyAttentionLabel}
-              />
-            )}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function DutyRow({
-  date,
-  dayLabel,
-  modality,
-  time,
-  tutor,
-}: AdminOverviewScreenData["upcomingDuties"][number]) {
-  return (
-    <li>
-      <Link
-        className="group grid grid-cols-[4.75rem_minmax(0,1fr)] gap-4 px-4 py-4 transition-colors hover:bg-muted focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:items-center sm:px-5"
-        href={`/admin/schedules?date=${date}`}
-      >
-        <div>
-          <p className="text-sm font-bold text-foreground">{dayLabel}</p>
-          <time
-            className="mt-1 block text-xs tabular-nums text-muted-foreground"
-            dateTime={date}
-          >
-            {formatShortDate(date)}
-          </time>
-        </div>
-
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">{tutor}</p>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Clock3 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-            <span>{time}</span>
-          </p>
-          <p className="mt-1 truncate text-xs text-muted-foreground">
-            Modalidad: {modality}
-          </p>
-        </div>
-
-        <ArrowUpRight
-          aria-hidden="true"
-          className="hidden h-5 w-5 text-muted-foreground transition-colors group-hover:text-link sm:block"
-        />
-      </Link>
-    </li>
-  );
-}
-
-function DutySkeletons() {
-  return (
-    <div
-      aria-label="Cargando guardias"
-      aria-live="polite"
-      className="overflow-hidden rounded-md border border-border bg-card"
-      role="status"
-    >
+      <OverviewActionLink href="/admin/schedules" label="Ver horarios" />
+    </div>
+    {loading ? <div role="status" aria-label="Cargando guardias" aria-busy="true" className="space-y-2">
       <span className="sr-only">Cargando guardias</span>
-      {["one", "two", "three"].map((key) => (
-        <div
-          className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-4 border-b border-border px-4 py-4 last:border-b-0 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:px-5"
-          data-slot="admin-overview-duty-skeleton"
-          key={key}
-        >
-          <div>
-            <div className="h-4 w-12 animate-pulse rounded-sm bg-muted" />
-            <div className="mt-2 h-3 w-10 animate-pulse rounded-sm bg-muted" />
-          </div>
-          <div>
-            <div className="h-4 w-40 animate-pulse rounded-sm bg-muted" />
-            <div className="mt-2 h-3 w-28 animate-pulse rounded-sm bg-muted" />
-            <div className="mt-2 h-3 w-32 animate-pulse rounded-sm bg-muted" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+      {["one", "two", "three"].map((id) => <Skeleton key={id} className="h-row w-full" />)}
+    </div> : <DataTable label="Guardias próximas" rows={data.upcomingDuties} getRowKey={(duty) => duty.id}
+      identityColumn={{ id: "tutor", header: "Tutor", cell: (duty) => duty.tutor }}
+      columns={[
+        { id: "date", header: "Día", cell: (duty) => <span className="flex flex-wrap gap-x-2"><span>{duty.dayLabel}</span><time className="tabular-nums" dateTime={duty.date}>{shortDateFormatter.format(new Date(`${duty.date}T00:00:00Z`))}</time></span> },
+        { id: "time", header: "Horario", cell: (duty) => <span className="whitespace-nowrap tabular-nums">{duty.time}</span> },
+        { id: "modality", header: "Modalidad", cell: (duty) => duty.modality },
+      ]}
+      rowActions={(duty) => <OverviewActionLink href={`/admin/schedules?date=${duty.date}`} label="Ver horarios" accessibleName={`Ver horarios de ${duty.tutor}`} />}
+      error={data.upcomingFailure && <FailureState failure={data.upcomingFailure} />}
+      empty={<EmptyState title="Sin guardias próximas" description="No hay guardias programadas para los próximos días del ciclo." />} />}
+  </section>;
 }
 
-function UpcomingSection({
-  data,
-  isLoading,
-}: {
-  data: AdminOverviewScreenData;
-  isLoading: boolean;
-}) {
-  return (
-    <section aria-labelledby="upcoming-heading">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground" id="upcoming-heading">
-            Hoy
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Guardias de hoy y próximamente, en orden cronológico.
-          </p>
-        </div>
-        <Link
-          className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-link underline-offset-4 hover:text-link hover:underline sm:self-auto"
-          href="/admin/schedules"
-        >
-          Ver horarios
-          <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
-        </Link>
-      </div>
-
-      {isLoading ? (
-        <DutySkeletons />
-      ) : data.upcomingFailure !== undefined &&
-        data.upcomingFailure !== null ? (
-        <OverviewNotice
-          actionHref={data.upcomingFailure.actionHref}
-          actionLabel={data.upcomingFailure.actionLabel}
-          description={data.upcomingFailure.description}
-          icon={<CircleAlert aria-hidden="true" className="h-5 w-5" />}
-          title={data.upcomingFailure.title}
-          tone="danger"
-        />
-      ) : data.upcomingDuties.length === 0 ? (
-        <EmptyState
-          className="min-h-[10rem]"
-          description="No hay guardias programadas para los próximos días del ciclo."
-          title="Sin guardias próximas"
-        />
-      ) : (
-        <ol className="overflow-hidden rounded-md border border-border bg-card">
-          {data.upcomingDuties.map((duty) => (
-            <DutyRow key={duty.id} {...duty} />
-          ))}
-        </ol>
-      )}
-    </section>
-  );
-}
-
-export function AdminOverviewScreen({
-  data,
-  state = "default",
-}: AdminOverviewScreenProps) {
-  const isLoading = state === "loading";
-  const isRequired = state === "required-action";
-
-  return (
-    <div data-slot="admin-overview-screen" data-state={state}>
-      <PageHeader
-        description={
-          <CycleContext
-            data={data}
-            isLoading={isLoading}
-            isRequired={isRequired}
-          />
-        }
-        title="Inicio"
-      />
-
-      <div className="space-y-10 pt-8">
-        <AttentionSection data={data} state={state} />
-        {!isRequired && (
-          <UpcomingSection data={data} isLoading={isLoading} />
-        )}
-      </div>
-    </div>
-  );
+export function AdminOverviewScreen({ data, state = "default" }: AdminOverviewScreenProps) {
+  return <div data-slot="admin-overview-screen" data-state={state} className="space-y-4 md:space-y-6">
+    <PageHeader title="Inicio" description={<CycleContext data={data} state={state} />} />
+    <AttentionSection data={data} state={state} />
+    {state !== "required-action" && <UpcomingSection data={data} loading={state === "loading"} />}
+  </div>;
 }

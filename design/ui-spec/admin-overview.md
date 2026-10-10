@@ -9,12 +9,12 @@ Global rules, system states, and the route inventory live in [UI-SPEC](../UI-SPE
 ## Content order
 
 1. Page header with the current cycle and date context.
-2. `Necesita atención`: action-needed items such as Tutors with a negative balance (Horas) and consultations pending review (Consultas). Each item pairs its count with a label and links to the relevant destination with a meaningful filter or context.
-3. `Hoy`: today's and upcoming duties in chronological order.
-4. A concise operational summary.
-5. Optional recent relevant administrative activity.
+2. `Necesita atención`: action-needed items for Tutors with a negative balance (Horas) and consultations pending review (Consultas). Each item pairs its count with a label and a one-line description, and links to its destination.
+3. `Hoy`: today's and upcoming duties in chronological order, with a `Ver horarios` link to Horarios.
 
-Data: the current open cycle, the negative-balance count and list, consultations requiring review, and upcoming duty context. Do not load vanity totals merely because they exist; no decorative KPI panels.
+The view has no operational summary or recent-activity section: no read model backs them, and the attention items and duties already answer what needs action now.
+
+Data: the current open cycle, the count of active Tutors with a negative balance, the count of consultations pending review, the consultation source health, and upcoming duties. The negative-balance read model exposes a count only; the Horas attention item links to `/admin/hours` without a filter because Horas has no URL-backed negative-balance filter. The consultations item links to `/admin/consultations?status=PENDING_REVIEW`. Do not load vanity totals merely because they exist; no decorative KPI panels.
 
 ## Wireframe
 
@@ -23,18 +23,16 @@ PageHeader
 Current cycle context
 
 Necesita atención
-[ Horas: saldo negativo ] [ Consultas: por revisar ]
+[ Saldo negativo ] [ Consultas por revisar ]
 
 Hoy
-operational list
-
-Concise summary or recent relevant activity
+duty table (Wide, Medium) or priority list (Compact)
 ```
 
 ## Responsive exceptions
 
-- Medium: attention items wrap; the `Hoy` list stays full width.
-- Compact: attention items become stacked rows; `Hoy` stays chronological.
+- Medium: attention items wrap; `Hoy` stays a full-width table.
+- Compact: attention items become stacked rows; `Hoy` becomes a priority list that stays chronological, with the Tutor as the row identity.
 
 ## States
 
@@ -42,10 +40,11 @@ Concise summary or recent relevant activity
 | --- | --- |
 | Default | Context, attention items, and today. |
 | Loading | Structural skeletons, not a spinner-only page. |
-| Empty attention | `No hay acciones pendientes.` |
-| Error | A section or page error depending on the failure scope. |
+| Empty attention | `No hay acciones pendientes.` with a short description that the cycle is up to date. |
+| Empty duties | `Sin guardias próximas` with a description that no duties are scheduled for the coming days of the cycle. |
+| Error | A section error depending on the failure scope: hour balances, consultation queue, consultation source status, and upcoming duties fail independently, each with its own title, description, and link to the module that can retry the read. A page-level failure shows the system error state with `Reintentar`. |
 | Degraded | A consultation source failure degrades only the external-dependent section; hour and schedule information stays usable. |
-| Required action | Without an open cycle, explain the prerequisite and link to Configuración. |
+| Required action | Without an open cycle, the header shows `Ciclo requerido`, the attention section explains the prerequisite and links to Configuración, and `Hoy` is hidden. |
 
 ## Copy
 
@@ -55,8 +54,12 @@ Concise summary or recent relevant activity
 | Primary action | None |
 | Attention section | Necesita atención |
 | Today section | Hoy |
+| Today description | Guardias de hoy y próximamente, en orden cronológico. |
+| Today link | Ver horarios |
+| Duty table | Label `Guardias próximas`; columns `Tutor`, `Día`, `Horario`, `Modalidad`; row action `Ver horarios` with accessible name `Ver horarios de <Tutor>`, linking to Horarios at the duty date |
+| Attention link | `Ver detalle` |
 | Empty | No hay acciones pendientes. |
-| Error | System error state with `Reintentar` |
+| Error | System error state with `Reintentar`, or the section error with a link to the owning module |
 | Success | None |
 
 ## Accessibility
@@ -64,6 +67,7 @@ Concise summary or recent relevant activity
 - Attention items are links or buttons with meaningful names.
 - Section headings form a logical hierarchy.
 - Counts are paired with labels.
+- Row actions in the duty list name their Tutor.
 - Status does not rely on color.
 
 ## Acceptance criteria
