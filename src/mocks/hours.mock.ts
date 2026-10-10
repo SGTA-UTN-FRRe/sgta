@@ -183,7 +183,7 @@ export const hoursStateFixtures = [
   {
     state: "loading",
     title: "Cargando saldos",
-    description: "Estamos preparando los balances del ciclo actual.",
+    description: "Preparando los saldos del ciclo actual.",
   },
   {
     state: "empty",
@@ -193,8 +193,8 @@ export const hoursStateFixtures = [
   },
   {
     state: "search-empty",
-    title: "No encontramos balances",
-    description: "Probar con otro nombre o limpiar los filtros.",
+    title: "No encontramos saldos",
+    description: "No hay resultados para la búsqueda actual.",
     actionLabel: "Limpiar filtros",
   },
   {

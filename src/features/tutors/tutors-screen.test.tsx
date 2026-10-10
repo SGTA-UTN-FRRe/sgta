@@ -138,6 +138,21 @@ describe("TutorsScreen", () => {
     expect(screen.getByLabelText("Apellido (opcional)")).toBeInTheDocument();
   });
 
+  it("asks the browser to confirm leaving while the sheet has unsaved changes", async () => {
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.click(screen.getByRole("button", { name: "Agregar tutor" }));
+    const pristine = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(pristine);
+    expect(pristine.defaultPrevented).toBe(false);
+
+    await user.type(screen.getByLabelText("Nombre"), "Ana");
+    const dirty = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(dirty);
+    expect(dirty.defaultPrevented).toBe(true);
+  });
+
   it("loads server-backed search and status filters", async () => {
     const user = userEvent.setup();
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {

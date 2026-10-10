@@ -102,6 +102,19 @@ export function TutorSheet({
     setConfirmDiscard(false);
   }, [catalogOptions, detail, formKey, mode, open, tutor]);
 
+  const isDirty = open && !formsEqual(form, baseline);
+
+  useEffect(() => {
+    if (!isDirty) {
+      return;
+    }
+
+    // Reloading or leaving the site asks for the browser's confirmation.
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isDirty]);
+
   if (!open || mode === null) {
     return null;
   }
@@ -129,8 +142,6 @@ export function TutorSheet({
         !catalogOptions.subjects.some((option) => option.id === subject.id),
     ) ?? []),
   ];
-  const isDirty = !formsEqual(form, baseline);
-
   function attemptClose() {
     if (isDirty) {
       setConfirmDiscard(true);

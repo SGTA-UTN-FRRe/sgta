@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { CareerLegend, ConfirmationDialog, DataTable, FilterBar, FormField, PageHeader, RouteErrorState, RouteLoadingState, SystemState, type LegendCareer } from "./index";
 
@@ -39,6 +40,12 @@ describe("FormField", () => {
     expect(screen.getByRole("textbox", { name: "Nombre" })).not.toHaveAttribute("aria-invalid");
     expect(screen.getByRole("textbox", { name: "Nombre" })).not.toHaveAttribute("aria-describedby");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+  it("places an inline control before its label", () => {
+    render(<FormField inline id="subject" label="Física I" description="Inactiva."><Checkbox /></FormField>);
+    const control = screen.getByRole("checkbox", { name: "Física I" });
+    expect(control).toHaveAccessibleDescription("Inactiva.");
+    expect(control.compareDocumentPosition(screen.getByText("Física I")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 

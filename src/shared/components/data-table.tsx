@@ -24,6 +24,8 @@ export interface DataTableProps<T> {
   rowActions?: (row: T) => ReactNode;
   stickyHeader?: boolean;
   loading?: boolean;
+  /** Announced name of the loading skeleton. */
+  loadingLabel?: string;
   empty?: ReactNode;
   error?: ReactNode;
 }
@@ -31,12 +33,12 @@ export interface DataTableProps<T> {
 /** One row model drives both the comparison table and the Compact priority list. */
 export function DataTable<T>({
   label, rows, identityColumn, columns, getRowKey, rowActions,
-  stickyHeader = false, loading = false, empty, error,
+  stickyHeader = false, loading = false, loadingLabel = "Cargando registros", empty, error,
 }: DataTableProps<T>) {
   if (loading) {
     return (
-      <div role="status" aria-label="Cargando registros" aria-busy="true" className="space-y-2 py-2">
-        <span className="sr-only">Cargando registros</span>
+      <div role="status" aria-label={loadingLabel} aria-busy="true" className="space-y-2 py-2">
+        <span className="sr-only">{loadingLabel}</span>
         {Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-row w-full" />)}
       </div>
     );
@@ -81,7 +83,10 @@ export function DataTable<T>({
       <ul aria-label={label} className="divide-y divide-border md:hidden">
         {rows.map((row) => (
           <li key={getRowKey(row)} className="space-y-3 py-3">
-            <div className="text-sm font-semibold">{identityColumn.cell(row)}</div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 text-sm font-semibold">{identityColumn.cell(row)}</div>
+              {rowActions && <div className="flex shrink-0 flex-wrap justify-end gap-2">{rowActions(row)}</div>}
+            </div>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
               {columns.map((column) => (
                 <div key={column.id} className={cn("min-w-0 space-y-1", column.compactClassName)}>
@@ -90,7 +95,6 @@ export function DataTable<T>({
                 </div>
               ))}
             </dl>
-            {rowActions && <div className="flex flex-wrap gap-2">{rowActions(row)}</div>}
           </li>
         ))}
       </ul>

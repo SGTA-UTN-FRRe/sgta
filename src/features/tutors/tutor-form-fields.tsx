@@ -97,7 +97,7 @@ export function TutorFormFields({ catalogOptions, detailLoading, detailUnavailab
       Seleccionar las materias asociadas a la carrera del tutor.
     </p>
     {fieldErrors.subjectIds && <p id="tutor-subjects-error" role="alert" className="text-sm text-destructive">{fieldErrors.subjectIds}</p>}
-    <div className="mt-4 space-y-4">
+    <div className="mt-4 space-y-3">
       {form.primaryCareerId === "" ? (
         <p className="text-sm text-muted-foreground">Seleccionar una carrera para ver sus materias.</p>
       ) : subjectOptions.length === 0 ? (
@@ -108,10 +108,10 @@ export function TutorFormFields({ catalogOptions, detailLoading, detailUnavailab
           const inactive = subject.status === "INACTIVE";
 
           return (
-            <FormField key={subject.id} id={`tutor-subject-${subject.id}`} label={subject.name} description={inactive ? "Inactiva · se conserva como antecedente" : undefined}>
+            <FormField inline key={subject.id} id={`tutor-subject-${subject.id}`} label={subject.name} description={inactive ? "Inactiva · se conserva como antecedente" : undefined}>
               <Checkbox
                 checked={checked}
-              disabled={isView || detailLoading || detailUnavailable || inactive}
+                disabled={isView || detailLoading || detailUnavailable || inactive}
                 onCheckedChange={() => toggleSubject(subject.id)}
                 aria-describedby={fieldErrors.subjectIds ? "tutor-subjects-error" : undefined}
                 aria-invalid={Boolean(fieldErrors.subjectIds)}
