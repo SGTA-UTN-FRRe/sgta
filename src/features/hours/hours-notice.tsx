@@ -6,13 +6,15 @@ import { cn } from "@/shared/utils";
 export function ActionLink({
   href,
   label,
+  size = "sm",
 }: {
   href: string;
   label: string;
+  size?: "default" | "sm";
 }) {
   return (
     <Link
-      className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}
+      className={cn(buttonVariants({ size, variant: "outline" }), "gap-1.5")}
       href={href}
     >
       {label}

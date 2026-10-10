@@ -116,7 +116,7 @@ export function MovementDialog({ category, data, date, direction, durationHours,
                 </FormField>
               </div>
             </fieldset>
-            <FormField id="movement-date" label="Fecha administrativa">
+            <FormField id="movement-date" label="Fecha">
               <Input type="date" value={date} required disabled={submitting} onChange={(event) => onDateChange(event.target.value)} />
             </FormField>
             <FormField id="movement-note" label="Nota">

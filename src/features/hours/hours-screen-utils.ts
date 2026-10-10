@@ -42,13 +42,13 @@ export const defaultStateDetails: Partial<Record<HoursScreenState, HoursStateDet
     title: "No se pudieron cargar las horas",
   },
   loading: {
-    description: "Estamos preparando los balances del ciclo actual.",
+    description: "Preparando los saldos del ciclo actual.",
     title: "Cargando saldos",
   },
   "search-empty": {
     actionLabel: "Limpiar filtros",
-    description: "Probar con otro nombre o limpiar los filtros.",
-    title: "No encontramos balances",
+    description: "No hay resultados para la búsqueda actual.",
+    title: "No encontramos saldos",
   },
   "required-action": {
     actionHref: "/admin/settings",

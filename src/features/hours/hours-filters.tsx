@@ -23,7 +23,7 @@ export function HoursFilters({ categories, category, categoryLabel, disabled, on
     <fieldset className="mt-6 min-w-0" disabled={disabled}>
       <legend className="sr-only">Buscar y filtrar saldos</legend>
       <FilterBar
-        search={{ id: "hours-search", label: "Buscar", value: search, placeholder: searchPlaceholder, onChange: onSearchChange }}
+        search={{ id: "hours-search", label: "Buscar tutor", value: search, placeholder: searchPlaceholder, onChange: onSearchChange }}
         filters={[
           { id: "hours-status", label: statusLabel, value: status === "all" ? "" : status,
             options: [{ value: "", label: "Todos" }, { value: "current", label: "Al día" }, { value: "owes", label: "Debe horas" }],

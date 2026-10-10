@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, Plus } from "lucide-react";
-import { type FormEvent, useCallback, useMemo, useRef, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/shared/components/empty-state";
@@ -79,6 +79,26 @@ export function HoursScreen({
     [category, history, search, status, workspace.balances],
   );
   const hasActiveFilters = Boolean(search || category || status !== "all");
+  const movementDraftDirty =
+    operation !== "MOVEMENT" ||
+    direction !== "CREDIT" ||
+    movementCategory !== firstMovementCategoryId(workspace.categories) ||
+    durationHours !== "01" ||
+    durationMinutes !== "30" ||
+    movementDate !== (workspace.currentCycle?.startDate ?? "") ||
+    movementNote !== "" ||
+    selectedTutorIds.length !== workspace.eligibleTutors.length;
+
+  useEffect(() => {
+    if (!movementDialogOpen || !movementDraftDirty) {
+      return;
+    }
+
+    // Dismissing the dialog keeps the draft; reloading or leaving the site asks for confirmation.
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [movementDialogOpen, movementDraftDirty]);
   const shouldShowSearchEmpty =
     screenState === "search-empty" ||
     (screenState === "default" && hasActiveFilters && filteredBalances.length === 0);
@@ -153,7 +173,7 @@ export function HoursScreen({
     setSearch("");
     setStatus("all");
     setCategory("");
-    setAnnouncement("Los filtros se limpiaron y la selección visible volvió a quedar explícita.");
+    setAnnouncement("Se limpiaron la búsqueda y los filtros.");
   }, []);
 
   const handleToggleAll = useCallback(() => {
@@ -333,17 +353,18 @@ export function HoursScreen({
         label={headerStateDetail.actionLabel ?? "Configurar ciclo"}
       />
     ) : (
-      <div className="flex flex-wrap gap-2">
-        <ActionLink href="/admin/hours/movements" label="Ver movimientos" />
-        <Button
-          disabled={screenState === "loading" || workspace.categories.length === 0 || workspace.eligibleTutors.length === 0}
-          onClick={(event) => openMovementDialog(event.currentTarget)}
-          type="button"
-        >
-          <Plus aria-hidden="true" />
-          Registrar movimiento
-        </Button>
-      </div>
+      <Button
+        disabled={screenState === "loading" || workspace.categories.length === 0 || workspace.eligibleTutors.length === 0}
+        onClick={(event) => openMovementDialog(event.currentTarget)}
+        type="button"
+      >
+        <Plus aria-hidden="true" />
+        Registrar movimiento
+      </Button>
+    );
+  const headerSecondaryActions =
+    screenState === "required-action" ? null : (
+      <ActionLink href="/admin/hours/movements" label="Ver movimientos" size="default" />
     );
 
   return (
@@ -352,7 +373,12 @@ export function HoursScreen({
         data-slot="hours-screen"
         data-state={screenState}
       >
-        <PageHeader action={headerAction} description={data.description} title="Horas" />
+        <PageHeader
+          action={headerAction}
+          description={data.description}
+          secondaryActions={headerSecondaryActions}
+          title="Horas"
+        />
 
         {screenState === "success" && (
           <HoursNotice
@@ -422,7 +448,7 @@ export function HoursScreen({
               statusLabel={data.statusFilterLabel}
             />
 
-            <p aria-live="polite" className="mt-4 text-sm text-muted-foreground">
+            <p aria-live="polite" className="sr-only">
               {screenState === "loading"
                 ? "Preparando los saldos del ciclo…"
                 : screenState === "empty"
@@ -460,8 +486,8 @@ export function HoursScreen({
                       Limpiar filtros
                     </Button>
                   }
-                  description={stateData?.description ?? "Probar con otro nombre o limpiar los filtros."}
-                  title={stateData?.title ?? "No encontramos balances"}
+                  description={stateData?.description ?? "No hay resultados para la búsqueda actual."}
+                  title={stateData?.title ?? "No encontramos saldos"}
                 />
               </div>
             )}

@@ -32,7 +32,7 @@ describe("HoursScreen", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Horas" })).toBeInTheDocument();
     expect(screen.getByText(data.description)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Registrar movimiento" })).toBeInTheDocument();
-    expect(screen.getByRole("searchbox", { name: "Buscar" })).toHaveAttribute(
+    expect(screen.getByRole("searchbox", { name: "Buscar tutor" })).toHaveAttribute(
       "placeholder",
       data.searchPlaceholder,
     );
@@ -52,12 +52,12 @@ describe("HoursScreen", () => {
     const user = userEvent.setup();
     render(<HoursScreen data={data} />);
 
-    await user.type(screen.getByRole("searchbox", { name: "Buscar" }), "Lucía");
+    await user.type(screen.getByRole("searchbox", { name: "Buscar tutor" }), "Lucía");
 
     expect(screen.queryByText("Benítez, Marina")).not.toBeInTheDocument();
     expect(screen.getAllByText("Funes, Lucía")).not.toHaveLength(0);
 
-    await user.clear(screen.getByRole("searchbox", { name: "Buscar" }));
+    await user.clear(screen.getByRole("searchbox", { name: "Buscar tutor" }));
     await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "owes");
 
     expect(screen.queryByText("Benítez, Marina")).not.toBeInTheDocument();
@@ -84,7 +84,7 @@ describe("HoursScreen", () => {
     expect(within(dialog).getByLabelText("Categoría")).toHaveValue(data.categories[0].id);
     expect(within(dialog).getByLabelText("Horas")).toHaveValue(1);
     expect(within(dialog).getByLabelText("Minutos")).toHaveValue(30);
-    expect(within(dialog).getByLabelText("Fecha administrativa")).toHaveValue("2026-08-01");
+    expect(within(dialog).getByLabelText("Fecha")).toHaveValue("2026-08-01");
     expect(within(dialog).getByLabelText("Nota")).toBeInTheDocument();
     expect(
       within(dialog).getByText(
@@ -101,6 +101,27 @@ describe("HoursScreen", () => {
     expect(
       within(dialog).getByText(/Débito · Guardia · Carga manual · 1 h 30 min · 3 tutores · 01\/08\/2026/),
     ).toBeInTheDocument();
+  });
+
+  it("keeps the movement draft after dismissal and guards reloads while the dialog has edits", async () => {
+    const user = userEvent.setup();
+    const reload = () => window.dispatchEvent(new Event("beforeunload", { cancelable: true }));
+    render(<HoursScreen data={data} />);
+    await user.click(screen.getByRole("button", { name: "Registrar movimiento" }));
+
+    let dialog = screen.getByRole("dialog", { name: "Registrar movimiento" });
+    expect(reload()).toBe(true);
+
+    await user.type(within(dialog).getByLabelText("Nota"), "Reunión de cierre");
+    expect(reload()).toBe(false);
+
+    await user.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+    expect(screen.queryByRole("dialog", { name: "Registrar movimiento" })).not.toBeInTheDocument();
+    expect(reload()).toBe(true);
+
+    await user.click(screen.getByRole("button", { name: "Registrar movimiento" }));
+    dialog = screen.getByRole("dialog", { name: "Registrar movimiento" });
+    expect(within(dialog).getByLabelText("Nota")).toHaveValue("Reunión de cierre");
   });
 
   it("supports activity credit and explicit recovery recognition", async () => {
