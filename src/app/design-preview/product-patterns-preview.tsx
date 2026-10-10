@@ -21,12 +21,13 @@ const records = [
 export function ProductPatternsPreview() {
   const [search, setSearch] = useState("");
   const [career, setCareer] = useState("");
+  const [type, setType] = useState("");
   const [selectedCareers, setSelectedCareers] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [notice, setNotice] = useState("");
-  const rows = records.filter((record) => record.name.toLowerCase().includes(search.toLowerCase()) && (!career || record.career === career) && (selectedCareers.length === 0 || selectedCareers.includes(record.career)));
+  const rows = records.filter((record) => record.name.toLowerCase().includes(search.toLowerCase()) && (!career || record.career === career) && (!type || record.recovery === (type === "recovery")) && (selectedCareers.length === 0 || selectedCareers.includes(record.career)));
   return (
     <section aria-labelledby="patterns-heading" className="space-y-6" id="product-patterns">
       <h2 id="patterns-heading" className="font-display text-xl font-semibold">Patrones de producto</h2>
@@ -35,8 +36,11 @@ export function ProductPatternsPreview() {
       <CareerLegend careers={careers} selectedCareerIds={selectedCareers} onSelectedCareerIdsChange={setSelectedCareers}
         summary={`Mostrando ${records.filter((record) => selectedCareers.length === 0 || selectedCareers.includes(record.career)).length} de ${records.length} asignaciones`} />
       <FilterBar search={{ id: "pattern-search", label: "Buscar tutor", value: search, onChange: setSearch }}
-        filters={[{ id: "pattern-career", label: "Carrera", value: career, onChange: setCareer, options: [{ value: "", label: "Todas las carreras" }, ...careers.map(({ id, name }) => ({ value: id, label: name }))] }]}
-        resultCount={rows.length} hasActiveFilters={!!search || !!career} onClear={() => { setSearch(""); setCareer(""); }} />
+        filters={[
+          { id: "pattern-career", label: "Carrera", value: career, onChange: setCareer, options: [{ value: "", label: "Todas las carreras" }, ...careers.map(({ id, name }) => ({ value: id, label: name }))] },
+          { id: "pattern-type", label: "Tipo", value: type, onChange: setType, options: [{ value: "", label: "Todos" }, { value: "guard", label: "Guardia" }, { value: "recovery", label: "Recuperación" }] },
+        ]}
+        resultCount={rows.length} hasActiveFilters={!!search || !!career || !!type} onClear={() => { setSearch(""); setCareer(""); setType(""); }} />
       <DataTable label="Asignaciones de ejemplo" rows={rows} getRowKey={(row) => row.id} stickyHeader
         identityColumn={{ id: "name", header: "Tutor", cell: (row) => row.name }}
         columns={[
@@ -44,7 +48,7 @@ export function ProductPatternsPreview() {
           { id: "status", header: "Tipo", cell: (row) => row.recovery ? <StatusBadge variant="neutral" icon={RotateCcw}>Recuperación</StatusBadge> : <StatusBadge variant="info">Guardia</StatusBadge> },
         ]}
         rowActions={(row) => <Button variant="ghost" aria-label={`Editar asignación de ${row.name}`} onClick={() => setOpen(true)}>Editar</Button>}
-        empty={<SystemState variant="empty" title="Sin resultados" description="Modificar la búsqueda o los filtros." action={<Button variant="ghost" onClick={() => { setSearch(""); setCareer(""); setSelectedCareers([]); }}>Limpiar filtros</Button>} />} />
+        empty={<SystemState variant="empty" title="Sin resultados" description="Modificar la búsqueda o los filtros." action={<Button variant="ghost" onClick={() => { setSearch(""); setCareer(""); setType(""); setSelectedCareers([]); }}>Limpiar filtros</Button>} />} />
       <div className="grid gap-6 md:grid-cols-2">
         <FormField id="pattern-name" label="Nombre" description="Nombre completo del tutor."><Input defaultValue="Camila Pérez" /></FormField>
         <FormField id="pattern-email" label="Correo" error="El correo es obligatorio."><Input type="email" /></FormField>
