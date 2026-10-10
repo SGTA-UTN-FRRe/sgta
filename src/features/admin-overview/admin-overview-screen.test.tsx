@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { adminOverviewScreenData } from "@/mocks/admin-overview.mock";
@@ -8,6 +8,11 @@ import { AdminOverviewScreen } from "./admin-overview-screen";
 
 const data = adminOverviewScreenData;
 const adminStates = adminOverviewStateCopy;
+
+function expectUpcomingTutor() {
+  expect(within(screen.getByRole("table", { name: "Guardias próximas" }))
+    .getByRole("rowheader", { name: data.upcomingDuties[0].tutor })).toBeInTheDocument();
+}
 
 describe("AdminOverviewScreen", () => {
   it("connects the cycle context, attention destinations, and upcoming duties", () => {
@@ -25,7 +30,7 @@ describe("AdminOverviewScreen", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: "Hoy" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(data.upcomingDuties[0].tutor)).toBeInTheDocument();
+    expectUpcomingTutor();
   });
 
   it("keeps the empty attention state useful while retaining today's list", () => {
@@ -35,7 +40,7 @@ describe("AdminOverviewScreen", () => {
       data.emptyAttentionLabel,
     );
     expect(screen.getByText(/la operación del ciclo está al día/i)).toBeInTheDocument();
-    expect(screen.getByText(data.upcomingDuties[0].tutor)).toBeInTheDocument();
+    expectUpcomingTutor();
   });
 
   it("preserves local consultation attention and internal operations when degraded", () => {
@@ -51,7 +56,7 @@ describe("AdminOverviewScreen", () => {
     );
     expect(screen.getByText(data.attention[0].label)).toBeInTheDocument();
     expect(screen.getByText(data.attention[1].label)).toBeInTheDocument();
-    expect(screen.getByText(data.upcomingDuties[0].tutor)).toBeInTheDocument();
+    expectUpcomingTutor();
   });
 
   it("uses structural loading placeholders for both operational sections", () => {
@@ -86,6 +91,30 @@ describe("AdminOverviewScreen", () => {
       "href",
       "/admin",
     );
-    expect(screen.getByText(data.upcomingDuties[0].tutor)).toBeInTheDocument();
+    expectUpcomingTutor();
+  });
+
+  it("retains dates, clock times, modalities, and schedule destinations in both layouts", () => {
+    render(<AdminOverviewScreen data={data} />);
+    for (const layout of [screen.getByRole("table", { name: "Guardias próximas" }), screen.getByRole("list", { name: "Guardias próximas" })]) {
+      const duty = data.upcomingDuties[0];
+      const action = within(layout).getByRole("link", { name: `Ver horarios de ${duty.tutor}` });
+      expect(action).toHaveAttribute("href", `/admin/schedules?date=${duty.date}`);
+      const row = action.closest("tr, li") as HTMLElement;
+      expect(within(row).getByText(duty.time)).toBeInTheDocument();
+      expect(within(row).getByText(duty.modality)).toBeInTheDocument();
+      expect(row.querySelector("time")).toHaveAttribute("datetime", duty.date);
+    }
+  });
+
+  it("isolates attention and schedule failures without hiding available attention", () => {
+    const attentionFailure = { id: "hours", title: "No se pudieron cargar los saldos de horas", description: "Abrir Horas.", actionHref: "/admin/hours", actionLabel: "Abrir horas" };
+    const upcomingFailure = { id: "schedules", title: "No se pudieron cargar las guardias próximas", description: "Abrir Horarios.", actionHref: "/admin/schedules", actionLabel: "Abrir horarios" };
+    render(<AdminOverviewScreen data={{ ...data, attentionFailures: [attentionFailure], upcomingFailure }} />);
+    expect(screen.getAllByRole("alert")).toHaveLength(2);
+    expect(screen.getByRole("link", { name: /Consultas por revisar/ })).toHaveAttribute("href", data.attention[1].href);
+    expect(screen.getByRole("link", { name: "Abrir horas" })).toHaveAttribute("href", "/admin/hours");
+    expect(screen.getByRole("link", { name: "Abrir horarios" })).toHaveAttribute("href", "/admin/schedules");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 });

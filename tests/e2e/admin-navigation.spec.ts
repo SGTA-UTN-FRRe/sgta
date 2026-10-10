@@ -42,6 +42,10 @@ for (const viewport of [
 
     await navigate("Inicio");
     await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+    const duties = page.getByRole(viewport.layout === "compact" ? "list" : "table", { name: "Guardias próximas" });
+    await expect(duties).toBeVisible();
+    await expect(duties.getByRole("link", { name: /^Ver horarios de / }).first())
+      .toHaveAttribute("href", /\/admin\/schedules\?date=\d{4}-\d{2}-\d{2}$/);
     if (viewport.layout === "compact") {
       await activateWithKeyboard(page, page.getByRole("button", { name: "Abrir navegación" }));
     }
