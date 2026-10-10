@@ -42,7 +42,7 @@ export function FilterBar({ search, filters = [], essentialFilterId, resultCount
   const filterLabel = activeCount ? `Filtros, ${activeCount} ${activeCount === 1 ? "activo" : "activos"}` : "Filtros";
   return (
     <div role="search" aria-label="Buscar y filtrar" className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end" data-slot="filter-bar">
-      {search && <div className="min-w-0 flex-1 space-y-2">
+      {search && <div className="min-w-0 flex-1 space-y-2 md:min-w-48">
         <Label htmlFor={search.id}>{search.label}</Label>
         <Input id={search.id} type="search" value={search.value} placeholder={search.placeholder} onChange={(event) => search.onChange(event.target.value)} />
       </div>}

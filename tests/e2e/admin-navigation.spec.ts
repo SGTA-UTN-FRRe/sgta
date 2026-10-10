@@ -31,10 +31,10 @@ for (const viewport of [
     }
 
     await page.goto("/admin/tutors");
-    const tutorName = () => page.locator(`[data-layout="${viewport.layout}"]`).getByRole("button", { name: "Lovelace, Ada", exact: true });
+    const tutorName = () => page.getByRole(viewport.layout === "compact" ? "list" : "table", { name: "Lista de tutores" }).getByRole("button", { name: "Lovelace, Ada", exact: true });
     await activateWithKeyboard(page, tutorName());
     await expect(page.getByRole("dialog", { name: "Detalle de Lovelace, Ada" })).toBeVisible();
-    await expect(page.getByRole("dialog").getByRole("link", { name: "Ver horas" })).toBeVisible();
+    await expect(page.getByRole("dialog").getByRole("link", { name: /^Ver movimientos de / })).toBeVisible();
     await expect(page.getByText(/Cargando el detalle del tutor/)).toHaveCount(0);
     await page.screenshot({ path: testInfo.outputPath("tutor-detail.png"), fullPage: true });
     await page.keyboard.press("Escape");
@@ -59,7 +59,7 @@ for (const viewport of [
     await expect(tutorName()).toBeVisible();
     await expect(page.getByRole("button", { name: "Curie, Marie", exact: true })).toHaveCount(0);
     await activateWithKeyboard(page, tutorName());
-    await activateWithKeyboard(page, page.getByRole("dialog").getByRole("link", { name: "Ver horas" }));
+    await activateWithKeyboard(page, page.getByRole("dialog").getByRole("link", { name: /^Ver movimientos de / }));
     await expect(page).toHaveURL(new RegExp(`/admin/hours/movements\\?cycleId=${E2E_CYCLE_ID}&tutorId=${E2E_PRIMARY_TUTOR_ID}$`));
     await expect(page.getByRole("combobox", { name: "Tutor", exact: true })).toHaveValue(E2E_PRIMARY_TUTOR_ID);
 
@@ -67,8 +67,8 @@ for (const viewport of [
     await activateWithKeyboard(page, page.getByRole("link", { name: "Ver tutor Hopper, Grace" }));
     await expect(page.getByRole("searchbox", { name: "Buscar tutor" })).toHaveValue("Hopper, Grace");
     await expect(page.getByRole("button", { name: "Lovelace, Ada", exact: true })).toHaveCount(0);
-    await activateWithKeyboard(page, page.locator(`[data-layout="${viewport.layout}"]`).getByRole("button", { name: "Hopper, Grace", exact: true }));
-    await activateWithKeyboard(page, page.getByRole("dialog").getByRole("link", { name: "Ver horas" }));
+    await activateWithKeyboard(page, page.getByRole(viewport.layout === "compact" ? "list" : "table", { name: "Lista de tutores" }).getByRole("button", { name: "Hopper, Grace", exact: true }));
+    await activateWithKeyboard(page, page.getByRole("dialog").getByRole("link", { name: /^Ver movimientos de / }));
     await expect(page.getByRole("combobox", { name: "Tutor", exact: true })).toHaveValue(E2E_SECONDARY_TUTOR_ID);
 
     await page.goto(`/admin/reports?fromDate=2027-01-18&toDate=2027-01-18`);

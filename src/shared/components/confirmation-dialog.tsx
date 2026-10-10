@@ -21,11 +21,12 @@ export interface ConfirmationDialogProps {
   pendingLabel?: string;
   pending?: boolean;
   destructive?: boolean;
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 export function ConfirmationDialog({
   title, description, summary, trigger, open, onOpenChange, onConfirm,
-  confirmLabel = "Confirmar", pendingLabel = "Confirmando…", pending = false, destructive = false,
+  confirmLabel = "Confirmar", pendingLabel = "Confirmando…", pending = false, destructive = false, onCloseAutoFocus,
 }: ConfirmationDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(next) => { if (!pending) onOpenChange(next); }}>
@@ -33,6 +34,7 @@ export function ConfirmationDialog({
       <AlertDialogContent
         className="max-md:inset-y-0 max-md:left-0 max-md:w-full max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none max-md:flex max-md:flex-col"
         aria-busy={pending}
+        onCloseAutoFocus={onCloseAutoFocus}
         onEscapeKeyDown={(event) => { if (pending) event.preventDefault(); }}
       >
         <AlertDialogHeader>

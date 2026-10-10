@@ -69,6 +69,15 @@ describe("DataTable", () => {
     expect(screen.getByRole("status", { name: "Cargando registros" })).toHaveAttribute("aria-busy", "true");
     expect(screen.queryByText("Camila Pérez")).not.toBeInTheDocument();
   });
+  it("keeps secondary column visibility consistent between headers, cells, and Compact details", () => {
+    render(<DataTable {...props} columns={props.columns.map((column) => ({
+      ...column, className: "hidden lg:table-cell", compactClassName: "hidden",
+    }))} />);
+    const table = screen.getByRole("table", { name: "Tutores" });
+    expect(within(table).getByRole("columnheader", { name: "Minutos" })).toHaveClass("hidden", "lg:table-cell");
+    expect(within(table).getByRole("cell", { name: "90" })).toHaveClass("hidden", "lg:table-cell");
+    expect(within(screen.getByRole("list", { name: "Tutores" })).getByText("Minutos").parentElement).toHaveClass("hidden");
+  });
   it("shows an empty state and accepts recovery slots", () => {
     const { rerender } = render(<DataTable {...props} rows={[]} />);
     expect(screen.getByRole("status")).toHaveTextContent("Sin resultados");

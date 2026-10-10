@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -16,6 +17,17 @@ const tutorStates = tutorsStateFixtures;
 const fetchMock = vi.fn();
 
 vi.stubGlobal("fetch", fetchMock);
+
+// jsdom has no layout geometry; browser tests cover collision positioning.
+vi.mock("@/components/ui/dropdown-menu", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/components/ui/dropdown-menu")>();
+  return {
+    ...actual,
+    DropdownMenuContent: (props: ComponentProps<typeof actual.DropdownMenuContent>) => (
+      <actual.DropdownMenuContent {...props} avoidCollisions={false} />
+    ),
+  };
+});
 
 function detailFor(tutor: SafeTutorListItem = data.rows[0]): SafeTutorDetail {
   return {
@@ -52,16 +64,16 @@ describe("TutorsScreen", () => {
     window.history.replaceState({}, "", "/admin/tutors");
   });
 
-  it.each(["wide", "medium", "compact"])("opens detail from the tutor name in the %s layout and links to scoped hours", async (layout) => {
+  it.each(["table", "list"])("opens detail from the tutor name in the %s layout and links to scoped hours", async (layout) => {
     const user = userEvent.setup();
     const detail = detailFor();
     fetchMock.mockResolvedValue(Response.json({ tutor: detail }));
     const { container } = renderScreen();
-    const names = within(container.querySelector(`[data-layout="${layout}"]`) as HTMLElement);
+    const names = within(container.querySelector(layout === "table" ? "table" : "ul") as HTMLElement);
     const name = names.getByRole("button", { name: detail.formalName });
     await user.click(name);
     const dialog = await screen.findByRole("dialog", { name: `Detalle de ${detail.formalName}` });
-    expect(within(dialog).getByRole("link", { name: "Ver horas" })).toHaveAttribute(
+    expect(within(dialog).getByRole("link", { name: `Ver movimientos de ${detail.formalName}` })).toHaveAttribute(
       "href", `/admin/hours/movements?cycleId=${detail.currentCycle!.id}&tutorId=${detail.id}`,
     );
     expect(fetchMock).toHaveBeenCalledWith(`/api/admin/tutors/${detail.id}`, expect.anything());
@@ -75,7 +87,7 @@ describe("TutorsScreen", () => {
     fetchMock.mockResolvedValue(Response.json({ tutor: detailFor(tutor) }));
     render(<TutorsScreen catalogOptions={catalogOptions} data={{ ...data, rows: [tutor] }} />);
     await user.click(screen.getAllByRole("button", { name: tutor.formalName })[0]);
-    expect(within(await screen.findByRole("dialog")).queryByRole("link", { name: "Ver horas" })).not.toBeInTheDocument();
+    expect(within(await screen.findByRole("dialog")).queryByRole("link", { name: /Ver movimientos/ })).not.toBeInTheDocument();
   });
 
   it("honors a tutor search link on arrival", async () => {
@@ -84,7 +96,7 @@ describe("TutorsScreen", () => {
     fetchMock.mockResolvedValue(Response.json({ tutors: [tutor] }));
     renderScreen();
     expect(screen.getByRole("searchbox", { name: "Buscar tutor" })).toHaveValue(tutor.formalName);
-    await waitFor(() => expect(screen.getAllByRole("button", { name: tutor.formalName })).toHaveLength(3));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: tutor.formalName })).toHaveLength(2));
     expect(screen.queryByText(data.rows[3].formalName)).not.toBeInTheDocument();
     expect(new URL(String(fetchMock.mock.calls[0][0]), "http://localhost").searchParams.get("search")).toBe(tutor.formalName);
   });
@@ -94,7 +106,7 @@ describe("TutorsScreen", () => {
     fetchMock.mockResolvedValue(Response.json({ tutors: [tutor] }));
     render(<TutorsScreen catalogOptions={catalogOptions} data={data} initialSearch={tutor.formalName} />);
     expect(screen.getByRole("searchbox", { name: "Buscar tutor" })).toHaveValue(tutor.formalName);
-    await waitFor(() => expect(screen.getAllByRole("button", { name: tutor.formalName })).toHaveLength(3));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: tutor.formalName })).toHaveLength(2));
     expect(screen.queryByText(data.rows[0].formalName)).not.toBeInTheDocument();
   });
 
@@ -108,12 +120,12 @@ describe("TutorsScreen", () => {
       "placeholder",
       data.searchPlaceholder,
     );
-    expect(screen.getAllByRole("table")).toHaveLength(2);
+    expect(screen.getAllByRole("table")).toHaveLength(1);
     expect(
       screen.getAllByRole("button", {
         name: `Acciones para ${data.rows[0].formalName}`,
       }),
-    ).toHaveLength(3);
+    ).toHaveLength(2);
     expect(screen.getAllByText(data.rows[0].formalName)).not.toHaveLength(0);
   });
 
@@ -216,6 +228,23 @@ describe("TutorsScreen", () => {
     expect(document.activeElement).toBe(submitButton);
   });
 
+  it("preserves unsaved input when dismissal is canceled and discards only on confirmation", async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    const trigger = screen.getByRole("button", { name: "Agregar tutor" });
+    await user.click(trigger);
+    await user.type(screen.getByLabelText("Nombre"), "Marina");
+    await user.keyboard("{Escape}");
+    const confirmation = screen.getByRole("alertdialog", { name: "¿Cerrar la ficha?" });
+    await user.click(within(confirmation).getByRole("button", { name: "Cancelar" }));
+    expect(screen.getByLabelText("Nombre")).toHaveValue("Marina");
+    expect(fetchMock).not.toHaveBeenCalled();
+    await user.keyboard("{Escape}");
+    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Cerrar" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(trigger).toHaveFocus();
+  });
+
   it("returns focus to the row action that opened the tutor sheet", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValue(Response.json({ tutor: detailFor() }));
@@ -283,7 +312,7 @@ describe("TutorsScreen", () => {
     await user.click(screen.getByRole("button", { name: "Agregar tutor" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    expect(screen.getByRole("status")).toHaveTextContent("Cambios guardados");
+    expect(screen.getByText("Cambios guardados").closest('[role="status"]')).toHaveTextContent("Cambios guardados");
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/tutors",
       expect.objectContaining({
@@ -355,7 +384,7 @@ describe("TutorsScreen", () => {
     await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    expect(screen.getByRole("status")).toHaveTextContent("Cambios guardados");
+    expect(screen.getByText("Cambios guardados").closest('[role="status"]')).toHaveTextContent("Cambios guardados");
     expect(fetchMock).toHaveBeenCalledWith(
       `/api/admin/tutors/${data.rows[0].id}`,
       expect.objectContaining({
@@ -382,7 +411,7 @@ describe("TutorsScreen", () => {
 
     await user.click(screen.getByRole("button", { name: "Desactivar tutor" }));
 
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cambios guardados"));
+    await waitFor(() => expect(screen.getByText("Cambios guardados").closest('[role="status"]')).toHaveTextContent("Cambios guardados"));
     expect(fetchMock).toHaveBeenCalledWith(
       `/api/admin/tutors/${data.rows[0].id}/status`,
       expect.objectContaining({
@@ -399,18 +428,18 @@ describe("TutorsScreen", () => {
     const required = tutorStates.find((state) => state.state === "required-action");
 
     const { rerender } = renderScreen("empty");
-    expect(screen.getByRole("status")).toHaveTextContent(data.emptyTitle);
+    expect(screen.getByText(data.emptyTitle).closest('[role="status"]')).toHaveTextContent(data.emptyTitle);
     expect(screen.getAllByRole("button", { name: data.emptyAction })).toHaveLength(2);
 
     rerender(<TutorsScreen catalogOptions={catalogOptions} data={data} state="search-empty" />);
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(searchEmpty!.title));
+    await waitFor(() => expect(screen.getByText(searchEmpty!.title).closest('[role="status"]')).toHaveTextContent(searchEmpty!.title));
 
     rerender(<TutorsScreen catalogOptions={catalogOptions} data={data} state="error" />);
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(error!.title));
     expect(screen.getByRole("button", { name: error!.actionLabel })).toBeInTheDocument();
 
     rerender(<TutorsScreen catalogOptions={catalogOptions} data={data} state="success" />);
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cambios guardados"));
+    await waitFor(() => expect(screen.getByText("Cambios guardados").closest('[role="status"]')).toHaveTextContent("Cambios guardados"));
 
     rerender(<TutorsScreen catalogOptions={catalogOptions} data={data} state="required-action" />);
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(required!.title));
