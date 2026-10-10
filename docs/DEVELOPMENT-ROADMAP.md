@@ -14,7 +14,7 @@ The remaining work redesigns the existing interface on a shared design system,
 then moves through workflow hardening, production readiness, and a controlled
 operational cutover.
 
-**Current phase:** Design system foundation
+**Current phase:** Interface migration
 
 ## Constraints
 
@@ -30,8 +30,7 @@ operational cutover.
 
 | Phase | Outcome | Depends on |
 | --- | --- | --- |
-| Design system foundation | Re-express the approved direction as tokens, primitives, shared patterns, and one reference screen approved from screenshots; make verification foundations deterministic. | None |
-| Interface migration | Move every existing view onto the design system and publish reproducible README screenshots. | Design system foundation |
+| Interface migration | Move every existing view onto the design system and publish reproducible README screenshots. | None |
 | Access and lifecycle | Complete controlled Tutor access and safe account and cycle lifecycle behavior. | Interface migration |
 | Academic workflows | Improve Tutor discovery and academic relationship visibility. | Interface migration |
 | Operational calendars | Plan office and event calendars week by week from a permanent base, and publish them as shareable images and documents. | Interface migration |
@@ -39,101 +38,6 @@ operational cutover.
 | Academic agenda | Publish support classes (GETs) and exam dates with delegated management. | Access and lifecycle; Operational calendars |
 | Production readiness | Establish production services, secure operations, and proven recovery. | Access and lifecycle; Hours, consultations and reporting; Operational calendars; Academic agenda |
 | Cutover, pilot and first release | Migrate validated data, prove operation with users, and complete maintainer handover. | Production readiness |
-
-## Phase: Design system foundation
-
-### Objective
-
-The approved SGTA visual direction exists as tokens in code, a complete
-primitive layer, shared product patterns, and one reference screen, each
-approved from rendered screenshots. Fixtures, business dates, and browser
-verification are deterministic foundations for later work.
-
-### In scope
-
-- Run a baseline screenshot review of the main Admin and Tutor routes and
-  classify each finding as a design-system or a view-level problem.
-- Rewrite the project design in the current template while preserving the
-  approved brand colors, the Faro identity, Branded Product expression,
-  Operational density, and the neutral Spanish voice, and adding a friendlier
-  sans-serif heading face, neutral surfaces without pastel tints, navy ink actions, and a
-  saturated career palette. Register tokens as `oklch()` values with shadcn
-  semantic names plus product extensions for navigation, brand surfaces, and
-  status pairs, and remove the link to the retired design standard.
-- Implement the token registry in `src/app/globals.css` and expose spacing,
-  type, tracking, layering, and layout tokens to Tailwind so components need no
-  arbitrary values.
-- Complete the primitive layer from shadcn/ui, including label, select,
-  textarea, checkbox, dialog, alert dialog, sheet, dropdown menu, tabs, tooltip,
-  skeleton, and toast primitives as the product needs them, and reconcile the
-  existing button, badge, card, input, and table primitives. Dependency
-  additions are approved in the phase plan.
-- Add a development-only design preview route that renders the type scale,
-  every color token, controls in each variant and state, table rows, status
-  badges, an empty state, and a page header with the signature move.
-- Build shared product patterns from primitives: the application shell with an
-  Admin sidebar that becomes a sheet in Compact and a Tutor top navigation bar,
-  page header, data table, filter bar, form field, confirmation dialog, and
-  system states.
-- Add a lint rule that rejects raw `button`, `input`, `select`, `textarea`, and
-  `dialog` elements outside `src/components/ui/`, starting at warning level.
-- Rebuild Horarios at full fidelity as the reference screen for later
-  migrations: a weekly matrix of who is present each hour as the primary view
-  and career-colored blocks as the alternative, both labeled by the Tutor's
-  career and preferred display name; a career legend that filters both views;
-  discreet coverage indicators against a target of two in-person Tutors per
-  open hour, with opening hours inferred from the assignments; and a visible
-  range derived from the plan's assignments.
-- Replace the free-text assignment modality with a per-assignment `Presencial`
-  or `Virtual` choice, migrate existing values, and mark virtual assignments
-  with a secondary indicator that keeps the career color primary.
-- Let Admins assign a palette color to each career in Configuración, migrate
-  existing careers, and validate the color on the server.
-- Restructure the UI specification in the current template: global rules,
-  system states, a route inventory with a README screenshot column, and
-  per-view files under `design/ui-spec/`. Remove visual prose that duplicates
-  the project design.
-- Keep fixture-only data and copy out of production feature imports and remove
-  duplicated business-date logic in favor of the shared Argentina date boundary.
-- Make browser journeys independent of the machine's current date, pass only
-  explicitly allowlisted environment values to the E2E application process, and
-  validate the production-build prerequisite and execution limits.
-
-### Out of scope
-
-- Migrating views other than Horarios.
-- A dark color scheme.
-- New domain capabilities other than the career color and the assignment
-  modality, or changes to hour-accounting rules.
-- Configured opening hours, weekly planning, events, export, and drag and drop
-  (Operational calendars).
-- Production hosting, data migration, and external service cutover.
-
-### Exit criteria
-
-- The project design and UI specification follow the current templates and are
-  approved again after the user reviews the design preview screenshots; the
-  token registry and `src/app/globals.css` match.
-- The design preview route is unavailable in a production build, verified by an
-  automated check.
-- The raw-element lint rule flags a fixture containing each restricted element
-  and passes primitives and pages that compose them.
-- Horarios uses only primitives, shared patterns, and registered tokens, passes
-  the screenshot review in Constraints, and is approved by the user from
-  screenshots.
-- Every schedule assignment has an in-person or virtual modality validated by
-  the server, and existing values are migrated.
-- Every career has a palette color: existing careers are migrated, new careers
-  receive one, and the server rejects values outside the palette.
-- Token, primitive, and shell changes add no new Blocking or Major finding to
-  other views compared with the baseline screenshot review.
-- Production feature code does not import fixture modules, and server-side
-  business-date calculations use the shared date boundary.
-- Browser journeys pass with a fixed test date before the deadline in
-  Constraints.
-- E2E environment forwarding is enforced by an explicit allowlist; the runner
-  rejects a missing production build and has validated execution limits.
-- The required lint, type, unit, integration, build, and browser checks pass.
 
 ## Phase: Interface migration
 
