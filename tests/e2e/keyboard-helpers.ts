@@ -63,6 +63,35 @@ export async function activateWithKeyboard(page: Page, locator: Locator) {
   await page.keyboard.press("Enter");
 }
 
+export async function expectAccessibleOverlay(
+  page: Page,
+  { trigger, overlay }: { trigger: Locator; overlay: Locator },
+) {
+  await activateWithKeyboard(page, trigger);
+  await expect(overlay).toBeVisible();
+  await expect(overlay).toHaveAccessibleName(/\S/);
+  const expectFocusInside = () => expect.poll(() => overlay.evaluate(
+    (element) => element.contains(document.activeElement),
+  )).toBe(true);
+  await expectFocusInside();
+  const focusableCount = await overlay.evaluate((element) =>
+    Array.from(element.querySelectorAll<HTMLElement>(
+      'a[href], button, input, select, textarea, [tabindex], [contenteditable="true"]',
+    )).filter((control) => control.tabIndex >= 0
+      && !control.matches(":disabled, [aria-disabled=true]")
+      && !control.closest("[inert]")
+      && control.getClientRects().length > 0
+      && getComputedStyle(control).visibility !== "hidden").length,
+  );
+  for (let index = 0; index <= focusableCount; index += 1) {
+    await page.keyboard.press("Tab");
+    await expectFocusInside();
+  }
+  await page.keyboard.press("Escape");
+  await expect(overlay).toBeHidden();
+  await expect(trigger).toBeFocused();
+}
+
 export async function setCheckboxWithKeyboard(
   page: Page,
   locator: Locator,

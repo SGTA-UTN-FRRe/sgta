@@ -101,6 +101,45 @@ describe("FilterBar", () => {
     expect(screen.getByRole("status")).toHaveTextContent("3 resultados");
     expect(screen.queryByRole("button", { name: "Limpiar filtros" })).not.toBeInTheDocument();
   });
+  it("applies sheet filters immediately and restores trigger focus on Escape", async () => {
+    const user = userEvent.setup();
+    render(<Filters />);
+    const trigger = screen.getByRole("button", { name: "Filtros" });
+    await user.click(trigger);
+    const sheet = screen.getByRole("dialog", { name: "Filtros" });
+    const status = within(sheet).getByRole("combobox", { name: "Estado" });
+    expect(status).toHaveAttribute("id", "status-compact");
+    await user.selectOptions(status, "active");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAccessibleName("Filtros, 1 activo");
+    expect(screen.getByRole("combobox", { name: "Estado" })).toHaveValue("active");
+    expect(screen.getByRole("status")).toHaveTextContent("1 resultado");
+    await user.click(screen.getByRole("button", { name: "Limpiar filtros" }));
+    expect(trigger).toHaveAccessibleName("Filtros");
+  });
+  it.each([undefined, "career"])("keeps the essential filter inline without search (%s)", async (essentialFilterId) => {
+    const user = userEvent.setup();
+    const filters = [
+      { id: "status", label: "Estado", value: "active", options: [{ value: "active", label: "Activo" }], onChange: vi.fn() },
+      { id: "career", label: "Carrera", value: "systems", options: [{ value: "systems", label: "Sistemas" }], onChange: vi.fn() },
+    ];
+    render(<FilterBar filters={filters} essentialFilterId={essentialFilterId} resultCount={1} hasActiveFilters onClear={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Filtros, 1 activo" }));
+    const sheet = screen.getByRole("dialog", { name: "Filtros" });
+    expect(within(sheet).getByRole("combobox")).toHaveAccessibleName(essentialFilterId === "career" ? "Estado" : "Carrera");
+  });
+  it("counts secondary filters without counting search and omits an unnecessary sheet", () => {
+    const props = { resultCount: 0, hasActiveFilters: true, onClear: vi.fn() };
+    const search = { id: "search", label: "Buscar", value: "Camila", onChange: vi.fn() };
+    const filters = ["Estado", "Carrera"].map((label) => ({ id: label, label, value: "selected", options: [{ value: "selected", label: "Seleccionado" }], onChange: vi.fn() }));
+    const { rerender } = render(<FilterBar {...props} search={search} filters={filters} />);
+    expect(screen.getByRole("button", { name: "Filtros, 2 activos" })).toHaveTextContent("2");
+    rerender(<FilterBar {...props} filters={filters.slice(0, 1)} />);
+    expect(screen.queryByRole("button", { name: /Filtros/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Estado" })).toBeInTheDocument();
+  });
 });
 
 describe("CareerLegend", () => {

@@ -7,7 +7,7 @@ import {
   E2E_AUTH_SECRET,
   E2E_CYCLE_ID,
 } from "./e2e-test-data";
-import { activateWithKeyboard, focusWithKeyboard, selectWithKeyboard } from "./keyboard-helpers";
+import { activateWithKeyboard, expectAccessibleOverlay, focusWithKeyboard, selectWithKeyboard } from "./keyboard-helpers";
 import { addE2ESessionCookie } from "./session-cookie";
 
 const scheduleDate = "2027-01-18";
@@ -35,6 +35,11 @@ test.describe("authenticated Admin schedule planning", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Horarios" }),
     ).toBeVisible();
+
+    await expectAccessibleOverlay(page, {
+      trigger: page.getByRole("button", { name: "Nuevo plan", exact: true }),
+      overlay: page.getByRole("dialog", { name: "Crear plan de horario" }),
+    });
 
     const planSelector = page.getByRole("group", { name: "Planes de horario" });
     const specialPlan = planSelector.getByRole("button", {
