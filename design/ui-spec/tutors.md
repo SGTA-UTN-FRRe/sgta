@@ -9,10 +9,10 @@ Global rules, system states, and the route inventory live in [UI-SPEC](../UI-SPE
 ## Content order
 
 1. Page header with `Agregar tutor`.
-2. Search and filters: `Buscar tutor`, `Carrera`, `Estado`.
-3. Tutor list: Tutor, Carrera (career badge), Beca, Materias, Estado, and row actions.
+2. Search and filters: `Buscar tutor`, `Carrera`, `Estado`, the shared result count (`<n> resultado` or `<n> resultados`), and `Limpiar filtros` while any filter is active. In Compact only the search stays inline; `Carrera` and `Estado` move to the `Filtros` sheet.
+3. Tutor list: Tutor, Carrera (career badge), Beca, Materias (the count of assigned subjects), Estado, and row actions. The Tutor cell shows the formal name as the control that opens the detail sheet, `Datos incompletos` when applicable, and the cycle membership line.
 4. Selected Tutor detail or edit sheet.
-5. Link to the derived [Materias](subjects.md) subview.
+5. Link `Ver materias` to the derived [Materias](subjects.md) subview, below the list.
 
 Tutor data: id, first name, optional last name, optional preferred display name, optional institutional identifier, primary career, status, subject assignments, cycle membership, scholarship reference when available, and the optional provisioned Tutor account email for Admin-only account ownership management. Account identifiers and session or provider details never appear in Tutor-facing views.
 
@@ -38,20 +38,20 @@ Gestionar perfiles, carrera, materias y estado.
 
 ## Responsive exceptions
 
-- Medium: keep Tutor, Carrera, Materias, and Estado; move secondary data to row detail.
-- Compact: structured rows with the full name dominant and state and career visible; secondary actions move to a named row menu. The form sheet becomes full height, or a dedicated form page if the form becomes too long.
+- Medium: keep Tutor, Carrera, Materias, and Estado; `Beca` moves to the row detail sheet.
+- Compact: structured rows with the full name dominant and state and career visible; secondary actions move to a row menu named `Acciones para <Tutor>`. The form sheet and the confirmation dialogs become full height. The list shows every record without pagination, so it grows long with the registry.
 
 ## States
 
 | State | Treatment |
 | --- | --- |
 | Default | Search, filters, and the Tutor list. |
-| Loading | A list skeleton that preserves the columns. |
-| Empty | `Todavía no hay tutores` with `Agregar tutor`. |
-| Search empty | Clear search and filters. |
-| Error | Explain the load or save failure with a retry. |
-| Success | Toast or inline update. |
-| Required action | Missing academic catalog or cycle prerequisite, when applicable. |
+| Loading | A list skeleton that preserves the columns; the header action is disabled. |
+| Empty | `Todavía no hay tutores` with `Agregar el primer tutor para comenzar a organizar la cobertura.` and `Agregar tutor`. |
+| Search empty | `No encontramos tutores` with `Probar con otro nombre o limpiar los filtros.` and `Limpiar filtros`. |
+| Error | A load failure shows the system error state `No se pudo cargar la lista` with `Reintentar`; a save or status failure shows a form banner or a message inside the confirmation dialog and preserves the input. |
+| Success | An inline `Cambios guardados` notice with the concise confirmation. |
+| Required action | Without an open cycle, `Abrir un ciclo para gestionar tutores` with `Configurar ciclo`; without an active career, `Completar el catálogo académico` with `Configurar catálogo`. Both link to Configuración. |
 
 ## Copy
 
@@ -63,20 +63,22 @@ Gestionar perfiles, carrera, materias y estado.
 | Empty | `Todavía no hay tutores` with `Agregar tutor` |
 | Incomplete data | Datos incompletos |
 | Deactivate action | Desactivar tutor |
+| Reactivate action | Reactivar |
+| Movement link | `Ver movimientos` |
+| Unsaved changes | `¿Cerrar la ficha?`, `Hay cambios sin guardar.`, `Cerrar`, `Cancelar` |
 | Error | Form banner with field errors; system error state for loads |
-| Success | Concise confirmation |
+| Success | `El tutor se agregó correctamente.`, `Los datos del tutor se actualizaron correctamente.`, `El tutor se desactivó y sus antecedentes se conservaron.`, `El tutor se reactivó correctamente.` |
 
 ## Interaction: Add or edit a Tutor
 
-A right side sheet in Wide and Medium with these sections:
+A right side sheet, full height in Compact, titled `Agregar tutor`, `Editar <Tutor>`, or `Detalle de <Tutor>`, with a visible `Cerrar panel de tutor` control and a footer holding `Cerrar` and the submit action (`Agregar tutor` or `Guardar cambios`, disabled until the form changes). The detail mode is read-only and offers `Ver movimientos` when the Tutor belongs to the open cycle. The sheet has these sections:
 
-1. Identidad
-2. Contexto académico
-3. Materias
-4. Ciclo y beca
-5. Cuenta de acceso
-6. Estado
-
+1. Identidad: `Nombre` (required), `Apellido (opcional)`, `Nombre preferido (opcional)`, `Identificador institucional (opcional)`.
+2. Contexto académico: `Carrera` (required) with its career badge. Changing the career clears the selected subjects.
+3. Materias: the subjects of the selected career as labeled checkboxes with a selection count. Inactive subjects stay visible, disabled, marked `Inactiva · se conserva como antecedente`.
+4. Ciclo y beca: `Ciclo abierto` and `Referencia de beca (opcional)`; inactive references stay visible and disabled.
+5. Cuenta de acceso: `Correo de la cuenta habilitada (opcional)`.
+6. Estado: the current status badge; a new Tutor is created active and later changes use the row actions.
 Account linking:
 
 - The Admin may enter the normalized email of an existing enabled provisioned Tutor account.
@@ -90,18 +92,18 @@ Validation:
 - A duplicate institutional identifier is prevented when present.
 - Duplicate subject assignments are prevented.
 
-Success closes the sheet or keeps it open according to the action, updates the list, and shows concise feedback. A server error shows a form banner and inline field errors and preserves valid input. Unsaved changes require confirmation before a destructive dismissal or navigation.
+Success closes the sheet, updates the list, and shows concise feedback. A server error shows a form banner and inline field errors and preserves valid input. Unsaved changes require confirmation before dismissing the sheet by the close control, `Cerrar`, or Escape; the confirmation is the shared alert dialog with the copy above and returns focus to the sheet's close control. Leaving the page by browser navigation or reload is not intercepted.
 
 ## Interaction: Deactivate
 
-`Desactivar tutor` opens the confirmation dialog, states what remains preserved, and on confirmation updates the state without destroying history. Historical Tutors are never hard-deleted.
+`Desactivar tutor` opens the confirmation dialog, which states that the Tutor becomes inactive and that subjects and cycle history are preserved, and on confirmation updates the state without destroying history. `Reactivar` uses the same dialog and states that the Tutor becomes available again. A failure stays inside the dialog and allows retry. Historical Tutors are never hard-deleted.
 
 ## Accessibility
 
 - Table headers have semantic scope.
-- The row menu's accessible name includes the Tutor's identity.
+- Row actions carry the Tutor's identity in their accessible names: `Editar <Tutor>`, `Ver materias de <Tutor>`, `Desactivar tutor <Tutor>` or `Reactivar <Tutor>`, and in Compact the menu `Acciones para <Tutor>`. The movements link in the detail sheet is named `Ver movimientos de <Tutor>`.
 - The sheet is named and traps focus.
-- The deactivation dialog returns focus to the triggering action.
+- The status confirmation dialog returns focus to the triggering action.
 - Filter labels stay programmatically associated.
 
 ## Acceptance criteria
