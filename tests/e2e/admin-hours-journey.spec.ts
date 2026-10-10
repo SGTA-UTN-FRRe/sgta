@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test, waitForHydration } from "./fixtures";
 import { makeSignature } from "better-auth/crypto";
 
 import {
@@ -12,6 +12,7 @@ import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 import { addE2ESessionCookie } from "./session-cookie";
 import {
   activateWithKeyboard,
+  expectAccessibleOverlay,
   selectWithKeyboard,
   setCheckboxWithKeyboard,
 } from "./keyboard-helpers";
@@ -35,9 +36,13 @@ test.describe("authenticated Admin hour operations", () => {
       page.getByRole("heading", { level: 1, name: "Horas" }),
     ).toBeVisible();
     await expect(
-      page.locator(`article#balance-${E2E_PRIMARY_TUTOR_ID}`),
+      page.getByRole("list", { name: "Saldos de horas" }).getByRole("listitem").filter({ hasText: "Lovelace, Ada" }),
     ).toBeVisible();
 
+    await expectAccessibleOverlay(page, {
+      trigger: page.getByRole("button", { name: "Registrar movimiento" }),
+      overlay: page.getByRole("dialog", { name: "Registrar movimiento" }),
+    });
     await activateWithKeyboard(page, page.getByRole("button", { name: "Registrar movimiento" }));
     const movementDialog = page.getByRole("dialog", {
       name: "Registrar movimiento",
@@ -73,7 +78,20 @@ test.describe("authenticated Admin hour operations", () => {
     await expect(selectedTutor).not.toBeChecked();
 
     await selectWithKeyboard(page, movementDialog.getByLabel("Categoría"), E2E_MEETING_CATEGORY_ID);
+    await page.setViewportSize({ width: 390, height: 640 });
     await movementDialog.getByLabel("Nota").fill("E2E meeting credit");
+    await expect(movementDialog.getByRole("heading", { name: "Registrar movimiento" })).toBeInViewport();
+    await page.route("**/api/admin/hours/movements", (route) => route.fulfill({
+      status: 409, json: { error: "inactive_category" },
+    }));
+    await movementDialog.getByRole("button", { name: "Registrar movimientos" }).click();
+    await expect(movementDialog.getByRole("alert")).toContainText("No se registró ningún movimiento.");
+    await expect(movementDialog.getByRole("alert")).toBeInViewport();
+    await expect(movementDialog.getByRole("heading", { name: "Registrar movimiento" })).toBeInViewport();
+    await expect(movementDialog.getByRole("button", { name: "Registrar movimientos" })).toBeInViewport();
+    await expect(movementDialog.getByLabel("Nota")).toHaveValue("E2E meeting credit");
+    await page.unroute("**/api/admin/hours/movements");
+    await page.setViewportSize({ width: 390, height: 844 });
     await activateWithKeyboard(
       page,
       movementDialog.getByRole("button", { name: "Registrar movimientos" }),
@@ -83,24 +101,24 @@ test.describe("authenticated Admin hour operations", () => {
       page.getByRole("status").filter({ hasText: "Origen: Reunión" }),
     ).toContainText("Origen: Reunión");
     await expect(
-      page.locator(`article#balance-${E2E_PRIMARY_TUTOR_ID}`),
-    ).toContainText("+02:00");
+      page.getByRole("list", { name: "Saldos de horas" }).getByRole("listitem").filter({ hasText: "Lovelace, Ada" }),
+    ).toContainText("2 h");
 
     await page.setViewportSize({ width: 820, height: 900 });
     await expect(
-      page.locator(
-        `div.hidden.md\\:block.lg\\:hidden tr#balance-${E2E_PRIMARY_TUTOR_ID}`,
-      ),
-    ).toContainText("+02:00");
+      page.getByRole("table", { name: "Saldos de horas" }).getByRole("row").filter({ hasText: "Lovelace, Ada" }),
+    ).toContainText("2 h");
 
     await page.setViewportSize({ width: 1280, height: 900 });
-    const primaryBalance = page.locator(
-      `div.hidden.lg\\:block tr#balance-${E2E_PRIMARY_TUTOR_ID}`,
-    );
-    await expect(primaryBalance).toContainText("+02:00");
+    const primaryBalance = page.getByRole("table", { name: "Saldos de horas" }).getByRole("row").filter({ hasText: "Lovelace, Ada" });
+    await expect(primaryBalance).toContainText("2 h");
+    await expectAccessibleOverlay(page, {
+      trigger: primaryBalance.getByRole("button", { name: "Ver movimientos de Lovelace, Ada" }),
+      overlay: page.getByRole("dialog", { name: "Lovelace, Ada" }),
+    });
     await activateWithKeyboard(
       page,
-      primaryBalance.getByRole("button", { name: "Ver movimientos" }),
+      primaryBalance.getByRole("button", { name: "Ver movimientos de Lovelace, Ada" }),
     );
 
     const contextualHistory = page.getByRole("dialog", {
@@ -112,7 +130,7 @@ test.describe("authenticated Admin hour operations", () => {
     ).toBeVisible();
     await activateWithKeyboard(
       page,
-      contextualHistory.getByRole("link", { name: "Ver historial completo" }),
+      contextualHistory.getByRole("link", { name: "Ver movimientos de Lovelace, Ada" }),
     );
 
     await expect(page).toHaveURL(
@@ -123,6 +141,7 @@ test.describe("authenticated Admin hour operations", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Movimientos" }),
     ).toBeVisible();
+    await waitForHydration(page);
     await expect(page.getByLabel("Tutor", { exact: true })).toHaveValue(
       E2E_PRIMARY_TUTOR_ID,
     );

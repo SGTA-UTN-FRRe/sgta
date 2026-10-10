@@ -24,6 +24,8 @@ export interface DataTableProps<T> {
   rowActions?: (row: T) => ReactNode;
   stickyHeader?: boolean;
   loading?: boolean;
+  /** Announced name of the loading skeleton. */
+  loadingLabel?: string;
   empty?: ReactNode;
   error?: ReactNode;
 }
@@ -31,12 +33,12 @@ export interface DataTableProps<T> {
 /** One row model drives both the comparison table and the Compact priority list. */
 export function DataTable<T>({
   label, rows, identityColumn, columns, getRowKey, rowActions,
-  stickyHeader = false, loading = false, empty, error,
+  stickyHeader = false, loading = false, loadingLabel = "Cargando registros", empty, error,
 }: DataTableProps<T>) {
   if (loading) {
     return (
-      <div role="status" aria-label="Cargando registros" aria-busy="true" className="space-y-2 py-2">
-        <span className="sr-only">Cargando registros</span>
+      <div role="status" aria-label={loadingLabel} aria-busy="true" className="space-y-2 py-2">
+        <span className="sr-only">{loadingLabel}</span>
         {Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-row w-full" />)}
       </div>
     );

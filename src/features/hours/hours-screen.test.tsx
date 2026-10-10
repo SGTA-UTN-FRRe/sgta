@@ -26,7 +26,7 @@ describe("HoursScreen", () => {
     fetchMock.mockReset();
   });
 
-  it("renders live balances with signed values and text statuses", () => {
+  it("renders unsigned balances with text statuses in a shared table and Compact list", () => {
     render(<HoursScreen data={data} />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Horas" })).toBeInTheDocument();
@@ -36,13 +36,13 @@ describe("HoursScreen", () => {
       "placeholder",
       data.searchPlaceholder,
     );
-    expect(screen.getAllByRole("table")).toHaveLength(2);
-    expect(screen.getAllByText("+02:30")).not.toHaveLength(0);
+    expect(screen.getAllByRole("table")).toHaveLength(1);
+    expect(screen.getAllByText("2 h 30 min")).not.toHaveLength(0);
     expect(screen.getAllByText("Al día")).not.toHaveLength(0);
     expect(screen.getAllByText("Debe horas")).not.toHaveLength(0);
     const name = data.balances[0].tutor.formalName;
     const links = screen.getAllByRole("link", { name: `Ver tutor ${name}` });
-    expect(links).toHaveLength(3);
+    expect(links).toHaveLength(2);
     for (const link of links) {
       expect(link).toHaveAttribute("href", `/admin/tutors?search=${encodeURIComponent(name)}`);
     }
@@ -63,7 +63,7 @@ describe("HoursScreen", () => {
     expect(screen.queryByText("Benítez, Marina")).not.toBeInTheDocument();
     expect(screen.getAllByText("Acosta, Tomás")).not.toHaveLength(0);
 
-    await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "all");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "");
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Categoría" }),
       data.categories.find((category) => category.name === "Actividad extraordinaria")!.id,
@@ -88,7 +88,7 @@ describe("HoursScreen", () => {
     expect(within(dialog).getByLabelText("Nota")).toBeInTheDocument();
     expect(
       within(dialog).getByText(
-        "Registrar movimiento · Crédito · Reunión de equipo · Reunión · 01:30 · 3 tutores · 01/08/2026",
+        "Registrar movimiento · Crédito · Reunión de equipo · Reunión · 1 h 30 min · 3 tutores · 01/08/2026",
       ),
     ).toBeInTheDocument();
 
@@ -99,7 +99,7 @@ describe("HoursScreen", () => {
     await user.click(within(dialog).getByRole("radio", { name: "Débito" }));
 
     expect(
-      within(dialog).getByText(/Débito · Guardia · Carga manual · 01:30 · 3 tutores · 01\/08\/2026/),
+      within(dialog).getByText(/Débito · Guardia · Carga manual · 1 h 30 min · 3 tutores · 01\/08\/2026/),
     ).toBeInTheDocument();
   });
 
@@ -148,6 +148,22 @@ describe("HoursScreen", () => {
     expect(selectAll).toHaveAttribute("aria-checked", "true");
   });
 
+  it("keeps hidden tutor selections explicit while searching and clearing the selector", async () => {
+    const user = userEvent.setup();
+    render(<HoursScreen data={data} />);
+    await user.click(screen.getByRole("button", { name: "Registrar movimiento" }));
+    const dialog = screen.getByRole("dialog", { name: "Registrar movimiento" });
+    await user.type(within(dialog).getByRole("searchbox", { name: "Buscar tutor" }), "Marina");
+    expect(within(dialog).queryByRole("checkbox", { name: "Seleccionar a Funes, Lucía" })).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("status")).toHaveTextContent("3 de 3 tutores seleccionados; la selección incluye los tutores ocultos por la búsqueda");
+    await user.click(within(dialog).getByRole("checkbox", { name: "Seleccionar a Benítez, Marina" }));
+    expect(within(dialog).getByRole("checkbox", { name: "Seleccionar todos" })).toHaveAttribute("aria-checked", "mixed");
+    await user.clear(within(dialog).getByRole("searchbox", { name: "Buscar tutor" }));
+    expect(within(dialog).getByRole("checkbox", { name: "Seleccionar a Funes, Lucía" })).toBeChecked();
+    expect(within(dialog).getByRole("checkbox", { name: "Seleccionar a Benítez, Marina" })).not.toBeChecked();
+    expect(within(dialog).getByRole("status")).toHaveTextContent("2 de 3 tutores seleccionados");
+  });
+
   it("announces a successful atomic submission and refreshes balances and history", async () => {
     const user = userEvent.setup();
     const recordedMovement = {
@@ -184,12 +200,12 @@ describe("HoursScreen", () => {
     await user.click(screen.getByRole("button", { name: "Registrar movimientos" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
+      expect(screen.getAllByRole("status").find((element) => element.textContent?.includes("Origen:"))).toHaveTextContent(
         "Se registraron movimientos para 1 tutor. Origen: Reunión.",
       ),
     );
     expect(screen.queryByRole("dialog", { name: "Registrar movimiento" })).not.toBeInTheDocument();
-    expect(screen.getAllByText("+04:00")).not.toHaveLength(0);
+    expect(screen.getAllByText("4 h")).not.toHaveLength(0);
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
       "/api/admin/hours/movements",
@@ -234,10 +250,10 @@ describe("HoursScreen", () => {
     await user.click(screen.getByRole("button", { name: "Registrar movimientos" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(/Origen: Reun/),
+      expect(screen.getAllByRole("status").find((element) => element.textContent?.includes("Origen:"))).toHaveTextContent(/Origen: Reun/),
     );
-    expect(screen.getByRole("status")).toHaveTextContent(/No se pudo actualizar/);
-    expect(screen.getAllByText("+04:00")).not.toHaveLength(0);
+    expect(screen.getAllByRole("status").find((element) => element.textContent?.includes("Origen:"))).toHaveTextContent(/No se pudo actualizar/);
+    expect(screen.getAllByText("4 h")).not.toHaveLength(0);
   });
 
   it("keeps valid transaction input and states that nothing was recorded on failure", async () => {
@@ -306,11 +322,11 @@ describe("HoursScreen", () => {
     expect(screen.getByRole("status", { name: "Cargando saldos" })).toBeInTheDocument();
 
     rerender(<HoursScreen data={data} state="empty" />);
-    expect(screen.getByRole("status")).toHaveTextContent("Todavía no hay saldos");
+    expect(screen.getByRole("heading", { name: "Todavía no hay saldos" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Registrar movimiento" })).toHaveLength(2);
 
     rerender(<HoursScreen data={data} state="search-empty" />);
-    expect(screen.getByRole("status")).toHaveTextContent(searchEmpty!.title);
+    expect(screen.getByRole("heading", { name: searchEmpty!.title })).toBeInTheDocument();
 
     rerender(
       <HoursScreen
@@ -327,10 +343,10 @@ describe("HoursScreen", () => {
     );
 
     rerender(<HoursScreen data={data} state="success" />);
-    expect(screen.getByRole("status")).toHaveTextContent("Movimiento registrado");
+    expect(screen.getByText("Movimiento registrado")).toBeInTheDocument();
 
     rerender(<HoursScreen data={data} state="required-action" />);
-    expect(screen.getByRole("status")).toHaveTextContent(required!.title);
+    expect(screen.getByRole("heading", { name: required!.title })).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: required!.actionLabel })).toHaveLength(2);
   });
 });
