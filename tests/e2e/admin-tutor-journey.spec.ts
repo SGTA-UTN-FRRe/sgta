@@ -10,6 +10,7 @@ import { addE2ESessionCookie } from "./session-cookie";
 import {
   activateWithKeyboard,
   expectReducedMotion,
+  expectAccessibleOverlay,
   selectWithKeyboard,
   setCheckboxWithKeyboard,
 } from "./keyboard-helpers";
@@ -33,37 +34,37 @@ test.describe("authenticated Admin tutor operations", () => {
       page.getByRole("heading", { level: 1, name: "Tutores" }),
     ).toBeVisible();
     await expect(
-      page.locator('[data-layout="wide"]').getByText("Lovelace, Ada"),
+      page.getByRole("table").getByText("Lovelace, Ada"),
     ).toBeVisible();
 
-    const rowAction = page.getByRole("button", { name: "Acciones para Lovelace, Ada" });
-    await activateWithKeyboard(page, rowAction);
-    const rowMenu = page.getByRole("menu", { name: "Acciones para Lovelace, Ada" });
-    await expectReducedMotion(rowMenu);
-    await expect(rowMenu.getByRole("menuitem", { name: "Ver detalle" })).toBeFocused();
-    await page.keyboard.press("End");
-    await expect(rowMenu.getByRole("menuitem", { name: "Desactivar tutor" })).toBeFocused();
-    await page.keyboard.press("ArrowDown");
-    await expect(rowMenu.getByRole("menuitem", { name: "Ver detalle" })).toBeFocused();
-    await page.keyboard.press("ArrowUp");
-    await expect(rowMenu.getByRole("menuitem", { name: "Desactivar tutor" })).toBeFocused();
-    await page.keyboard.press("Escape");
-    await expect(rowAction).toBeFocused();
-
-    await activateWithKeyboard(page, rowAction);
-    await page.keyboard.press("End");
-    await page.keyboard.press("Enter");
+    const rowAction = page.getByRole("button", { name: "Desactivar tutor Lovelace, Ada" });
     const statusConfirmation = page.getByRole("alertdialog", { name: "Desactivar tutor" });
+    await expectAccessibleOverlay(page, { trigger: rowAction, overlay: statusConfirmation });
+    await activateWithKeyboard(page, rowAction);
     await expect(statusConfirmation.getByRole("button", { name: "Cancelar" })).toBeFocused();
     await expectReducedMotion(statusConfirmation);
     await page.keyboard.press("Tab");
-    await expect(
-      statusConfirmation.getByRole("button", { name: "Desactivar tutor" }),
-    ).toBeFocused();
+    await expect(statusConfirmation.getByRole("button", { name: "Desactivar tutor" })).toBeFocused();
     await page.keyboard.press("Shift+Tab");
     await expect(statusConfirmation.getByRole("button", { name: "Cancelar" })).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(rowAction).toBeFocused();
+
+    const addTutor = page.getByRole("button", { name: "Agregar tutor" });
+    await expectAccessibleOverlay(page, { trigger: addTutor, overlay: page.getByRole("dialog", { name: "Agregar tutor" }) });
+    await activateWithKeyboard(page, addTutor);
+    const unsavedSheet = page.getByRole("dialog", { name: "Agregar tutor" });
+    await unsavedSheet.getByLabel("Nombre", { exact: true }).fill("Prueba");
+    await expectAccessibleOverlay(page, {
+      trigger: unsavedSheet.getByRole("button", { name: "Cerrar panel de tutor" }),
+      overlay: page.getByRole("alertdialog", { name: "¿Cerrar la ficha?" }),
+    });
+    await expect(unsavedSheet.getByLabel("Nombre", { exact: true })).toHaveValue("Prueba");
+    await activateWithKeyboard(page, unsavedSheet.getByRole("button", { name: "Cerrar panel de tutor" }));
+    await activateWithKeyboard(page, page.getByRole("alertdialog").getByRole("button", { name: "Cerrar", exact: true }));
+    await expect(addTutor).toBeFocused();
+    const tutorName = page.getByRole("button", { name: "Lovelace, Ada", exact: true });
+    await expectAccessibleOverlay(page, { trigger: tutorName, overlay: page.getByRole("dialog", { name: "Detalle de Lovelace, Ada" }) });
 
     await activateWithKeyboard(page, page.getByRole("button", { name: "Agregar tutor" }));
     const dialog = page.getByRole("dialog", { name: "Agregar tutor" });
@@ -81,10 +82,10 @@ test.describe("authenticated Admin tutor operations", () => {
     await selectWithKeyboard(page, dialog.getByLabel("Ciclo abierto"), { label: "2027" });
     await activateWithKeyboard(page, dialog.getByRole("button", { name: "Agregar tutor" }));
 
-    await expect(page.getByRole("status")).toContainText("Cambios guardados");
-    await expectReducedMotion(page.getByRole("status"));
+    await expect(page.getByText("Cambios guardados", { exact: true })).toBeVisible();
+    await expectReducedMotion(page.getByText("Cambios guardados", { exact: true }));
     await expect(
-      page.locator('[data-layout="wide"]').getByText("Johnson, Katherine"),
+      page.getByRole("table").getByText("Johnson, Katherine"),
     ).toBeVisible();
 
     for (const viewport of [
@@ -93,9 +94,30 @@ test.describe("authenticated Admin tutor operations", () => {
       { width: 1280, height: 900, layout: "wide" },
     ]) {
       await page.setViewportSize(viewport);
-      await expect(page.locator(`[data-layout="${viewport.layout}"]`)).toBeVisible();
+      await expect(page.getByRole(viewport.layout === "compact" ? "list" : "table", { name: "Lista de tutores" })).toBeVisible();
 
       if (viewport.layout === "compact") {
+        const menuTrigger = page.getByRole("button", { name: "Acciones para Lovelace, Ada" });
+        await activateWithKeyboard(page, menuTrigger);
+        const menu = page.getByRole("menu", { name: "Acciones para Lovelace, Ada" });
+        await expectReducedMotion(menu);
+        await expect(menu.getByRole("menuitem", { name: "Ver detalle" })).toBeFocused();
+        await page.keyboard.press("End");
+        await expect(menu.getByRole("menuitem", { name: "Desactivar tutor" })).toBeFocused();
+        await page.keyboard.press("ArrowDown");
+        await expect(menu.getByRole("menuitem", { name: "Ver detalle" })).toBeFocused();
+        await page.keyboard.press("ArrowUp");
+        await expect(menu.getByRole("menuitem", { name: "Desactivar tutor" })).toBeFocused();
+        await page.keyboard.press("Escape");
+        await expect(menuTrigger).toBeFocused();
+        await activateWithKeyboard(page, menuTrigger);
+        await page.keyboard.press("Enter");
+        const detail = page.getByRole("dialog", { name: "Detalle de Lovelace, Ada" });
+        await expect(detail).toBeVisible();
+        await expect(detail.getByRole("button", { name: "Cerrar panel de tutor" })).toBeFocused();
+        await page.keyboard.press("Escape");
+        await expect(menuTrigger).toBeFocused();
+
         await activateWithKeyboard(page, page.getByRole("button", { name: "Abrir navegación" }));
         await expect(page.getByRole("dialog").getByRole("button", { name: "Cerrar sesión" })).toBeVisible();
         await page.keyboard.press("Escape");

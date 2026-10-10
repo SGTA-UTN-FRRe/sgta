@@ -11,6 +11,9 @@ export interface DataColumn<T> {
   header: string;
   cell: (row: T) => ReactNode;
   numeric?: boolean;
+  /** Responsive visibility for secondary comparison columns. */
+  className?: string;
+  compactClassName?: string;
 }
 export interface DataTableProps<T> {
   label: string;
@@ -49,7 +52,7 @@ export function DataTable<T>({
           <TableHeader className={stickyHeader ? "sticky top-0 z-sticky bg-card" : undefined}>
             <TableRow className="hover:bg-transparent">
               {allColumns.map((column) => (
-                <TableHead key={column.id} scope="col" className={cn("text-muted-foreground", column.numeric && "text-right tabular-nums")}>
+                <TableHead key={column.id} scope="col" className={cn("text-muted-foreground", column.numeric && "text-right tabular-nums", column.className)}>
                   {column.header}
                 </TableHead>
               ))}
@@ -61,7 +64,7 @@ export function DataTable<T>({
               <TableRow key={getRowKey(row)} className="h-row hover:bg-transparent">
                 <TableHead scope="row" className="whitespace-normal font-semibold">{identityColumn.cell(row)}</TableHead>
                 {columns.map((column) => (
-                  <TableCell key={column.id} className={cn("py-0 whitespace-normal", column.numeric && "text-right tabular-nums")}>
+                  <TableCell key={column.id} className={cn("py-0 whitespace-normal", column.numeric && "text-right tabular-nums", column.className)}>
                     {column.cell(row)}
                   </TableCell>
                 ))}
@@ -81,7 +84,7 @@ export function DataTable<T>({
             <div className="text-sm font-semibold">{identityColumn.cell(row)}</div>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
               {columns.map((column) => (
-                <div key={column.id} className="min-w-0 space-y-1">
+                <div key={column.id} className={cn("min-w-0 space-y-1", column.compactClassName)}>
                   <dt className="text-xs text-muted-foreground">{column.header}</dt>
                   <dd className={cn(column.numeric && "tabular-nums")}>{column.cell(row)}</dd>
                 </div>
