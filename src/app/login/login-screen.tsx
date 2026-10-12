@@ -11,7 +11,7 @@ import { useState } from "react";
 
 import { authClient } from "@/auth/auth-client";
 import { Button } from "@/components/ui/button";
-import { FaroIcon } from "@/shared/components/faro-icon";
+import { TutoriasMark } from "@/shared/components/tutorias-mark";
 
 import type { LoginScreenData } from "./login-copy";
 import {
@@ -189,7 +189,7 @@ export function LoginScreen({
           <div className="relative z-10 flex w-full flex-col justify-between gap-12">
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-md border border-white/20 bg-white/10 text-faro">
-                <FaroIcon aria-hidden="true" className="h-7 w-7" />
+                <TutoriasMark aria-hidden="true" className="h-7 w-7" />
               </span>
               <div>
                 <p className="text-sm font-bold tracking-[0.12em] text-white">
