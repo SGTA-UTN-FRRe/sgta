@@ -1,27 +1,32 @@
 "use client";
 
-import { ArrowDownLeft, ArrowUpRight, Clock3, RefreshCw } from "lucide-react";
+import { Clock3, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BalanceStatus } from "@/features/hours/balance-status";
 import { formatDuration } from "@/shared/format-duration";
 import type {
+  TutorSelfServiceMovement,
   TutorSelfServiceHours,
   TutorSelfServiceRequiredActionReason,
 } from "./tutor-self-service-service";
 import {
   formatLongDate,
   focusTutorPageTitle,
-  getBalanceLabel,
   getMovementDirectionLabel,
   getRequiredActionCopy,
   getTutorSelfServiceErrorMessage,
   requestTutorSelfService,
   TutorSelfServiceRequestError,
 } from "./tutor-self-service-screen-utils";
+import { DataTable, type DataColumn } from "@/shared/components/data-table";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import { StatusBadge } from "@/shared/components/status-badge";
+import { SystemState } from "@/shared/components/system-state";
 
 export type TutorHoursScreenState =
   | "default"
@@ -56,34 +61,34 @@ function HoursLoading() {
       className="space-y-6"
       role="status"
     >
-      <div className="h-9 w-48 animate-pulse rounded-sm bg-muted" />
-      <div className="h-36 animate-pulse rounded-md border border-border bg-card" />
-      <div className="space-y-3">
+      <span className="sr-only">Cargando horas</span>
+      <Skeleton aria-hidden="true" className="h-28 w-full rounded-xl" />
+      <div aria-hidden="true" className="space-y-3">
+        <Skeleton className="h-6 w-56 max-w-full" />
         {Array.from({ length: 3 }, (_, index) => (
-          <div
-            className="h-20 animate-pulse rounded-md border border-border bg-card"
-            key={index}
-          />
+          <Skeleton className="h-row w-full" key={index} />
         ))}
       </div>
     </div>
   );
 }
 
+const genericErrorMessage = "No se pudieron cargar las horas. Intentar nuevamente.";
+
 function HoursError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div
-      aria-live="assertive"
-      className="rounded-md border border-destructive/30 bg-muted/70 p-6"
-      role="alert"
-    >
-      <h2 className="text-base font-semibold text-foreground">No se pudieron cargar las horas</h2>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{message}</p>
-      <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
-        <RefreshCw aria-hidden="true" />
-        Reintentar
-      </Button>
-    </div>
+    <SystemState
+      action={
+        <Button onClick={onRetry} type="button" variant="outline">
+          <RefreshCw aria-hidden="true" />
+          Reintentar
+        </Button>
+      }
+      description={message === genericErrorMessage ? undefined : message}
+      headingLevel={2}
+      title="No se pudieron cargar las horas"
+      variant="error"
+    />
   );
 }
 
@@ -97,21 +102,23 @@ function HoursRequiredAction({
   const copy = getRequiredActionCopy(reason);
 
   return (
-    <div
-      aria-live="polite"
-      className="rounded-md border border-warning/30 bg-muted/70 p-6"
-      role="status"
-    >
-      <StatusBadge label="Acción requerida" variant="warning" />
-      <h2 className="mt-4 text-lg font-semibold text-foreground">{copy.title}</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-        {copy.description}
-      </p>
-      <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
-        <RefreshCw aria-hidden="true" />
-        Volver a consultar
-      </Button>
-    </div>
+    <SystemState
+      action={
+        <Button onClick={onRetry} type="button" variant="outline">
+          <RefreshCw aria-hidden="true" />
+          Volver a consultar
+        </Button>
+      }
+      description={
+        <div className="space-y-2">
+          <StatusBadge label="Acción requerida" variant="warning" />
+          <p>{copy.description}</p>
+        </div>
+      }
+      headingLevel={2}
+      title={copy.title}
+      variant="required-action"
+    />
   );
 }
 
@@ -130,107 +137,179 @@ function HoursEmpty({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: "ready" }> }) {
+function MovementRelationship({
+  movement,
+  visibleIds,
+}: {
+  movement: TutorSelfServiceMovement;
+  visibleIds: ReadonlySet<string>;
+}) {
+  const targetId =
+    movement.reversalState === "REVERSED"
+      ? movement.reversalMovementId
+      : movement.reversalOfMovementId;
+
+  if (targetId === null || !visibleIds.has(targetId)) {
+    return null;
+  }
+
+  const label =
+    movement.reversalState === "REVERSED"
+      ? "Ver reversión vinculada"
+      : "Ver movimiento original";
+
   return (
     <>
-      <section className="mt-6 rounded-md border border-border bg-card p-5 shadow-xs sm:p-6" aria-labelledby="tutor-hours-balance">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-muted-foreground">Ciclo vigente</p>
-            <h2 className="mt-2 text-xl font-bold text-foreground" id="tutor-hours-balance">
-              {data.cycle.name}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {formatLongDate(data.cycle.startDate)} — {formatLongDate(data.cycle.endDate)}
-            </p>
-          </div>
-          <div className="sm:text-right">
-            <p className="text-sm font-semibold text-muted-foreground">Saldo del ciclo</p>
-            <p className="mt-1 font-sans text-4xl font-extrabold tabular-nums text-foreground">
-              {formatDuration(data.balance.signedBalanceMinutes)}
-            </p>
-            <StatusBadge
-              className="mt-3"
-              label={getBalanceLabel(data.balance.state)}
-              variant={data.balance.state === "current" ? "success" : "warning"}
-            />
-          </div>
-        </div>
-      </section>
+      <a
+        className="hidden min-h-6 items-center text-xs text-link underline underline-offset-4 md:inline-flex"
+        href={`#tutor-movement-${targetId}-table`}
+      >
+        {label}
+      </a>
+      <a
+        className="inline-flex min-h-11 items-center text-xs text-link underline underline-offset-4 md:hidden"
+        href={`#tutor-movement-${targetId}-list`}
+      >
+        {label}
+      </a>
+    </>
+  );
+}
 
-      <section aria-labelledby="tutor-hours-history" className="mt-6">
-        <div className="flex items-center gap-3">
-          <Clock3 aria-hidden="true" className="h-5 w-5 text-primary" />
-          <div>
-            <h2 className="text-lg font-bold text-foreground" id="tutor-hours-history">
+function MovementStatus({
+  movement,
+  visibleIds,
+}: {
+  movement: TutorSelfServiceMovement;
+  visibleIds: ReadonlySet<string>;
+}) {
+  if (movement.reversalState === "CONFIRMED") {
+    return null;
+  }
+
+  return (
+    <div className="max-w-56 space-y-2">
+      <StatusBadge
+        label={
+          movement.reversalState === "REVERSED"
+            ? "Movimiento revertido"
+            : "Reversión registrada"
+        }
+        variant="neutral"
+      />
+      <MovementRelationship movement={movement} visibleIds={visibleIds} />
+    </div>
+  );
+}
+
+function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: "ready" }> }) {
+  const visibleIds = new Set(data.movements.map((movement) => movement.id));
+  const hasReversals = data.movements.some(
+    (movement) => movement.reversalState !== "CONFIRMED",
+  );
+  const columns: DataColumn<TutorSelfServiceMovement>[] = [
+    {
+      id: "duration",
+      header: "Duración",
+      numeric: true,
+      cell: (movement) => (
+        <p className="whitespace-nowrap py-3 font-bold">
+          {formatDuration(movement.signedDurationMinutes, { signed: true })}
+        </p>
+      ),
+    },
+    {
+      id: "note",
+      header: "Nota",
+      className: "hidden xl:table-cell",
+      compactClassName: "col-span-2",
+      cell: (movement) => (
+        <p className="max-w-56 break-words py-3 text-muted-foreground">
+          {movement.note ?? "Sin nota"}
+        </p>
+      ),
+    },
+  ];
+
+  if (hasReversals) {
+    columns.push({
+      id: "state",
+      header: "Estado",
+      compactClassName: "col-span-2",
+      cell: (movement) => (
+        <MovementStatus movement={movement} visibleIds={visibleIds} />
+      ),
+    });
+  }
+
+  return (
+    <>
+      <Card>
+        <section aria-labelledby="tutor-hours-balance">
+          <CardContent className="grid gap-4 p-3 md:grid-cols-2 md:p-4">
+            <div>
+              <h2 className="font-display text-xl font-semibold" id="tutor-hours-balance">
+                Saldo del ciclo
+              </h2>
+              <div className="mt-3">
+                <BalanceStatus balance={data.balance} />
+              </div>
+            </div>
+            <div className="min-w-0 border-t border-border pt-4 md:border-t-0 md:border-l md:pt-0 md:pl-4">
+              <p className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
+                Ciclo vigente
+              </p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{data.cycle.name}</p>
+              <p className="mt-1 text-sm tabular-nums text-muted-foreground">
+                <time dateTime={data.cycle.startDate}>{formatLongDate(data.cycle.startDate)}</time>
+                {" — "}
+                <time dateTime={data.cycle.endDate}>{formatLongDate(data.cycle.endDate)}</time>
+              </p>
+            </div>
+          </CardContent>
+        </section>
+      </Card>
+
+      <section aria-labelledby="tutor-hours-history" className="space-y-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Clock3 aria-hidden="true" className="size-5 shrink-0 text-primary" />
+            <h2 className="font-display text-xl font-semibold" id="tutor-hours-history">
               Historial de movimientos
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Movimientos del ciclo vigente, ordenados del más reciente al más antiguo.
-            </p>
           </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Movimientos del ciclo vigente, ordenados del más reciente al más antiguo.
+          </p>
         </div>
 
-        <ol
-          aria-label="Historial de movimientos"
-          className="mt-4 space-y-3"
-          data-layout="movement-history"
-        >
-          {data.movements.map((movement) => {
-            const isCredit = movement.direction === "CREDIT";
-
-            return (
-              <li
-                className="rounded-md border border-border bg-card p-4 shadow-xs sm:p-5"
-                key={movement.id}
-              >
-                <div className="flex items-start gap-3">
-                  <span
-                    aria-hidden="true"
-                    className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                      isCredit
-                        ? "bg-muted text-success"
-                        : "bg-muted text-warning"
-                    }`}
-                  >
-                    {isCredit ? (
-                      <ArrowUpRight className="h-4 w-4" />
-                    ) : (
-                      <ArrowDownLeft className="h-4 w-4" />
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                      <div>
-                        <p className="font-semibold text-foreground">{movement.category.name}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {getMovementDirectionLabel(movement.direction)} · {formatLongDate(movement.movementDate)}
-                        </p>
-                      </div>
-                      <p className="font-sans text-lg font-bold tabular-nums text-foreground">
-                        {formatDuration(movement.signedDurationMinutes, { signed: true })}
-                      </p>
-                    </div>
-                    {movement.note && (
-                      <p className="mt-3 text-sm leading-6 text-muted-foreground">{movement.note}</p>
-                    )}
-                    {movement.reversalState !== "CONFIRMED" && (
-                      <StatusBadge
-                        className="mt-3"
-                        label={
-                          movement.reversalState === "REVERSED"
-                            ? "Movimiento revertido"
-                            : "Reversión registrada"
-                        }
-                        variant="neutral"
-                      />
-                    )}
-                  </div>
-                </div>
-              </li>
-            );
+        <DataTable
+          columns={columns}
+          getRowKey={(movement) => movement.id}
+          getRowProps={(movement, layout) => ({
+            id: `tutor-movement-${movement.id}-${layout}`,
+            "data-movement-id": movement.id,
+            "data-reversal-state": movement.reversalState,
           })}
-        </ol>
+          identityColumn={{
+            id: "movement",
+            header: "Movimiento y fecha",
+            cell: (movement) => (
+              <div className="min-w-0 space-y-1 py-3">
+                <p className="font-bold">{movement.category.name}</p>
+                <p className="text-xs font-normal text-muted-foreground">
+                  {getMovementDirectionLabel(movement.direction)} ·{" "}
+                  <time dateTime={movement.movementDate}>{formatLongDate(movement.movementDate)}</time>
+                </p>
+                <p className="hidden text-xs font-normal text-muted-foreground md:block xl:hidden">
+                  {movement.note ?? "Sin nota"}
+                </p>
+              </div>
+            ),
+          }}
+          label="Historial de movimientos"
+          rows={data.movements}
+        />
       </section>
     </>
   );
@@ -246,7 +325,7 @@ export function TutorHoursScreen({
     initialState ?? deriveState(initialData),
   );
   const [errorMessage, setErrorMessage] = useState(
-    initialErrorMessage ?? "No se pudieron cargar las horas. Intentar nuevamente.",
+    initialErrorMessage ?? genericErrorMessage,
   );
 
   const retry = async () => {
@@ -264,7 +343,7 @@ export function TutorHoursScreen({
       setErrorMessage(
         error instanceof TutorSelfServiceRequestError
           ? getTutorSelfServiceErrorMessage(error.code)
-          : "No se pudieron cargar las horas. Intentar nuevamente.",
+          : genericErrorMessage,
       );
     }
   };

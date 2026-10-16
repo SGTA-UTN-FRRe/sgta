@@ -190,10 +190,18 @@ test.describe("authenticated Tutor self-service", () => {
         page.getByRole("heading", { level: 1, name: "Mis horas" }),
       ).toBeVisible();
       await expect(page.getByText("Al día", { exact: true })).toBeVisible();
-      await expect(page.getByText("Seeded meeting movement.", { exact: true })).toBeVisible();
-      await expect(page.getByText("+30 min", { exact: true })).toBeVisible();
+      const movementHistory = page.getByRole(
+        viewport.width < 768 ? "list" : "table",
+        { name: "Historial de movimientos" },
+      );
+      await expect(movementHistory).toBeVisible();
       await expect(
-        page.locator('[data-layout="movement-history"]'),
+        movementHistory
+          .getByText("Seeded meeting movement.", { exact: true })
+          .filter({ visible: true }),
+      ).toBeVisible();
+      await expect(
+        movementHistory.getByText("+30 min", { exact: true }),
       ).toBeVisible();
       await expect(
         page.getByRole("button", { name: /registrar|editar|revertir|eliminar/i }),
