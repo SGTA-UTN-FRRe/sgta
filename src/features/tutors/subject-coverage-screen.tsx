@@ -1,33 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ChevronDown,
-  CircleAlert,
-  RefreshCw,
-  Search,
-} from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { buttonVariants, Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import type {
   SafeSubjectCoverage,
   SafeSubjectCoverageResult,
-  SafeSubjectCoverageTutor,
 } from "@/features/tutors/tutor-service";
 import { EmptyState } from "@/shared/components/empty-state";
+import { FilterBar } from "@/shared/components/filter-bar";
 import { PageHeader } from "@/shared/components/page-header";
-import { StatusBadge } from "@/shared/components/status-badge";
-import { cn } from "@/shared/utils";
+import { SystemState } from "@/shared/components/system-state";
+import { SubjectCoverageTable } from "./subject-coverage-table";
 
 export type SubjectCoverageScreenState =
   | "default"
@@ -44,9 +30,7 @@ export interface SubjectCoverageScreenProps {
 }
 
 const searchInputId = "subject-coverage-search";
-const searchPlaceholder = "Buscar materia, carrera o tutor";
-const defaultErrorMessage =
-  "No se pudo cargar la cobertura. Reintentar para volver a consultar las materias.";
+const defaultErrorMessage = "Reintentar para volver a consultar las materias.";
 
 function readInitialSearch() {
   if (typeof window === "undefined") {
@@ -130,292 +114,17 @@ function getDerivedState(
   return subjects.length === 0 ? ("search-empty" as const) : ("default" as const);
 }
 
-function tutorStatusLabel(status: SafeSubjectCoverageTutor["status"]) {
-  return status === "ACTIVE" ? "Activo" : "Inactivo";
-}
-
-function tutorStatusVariant(status: SafeSubjectCoverageTutor["status"]) {
-  return status === "ACTIVE" ? ("success" as const) : ("neutral" as const);
-}
-
-function subjectStatusLabel(status: SafeSubjectCoverage["subject"]["status"]) {
-  return status === "ACTIVE" ? "Activa" : "Inactiva";
-}
-
-function tutorCountLabel(count: number) {
-  return `${count} ${count === 1 ? "tutor" : "tutores"}`;
-}
-
-function activeTutorCount(tutors: SafeSubjectCoverageTutor[]) {
-  return tutors.filter((tutor) => tutor.status === "ACTIVE").length;
-}
-
-function activeCoverageLabel(tutors: SafeSubjectCoverageTutor[]) {
-  const count = activeTutorCount(tutors);
-
-  return count === 0 ? "Sin cobertura activa" : `${tutorCountLabel(count)} activos`;
-}
-
-function TutorLink({ tutor }: { tutor: SafeSubjectCoverageTutor }) {
-  const href = `/admin/tutors?search=${encodeURIComponent(tutor.formalName)}`;
-
-  return (
-    <li className="flex min-w-0 flex-wrap items-center gap-2">
-      <Link
-        aria-label={`Ver tutor ${tutor.formalName}`}
-        className="min-w-0 truncate font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
-        href={href}
-      >
-        {tutor.formalName}
-      </Link>
-      <StatusBadge
-        label={tutorStatusLabel(tutor.status)}
-        variant={tutorStatusVariant(tutor.status)}
-      />
-      {tutor.status === "INACTIVE" && (
-        <span className="text-xs text-muted-foreground">Relación histórica</span>
-      )}
-    </li>
-  );
-}
-
-function CoverageTutorList({ tutors }: { tutors: SafeSubjectCoverageTutor[] }) {
-  if (tutors.length === 0) {
-    return <p className="text-sm text-muted-foreground">Sin tutor asignado.</p>;
-  }
-
-  return (
-    <ul aria-label="Tutores asociados" className="space-y-2">
-      {tutors.map((tutor) => (
-        <TutorLink key={tutor.id} tutor={tutor} />
-      ))}
-    </ul>
-  );
-}
-
-function CoverageTutorDetails({
-  tutors,
-  wide = false,
-}: {
-  tutors: SafeSubjectCoverageTutor[];
-  wide?: boolean;
-}) {
-  const activeCount = activeTutorCount(tutors);
-  const historicalCount = tutors.length - activeCount;
-
-  return (
-    <details className={cn("group", wide && "rounded-sm border border-border p-2")} open>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-sm text-sm text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-        <span className="font-medium">
-          {activeCoverageLabel(tutors)}
-          {historicalCount > 0 && (
-            <span className="ml-2 text-xs font-normal text-muted-foreground">
-            + {historicalCount} histórico{historicalCount === 1 ? "" : "s"}
-            </span>
-          )}
-        </span>
-        <ChevronDown
-          aria-hidden="true"
-          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-        />
-      </summary>
-      <div className="mt-3 border-t border-border pt-3">
-        <CoverageTutorList tutors={tutors} />
-      </div>
-    </details>
-  );
-}
-
-function SubjectLabel({ coverage }: { coverage: SafeSubjectCoverage }) {
-  return (
-    <div className="min-w-0">
-      <p className="truncate font-semibold text-foreground">{coverage.subject.name}</p>
-      <StatusBadge
-        className="mt-2"
-        label={subjectStatusLabel(coverage.subject.status)}
-        variant={coverage.subject.status === "ACTIVE" ? "success" : "neutral"}
-      />
-    </div>
-  );
-}
-
-function CoverageCompactList({
-  currentCycleName,
-  subjects,
-}: {
-  currentCycleName: string;
-  subjects: SafeSubjectCoverage[];
-}) {
-  return (
-    <div className="mt-4 md:hidden" data-layout="compact">
-      <ul aria-label="Cobertura de materias" className="space-y-3">
-        {subjects.map((coverage) => (
-          <li key={coverage.subject.id}>
-            <details className="group rounded-md border border-border bg-card shadow-xs">
-              <summary className="flex cursor-pointer list-none items-start justify-between gap-3 p-4 outline-none focus-visible:ring-3 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-foreground">{coverage.subject.name}</p>
-                  <p className="mt-1 truncate text-sm text-muted-foreground">
-                    {coverage.career.name}
-                  </p>
-                </div>
-                <span className="flex shrink-0 items-center gap-2 text-right text-xs text-muted-foreground">
-                  {activeCoverageLabel(coverage.tutors)}
-                  <ChevronDown
-                    aria-hidden="true"
-                    className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180"
-                  />
-                </span>
-              </summary>
-              <div className="space-y-4 border-t border-border px-4 py-4">
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-muted-foreground">Ciclo vigente</span>
-                  <span className="font-medium text-foreground">{currentCycleName}</span>
-                </div>
-                <CoverageTutorList tutors={coverage.tutors} />
-              </div>
-            </details>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function CoverageMediumTable({
-  currentCycleName,
-  subjects,
-}: {
-  currentCycleName: string;
-  subjects: SafeSubjectCoverage[];
-}) {
-  return (
-    <div
-      className="mt-4 hidden overflow-x-auto rounded-md border border-border bg-card md:block lg:hidden"
-      data-layout="medium"
-    >
-      <Table className="min-w-[46rem]">
-        <caption className="sr-only">Cobertura de materias</caption>
-        <TableHeader>
-          <TableRow>
-            <TableHead scope="col">Materia</TableHead>
-            <TableHead scope="col">Carrera</TableHead>
-            <TableHead scope="col">Tutores</TableHead>
-            <TableHead scope="col">Ciclo</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {subjects.map((coverage) => (
-            <TableRow key={coverage.subject.id}>
-              <TableCell><SubjectLabel coverage={coverage} /></TableCell>
-              <TableCell className="text-muted-foreground">{coverage.career.name}</TableCell>
-              <TableCell><CoverageTutorList tutors={coverage.tutors} /></TableCell>
-              <TableCell className="whitespace-nowrap text-muted-foreground">
-                {currentCycleName}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
-function CoverageWideTable({
-  currentCycleName,
-  subjects,
-}: {
-  currentCycleName: string;
-  subjects: SafeSubjectCoverage[];
-}) {
-  return (
-    <div
-      className="mt-4 hidden overflow-x-auto rounded-md border border-border bg-card lg:block"
-      data-layout="wide"
-    >
-      <Table className="min-w-[64rem]">
-        <caption className="sr-only">Comparación de cobertura de materias</caption>
-        <TableHeader>
-          <TableRow>
-            <TableHead scope="col">Materia</TableHead>
-            <TableHead scope="col">Carrera</TableHead>
-            <TableHead scope="col">Cobertura activa</TableHead>
-            <TableHead scope="col">Ciclo vigente</TableHead>
-            <TableHead scope="col">Navegación</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {subjects.map((coverage) => (
-            <TableRow key={coverage.subject.id}>
-              <TableCell><SubjectLabel coverage={coverage} /></TableCell>
-              <TableCell className="text-muted-foreground">{coverage.career.name}</TableCell>
-              <TableCell><CoverageTutorDetails tutors={coverage.tutors} wide /></TableCell>
-              <TableCell className="whitespace-nowrap text-muted-foreground">
-                {currentCycleName}
-              </TableCell>
-              <TableCell>
-                <Link
-                  className="text-sm font-medium text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
-                  href="/admin/tutors"
-                >
-                  Ver tutores
-                </Link>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
-function CoverageLoadingState() {
-  return (
-    <div
-      aria-label="Cargando cobertura de materias"
-      aria-live="polite"
-      className="mt-4 overflow-hidden rounded-md border border-border bg-card"
-      role="status"
-    >
-      <span className="sr-only">Cargando cobertura de materias</span>
-      <div className="hidden lg:block">
-        {Array.from({ length: 4 }, (_, index) => (
-          <div
-            className="grid grid-cols-[1.2fr_1.2fr_2fr_1fr_1fr] gap-4 border-b border-border px-3 py-5 last:border-b-0"
-            key={index}
-          >
-            <span className="h-5 w-32 animate-pulse rounded-sm bg-muted" />
-            <span className="h-5 w-40 animate-pulse rounded-sm bg-muted" />
-            <span className="h-5 w-48 animate-pulse rounded-sm bg-muted" />
-            <span className="h-5 w-24 animate-pulse rounded-sm bg-muted" />
-            <span className="h-5 w-24 animate-pulse rounded-sm bg-muted" />
-          </div>
-        ))}
-      </div>
-      <div className="space-y-3 p-4 md:hidden">
-        {Array.from({ length: 3 }, (_, index) => (
-          <div className="rounded-md border border-border p-4" key={index}>
-            <div className="h-5 w-40 animate-pulse rounded-sm bg-muted" />
-            <div className="mt-2 h-4 w-52 animate-pulse rounded-sm bg-muted" />
-            <div className="mt-5 h-12 animate-pulse rounded-sm bg-muted" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function CoverageContext({ cycleName }: { cycleName: string }) {
   return (
     <div className="mt-6 grid gap-3 rounded-md border border-border bg-muted/60 p-4 text-sm md:grid-cols-3">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
           Ciclo vigente
         </p>
         <p className="mt-1 font-semibold text-foreground">{cycleName}</p>
       </div>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
           Criterio de cobertura
         </p>
         <p className="mt-1 text-muted-foreground">
@@ -423,48 +132,12 @@ function CoverageContext({ cycleName }: { cycleName: string }) {
         </p>
       </div>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
           Horas planificadas
         </p>
         <p className="mt-1 text-muted-foreground">
           No disponibles en esta vista hasta contar con datos de horarios.
         </p>
-      </div>
-    </div>
-  );
-}
-
-function StateNotice({
-  action,
-  children,
-  title,
-  tone,
-}: {
-  action?: React.ReactNode;
-  children: React.ReactNode;
-  title: string;
-  tone: "danger" | "warning";
-}) {
-  const styles = {
-    danger: "border-destructive/30 bg-muted/60",
-    warning: "border-warning/30 bg-muted/60",
-  } as const;
-  const iconStyles = {
-    danger: "text-destructive",
-    warning: "text-warning",
-  } as const;
-
-  return (
-    <div
-      aria-live="polite"
-      className={cn("mt-6 flex items-start gap-3 rounded-md border p-4", styles[tone])}
-      role={tone === "danger" ? "alert" : "status"}
-    >
-      <CircleAlert aria-hidden="true" className={cn("mt-0.5 h-5 w-5 shrink-0", iconStyles[tone])} />
-      <div>
-        <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">{children}</p>
-        {action && <div className="mt-3">{action}</div>}
       </div>
     </div>
   );
@@ -515,26 +188,16 @@ export function SubjectCoverageScreen({
   }, []);
 
   const clearSearch = useCallback(() => setSearch(""), []);
-  const headerAction =
-    derivedState === "required-action" ? (
+  const canRefresh = derivedState !== "error" && derivedState !== "required-action";
+  const headerAction = (
+    <div className="flex flex-wrap items-center gap-2">
       <Link
         className={buttonVariants({ size: "sm", variant: "outline" })}
-        href="/admin/settings"
+        href="/admin/tutors"
       >
-        Configurar ciclo
+        Ver tutores
       </Link>
-    ) : derivedState === "error" ? (
-      <Button onClick={() => void refreshCoverage()} size="sm" type="button" variant="outline">
-        Reintentar
-      </Button>
-    ) : (
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          className={buttonVariants({ size: "sm", variant: "outline" })}
-          href="/admin/tutors"
-        >
-          Ver tutores
-        </Link>
+      {canRefresh && (
         <Button
           disabled={derivedState === "loading"}
           onClick={() => void refreshCoverage()}
@@ -542,11 +205,12 @@ export function SubjectCoverageScreen({
           type="button"
           variant="outline"
         >
-          <RefreshCw aria-hidden="true" className={cn(derivedState === "loading" && "animate-spin")} />
+          <RefreshCw aria-hidden="true" className={derivedState === "loading" ? "animate-spin" : undefined} />
           Actualizar
         </Button>
-      </div>
-    );
+      )}
+    </div>
+  );
 
   return (
     <div data-slot="subject-coverage-screen" data-state={derivedState}>
@@ -558,21 +222,21 @@ export function SubjectCoverageScreen({
       />
 
       {derivedState === "error" && (
-        <StateNotice
+        <SystemState
           action={
             <Button onClick={() => void refreshCoverage()} size="sm" type="button" variant="outline">
               Reintentar
             </Button>
           }
+          description={loadError ?? defaultErrorMessage}
+          headingLevel={2}
           title="No se pudo cargar la cobertura"
-          tone="danger"
-        >
-          {loadError ?? defaultErrorMessage}
-        </StateNotice>
+          variant="error"
+        />
       )}
 
       {derivedState === "required-action" && (
-        <StateNotice
+        <SystemState
           action={
             <Link
               className={buttonVariants({ size: "sm", variant: "outline" })}
@@ -581,41 +245,32 @@ export function SubjectCoverageScreen({
               Configurar ciclo
             </Link>
           }
+          description="Es necesario contar con un ciclo abierto para consultar la cobertura vigente."
+          headingLevel={2}
           title="Abrir un ciclo para consultar la cobertura"
-          tone="warning"
-        >
-          Es necesario contar con un ciclo abierto para consultar la cobertura vigente.
-        </StateNotice>
+          variant="required-action"
+        />
       )}
 
-      {derivedState !== "error" && derivedState !== "required-action" && (
+      {canRefresh && (
         <>
-          <div className="mt-6 rounded-md border border-border bg-muted/60 p-4">
-            <label
-              className="text-xs font-semibold text-muted-foreground"
-              htmlFor={searchInputId}
-            >
-              Buscar cobertura
-            </label>
-            <div className="relative mt-1.5 max-w-2xl">
-              <Search
-                aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                aria-label={searchPlaceholder}
-                className="pl-9"
-                disabled={derivedState === "loading"}
-                id={searchInputId}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={searchPlaceholder}
-                type="search"
-                value={search}
-              />
-            </div>
-          </div>
+          <fieldset className="mt-6 min-w-0" disabled={derivedState === "loading"}>
+            <legend className="sr-only">Buscar cobertura</legend>
+            <FilterBar
+              hasActiveFilters={search.trim().length > 0}
+              onClear={clearSearch}
+              search={{
+                id: searchInputId,
+                label: "Buscar materia, carrera o tutor",
+                value: search,
+                onChange: setSearch,
+              }}
+            />
+          </fieldset>
 
-          {derivedState === "loading" && <CoverageLoadingState />}
+          {derivedState === "loading" && (
+            <SubjectCoverageTable loading subjects={[]} />
+          )}
 
           {derivedState === "empty" && (
             <div className="mt-4">
@@ -637,35 +292,19 @@ export function SubjectCoverageScreen({
           {derivedState === "search-empty" && (
             <div className="mt-4">
               <EmptyState
-                action={
-                  <Button onClick={clearSearch} type="button" variant="outline">
-                    Limpiar búsqueda
-                  </Button>
-                }
                 description="Probar con otro término o limpiar la búsqueda para ver toda la cobertura."
                 title="No encontramos cobertura"
               />
             </div>
           )}
 
-          {derivedState !== "loading" && derivedState !== "empty" && derivedState !== "search-empty" && coverage.currentCycle !== null && (
+          {derivedState === "default" && coverage.currentCycle !== null && (
             <>
               <CoverageContext cycleName={coverage.currentCycle.name} />
               <p aria-live="polite" className="mt-4 text-sm text-muted-foreground">
                 Mostrando {filteredSubjects.length} {filteredSubjects.length === 1 ? "materia" : "materias"} con cobertura.
               </p>
-              <CoverageCompactList
-                currentCycleName={coverage.currentCycle.name}
-                subjects={filteredSubjects}
-              />
-              <CoverageMediumTable
-                currentCycleName={coverage.currentCycle.name}
-                subjects={filteredSubjects}
-              />
-              <CoverageWideTable
-                currentCycleName={coverage.currentCycle.name}
-                subjects={filteredSubjects}
-              />
+              <SubjectCoverageTable subjects={filteredSubjects} />
             </>
           )}
         </>

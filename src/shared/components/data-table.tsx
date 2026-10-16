@@ -86,7 +86,7 @@ export function DataTable<T>({
         {rows.map((row) => (
           <li {...getRowProps?.(row, "list")} key={getRowKey(row)} className="space-y-3 py-3">
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 text-sm font-semibold">{identityColumn.cell(row)}</div>
+              <div className="min-w-0 flex-1 text-sm font-semibold">{identityColumn.cell(row)}</div>
               {rowActions && <div className="flex shrink-0 flex-wrap justify-end gap-2">{rowActions(row)}</div>}
             </div>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">

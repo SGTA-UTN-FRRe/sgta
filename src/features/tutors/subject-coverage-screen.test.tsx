@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -70,17 +70,36 @@ describe("SubjectCoverageScreen", () => {
     );
     expect(screen.getByRole("heading", { name: "Materias" })).toBeInTheDocument();
     expect(screen.getByText("Tutores disponibles por materia.")).toBeInTheDocument();
-    expect(screen.getAllByRole("table")).toHaveLength(2);
-    expect(screen.getAllByText("Álgebra")).toHaveLength(3);
-    expect(screen.getAllByRole("link", { name: "Ver tutor Benítez, Marina" })).toHaveLength(3);
-    expect(screen.getAllByText("Inactivo")).toHaveLength(3);
+    expect(screen.getAllByRole("table")).toHaveLength(1);
+    const coverageTable = screen.getByRole("table", { name: "Cobertura de materias" });
+    const coverageList = screen.getByRole("list", { name: "Cobertura de materias" });
+    expect(within(coverageTable).getAllByText("Álgebra").length).toBeGreaterThan(0);
+    expect(within(coverageList).getAllByText("Álgebra").length).toBeGreaterThan(0);
+    for (const layout of [coverageTable, coverageList]) {
+      expect(
+        within(layout).getAllByRole("link", { name: "Ver tutor Benítez, Marina" }).length,
+      ).toBeGreaterThan(0);
+      expect(within(layout).getAllByText("Inactivo").length).toBeGreaterThan(0);
+      expect(within(layout).getAllByText("Relación histórica").length).toBeGreaterThan(0);
+      expect(within(layout).getAllByText("Ingeniería en Sistemas").length).toBeGreaterThan(0);
+      expect(within(layout).getAllByText("1 tutor activo").length).toBeGreaterThan(0);
+      expect(within(layout).getAllByText("+ 1 histórico").length).toBeGreaterThan(0);
+    }
+    expect(screen.queryByText("Activo")).not.toBeInTheDocument();
+    expect(screen.queryByText("Activa")).not.toBeInTheDocument();
     expect(screen.getAllByText("Ciclo 2026")).not.toHaveLength(0);
     expect(screen.getByText(/No disponibles en esta vista/)).toBeInTheDocument();
     expect(screen.queryByText(/horas planificadas.*0/i)).not.toBeInTheDocument();
     const tutorNavigationLinks = screen.getAllByRole("link", { name: "Ver tutores" });
-    expect(tutorNavigationLinks).toHaveLength(2);
+    expect(tutorNavigationLinks.length).toBeGreaterThan(0);
     tutorNavigationLinks.forEach((link) => {
       expect(link).toHaveAttribute("href", "/admin/tutors");
+    });
+    screen.getAllByRole("link", { name: "Ver tutor Benítez, Marina" }).forEach((link) => {
+      expect(link).toHaveAttribute(
+        "href",
+        "/admin/tutors?search=Ben%C3%ADtez%2C%20Marina",
+      );
     });
   });
 
@@ -102,7 +121,7 @@ describe("SubjectCoverageScreen", () => {
     expect(screen.getByRole("status")).toHaveTextContent("No encontramos cobertura");
     expect(screen.queryByText("Álgebra")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Limpiar búsqueda" }));
+    await user.click(screen.getByRole("button", { name: "Limpiar filtros" }));
 
     await waitFor(() => {
       expect(document.querySelector('[data-slot="subject-coverage-screen"]')).toHaveAttribute(
@@ -110,8 +129,43 @@ describe("SubjectCoverageScreen", () => {
         "default",
       );
     });
-    expect(screen.getAllByText("Álgebra")).toHaveLength(3);
+    expect(
+      within(screen.getByRole("table", { name: "Cobertura de materias" })).getAllByText("Álgebra").length,
+    ).toBeGreaterThan(0);
+    expect(
+      within(screen.getByRole("list", { name: "Cobertura de materias" })).getAllByText("Álgebra").length,
+    ).toBeGreaterThan(0);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps search in the URL while preserving other parameters and the fragment", async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(
+      {},
+      "",
+      "/admin/tutors/subjects?cycleId=cycle-2026&view=compact&search=Ben%C3%ADtez#coverage",
+    );
+    render(<SubjectCoverageScreen data={coverage} />);
+
+    const search = screen.getByRole("searchbox", {
+      name: "Buscar materia, carrera o tutor",
+    });
+    expect(search).toHaveValue("Benítez");
+    expect(new URLSearchParams(window.location.search).get("search")).toBe("Benítez");
+
+    await user.clear(search);
+    await user.type(search, "Sosa");
+
+    expect(new URLSearchParams(window.location.search).get("search")).toBe("Sosa");
+    expect(new URLSearchParams(window.location.search).get("cycleId")).toBe("cycle-2026");
+    expect(new URLSearchParams(window.location.search).get("view")).toBe("compact");
+    expect(window.location.hash).toBe("#coverage");
+
+    await user.clear(search);
+
+    expect(new URLSearchParams(window.location.search).has("search")).toBe(false);
+    expect(new URLSearchParams(window.location.search).get("cycleId")).toBe("cycle-2026");
+    expect(window.location.hash).toBe("#coverage");
   });
 
   it("renders the required cycle action without inventing coverage or hours", () => {
@@ -121,7 +175,11 @@ describe("SubjectCoverageScreen", () => {
       "data-state",
       "required-action",
     );
-    expect(screen.getAllByRole("link", { name: "Configurar ciclo" })).toHaveLength(2);
+    expect(screen.getByRole("link", { name: "Configurar ciclo" })).toHaveAttribute(
+      "href",
+      "/admin/settings",
+    );
+    expect(screen.queryByRole("button", { name: "Actualizar" })).not.toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("ciclo abierto");
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.queryByText(/horas planificadas/i)).not.toBeInTheDocument();
@@ -155,15 +213,19 @@ describe("SubjectCoverageScreen", () => {
     rerender(
       <SubjectCoverageScreen
         data={coverage}
-        errorMessage="No se pudo cargar la cobertura. Reintentar para volver a consultar las materias."
+        errorMessage="Reintentar para volver a consultar las materias."
         state="error"
         key="error"
       />,
     );
     expect(screen.getByRole("alert")).toHaveTextContent("No se pudo cargar la cobertura");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Reintentar para volver a consultar las materias.",
+    );
+    expect(screen.getAllByText(/No se pudo cargar la cobertura/)).toHaveLength(1);
 
     fetchMock.mockResolvedValueOnce(Response.json({ coverage }));
-    await user.click(screen.getAllByRole("button", { name: "Reintentar" })[0]);
+    await user.click(screen.getByRole("button", { name: "Reintentar" }));
 
     await waitFor(() => {
       expect(document.querySelector('[data-slot="subject-coverage-screen"]')).toHaveAttribute(
