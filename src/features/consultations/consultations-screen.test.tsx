@@ -469,11 +469,11 @@ describe("ConsultationsScreen", () => {
     await user.click(trigger);
     const reopenedDialog = await screen.findByRole("dialog", { name: "Detalle de Lucía Pérez" });
     await user.click(within(reopenedDialog).getByRole("button", { name: "Guardar revisión" }));
-    expect(within(reopenedDialog).getByRole("alert")).toHaveTextContent("confirmá cada observación");
+    expect(within(reopenedDialog).getByRole("alert")).toHaveTextContent("Confirmar cada observación");
 
     await user.click(within(reopenedDialog).getByRole("checkbox", { name: "Confirmo que revisé esta observación" }));
     await user.click(within(reopenedDialog).getByRole("button", { name: "Guardar revisión" }));
-    expect(within(reopenedDialog).getByRole("alert")).toHaveTextContent("Indicá si cada posible duplicado");
+    expect(within(reopenedDialog).getByRole("alert")).toHaveTextContent("Indicar si cada posible duplicado");
 
     await user.selectOptions(
       within(reopenedDialog).getByLabelText("Decisión para el posible duplicado de Eva Ríos"),
@@ -487,6 +487,41 @@ describe("ConsultationsScreen", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: "Revisar a Lucía Pérez" })).not.toBeInTheDocument());
     await user.click(within(reopenedDialog).getByRole("button", { name: /^Cerrar$/ }));
     await waitFor(() => expect(screenRoot()).toHaveFocus());
+  });
+
+  it("confirms before discarding an unsaved review draft", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) =>
+      String(input).includes("/review/")
+        ? jsonResponse({ review: reviewDetail() })
+        : jsonResponse(createQueueWorkspace()),
+    );
+    renderScreen(createQueueWorkspace());
+
+    const trigger = screen.getByRole("button", { name: "Revisar a Lucía Pérez" });
+    await user.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "Detalle de Lucía Pérez" });
+    await user.selectOptions(within(dialog).getByLabelText("Clasificación"), "GENERAL");
+
+    await user.keyboard("{Escape}");
+    const discard = await screen.findByRole("alertdialog", { name: "¿Cerrar el detalle?" });
+    expect(discard).toHaveTextContent("Hay cambios sin guardar en la revisión.");
+    await user.click(within(discard).getByRole("button", { name: "Cancelar" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(within(dialog).getByLabelText("Clasificación")).toHaveValue("GENERAL");
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Cerrar detalle" })).toHaveFocus());
+
+    await user.click(within(dialog).getByRole("button", { name: /^Cerrar$/ }));
+    await user.click(within(await screen.findByRole("alertdialog", { name: "¿Cerrar el detalle?" })).getByRole("button", { name: "Cerrar" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(trigger).toHaveFocus();
+
+    await user.click(trigger);
+    const reopened = await screen.findByRole("dialog", { name: "Detalle de Lucía Pérez" });
+    expect(within(reopened).getByLabelText("Clasificación")).toHaveValue("PENDING_CLASSIFICATION");
+    await user.click(within(reopened).getByRole("button", { name: /^Cerrar$/ }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
   it("recovers a stale review conflict by refreshing the current detail", async () => {

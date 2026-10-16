@@ -34,6 +34,7 @@ export function ConsultationsScreen(props: ConsultationsScreenProps) {
     reviewSaving,
     reviewError,
     reviewSuccess,
+    reviewDirty,
     selectedStagingIds,
     selectionLoading,
     bulkSubmitting,
@@ -162,13 +163,13 @@ export function ConsultationsScreen(props: ConsultationsScreenProps) {
             : screenState === "loading"
               ? "Cargando consultas…"
               : listError && workspace === null
-                ? "No se pudieron cargar las consultas."
+                ? null
                 : `${currentWorkspace.totalRows} consultas registradas · ${currentWorkspace.pendingReviewCount} pendientes de revisión`}
         </p>
 
         {screenState === "error" && workspace === null && (
-          <SystemState variant="error" className="mt-3" title="No se pudo cargar la lista"
-            description={listError ?? "Reintentar para volver a consultar las consultas registradas."}
+          <SystemState variant="error" className="mt-3" title="No se pudo cargar la lista de consultas."
+            description="Reintentar para volver a cargar las consultas registradas."
             action={<Button onClick={retryList} type="button" variant="outline">Reintentar</Button>} />
         )}
         {screenState === "loading" && workspace === null && <LoadingWorkspace />}
@@ -331,6 +332,7 @@ export function ConsultationsScreen(props: ConsultationsScreenProps) {
           saving={reviewSaving}
           error={reviewError}
           success={reviewSuccess}
+          dirty={reviewDirty}
           onClose={closeReview}
           onLoadMore={(offset) => void loadReview(selectedStagingId, offset, true)}
           onRetry={() => void loadReview(selectedStagingId)}

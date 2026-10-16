@@ -275,6 +275,25 @@ export function emptyReviewForm(detail: ConsultationReviewDetail): ReviewForm {
   };
 }
 
+export function reviewFormsEqual(left: ReviewForm, right: ReviewForm) {
+  return (
+    left.careerId === right.careerId &&
+    left.tutorId === right.tutorId &&
+    left.consultationDate === right.consultationDate &&
+    left.classification === right.classification &&
+    left.subjectId === right.subjectId &&
+    [...left.acknowledgedAnomalies].sort().join(",") === [...right.acknowledgedAnomalies].sort().join(",")
+  );
+}
+
+export function initialDuplicateChoice(
+  candidate: ConsultationReviewDetail["duplicateCandidates"][number],
+): DuplicateChoice {
+  if (candidate.decision === "PENDING") return "";
+  if (candidate.isCurrentDuplicate) return "DUPLICATE";
+  return candidate.decision === "DUPLICATE" ? "PEER_DUPLICATE" : "NOT_DUPLICATE";
+}
+
 export function mergeWorkspacePage(
   current: ConsultationWorkspace | null,
   next: ConsultationWorkspace,

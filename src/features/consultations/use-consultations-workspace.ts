@@ -8,6 +8,8 @@ import {
   writeURLFilters,
   responseJSON,
   emptyReviewForm,
+  initialDuplicateChoice,
+  reviewFormsEqual,
   sourcePresentation,
   type BulkAction,
   type ConsultationFilterState,
@@ -32,6 +34,7 @@ export function useConsultationsWorkspace({ initialFilters, initialWorkspace, in
   const [reviewDetail, setReviewDetail] = useState<ConsultationReviewDetail | null>(null);
   const [reviewForm, setReviewForm] = useState<ReviewForm | null>(null);
   const [duplicateChoices, setDuplicateChoices] = useState<Record<string, DuplicateChoice>>({});
+  const [duplicateBaseline, setDuplicateBaseline] = useState<Record<string, DuplicateChoice>>({});
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewSaving, setReviewSaving] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
@@ -264,26 +267,22 @@ export function useConsultationsWorkspace({ initialFilters, initialWorkspace, in
 
         setReviewDetail(body.review);
         if (!preserveForm) setReviewForm(emptyReviewForm(body.review));
-        setDuplicateChoices((current) => {
+        const withLoadedCandidates = (current: Record<string, DuplicateChoice>) => {
           const next = { ...current };
           for (const candidate of body.review!.duplicateCandidates) {
             if (Object.hasOwn(next, candidate.candidateId)) continue;
-            next[candidate.candidateId] = candidate.decision === "PENDING"
-              ? ""
-              : candidate.isCurrentDuplicate
-                ? "DUPLICATE"
-                : candidate.decision === "DUPLICATE"
-                  ? "PEER_DUPLICATE"
-                  : "NOT_DUPLICATE";
+            next[candidate.candidateId] = initialDuplicateChoice(candidate);
           }
           return next;
-        });
+        };
+        setDuplicateChoices(withLoadedCandidates);
+        setDuplicateBaseline(withLoadedCandidates);
         return true;
       } catch (error) {
         if (reviewRequestRef.current === requestId) {
           setReviewError(
             error instanceof Error && error.message === "not_found"
-              ? "La consulta ya no está disponible. Actualizá la lista e intentá nuevamente."
+              ? "La consulta ya no está disponible. Actualizar la lista e intentar nuevamente."
               : "No se pudo cargar el detalle de la consulta. Reintentar.",
           );
         }
@@ -303,6 +302,7 @@ export function useConsultationsWorkspace({ initialFilters, initialWorkspace, in
       setReviewDetail(null);
       setReviewForm(null);
       setDuplicateChoices({});
+      setDuplicateBaseline({});
       setReviewError(null);
       setReviewSuccess(null);
       void loadReview(stagingId);
@@ -354,7 +354,7 @@ export function useConsultationsWorkspace({ initialFilters, initialWorkspace, in
           setImportError("No se pudo acceder a la fuente de consultas.");
           setAnnouncement("La fuente no está disponible. Las consultas registradas siguen visibles.");
         } else if (body.error === "import_already_running") {
-          setImportError("Ya hay una actualización en curso. Reintentá en unos momentos.");
+          setImportError("Ya hay una actualización en curso. Reintentar en unos momentos.");
           setAnnouncement("La actualización ya está en curso.");
         } else {
           setImportError("No se pudo actualizar la fuente. Reintentar.");
@@ -407,12 +407,12 @@ export function useConsultationsWorkspace({ initialFilters, initialWorkspace, in
         selection.matchingCount === 0
           ? "No hay consultas pendientes con estos filtros."
           : selection.matchingCount > selection.stagingIds.length
-            ? `Se seleccionaron ${selection.stagingIds.length} de ${selection.matchingCount} pendientes; quedan ${selection.matchingCount - selection.stagingIds.length} para otra tanda. Confirme el lote y seleccione la siguiente tanda para continuar.`
+            ? `Se seleccionaron ${selection.stagingIds.length} de ${selection.matchingCount} pendientes; quedan ${selection.matchingCount - selection.stagingIds.length} para otra tanda. Confirmar el lote y seleccionar la siguiente tanda para continuar.`
             : `Se seleccionaron ${selection.stagingIds.length} consultas pendientes.`;
       setBulkMessage(message);
       setAnnouncement(message);
     } catch {
-      setBulkError("No se pudieron seleccionar las consultas filtradas. Intente nuevamente.");
+      setBulkError("No se pudieron seleccionar las consultas filtradas. Intentar nuevamente.");
     } finally {
       setSelectionLoading(false);
     }
@@ -484,7 +484,7 @@ export function useConsultationsWorkspace({ initialFilters, initialWorkspace, in
       setBulkConfirmationAction(null);
       await refreshWorkspace(currentFiltersRef.current);
     } catch {
-      setBulkError("No se pudo completar la consolidación masiva. Intente nuevamente.");
+      setBulkError("No se pudo completar la consolidación masiva. Intentar nuevamente.");
     } finally {
       setBulkSubmitting(false);
     }
@@ -537,24 +537,26 @@ export function useConsultationsWorkspace({ initialFilters, initialWorkspace, in
             setReviewDetail(null);
             setReviewForm(null);
             setDuplicateChoices({});
+            setDuplicateBaseline({});
             const refreshed = await loadReview(selectedStagingId, 0);
             setReviewError(refreshed
-              ? "La consulta cambió o una decisión de duplicado entró en conflicto. Se actualizó la ficha; revisá los datos antes de guardar otra vez."
-              : "La consulta cambió, pero no se pudo actualizar la ficha. Reintentá cargar el detalle antes de guardar.");
+              ? "La consulta cambió o una decisión de duplicado entró en conflicto. Se actualizó el detalle; revisar los datos antes de guardar otra vez."
+              : "La consulta cambió, pero no se pudo actualizar el detalle. Reintentar la carga antes de guardar.");
             await refreshWorkspace(currentFiltersRef.current);
             return;
           }
           if (response.status === 404) {
-            setReviewError("La consulta ya no está disponible. Actualizá la lista e intentá nuevamente.");
+            setReviewError("La consulta ya no está disponible. Actualizar la lista e intentar nuevamente.");
             return;
           }
-          setReviewError("No se pudo guardar la revisión. Revisá los campos e intentá nuevamente.");
+          setReviewError("No se pudo guardar la revisión. Revisar los campos e intentar nuevamente.");
           return;
         }
 
         setReviewDetail(result.review);
         setReviewForm(emptyReviewForm(result.review));
         setDuplicateChoices({});
+        setDuplicateBaseline({});
         setReviewSuccess(
           result.outcome === "consolidated"
             ? "La consulta quedó consolidada."
@@ -564,7 +566,7 @@ export function useConsultationsWorkspace({ initialFilters, initialWorkspace, in
         );
         await refreshWorkspace(currentFiltersRef.current);
       } catch {
-        setReviewError("No se pudo guardar la revisión. Revisá la conexión e intentá nuevamente.");
+        setReviewError("No se pudo guardar la revisión. Revisar la conexión e intentar nuevamente.");
       } finally {
         setReviewSaving(false);
       }
@@ -572,6 +574,12 @@ export function useConsultationsWorkspace({ initialFilters, initialWorkspace, in
     [loadReview, refreshWorkspace, reviewDetail, selectedStagingId],
   );
 
+  const reviewDirty =
+    reviewDetail !== null &&
+    reviewForm !== null &&
+    !["CONSOLIDATED", "DUPLICATE"].includes(reviewDetail.status) &&
+    (!reviewFormsEqual(reviewForm, emptyReviewForm(reviewDetail)) ||
+      Object.entries(duplicateChoices).some(([id, choice]) => choice !== (duplicateBaseline[id] ?? "")));
   const currentWorkspace = workspace ?? emptyWorkspace;
   const status = sourcePresentation(currentWorkspace.import);
   const lastUpdate = currentWorkspace.import.lastSuccessfulAt;
@@ -626,6 +634,7 @@ export function useConsultationsWorkspace({ initialFilters, initialWorkspace, in
     reviewSaving,
     reviewError,
     reviewSuccess,
+    reviewDirty,
     selectedStagingIds,
     selectionLoading,
     bulkSubmitting,

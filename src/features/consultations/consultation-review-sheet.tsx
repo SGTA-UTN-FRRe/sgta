@@ -1,10 +1,11 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, LoaderCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { ConfirmationDialog } from "@/shared/components/confirmation-dialog";
 import { FormField } from "@/shared/components/form-field";
 import { SystemState } from "@/shared/components/system-state";
 import { StatusBadge } from "@/shared/components/status-badge";
@@ -34,6 +35,7 @@ export function ReviewSheet({
   saving,
   error,
   success,
+  dirty,
   onClose,
   onLoadMore,
   onRetry,
@@ -50,6 +52,7 @@ export function ReviewSheet({
   saving: boolean;
   error: string | null;
   success: string | null;
+  dirty: boolean;
   onClose: () => void;
   onLoadMore: (offset: number) => void;
   onRetry: () => void;
@@ -58,6 +61,8 @@ export function ReviewSheet({
   onDuplicateChoice: (candidateId: string, choice: DuplicateChoice) => void;
 }) {
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const readOnly = detail !== null && ["CONSOLIDATED", "DUPLICATE"].includes(detail.status);
   const subjects = detail?.references.subjects.filter(
     (subject) => subject.careerId === form?.careerId,
@@ -69,6 +74,24 @@ export function ReviewSheet({
     (candidate) => candidate.decision === "PENDING" && !duplicateChoices[candidate.candidateId],
   ).length ?? 0;
 
+  useEffect(() => {
+    if (!dirty) return;
+
+    // Reloading or leaving the site asks for the browser's confirmation.
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  function attemptClose() {
+    if (saving) return;
+    if (dirty) {
+      setConfirmDiscard(true);
+      return;
+    }
+    onClose();
+  }
+
   function updateForm<K extends keyof ReviewForm>(key: K, value: ReviewForm[K]) {
     if (form === null) return;
     onFormChange({ ...form, [key]: value });
@@ -79,22 +102,22 @@ export function ReviewSheet({
     event.preventDefault();
     if (form === null || detail === null) return;
     if (!form.careerId || !form.tutorId || !validDate(form.consultationDate)) {
-      setFieldError("Seleccioná una carrera, un tutor y una fecha válida.");
+      setFieldError("La carrera, el tutor y una fecha válida son obligatorios.");
       return;
     }
     if (form.classification === "SUBJECT" && !form.subjectId) {
-      setFieldError("Seleccioná una materia para esta clasificación.");
+      setFieldError("La materia es obligatoria para esta clasificación.");
       return;
     }
     const unacknowledged = detail.anomalyFlags.filter(
       (anomaly) => !form.acknowledgedAnomalies.includes(anomaly),
     );
     if (unacknowledged.length > 0) {
-      setFieldError("Revisá y confirmá cada observación antes de guardar.");
+      setFieldError("Confirmar cada observación antes de guardar.");
       return;
     }
     if (pendingVisibleCandidates > 0) {
-      setFieldError("Indicá si cada posible duplicado mostrado es duplicado o no.");
+      setFieldError("Indicar si cada posible duplicado mostrado es duplicado o no.");
       return;
     }
     setFieldError(null);
@@ -115,7 +138,8 @@ export function ReviewSheet({
     : [];
 
   return (
-    <Sheet open onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
+    <>
+    <Sheet open onOpenChange={(open) => { if (!open) attemptClose(); }}>
       <SheetContent size="wide" showCloseButton={false} className="gap-0 overflow-hidden max-md:rounded-none" onCloseAutoFocus={(event) => { event.preventDefault(); returnFocus(); }} onEscapeKeyDown={(event) => { if (saving) event.preventDefault(); }} onPointerDownOutside={(event) => { if (saving) event.preventDefault(); }}>
         <header className="flex items-start justify-between gap-4 border-b border-border bg-card px-4 py-4 sm:px-6">
           <div className="min-w-0">
@@ -124,7 +148,7 @@ export function ReviewSheet({
             </SheetTitle>
             <SheetDescription>Comparar la fila original con los valores normalizados.</SheetDescription>
           </div>
-          <Button disabled={saving} aria-label="Cerrar detalle" data-review-close onClick={onClose} size="icon" type="button" variant="ghost">
+          <Button disabled={saving} aria-label="Cerrar detalle" data-review-close onClick={attemptClose} ref={closeButtonRef} size="icon" type="button" variant="ghost">
             <X aria-hidden="true" />
           </Button>
         </header>
@@ -293,9 +317,26 @@ export function ReviewSheet({
           )}
         </div>
         <footer className="flex justify-end border-t border-border bg-card px-4 py-3 sm:px-6">
-          <Button disabled={saving} onClick={onClose} type="button" variant="outline">Cerrar</Button>
+          <Button disabled={saving} onClick={attemptClose} type="button" variant="outline">Cerrar</Button>
         </footer>
       </SheetContent>
     </Sheet>
+    <ConfirmationDialog
+      open={confirmDiscard}
+      onOpenChange={setConfirmDiscard}
+      title="¿Cerrar el detalle?"
+      description="Hay cambios sin guardar en la revisión."
+      onCloseAutoFocus={(event) => {
+        event.preventDefault();
+        if (closeButtonRef.current?.isConnected) closeButtonRef.current.focus();
+      }}
+      confirmLabel="Cerrar"
+      destructive
+      onConfirm={() => {
+        setConfirmDiscard(false);
+        onClose();
+      }}
+    />
+    </>
   );
 }
