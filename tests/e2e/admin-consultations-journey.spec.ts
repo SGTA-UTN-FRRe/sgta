@@ -13,6 +13,7 @@ import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 import { addE2ESessionCookie } from "./session-cookie";
 import {
   activateWithKeyboard,
+  expectAccessibleOverlay,
   expectReducedMotion,
   selectWithKeyboard,
   setCheckboxWithKeyboard,
@@ -49,7 +50,7 @@ test.describe("authenticated Admin consultation workflow", () => {
       page.getByRole("heading", { level: 1, name: "Consultas" }),
     ).toBeVisible();
 
-    await activateWithKeyboard(page, page.getByRole("button", { name: "Actualizar consultas" }));
+    await activateWithKeyboard(page, page.locator("[data-slot=page-header]").getByRole("button", { name: "Actualizar consultas" }));
     await expect(page.getByRole("status").filter({ hasText: "3 nuevas" })).toContainText(
       "3 nuevas",
     );
@@ -74,8 +75,20 @@ test.describe("authenticated Admin consultation workflow", () => {
       )),
     );
 
-    await selectWithKeyboard(page, page.getByRole("combobox", { name: "Estado" }), "PENDING_REVIEW");
-    await selectWithKeyboard(page, page.getByRole("combobox", { name: "Carrera" }), E2E_CAREER_ID);
+    const pageSelection = page.getByRole("checkbox", { name: "Seleccionar las consultas pendientes de esta página" });
+    await setCheckboxWithKeyboard(page, pageSelection, true);
+    await expectAccessibleOverlay(page, {
+      trigger: page.getByRole("button", { name: "Confirmar como General / Varias", exact: true }),
+      overlay: page.getByRole("alertdialog", { name: "Confirmar como General / Varias" }),
+    });
+    await setCheckboxWithKeyboard(page, pageSelection, false);
+
+    await activateWithKeyboard(page, page.getByRole("button", { name: "Filtros", exact: true }));
+    const compactFilters = page.getByRole("dialog", { name: "Filtros", exact: true });
+    await selectWithKeyboard(page, compactFilters.getByRole("combobox", { name: "Estado" }), "PENDING_REVIEW");
+    await selectWithKeyboard(page, compactFilters.getByRole("combobox", { name: "Carrera" }), E2E_CAREER_ID);
+    await activateWithKeyboard(page, compactFilters.getByRole("button", { name: "Cerrar", exact: true }));
+    await expect(compactFilters).toBeHidden();
     await page.getByRole("searchbox", { name: "Buscar consultas" }).fill("Casey");
     await expect(page).toHaveURL(/status=PENDING_REVIEW/);
     await expect(page).toHaveURL(/careerId=/);
@@ -87,10 +100,11 @@ test.describe("authenticated Admin consultation workflow", () => {
     const firstReviewButton = page
       .getByRole("button", { name: "Revisar a Casey Duplicate" })
       .first();
-    await activateWithKeyboard(page, firstReviewButton);
     const firstReview = page.getByRole("dialog", {
       name: "Detalle de Casey Duplicate",
     });
+    await expectAccessibleOverlay(page, { trigger: firstReviewButton, overlay: firstReview });
+    await activateWithKeyboard(page, firstReviewButton);
     await expect(firstReview).toBeVisible();
     accessibilityViolations.push(
       ...(await collectSeriousAccessibilityViolations(
@@ -164,7 +178,10 @@ test.describe("authenticated Admin consultation workflow", () => {
       "data-state",
       "search-empty",
     );
-    await selectWithKeyboard(page, page.getByRole("combobox", { name: "Estado" }), "ALL");
+    await activateWithKeyboard(page, page.getByRole("button", { name: /^Filtros/ }));
+    await selectWithKeyboard(page, compactFilters.getByRole("combobox", { name: "Estado" }), "");
+    await activateWithKeyboard(page, compactFilters.getByRole("button", { name: "Cerrar", exact: true }));
+    await expect(compactFilters).toBeHidden();
     await expect(page).toHaveURL(/careerId=/);
     await expect(page).toHaveURL(/search=Casey/);
 
@@ -235,7 +252,7 @@ test.describe("authenticated Admin consultation workflow", () => {
       pendingReview.getByRole("button", { name: "Cerrar", exact: true }),
     );
 
-    await activateWithKeyboard(page, page.getByRole("button", { name: "Actualizar consultas" }));
+    await activateWithKeyboard(page, page.locator("[data-slot=page-header]").getByRole("button", { name: "Actualizar consultas" }));
     await expect(page.getByRole("status").filter({ hasText: "3 ya procesadas" })).toContainText(
       "0 nuevas",
     );
@@ -243,7 +260,7 @@ test.describe("authenticated Admin consultation workflow", () => {
     await expect(page).not.toHaveURL(/search=/);
 
     const partialStatus = page.locator('[aria-label="Estado de la fuente de consultas"]');
-    await activateWithKeyboard(page, page.getByRole("button", { name: "Actualizar consultas" }));
+    await activateWithKeyboard(page, page.locator("[data-slot=page-header]").getByRole("button", { name: "Actualizar consultas" }));
     await expect(partialStatus).toHaveAttribute("data-state", "degraded");
     await expect(page.getByRole("status").filter({ hasText: "1 con errores" })).toBeVisible();
     await expect(page.getByText("Casey Duplicate").first()).toBeVisible();
@@ -254,7 +271,7 @@ test.describe("authenticated Admin consultation workflow", () => {
       )),
     );
 
-    await activateWithKeyboard(page, page.getByRole("button", { name: "Actualizar consultas" }));
+    await activateWithKeyboard(page, page.locator("[data-slot=page-header]").getByRole("button", { name: "Actualizar consultas" }));
     await expect(
       page.getByRole("alert").filter({ hasText: "No se pudo acceder a la fuente de consultas." }),
     ).toBeVisible();

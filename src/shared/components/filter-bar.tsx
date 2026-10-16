@@ -15,23 +15,27 @@ export interface SelectFilter {
   options: readonly { value: string; label: string }[];
   onChange: (value: string) => void;
 }
+export interface DateFilter extends Omit<SelectFilter, "options"> {
+  type: "date";
+}
+type FilterControlValue = SelectFilter | DateFilter;
 export interface FilterBarProps {
-  search?: { id: string; label: string; value: string; placeholder?: string; onChange: (value: string) => void };
-  filters?: readonly SelectFilter[];
+  search?: { id: string; label: string; value: string; placeholder?: string; maxLength?: number; onChange: (value: string) => void };
+  filters?: readonly FilterControlValue[];
   essentialFilterId?: string;
   resultCount: number;
   hasActiveFilters: boolean;
   onClear: () => void;
 }
 
-function FilterControl({ filter, compact = false }: { filter: SelectFilter; compact?: boolean }) {
+function FilterControl({ filter, compact = false }: { filter: FilterControlValue; compact?: boolean }) {
   const id = compact ? `${filter.id}-compact` : filter.id;
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{filter.label}</Label>
-      <NativeSelect id={id} value={filter.value} disabled={filter.disabled} onChange={(event) => filter.onChange(event.target.value)}>
+      {"type" in filter ? <Input id={id} type="date" value={filter.value} disabled={filter.disabled} onChange={(event) => filter.onChange(event.target.value)} /> : <NativeSelect id={id} value={filter.value} disabled={filter.disabled} onChange={(event) => filter.onChange(event.target.value)}>
         {filter.options.map((option) => <NativeSelectOption key={option.value} value={option.value}>{option.label}</NativeSelectOption>)}
-      </NativeSelect>
+      </NativeSelect>}
     </div>
   );
 }
@@ -45,7 +49,7 @@ export function FilterBar({ search, filters = [], essentialFilterId, resultCount
     <div role="search" aria-label="Buscar y filtrar" className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end" data-slot="filter-bar">
       {search && <div className="min-w-0 flex-1 space-y-2 md:min-w-48">
         <Label htmlFor={search.id}>{search.label}</Label>
-        <Input id={search.id} type="search" value={search.value} placeholder={search.placeholder} onChange={(event) => search.onChange(event.target.value)} />
+        <Input id={search.id} type="search" maxLength={search.maxLength} value={search.value} placeholder={search.placeholder} onChange={(event) => search.onChange(event.target.value)} />
       </div>}
       {filters.map((filter) => <div key={filter.id} className={filter === essentialFilter ? undefined : "hidden md:block"}>
         <FilterControl filter={filter} />

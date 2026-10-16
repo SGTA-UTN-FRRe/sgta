@@ -97,6 +97,20 @@ describe("DataTable", () => {
 });
 
 describe("FilterBar", () => {
+  it("moves date inputs into the Compact filter sheet and preserves their values", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<FilterBar resultCount={3} hasActiveFilters onClear={vi.fn()}
+      search={{ id: "query", label: "Buscar", value: "", maxLength: 120, onChange: vi.fn() }}
+      filters={[{ id: "from", type: "date", label: "Fecha desde", value: "2026-09-16", onChange }]} />);
+    expect(screen.getByRole("searchbox", { name: "Buscar" })).toHaveAttribute("maxlength", "120");
+    await user.click(screen.getByRole("button", { name: "Filtros, 1 activo" }));
+    const date = within(screen.getByRole("dialog", { name: "Filtros" })).getByLabelText("Fecha desde");
+    expect(date).toHaveValue("2026-09-16");
+    expect(date).toHaveAttribute("id", "from-compact");
+    await user.clear(date);
+    expect(onChange).toHaveBeenCalledWith("");
+  });
   function Filters() {
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState("");
