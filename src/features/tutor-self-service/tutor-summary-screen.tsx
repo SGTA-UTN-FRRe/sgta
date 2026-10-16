@@ -5,21 +5,20 @@ import {
   CalendarDays,
   Clock3,
   RefreshCw,
-  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { BalanceStatus } from "@/features/hours/balance-status";
 import type {
   TutorSelfServiceRequiredActionReason,
   TutorSelfServiceSummary,
 } from "./tutor-self-service-service";
 import {
   formatLongDate,
-  formatSignedMinutes,
   formatTime,
   formatTimeRange,
-  getBalanceLabel,
   getRequiredActionCopy,
   getTutorSelfServiceErrorMessage,
   focusTutorPageTitle,
@@ -28,7 +27,9 @@ import {
 } from "./tutor-self-service-screen-utils";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
+import { RouteLoadingState } from "@/shared/components/route-loading-state";
 import { StatusBadge } from "@/shared/components/status-badge";
+import { SystemState } from "@/shared/components/system-state";
 
 export type TutorSummaryScreenState =
   | "default"
@@ -57,43 +58,24 @@ function deriveState(data: TutorSelfServiceSummary | null): TutorSummaryScreenSt
     : "default";
 }
 
-function SummaryLoading() {
-  return (
-    <div
-      aria-label="Cargando resumen"
-      aria-live="polite"
-      className="space-y-6"
-      role="status"
-    >
-      <div className="h-9 w-56 animate-pulse rounded-sm bg-muted" />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }, (_, index) => (
-          <div
-            className="h-40 animate-pulse rounded-md border border-border bg-card"
-            key={index}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function SummaryError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const isGenericMessage =
+    message === "No se pudo cargar el resumen. Intentar nuevamente." ||
+    message === "No se pudo cargar el resumen.";
+
   return (
-    <div
-      aria-live="assertive"
-      className="rounded-md border border-destructive/30 bg-muted/70 p-6"
-      role="alert"
-    >
-      <h2 className="text-base font-semibold text-foreground">
-        No se pudo cargar el resumen
-      </h2>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{message}</p>
-      <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
-        <RefreshCw aria-hidden="true" />
-        Reintentar
-      </Button>
-    </div>
+    <SystemState
+      action={
+        <Button onClick={onRetry} type="button" variant="outline">
+          <RefreshCw aria-hidden="true" />
+          Reintentar
+        </Button>
+      }
+      description={isGenericMessage ? undefined : message}
+      headingLevel={2}
+      title={isGenericMessage ? message : "No se pudo cargar el resumen."}
+      variant="error"
+    />
   );
 }
 
@@ -107,21 +89,23 @@ function SummaryRequiredAction({
   const copy = getRequiredActionCopy(reason);
 
   return (
-    <div
-      aria-live="polite"
-      className="rounded-md border border-warning/30 bg-muted/70 p-6"
-      role="status"
-    >
-      <StatusBadge label="Acción requerida" variant="warning" />
-      <h2 className="mt-4 text-lg font-semibold text-foreground">{copy.title}</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-        {copy.description}
-      </p>
-      <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
-        <RefreshCw aria-hidden="true" />
-        Volver a consultar
-      </Button>
-    </div>
+    <SystemState
+      action={
+        <Button onClick={onRetry} type="button" variant="outline">
+          <RefreshCw aria-hidden="true" />
+          Volver a consultar
+        </Button>
+      }
+      description={
+        <div className="space-y-3">
+          <StatusBadge label="Acción requerida" variant="warning" />
+          <p>{copy.description}</p>
+        </div>
+      }
+      headingLevel={2}
+      title={copy.title}
+      variant="required-action"
+    />
   );
 }
 
@@ -142,141 +126,152 @@ function SummaryEmpty({ onRetry }: { onRetry: () => void }) {
 
 function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { state: "ready" }> }) {
   const nextDuty = data.nextDuty;
+  const subjectCount = data.tutor.subjects.length;
 
   return (
     <>
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <section
-          aria-labelledby="tutor-summary-hours"
-          className="rounded-md border border-border bg-card p-5 shadow-xs"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">Horas</p>
-              <h2
-                className="mt-3 font-sans text-3xl font-extrabold tabular-nums text-foreground"
-                id="tutor-summary-hours"
-              >
-                {formatSignedMinutes(data.balance.signedBalanceMinutes)}
-              </h2>
-            </div>
-            <Clock3 aria-hidden="true" className="h-5 w-5 text-primary" />
-          </div>
-          <StatusBadge
-            className="mt-5"
-            label={getBalanceLabel(data.balance.state)}
-            variant={data.balance.state === "current" ? "success" : "warning"}
-          />
-        </section>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
+        <Card>
+          <section aria-labelledby="tutor-summary-hours">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center gap-2">
+                <Clock3 aria-hidden="true" className="size-5 shrink-0 text-primary" />
+                <h2 className="font-display text-xl font-semibold" id="tutor-summary-hours">
+                  Horas
+                </h2>
+              </div>
+              <div className="mt-3">
+                <BalanceStatus balance={data.balance} />
+              </div>
+            </CardContent>
+          </section>
+        </Card>
 
-        <section
-          aria-labelledby="tutor-summary-next-duty"
-          className="rounded-md border border-border bg-card p-5 shadow-xs md:col-span-1 xl:col-span-2"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">
-                Próxima guardia
-              </p>
-              <h2 className="mt-3 text-lg font-bold text-foreground" id="tutor-summary-next-duty">
-                {nextDuty === null ? "No hay guardias próximas" : formatLongDate(nextDuty.date)}
-              </h2>
-            </div>
-            <CalendarDays aria-hidden="true" className="h-5 w-5 text-primary" />
-          </div>
-          {nextDuty && (
-            <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              <time dateTime={`${nextDuty.date}T${formatTime(nextDuty.startMinutes)}`}>
-                {formatTimeRange(nextDuty.startMinutes, nextDuty.endMinutes)}
-              </time>
-              {nextDuty.modality ? ` · ${nextDuty.modality}` : ""}
-            </p>
-          )}
-        </section>
-
-        <section
-          aria-labelledby="tutor-summary-career"
-          className="rounded-md border border-border bg-card p-5 shadow-xs"
-        >
-          <p className="text-sm font-semibold text-muted-foreground">Carrera</p>
-          <h2 className="mt-3 text-lg font-bold text-foreground" id="tutor-summary-career">
-            {data.tutor.career.name}
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {data.tutor.subjects.length === 1
-              ? "1 materia asignada"
-              : `${data.tutor.subjects.length} materias asignadas`}
-          </p>
-        </section>
+        <Card>
+          <section aria-labelledby="tutor-summary-next-duty">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-start gap-3">
+                <CalendarDays aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <h2 className="font-display text-xl font-semibold" id="tutor-summary-next-duty">
+                    Próxima guardia
+                  </h2>
+                  {nextDuty === null ? (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      No hay guardias próximas
+                    </p>
+                  ) : (
+                    <>
+                      <p className="mt-2 font-semibold leading-6 text-foreground">
+                        <time dateTime={nextDuty.date}>{formatLongDate(nextDuty.date)}</time>
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                        <time
+                          className="tabular-nums"
+                          dateTime={`${nextDuty.date}T${formatTime(nextDuty.startMinutes)}`}
+                        >
+                          {formatTimeRange(nextDuty.startMinutes, nextDuty.endMinutes)}
+                        </time>
+                        {nextDuty.modality ? ` · ${nextDuty.modality}` : ""}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </section>
+        </Card>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-        <section
-          aria-labelledby="tutor-summary-subjects"
-          className="rounded-md border border-border bg-card p-5 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <BookOpen aria-hidden="true" className="mt-0.5 h-5 w-5 text-primary" />
-            <div>
-              <h2 className="text-lg font-bold text-foreground" id="tutor-summary-subjects">
-                Materias
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Materias asignadas.
-              </p>
-            </div>
-          </div>
-          {data.tutor.subjects.length === 0 ? (
-            <p className="mt-6 rounded-sm bg-muted px-4 py-3 text-sm text-muted-foreground">
-              Todavía no hay materias asignadas.
-            </p>
-          ) : (
-            <ul className="mt-5 grid gap-2 sm:grid-cols-2" data-testid="tutor-subject-list">
-              {data.tutor.subjects.map((subject) => (
-                <li
-                  className="rounded-sm border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground"
-                  key={subject.id}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
+        <Card className="min-w-0">
+          <section aria-labelledby="tutor-summary-subjects">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <div className="flex items-center gap-2">
+                  <BookOpen aria-hidden="true" className="size-5 shrink-0 text-primary" />
+                  <h2 className="font-display text-xl font-semibold" id="tutor-summary-subjects">
+                    Materias
+                  </h2>
+                </div>
+                {subjectCount > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {subjectCount === 1
+                      ? "1 materia asignada"
+                      : `${subjectCount} materias asignadas`}
+                  </p>
+                )}
+              </div>
+              {subjectCount === 0 ? (
+                <EmptyState
+                  className="py-2"
+                  title="Todavía no hay materias asignadas."
+                />
+              ) : (
+                <ul
+                  className="mt-3 divide-y divide-border border-t border-border"
+                  data-testid="tutor-subject-list"
                 >
-                  <span>{subject.name}</span>
-                  {subject.status === "INACTIVE" && (
-                    <span className="mt-1 block text-xs font-medium text-muted-foreground">
-                      Materia inactiva
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                  {data.tutor.subjects.map((subject) => (
+                    <li
+                      className="flex min-h-row flex-col justify-center py-3 text-sm font-semibold text-foreground"
+                      key={subject.id}
+                    >
+                      <span>{subject.name}</span>
+                      {subject.status === "INACTIVE" && (
+                        <span className="mt-1 block text-xs font-medium text-muted-foreground">
+                          Materia inactiva
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </section>
+        </Card>
 
-        <section
-          aria-labelledby="tutor-summary-cycle"
-          className="rounded-md border border-border bg-card p-5 shadow-xs"
-        >
-          <div className="flex items-start gap-3">
-            <Sparkles aria-hidden="true" className="mt-0.5 h-5 w-5 text-faro" />
-            <div>
-              <h2 className="text-lg font-bold text-foreground" id="tutor-summary-cycle">
+        <Card>
+          <section aria-labelledby="tutor-summary-cycle">
+            <CardContent className="p-3 md:p-4">
+              <h2 className="font-display text-xl font-semibold" id="tutor-summary-cycle">
                 Ciclo vigente
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Contexto de la pertenencia actual.
               </p>
-            </div>
-          </div>
-          <p className="mt-5 font-semibold text-foreground">{data.cycle.name}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {formatLongDate(data.cycle.startDate)} — {formatLongDate(data.cycle.endDate)}
-          </p>
-          <div className="mt-5 border-t border-border pt-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Referencia de beca
-            </p>
-            <p className="mt-2 text-sm font-semibold text-foreground">
-              {data.membership.scholarshipReference?.type ?? "Sin referencia registrada"}
-            </p>
-          </div>
-        </section>
+              <dl className="mt-4 divide-y divide-border">
+                <div className="py-3 first:pt-0">
+                  <dt className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
+                    Ciclo
+                  </dt>
+                  <dd className="mt-1">
+                    <p className="text-sm font-semibold text-foreground">{data.cycle.name}</p>
+                    <p className="mt-1 text-sm tabular-nums text-muted-foreground">
+                      {formatLongDate(data.cycle.startDate)} — {formatLongDate(data.cycle.endDate)}
+                    </p>
+                  </dd>
+                </div>
+                <div className="py-3">
+                  <dt className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
+                    Carrera
+                  </dt>
+                  <dd className="mt-1 break-words text-sm font-semibold text-foreground">
+                    {data.tutor.career.name}
+                  </dd>
+                </div>
+                <div className="py-3 last:pb-0">
+                  <dt className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
+                    Referencia de beca
+                  </dt>
+                  <dd className="mt-1 text-sm font-semibold text-foreground">
+                    {data.membership.scholarshipReference?.type ?? "Sin referencia registrada"}
+                  </dd>
+                </div>
+              </dl>
+            </CardContent>
+          </section>
+        </Card>
       </div>
     </>
   );
@@ -316,7 +311,7 @@ export function TutorSummaryScreen({
   };
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-4 pb-10 md:space-y-6">
       <PageHeader
         description={
           data?.state === "ready"
@@ -326,7 +321,7 @@ export function TutorSummaryScreen({
         titleId="tutor-page-title"
         title="Mi resumen"
       />
-      {state === "loading" && <SummaryLoading />}
+      {state === "loading" && <RouteLoadingState />}
       {state === "error" && <SummaryError message={errorMessage} onRetry={retry} />}
       {state === "required-action" && data?.state === "required-action" && (
         <SummaryRequiredAction onRetry={retry} reason={data.reason} />

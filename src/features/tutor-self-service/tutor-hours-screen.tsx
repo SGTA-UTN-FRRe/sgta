@@ -4,13 +4,13 @@ import { ArrowDownLeft, ArrowUpRight, Clock3, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { formatDuration } from "@/shared/format-duration";
 import type {
   TutorSelfServiceHours,
   TutorSelfServiceRequiredActionReason,
 } from "./tutor-self-service-service";
 import {
   formatLongDate,
-  formatSignedMinutes,
   focusTutorPageTitle,
   getBalanceLabel,
   getMovementDirectionLabel,
@@ -147,7 +147,7 @@ function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: 
           <div className="sm:text-right">
             <p className="text-sm font-semibold text-muted-foreground">Saldo del ciclo</p>
             <p className="mt-1 font-sans text-4xl font-extrabold tabular-nums text-foreground">
-              {formatSignedMinutes(data.balance.signedBalanceMinutes)}
+              {formatDuration(data.balance.signedBalanceMinutes)}
             </p>
             <StatusBadge
               className="mt-3"
@@ -208,7 +208,7 @@ function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: 
                         </p>
                       </div>
                       <p className="font-sans text-lg font-bold tabular-nums text-foreground">
-                        {formatSignedMinutes(movement.signedDurationMinutes)}
+                        {formatDuration(movement.signedDurationMinutes, { signed: true })}
                       </p>
                     </div>
                     {movement.note && (

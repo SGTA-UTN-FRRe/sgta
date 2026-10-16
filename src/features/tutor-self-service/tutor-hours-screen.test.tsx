@@ -9,13 +9,14 @@ import {
 } from "./tutor-self-service-screen.fixtures";
 
 describe("TutorHoursScreen", () => {
-  it("renders signed balance and read-only movement history", () => {
+  it("formats the balance and movement history while keeping it read-only", () => {
     render(<TutorHoursScreen data={tutorSelfServiceHoursReady} />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Mis horas" })).toBeInTheDocument();
     expect(screen.getByText("Saldo del ciclo")).toBeInTheDocument();
     expect(screen.getByText("Saldo de horas y movimientos del ciclo.")).toBeInTheDocument();
-    expect(screen.getAllByText("+01:00")).not.toHaveLength(0);
+    expect(screen.getByText("1 h")).toBeInTheDocument();
+    expect(screen.getByText("+1 h")).toBeInTheDocument();
     expect(screen.getByText("Al día")).toBeInTheDocument();
     expect(screen.getByText("Reunión de equipo")).toBeInTheDocument();
     expect(screen.getByText("Reunión de coordinación semanal.")).toBeInTheDocument();
