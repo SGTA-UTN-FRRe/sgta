@@ -22,7 +22,13 @@ export const careerFillClassNames: Record<CareerColor, string> = {
 };
 
 /** Recovery and conflict cues shown as badges with visible text. */
-export function AssignmentCues({ assignment, conflict }: { assignment: AssignmentView; conflict: boolean }) {
+export function AssignmentCues({
+  assignment,
+  conflict,
+}: {
+  assignment: Pick<AssignmentView, "kind">;
+  conflict: boolean;
+}) {
   if (assignment.kind !== "RECOVERY" && !conflict) {
     return null;
   }
