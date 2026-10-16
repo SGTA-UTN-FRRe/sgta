@@ -131,7 +131,7 @@ test.describe("authenticated Tutor self-service", () => {
         page.getByRole("heading", { level: 1, name: "Mi resumen" }),
       ).toBeVisible();
       await expect(page.getByText("Algorithms", { exact: true })).toBeVisible();
-      await expect(page.getByText(/\+\d{2}:\d{2}/).first()).toBeVisible();
+      await expect(page.getByText("30 min", { exact: true })).toBeVisible();
       await expect(page.getByRole("link", { name: "Tutores", exact: true })).toHaveCount(0);
       await expect(page.getByRole("link", { name: "Configuración", exact: true })).toHaveCount(0);
       await expect(
@@ -191,6 +191,7 @@ test.describe("authenticated Tutor self-service", () => {
       ).toBeVisible();
       await expect(page.getByText("Al día", { exact: true })).toBeVisible();
       await expect(page.getByText("Seeded meeting movement.", { exact: true })).toBeVisible();
+      await expect(page.getByText("+30 min", { exact: true })).toBeVisible();
       await expect(
         page.locator('[data-layout="movement-history"]'),
       ).toBeVisible();

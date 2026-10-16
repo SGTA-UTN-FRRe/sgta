@@ -50,14 +50,6 @@ export function formatTimeRange(startMinutes: number, endMinutes: number) {
   return `${formatTime(startMinutes)} a ${formatTime(endMinutes)}`;
 }
 
-export function formatSignedMinutes(minutes: number) {
-  const sign = minutes < 0 ? "-" : "+";
-  const absolute = Math.abs(minutes);
-  const hours = Math.floor(absolute / 60);
-  const remainder = absolute % 60;
-  return `${sign}${String(hours).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
-}
-
 export function getBalanceLabel(state: "current" | "owes") {
   return state === "current" ? "Al d\u00eda" : "Debe horas";
 }
@@ -105,7 +97,7 @@ export function getTutorSelfServiceErrorMessage(code: string) {
       "El perfil todavía no tiene una pertenencia configurada para el ciclo vigente.",
     date_outside_cycle:
       "La fecha seleccionada no pertenece al ciclo administrativo vigente.",
-    forbidden: "No tienes permisos para consultar esta información.",
+    forbidden: "La cuenta no tiene permisos para consultar esta información.",
     internal_server_error:
       "No se pudo cargar la información. Intentar nuevamente.",
     invalid_request: "Revisar la fecha seleccionada antes de intentar nuevamente.",
