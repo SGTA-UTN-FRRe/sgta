@@ -23,6 +23,24 @@ describe("LoginScreen", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       data.title,
     );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveClass(
+      "font-display",
+      "text-2xl",
+      "md:text-title",
+      "font-semibold",
+    );
+    expect(screen.getByRole("heading", { level: 2 })).toHaveClass(
+      "font-display",
+      "text-2xl",
+      "lg:text-display",
+      "font-semibold",
+    );
+    expect(screen.getByText("Acceso institucional")).toHaveClass(
+      "text-xs",
+      "font-semibold",
+      "uppercase",
+      "tracking-eyebrow",
+    );
     expect(
       screen.getByRole("button", { name: data.ctaLabel }),
     ).toBeEnabled();
@@ -67,6 +85,7 @@ describe("LoginScreen", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       data.states.permissionDeniedDescription,
     );
+    expect(screen.getAllByText(data.recoveryText)).toHaveLength(1);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
