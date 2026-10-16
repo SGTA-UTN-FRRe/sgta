@@ -4,38 +4,47 @@ Global rules, system states, and the route inventory live in [UI-SPEC](../UI-SPE
 
 - Route: `/admin/reports`. Access: Admin.
 - Purpose and success condition: answer administrative questions from canonical SGTA data, so the Admin filters a period and understands demand, schedule coverage, and hour status; reports are derived, explainable, and accessible, and need no manual spreadsheet reconstruction.
-- Primary action: none by default; filters drive the view.
+- Primary action: none by default; filters drive the view and are applied together with `Aplicar filtros`.
 
 ## Content order
 
 1. Page header.
-2. Global filters: Período, Carrera, Materia, Tutor, Modalidad, and `Restablecer filtros`.
-3. A concise summary.
-4. `Demanda`: consultation demand by career, subject, Tutor, modality, academic stage, and month, with a visualization only where useful and a detailed ranked table.
-5. `Cobertura`: subject coverage and scheduled duties.
-6. `Horas y actividades`: current balances, movements, and activities.
+2. `Filtros` panel: the period as `Desde` and `Hasta`, then `Carrera` (`Todas las carreras`), `Materia` (`Todas las materias`), `Tutor` (`Todos los tutores`), and `Modalidad` (`Todas las modalidades`, `Sin especificar`, then recorded modalities); the helper line `El período incluye ambas fechas y admite hasta 366 días. Una materia elegida debe pertenecer a la carrera seleccionada.`; then `Aplicar filtros` and `Restablecer filtros`. A selected value missing from the loaded options stays selectable as `Selección actual`.
+3. `Resumen`: `Período del <desde> al <hasta>` and four metrics: `Consultas`, `De materia`, `Generales`, and `Tutores activos`, each with a one-line scope caption. A metric whose source failed shows `—`.
+4. `Demanda`: six ranked tables, `Por carrera`, `Por materia`, `Por tutor`, `Por modalidad`, `Por etapa académica`, and `Evolución mensual`, each with its count column `Consultas`. Ranked groups show the first 50 by count with `Se muestran los primeros 50 resultados ordenados por cantidad.` when more exist.
+5. `Cobertura`: `Cobertura de materias` (covered / total subjects, the percentage when defined, and the open cycle) and `Guardias programadas` (`Ocurrencias`, `Tiempo programado`, a table by kind, `Ordinarias` and `Recuperatorias`, and a table by Tutor limited to 50 rows with a notice).
+6. `Horas y actividades`: `Estado de saldos actual` (`Tutores incluidos`, `Con saldo negativo`, `Al día`), `Movimientos de horas` (`Créditos`, `Débitos`, and `Neto (créditos menos débitos)` as count and duration, then a table `Fecha`, `Dirección`, `Categoría`, `Movimientos`, `Duración` limited to the first 1,000 groups by date with a notice), and `Actividades` (`Actividades`, `Duración registrada`, and a table `Fecha`, `Tipo`, `Actividades`, `Duración`).
+
+Each section and card names the filters that affect it and, for snapshots, the open cycle it describes. Tutor names in report tables link to the tutor registry searched by that name, with the accessible name `Ver tutor <Tutor>`. Careers appear as text: report groups and filter options carry the career name without its palette, so report tables do not use career color. Durations use the shared duration format; net movement duration is signed.
 
 ## Wireframe
 
 ```text
 Reportes
-[Período] [Carrera] [Materia] [Tutor] [Modalidad]
+Filtros
+[Desde] [Hasta] [Carrera] [Materia] [Tutor] [Modalidad]
+[Aplicar filtros] [Restablecer filtros]
 
-Summary
+Resumen
+[Consultas] [De materia] [Generales] [Tutores activos]
 
 Demanda
-[visualization if useful]
-[detailed ranked table]
+[Por carrera] [Por materia] [Por tutor]
+[Por modalidad] [Por etapa académica] [Evolución mensual]
 
 Cobertura
+[Cobertura de materias]
+[Guardias programadas]
 
 Horas y actividades
+[Estado de saldos actual] [Movimientos de horas]
+[Actividades]
 ```
 
 ## Responsive exceptions
 
-- Medium: sections mix columns where tables allow.
-- Compact: sections stack; tables become priority lists.
+- Medium: sections mix columns where tables allow; filters wrap in order.
+- Compact: sections stack; tables become priority lists with the same values and Tutor links. `Desde` stays inline; `Hasta`, `Carrera`, `Materia`, `Tutor`, and `Modalidad` move to the `Filtros` sheet, which has its own `Aplicar filtros`. The trigger badge counts selected `Carrera`, `Materia`, `Tutor`, and `Modalidad` values; the period always applies and is not counted.
 
 ## States
 
@@ -43,9 +52,11 @@ Horas y actividades
 | --- | --- |
 | Default | Filters and every section. |
 | Loading | The Reportes skeleton, announced as `Cargando reportes`. |
-| Empty | `No hay datos para los filtros seleccionados.` |
-| Error | `No se pudieron cargar los reportes` with `Los valores enviados se mantienen en el formulario. Reintentar la consulta para volver a cargar los reportes.` |
-| Degraded | When one source or section fails, its own error (for example `No se pudo cargar la demanda de consultas`) appears in that section and unaffected sections stay usable. |
+| Empty | When the period has no consultations, planned duties, movements, or activities: `No hay datos para los filtros seleccionados.` with `Los indicadores de estado actual, cuando están disponibles, siguen describiendo el ciclo vigente.` and `Restablecer filtros`, shown once after the summary. Summary, coverage, and balance snapshots stay visible. Inside sections, an empty demand reads `Sin consultas consolidadas para los filtros seleccionados.` and empty tables read `Sin consultas para este desglose.`, `Sin guardias programadas en el período.`, `Sin movimientos en el período.`, or `Sin actividades en el período.` as a single muted line. |
+| Invalid filters | `No se pudieron aplicar los filtros` with one line per problem; the submitted values stay in the form and no report section renders. |
+| Error | `No se pudieron cargar los reportes` with `Los valores enviados se mantienen en el formulario. Reintentar la consulta para volver a cargar los reportes.` and `Reintentar`. |
+| Degraded | When one source or section fails, a `Carga parcial` notice reads `Una o más secciones no están disponibles; el resto conserva sus resultados.` with `Reintentar todas`; each failed section shows its own error and `Reintentar` (for example `No se pudo cargar la demanda de consultas`), and unaffected sections stay usable. When filter options fail, the panel shows `No se pudieron cargar todas las opciones de filtro.` with `Los resultados disponibles siguen visibles.` and keeps the selected values. |
+| Required action | Without an open cycle, `No hay un ciclo abierto para consultar la cobertura de materias.` and `No hay un ciclo abierto para consultar los saldos actuales.` link to `Configuración`; dated sections stay usable. |
 
 ## Copy
 
@@ -54,7 +65,10 @@ Horas y actividades
 | Title | Reportes |
 | Description | Consultar demanda, cobertura y movimientos a partir de registros consolidados. |
 | Primary action | None |
+| Apply filters | Aplicar filtros |
 | Reset filters | Restablecer filtros |
+| Invalid filters | No se pudieron aplicar los filtros |
+| Partial load | Carga parcial · Reintentar todas |
 | Empty | No hay datos para los filtros seleccionados. |
 | Error | No se pudieron cargar los reportes |
 | Success | None |
@@ -103,12 +117,13 @@ Career and Subject are not applied retroactively to schedule, movement, or activ
 
 Filters:
 
+- are edited as a draft and applied together with `Aplicar filtros`, from the panel or the Compact `Filtros` sheet;
 - apply to the sections listed in Filter scope;
 - `Restablecer filtros` restores the documented default period;
 - valid state is URL-backed and survives reload or sharing;
 - invalid or incomplete date ranges retain the submitted values and explain the correction needed.
 
-Charts:
+Charts (none in this release; the ranked tables are the exact-value presentation):
 
 - appear only when they materially improve comprehension;
 - require an accessible value or table equivalent;
@@ -119,7 +134,7 @@ Charts:
 
 - Charts have an accessible title, description, and value equivalent.
 - Filter order is logical.
-- Data tables stay keyboard navigable.
+- Data tables stay keyboard navigable; each ranked table is a focusable region named by its caption, and its Compact list carries the same values.
 - No meaning depends on color.
 
 ## Acceptance criteria

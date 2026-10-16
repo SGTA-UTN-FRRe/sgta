@@ -160,12 +160,14 @@ describe("FilterBar", () => {
     const sheet = screen.getByRole("dialog", { name: "Filtros" });
     expect(within(sheet).getByRole("combobox")).toHaveAccessibleName(essentialFilterId === "career" ? "Estado" : "Carrera");
   });
-  it("counts secondary filters without counting search and omits an unnecessary sheet", () => {
+  it("counts secondary filters without counting search or always-applied filters and omits an unnecessary sheet", () => {
     const props = { resultCount: 0, hasActiveFilters: true, onClear: vi.fn() };
     const search = { id: "search", label: "Buscar", value: "Camila", onChange: vi.fn() };
     const filters = ["Estado", "Carrera"].map((label) => ({ id: label, label, value: "selected", options: [{ value: "selected", label: "Seleccionado" }], onChange: vi.fn() }));
     const { rerender } = render(<FilterBar {...props} search={search} filters={filters} />);
     expect(screen.getByRole("button", { name: "Filtros, 2 activos" })).toHaveTextContent("2");
+    rerender(<FilterBar {...props} search={search} filters={[{ ...filters[0], alwaysApplied: true }, filters[1]]} />);
+    expect(screen.getByRole("button", { name: "Filtros, 1 activo" })).toHaveTextContent("1");
     rerender(<FilterBar {...props} filters={filters.slice(0, 1)} />);
     expect(screen.queryByRole("button", { name: /Filtros/ })).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Estado" })).toBeInTheDocument();

@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import type { ReportFilterOptions } from "@/features/reports/report-service";
@@ -137,6 +138,24 @@ function createEmptyReport(): OperationalReport {
 }
 
 describe("ReportsScreen", () => {
+  it("submits each filter once after editing in the Compact sheet", async () => {
+    const user = userEvent.setup();
+    render(<ReportsScreen filterOptions={filterOptions} query={{}} report={createReport()} />);
+    const form = screen.getByRole("button", { name: "Aplicar filtros" }).closest("form")!;
+    await user.click(screen.getByRole("button", { name: "Filtros, 4 activos" }));
+    const sheet = screen.getByRole("dialog", { name: "Filtros" });
+    await user.selectOptions(within(sheet).getByRole("combobox", { name: "Modalidad" }), "UNSPECIFIED");
+    expect(within(sheet).getByRole("button", { name: "Aplicar filtros" })).toHaveAttribute("form", form.id);
+    const values = new FormData(form);
+    expect([...values.entries()]).toEqual([
+      ["fromDate", "2026-09-18"], ["toDate", "2026-09-21"],
+      ["careerId", "career-1"], ["subjectId", "subject-1"],
+      ["tutorId", "tutor-1"], ["modality", "UNSPECIFIED"],
+    ]);
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("combobox", { name: "Modalidad" })).toHaveValue("UNSPECIFIED");
+  });
+
   it("links tutor identities from consultation and schedule tables to the filtered tutor list", () => {
     const report = createReport();
     report.plannedSchedules = ready({
@@ -144,10 +163,11 @@ describe("ReportsScreen", () => {
       byTutor: { items: [{ key: "tutor-1", label: "Owens, Iris", count: 1, minutes: 60 }], truncated: false },
     });
     render(<ReportsScreen filterOptions={filterOptions} query={{}} report={report} />);
-    const links = screen.getAllByRole("link", { name: "Ver tutor Owens, Iris" });
-    expect(links).toHaveLength(2);
-    for (const link of links) {
-      expect(link).toHaveAttribute("href", "/admin/tutors?search=Owens%2C%20Iris");
+    for (const label of ["Tutor", "Guardias programadas por tutor"]) {
+      for (const role of ["table", "list"] as const) {
+        const link = within(screen.getByRole(role, { name: label })).getByRole("link", { name: "Ver tutor Owens, Iris" });
+        expect(link).toHaveAttribute("href", "/admin/tutors?search=Owens%2C%20Iris");
+      }
     }
     expect(screen.queryByRole("link", { name: "Ver tutor Applied Science" })).not.toBeInTheDocument();
   });
@@ -182,6 +202,7 @@ describe("ReportsScreen", () => {
     expect(screen.getByText("La cobertura y los saldos muestran el estado actual del ciclo abierto; la programación corresponde al período seleccionado.")).toBeInTheDocument();
     expect(screen.getAllByText("21/09/2026")).not.toHaveLength(0);
     expect(screen.getByText("5 · 21 h 39 min")).toBeInTheDocument();
+    expect(screen.getByText("+17 h 39 min")).toBeInTheDocument();
 
     const careerTableRegion = screen.getByRole("region", { name: "Carrera" });
     expect(careerTableRegion).toHaveAttribute("tabindex", "0");
@@ -216,9 +237,12 @@ describe("ReportsScreen", () => {
       />,
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(screen.getByText("Los indicadores de estado actual, cuando están disponibles, siguen describiendo el ciclo vigente.").closest('[role="status"]')).toHaveTextContent(
       "No hay datos para los filtros seleccionados.",
     );
+    expect(screen.getAllByText("No hay datos para los filtros seleccionados.")).toHaveLength(1);
+    expect(screen.getByText("Sin consultas consolidadas para los filtros seleccionados.")).toBeInTheDocument();
+    expect(screen.getByText("Sin movimientos en el período.")).toBeInTheDocument();
     expect(screen.getByText("Tutores activos")).toBeInTheDocument();
     expect(screen.getAllByText(/Estado actual .*2026/)).not.toHaveLength(0);
   });
@@ -241,5 +265,28 @@ describe("ReportsScreen", () => {
     expect(screen.getByText("No se pudieron cargar los movimientos")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Cobertura" })).toBeInTheDocument();
     expect(screen.getByText(/Estado actual .*2026 .*filtros de carrera, materia y tutor/)).toBeInTheDocument();
+  });
+
+  it("offers cycle setup while keeping period data available without an open cycle", () => {
+    const report = createReport();
+    report.currentCycle = ready(null);
+    report.subjectCoverage = { status: "unavailable", reason: "NO_OPEN_CYCLE" };
+    report.currentBalances = { status: "unavailable", reason: "NO_OPEN_CYCLE" };
+    render(<ReportsScreen filterOptions={filterOptions} query={{}} report={report} />);
+    for (const name of ["Cobertura de materias", "Estado de saldos actual"]) {
+      const section = screen.getByRole("heading", { name }).closest('[data-slot="card"]')!;
+      expect(within(section as HTMLElement).getByRole("link", { name: "Configuración" })).toHaveAttribute("href", "/admin/settings");
+    }
+    expect(screen.getByRole("table", { name: "Movimientos por fecha, categoría y dirección" })).toBeInTheDocument();
+  });
+
+  it("keeps selected options and submitted dates when filter options fail", () => {
+    render(<ReportsScreen report={null} filterOptions={null} filterOptionsError loadError
+      query={{ fromDate: "2026-09-18", toDate: "2026-09-21", tutorId: "tutor-1", modality: "Remote" }} />);
+    expect(screen.getByLabelText("Desde")).toHaveValue("2026-09-18");
+    expect(screen.getByRole("combobox", { name: "Tutor" })).toHaveValue("tutor-1");
+    expect(screen.getByRole("combobox", { name: "Modalidad" })).toHaveValue("Remote");
+    expect(screen.getByRole("link", { name: "Reintentar" })).toHaveAttribute("href",
+      "/admin/reports?fromDate=2026-09-18&toDate=2026-09-21&tutorId=tutor-1&modality=Remote");
   });
 });

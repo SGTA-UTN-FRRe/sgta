@@ -80,7 +80,7 @@ for (const viewport of [
     await expectMovementTutor(E2E_SECONDARY_TUTOR_ID);
 
     await page.goto(`/admin/reports?fromDate=2027-01-18&toDate=2027-01-18`);
-    await activateWithKeyboard(page, page.getByRole("table", { name: "Guardias programadas por tutor" }).getByRole("link", { name: "Ver tutor Curie, Marie" }));
+    await activateWithKeyboard(page, page.getByRole(viewport.layout === "compact" ? "list" : "table", { name: "Guardias programadas por tutor" }).getByRole("link", { name: "Ver tutor Curie, Marie" }));
     await expect(page.getByRole("searchbox", { name: "Buscar tutor" })).toHaveValue("Curie, Marie");
     await expect(page.getByRole("button", { name: "Lovelace, Ada", exact: true })).toHaveCount(0);
 
