@@ -7,7 +7,7 @@ import { formatDuration } from "@/shared/format-duration";
 import type { SafeHourMovement } from "./hour-service";
 import { directionLabels, formatCycleStatus, formatDate, formatOrigin, getReversalVariant, reversalLabels } from "./movement-history-utils";
 
-function MovementRelationship({ movement }: { movement: SafeHourMovement }) {
+function MovementRelationship({ movement, visibleIds }: { movement: SafeHourMovement; visibleIds: ReadonlySet<string> }) {
   const targetId = movement.reversalState === "REVERSED" ? movement.reversalMovementId : movement.reversalOfMovementId;
   if (targetId) {
     const label = movement.reversalState === "REVERSED" ? "Ver reversión vinculada" : "Ver movimiento original";
@@ -15,8 +15,10 @@ function MovementRelationship({ movement }: { movement: SafeHourMovement }) {
       <p className="text-xs text-muted-foreground">{movement.reversalState === "REVERSED"
         ? "El movimiento original permanece visible como revertido."
         : "Esta fila compensa un movimiento anterior y no puede revertirse otra vez."}</p>
-      <a className="hidden min-h-6 items-center text-xs text-link underline underline-offset-4 md:inline-flex" href={`#movement-${targetId}-table`}>{label}</a>
-      <a className="inline-flex min-h-11 items-center text-xs text-link underline underline-offset-4 md:hidden" href={`#movement-${targetId}`}>{label}</a>
+      {visibleIds.has(targetId) ? <>
+        <a className="hidden min-h-6 items-center text-xs text-link underline underline-offset-4 md:inline-flex" href={`#movement-${targetId}-table`}>{label}</a>
+        <a className="inline-flex min-h-11 items-center text-xs text-link underline underline-offset-4 md:hidden" href={`#movement-${targetId}`}>{label}</a>
+      </> : <p className="text-xs text-muted-foreground">El movimiento vinculado no aparece con los filtros actuales.</p>}
     </>;
   }
   return movement.cycle.status === "CLOSED" ? <p className="text-xs text-muted-foreground">El ciclo está cerrado; este movimiento permanece disponible sólo para consulta.</p> : null;
@@ -29,6 +31,7 @@ export function MovementHistoryTable({ movements, loading, onReverse, reverseDis
   reverseDisabled: boolean;
   empty: ReactNode;
 }) {
+  const visibleIds = new Set(movements.map((movement) => movement.id));
   const columns: DataColumn<SafeHourMovement>[] = [
     { id: "duration", header: "Duración", numeric: true, cell: (movement) => <div className="space-y-1 py-3">
       <p className="whitespace-nowrap font-bold">{formatDuration(movement.signedDurationMinutes, { signed: true })}</p>
@@ -45,7 +48,7 @@ export function MovementHistoryTable({ movements, loading, onReverse, reverseDis
     </div> },
     { id: "state", header: "Estado", compactClassName: "col-span-2", cell: (movement) => <div className="max-w-56 space-y-1 py-3">
       <StatusBadge label={reversalLabels[movement.reversalState]} variant={getReversalVariant(movement.reversalState)} />
-      <MovementRelationship movement={movement} />
+      <MovementRelationship movement={movement} visibleIds={visibleIds} />
     </div> },
   ];
   return <DataTable

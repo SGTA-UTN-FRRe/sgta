@@ -31,7 +31,7 @@ export const defaultStateDetails: Partial<
   Record<MovementHistoryScreenState, HoursStateDetail>
 > = {
   empty: {
-    description: "Los movimientos registrados en el ciclo aparecerán aquí.",
+    description: "Los movimientos registrados en el ciclo seleccionado aparecerán aquí.",
     title: "Todavía no hay movimientos",
   },
   error: {

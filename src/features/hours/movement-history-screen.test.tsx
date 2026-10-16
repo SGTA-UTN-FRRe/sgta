@@ -140,6 +140,17 @@ describe("MovementHistoryScreen", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("replaces a relationship link with an explanation when filters hide the linked row", async () => {
+    const user = userEvent.setup();
+    renderHistory();
+
+    await user.selectOptions(screen.getByLabelText("Estado"), "REVERSAL");
+    const list = screen.getByRole("list", { name: "Historial de movimientos" });
+    expect(within(list).queryByText("Ver movimiento original")).not.toBeInTheDocument();
+    expect(within(list).getAllByText("El movimiento vinculado no aparece con los filtros actuales.")).not.toHaveLength(0);
+    expect(within(list).getAllByText("Esta fila compensa un movimiento anterior y no puede revertirse otra vez.")).not.toHaveLength(0);
+  });
+
   it("opens, cancels, and returns focus from the reversal dialog", async () => {
     const user = userEvent.setup();
     renderHistory();
