@@ -63,7 +63,6 @@ function TutorActions({ tutor, onOpenSheet, onRequestStatusChange }: {
         }}>
           <DropdownMenuItem onSelect={() => openSheet("view")}>Ver detalle</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => openSheet("edit")}>Editar</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => openSheet("view")}>Ver materias</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => {
             if (trigger.current) {
               openingOverlay.current = true;
