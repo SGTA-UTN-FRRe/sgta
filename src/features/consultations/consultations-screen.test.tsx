@@ -169,6 +169,78 @@ afterEach(() => {
 });
 
 describe("ConsultationsScreen", () => {
+  it("restores results when search returns to the initial filters", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const filtered = new URL(String(input), "https://sgta.invalid").searchParams.has("search");
+      return jsonResponse(filtered
+        ? createConsultationWorkspace({ rows: [], totalRows: 0, pendingReviewCount: 2 })
+        : createConsultationWorkspace());
+    });
+    renderScreen();
+    const search = screen.getByRole("searchbox", { name: "Buscar consultas" });
+    await user.type(search, "No existe");
+    await screen.findByRole("heading", { name: "No hay resultados para estos filtros" });
+    expect(screen.getAllByRole("status").some((status) => status.textContent === "0 resultados")).toBe(true);
+    await user.clear(search);
+    await screen.findByRole("table");
+    expect(screen.getAllByText("Lucía Pérez").length).toBeGreaterThan(0);
+    expect(window.location.search).toBe("");
+  });
+
+  it("preserves the selected batch on failure and reports confirmed and omitted rows on retry", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") return jsonResponse({ error: "bulk_action_failed" }, 500);
+      return jsonResponse(createQueueWorkspace());
+    });
+    renderScreen(createQueueWorkspace());
+    await user.click(screen.getByRole("checkbox", { name: "Seleccionar las consultas pendientes de esta página" }));
+    const trigger = screen.getByRole("button", { name: "Confirmar como General / Varias" });
+    await user.click(trigger);
+    const confirmation = screen.getByRole("alertdialog", { name: "Confirmar como General / Varias" });
+    expect(confirmation).toHaveAccessibleDescription("Se intentará consolidar 1 consultas como General / Varias.");
+    expect(within(confirmation).getByRole("button", { name: "Cancelar" })).toHaveFocus();
+    await user.click(within(confirmation).getByRole("button", { name: "Confirmar como General / Varias" }));
+    expect(await within(confirmation).findByRole("alert")).toHaveTextContent("No se pudo completar la consolidación masiva.");
+    fetchMock.mockImplementation(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        expect(JSON.parse(String(init.body))).toEqual({ action: "CONFIRM_GENERAL", stagingIds: [consultationStagingId] });
+        return jsonResponse({ confirmedCount: 1, skippedCount: 0 });
+      }
+      return jsonResponse(createConsultationWorkspace());
+    });
+    await user.click(within(confirmation).getByRole("button", { name: "Confirmar como General / Varias" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(screen.getAllByRole("status").some((status) => status.textContent?.includes("1 confirmadas, 0 omitidas."))).toBe(true);
+    expect(screenRoot()).toHaveFocus();
+    expect(screen.getByText("0 seleccionadas · máximo 500")).toBeInTheDocument();
+  });
+
+  it("selects filtered batches and locks confirmation while the write is pending", async () => {
+    const user = userEvent.setup();
+    let completeWrite!: (response: Response) => void;
+    const pendingWrite = new Promise<Response>((resolve) => { completeWrite = resolve; });
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") return pendingWrite;
+      if (String(input).includes("/bulk")) return jsonResponse({ stagingIds: [consultationStagingId], matchingCount: 501 });
+      return jsonResponse(createConsultationWorkspace());
+    });
+    renderScreen(createQueueWorkspace());
+    await user.click(screen.getByRole("button", { name: "Seleccionar todas las filtradas" }));
+    expect(await screen.findByText(/Se seleccionaron 1 de 501 pendientes/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Confirmar materia sugerida" }));
+    const confirmation = screen.getByRole("alertdialog", { name: "Confirmar materia sugerida" });
+    await user.click(within(confirmation).getByRole("button", { name: "Confirmar materia sugerida" }));
+    expect(within(confirmation).getByRole("button", { name: "Confirmando…" })).toBeDisabled();
+    expect(within(confirmation).getByRole("button", { name: "Cancelar" })).toBeDisabled();
+    await user.keyboard("{Escape}");
+    expect(confirmation).toBeInTheDocument();
+    completeWrite(jsonResponse({ confirmedCount: 0, skippedCount: 1 }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(screen.getAllByRole("status").some((status) => status.textContent?.includes("0 confirmadas, 1 omitidas."))).toBe(true);
+  });
+
   it("renders the import status, pending count, canonical rows, and labeled contact", () => {
     renderScreen();
 
@@ -176,7 +248,7 @@ describe("ConsultationsScreen", () => {
     expect(screenRoot()).toHaveAttribute("data-state", "default");
     expect(screen.getByRole("button", { name: "Actualizar consultas" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Pendientes de revisión" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Contacto de Lucía Pérez" })).toHaveAttribute(
+    expect(within(screen.getByRole("table")).getByRole("link", { name: "Contacto de Lucía Pérez" })).toHaveAttribute(
       "href",
       "mailto:lucia%40example.test",
     );
@@ -397,11 +469,11 @@ describe("ConsultationsScreen", () => {
     await user.click(trigger);
     const reopenedDialog = await screen.findByRole("dialog", { name: "Detalle de Lucía Pérez" });
     await user.click(within(reopenedDialog).getByRole("button", { name: "Guardar revisión" }));
-    expect(within(reopenedDialog).getByRole("alert")).toHaveTextContent("confirmá cada observación");
+    expect(within(reopenedDialog).getByRole("alert")).toHaveTextContent("Confirmar cada observación");
 
     await user.click(within(reopenedDialog).getByRole("checkbox", { name: "Confirmo que revisé esta observación" }));
     await user.click(within(reopenedDialog).getByRole("button", { name: "Guardar revisión" }));
-    expect(within(reopenedDialog).getByRole("alert")).toHaveTextContent("Indicá si cada posible duplicado");
+    expect(within(reopenedDialog).getByRole("alert")).toHaveTextContent("Indicar si cada posible duplicado");
 
     await user.selectOptions(
       within(reopenedDialog).getByLabelText("Decisión para el posible duplicado de Eva Ríos"),
@@ -415,6 +487,41 @@ describe("ConsultationsScreen", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: "Revisar a Lucía Pérez" })).not.toBeInTheDocument());
     await user.click(within(reopenedDialog).getByRole("button", { name: /^Cerrar$/ }));
     await waitFor(() => expect(screenRoot()).toHaveFocus());
+  });
+
+  it("confirms before discarding an unsaved review draft", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) =>
+      String(input).includes("/review/")
+        ? jsonResponse({ review: reviewDetail() })
+        : jsonResponse(createQueueWorkspace()),
+    );
+    renderScreen(createQueueWorkspace());
+
+    const trigger = screen.getByRole("button", { name: "Revisar a Lucía Pérez" });
+    await user.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "Detalle de Lucía Pérez" });
+    await user.selectOptions(within(dialog).getByLabelText("Clasificación"), "GENERAL");
+
+    await user.keyboard("{Escape}");
+    const discard = await screen.findByRole("alertdialog", { name: "¿Cerrar el detalle?" });
+    expect(discard).toHaveTextContent("Hay cambios sin guardar en la revisión.");
+    await user.click(within(discard).getByRole("button", { name: "Cancelar" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(within(dialog).getByLabelText("Clasificación")).toHaveValue("GENERAL");
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Cerrar detalle" })).toHaveFocus());
+
+    await user.click(within(dialog).getByRole("button", { name: /^Cerrar$/ }));
+    await user.click(within(await screen.findByRole("alertdialog", { name: "¿Cerrar el detalle?" })).getByRole("button", { name: "Cerrar" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(trigger).toHaveFocus();
+
+    await user.click(trigger);
+    const reopened = await screen.findByRole("dialog", { name: "Detalle de Lucía Pérez" });
+    expect(within(reopened).getByLabelText("Clasificación")).toHaveValue("PENDING_CLASSIFICATION");
+    await user.click(within(reopened).getByRole("button", { name: /^Cerrar$/ }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
   it("recovers a stale review conflict by refreshing the current detail", async () => {
