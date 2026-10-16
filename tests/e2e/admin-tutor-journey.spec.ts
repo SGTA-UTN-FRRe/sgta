@@ -135,14 +135,12 @@ test.describe("authenticated Admin tutor operations", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Materias" }),
     ).toBeVisible();
+    const subjectTable = page.getByRole("table", { name: "Cobertura de materias" });
+    const subjectList = page.getByRole("list", { name: "Cobertura de materias" });
+    await expect(subjectTable.getByRole("rowheader", { name: /Algorithms/ })).toBeVisible();
+    await expect(subjectTable.getByRole("link", { name: "Ver tutor Lovelace, Ada" })).toBeVisible();
     await expect(
-      page.locator('[data-layout="wide"]').getByText("Algorithms"),
-    ).toBeVisible();
-    await expect(
-      page.locator('[data-layout="wide"]').getByText("Lovelace, Ada"),
-    ).toBeVisible();
-    await expect(
-      page.locator('[data-layout="wide"]').getByText("Johnson, Katherine"),
+      subjectTable.getByRole("link", { name: "Ver tutor Johnson, Katherine" }),
     ).toBeVisible();
 
     for (const viewport of [
@@ -151,7 +149,20 @@ test.describe("authenticated Admin tutor operations", () => {
       { width: 1280, height: 900, layout: "wide" },
     ]) {
       await page.setViewportSize(viewport);
-      await expect(page.locator(`[data-layout="${viewport.layout}"]`)).toBeVisible();
+      if (viewport.layout === "compact") {
+        await expect(subjectList).toBeVisible();
+        await expect(subjectTable).toBeHidden();
+      } else {
+        await expect(subjectTable).toBeVisible();
+        await expect(subjectList).toBeHidden();
+        if (viewport.layout === "medium") {
+          await expect(subjectTable.getByRole("columnheader", { name: "Tutores" })).toBeVisible();
+          await expect(subjectTable.getByRole("columnheader", { name: "Navegación" })).toBeHidden();
+        } else {
+          await expect(subjectTable.getByRole("columnheader", { name: "Cobertura activa" })).toBeVisible();
+          await expect(subjectTable.getByRole("columnheader", { name: "Navegación" })).toBeVisible();
+        }
+      }
     }
     expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
 
