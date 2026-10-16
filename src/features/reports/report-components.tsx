@@ -37,12 +37,12 @@ export function ReportTable({
   caption: string;
   headers: string[];
   rows: Array<{ key: string; cells: ReactNode[] }>;
-  emptyLabel?: string;
+  emptyLabel: string;
 }) {
   const columns = headers.map((header, index) => ({
     id: String(index),
     header,
-    numeric: index > 0 && ["Consultas", "Ocurrencias", "Duración", "Movimientos", "Minutos"].includes(header),
+    numeric: index > 0 && ["Consultas", "Ocurrencias", "Duración", "Movimientos", "Actividades"].includes(header),
     cell: (row: { key: string; cells: ReactNode[] }) => row.cells[index],
   }));
   return (
@@ -50,7 +50,7 @@ export function ReportTable({
       className="min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
       <DataTable label={caption} rows={rows} identityColumn={columns[0]}
         columns={columns.slice(1)} getRowKey={(row) => row.key}
-        empty={<SystemState variant="empty" title={emptyLabel ?? "No hay datos para los filtros seleccionados."} />}
+        empty={<p className="py-3 text-sm text-muted-foreground">{emptyLabel}</p>}
       />
     </div>
   );

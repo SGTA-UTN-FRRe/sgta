@@ -85,7 +85,7 @@ export function ReportsScreen({
       </section>
 
       {issues.length > 0 && (
-        <SystemState variant="error" title="Revise los filtros seleccionados"
+        <SystemState variant="error" title="No se pudieron aplicar los filtros"
           description={<ul className="list-disc space-y-1 pl-5">{issues.map((issue) => <li key={issue}>{issue}</li>)}</ul>} />
       )}
 

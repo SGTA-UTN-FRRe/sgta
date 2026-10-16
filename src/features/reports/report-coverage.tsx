@@ -81,6 +81,7 @@ function PlannedSchedulesSection({
           </dl>
           <ReportTable
             caption="Guardias programadas por tipo"
+            emptyLabel="Sin guardias programadas en el período."
             headers={["Tipo", "Ocurrencias", "Duración"]}
             rows={section.data.byKind.map((group) => ({
               key: group.kind,
@@ -93,6 +94,7 @@ function PlannedSchedulesSection({
           />
           <ReportTable
             caption="Guardias programadas por tutor"
+            emptyLabel="Sin guardias programadas en el período."
             headers={["Tutor", "Ocurrencias", "Duración"]}
             rows={section.data.byTutor.items.map((group) => ({
               key: group.key,

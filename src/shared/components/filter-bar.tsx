@@ -14,6 +14,8 @@ export interface SelectFilter {
   label: string;
   value: string;
   disabled?: boolean;
+  /** A required filter, such as a period endpoint, always applies and is not counted as active. */
+  alwaysApplied?: boolean;
   options: readonly { value: string; label: string }[];
   onChange: (value: string) => void;
 }
@@ -48,7 +50,7 @@ function FilterControl({ filter, compact = false }: { filter: FilterControlValue
 export function FilterBar({ search, filters = [], essentialFilterId, resultCount, sheetAction, hasActiveFilters, onClear }: FilterBarProps) {
   const essentialFilter = search ? undefined : filters.find((filter) => filter.id === essentialFilterId) ?? filters[0];
   const secondaryFilters = filters.filter((filter) => filter !== essentialFilter);
-  const activeCount = secondaryFilters.filter((filter) => filter.value !== "").length;
+  const activeCount = secondaryFilters.filter((filter) => !filter.alwaysApplied && filter.value !== "").length;
   const filterLabel = activeCount ? `Filtros, ${activeCount} ${activeCount === 1 ? "activo" : "activos"}` : "Filtros";
   return (
     <div role="search" aria-label="Buscar y filtrar" className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end" data-slot="filter-bar">

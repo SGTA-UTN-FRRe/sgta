@@ -81,7 +81,8 @@ function MovementsSection({
           </dl>
           <ReportTable
             caption="Movimientos por fecha, categoría y dirección"
-            headers={["Fecha", "Dirección", "Categoría", "Movimientos", "Minutos"]}
+            emptyLabel="Sin movimientos en el período."
+            headers={["Fecha", "Dirección", "Categoría", "Movimientos", "Duración"]}
             rows={section.data.groups.items.map((group, index) => ({
               key: `${group.date}-${group.categoryId}-${group.direction}-${index}`,
               cells: [
@@ -145,6 +146,7 @@ function ActivitiesSection({
           </dl>
           <ReportTable
             caption="Actividades por fecha y tipo"
+            emptyLabel="Sin actividades en el período."
             headers={["Fecha", "Tipo", "Actividades", "Duración"]}
             rows={section.data.groups.map((group, index) => ({
               key: `${group.date}-${group.kind}-${index}`,

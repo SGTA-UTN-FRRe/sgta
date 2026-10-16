@@ -25,7 +25,7 @@ export function ReportFiltersForm({ filters, filterOptions, query, filterOptions
   )) as Record<FilterName, string>);
   const update = (name: FilterName) => (value: string) => setDraft((current) => ({ ...current, [name]: value }));
   const date = (id: "fromDate" | "toDate", label: string): DateFilter => ({
-    id, label, type: "date", value: draft[id], onChange: update(id),
+    id, label, type: "date", value: draft[id], onChange: update(id), alwaysApplied: true,
     inputType: draft[id] === "" || isRealDate(draft[id]) ? "date" : "text",
   });
   const select = (id: FilterName, label: string, emptyLabel: string, options: { id: string; label: string }[]): SelectFilter => ({

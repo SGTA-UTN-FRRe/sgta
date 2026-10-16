@@ -142,7 +142,7 @@ describe("ReportsScreen", () => {
     const user = userEvent.setup();
     render(<ReportsScreen filterOptions={filterOptions} query={{}} report={createReport()} />);
     const form = screen.getByRole("button", { name: "Aplicar filtros" }).closest("form")!;
-    await user.click(screen.getByRole("button", { name: "Filtros, 5 activos" }));
+    await user.click(screen.getByRole("button", { name: "Filtros, 4 activos" }));
     const sheet = screen.getByRole("dialog", { name: "Filtros" });
     await user.selectOptions(within(sheet).getByRole("combobox", { name: "Modalidad" }), "UNSPECIFIED");
     expect(within(sheet).getByRole("button", { name: "Aplicar filtros" })).toHaveAttribute("form", form.id);
@@ -240,6 +240,9 @@ describe("ReportsScreen", () => {
     expect(screen.getByText("Los indicadores de estado actual, cuando están disponibles, siguen describiendo el ciclo vigente.").closest('[role="status"]')).toHaveTextContent(
       "No hay datos para los filtros seleccionados.",
     );
+    expect(screen.getAllByText("No hay datos para los filtros seleccionados.")).toHaveLength(1);
+    expect(screen.getByText("Sin consultas consolidadas para los filtros seleccionados.")).toBeInTheDocument();
+    expect(screen.getByText("Sin movimientos en el período.")).toBeInTheDocument();
     expect(screen.getByText("Tutores activos")).toBeInTheDocument();
     expect(screen.getAllByText(/Estado actual .*2026/)).not.toHaveLength(0);
   });

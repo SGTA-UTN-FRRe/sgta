@@ -25,8 +25,8 @@ function isDateOnly(value: string) {
 const dateOnlySchema = z
   .string()
   .trim()
-  .regex(datePattern, "Use el formato AAAA-MM-DD.")
-  .refine(isDateOnly, "Ingrese una fecha válida.");
+  .regex(datePattern, "La fecha debe tener el formato AAAA-MM-DD.")
+  .refine(isDateOnly, "La fecha no es válida.");
 
 const identifierSchema = z.string().uuid();
 
@@ -48,7 +48,7 @@ export const reportFilterSchema = z
       context.addIssue({
         code: "custom",
         path: [hasFromDate ? "toDate" : "fromDate"],
-        message: "Complete ambas fechas del período.",
+        message: "El período requiere una fecha inicial y una fecha final.",
       });
       return;
     }

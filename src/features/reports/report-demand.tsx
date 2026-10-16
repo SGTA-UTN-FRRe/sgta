@@ -1,5 +1,4 @@
 import { TutorProfileLink } from "@/features/tutors/tutor-profile-link";
-import { SystemState } from "@/shared/components/system-state";
 import type { ConsultationDemandReport, LimitedReportGroups, ReportGroup, ReportSection } from "./report-types";
 import { ReportCard, ReportTable, SectionHeading, SectionState } from "./report-components";
 import { formatMonth, formatNumber } from "./report-presentation";
@@ -17,7 +16,7 @@ function GroupTable<T extends ReportGroup<string | null>>({
     <div className="space-y-2">
       <ReportTable
         caption={title}
-        emptyLabel="No hay datos para los filtros seleccionados."
+        emptyLabel="Sin consultas para este desglose."
         headers={[title, "Consultas"]}
         rows={groups.items.map((group, index) => ({
           key: group.key ?? `${title}-${index}`,
@@ -54,12 +53,12 @@ export function DemandSection({
       />
       {section.status !== "ready" ? (
         <SectionState
-          description="Las demás secciones siguen disponibles. Vuelva a consultar la demanda para recuperar sus desgloses."
+          description="Las demás secciones siguen disponibles. Reintentar para recuperar los desgloses de la demanda."
           retryHref={retryHref}
           title="No se pudo cargar la demanda de consultas"
         />
       ) : section.data.total === 0 ? (
-        <SystemState variant="empty" title="No hay datos para los filtros seleccionados." />
+        <p className="text-sm text-muted-foreground">Sin consultas consolidadas para los filtros seleccionados.</p>
       ) : (
         <>
           <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -81,6 +80,7 @@ export function DemandSection({
             <ReportCard title="Evolución mensual">
               <ReportTable
                 caption="Consultas por mes"
+                emptyLabel="Sin consultas para este desglose."
                 headers={["Mes", "Consultas"]}
                 rows={section.data.byMonth.map((group) => ({
                   key: group.key,
