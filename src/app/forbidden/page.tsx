@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ShieldAlert } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
-import { FaroIcon } from "@/shared/components/faro-icon";
+import { TutoriasMark } from "@/shared/components/tutorias-mark";
 import { SignOutButton } from "@/shared/components/sign-out-button";
 import { cn } from "@/shared/utils";
 
@@ -20,7 +20,7 @@ export default function ForbiddenPage() {
         className="w-full max-w-lg rounded-lg border border-border bg-card px-6 py-10 text-center shadow-xs sm:px-10"
       >
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl border border-faro/40 bg-muted text-faro">
-          <FaroIcon className="h-10 w-10" />
+          <TutoriasMark className="h-10 w-10" />
         </div>
         <div className="mt-6 flex items-center justify-center gap-2 text-sm font-semibold text-destructive">
           <ShieldAlert className="h-4 w-4" aria-hidden="true" />

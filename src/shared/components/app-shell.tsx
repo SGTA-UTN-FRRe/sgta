@@ -27,15 +27,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { FaroIcon } from "@/shared/components/faro-icon";
+import { TutoriasMark } from "@/shared/components/tutorias-mark";
 import { PageContainer } from "@/shared/components/page-container";
 import {
   SIGN_OUT_ERROR_MESSAGE,
@@ -167,7 +161,7 @@ function BrandLink({
       className="group flex min-h-11 min-w-0 items-center gap-3 rounded-md"
     >
       <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-faro/40 bg-muted text-faro transition-colors group-hover:border-faro">
-        <FaroIcon className="size-7" />
+        <TutoriasMark className="size-7" />
       </span>
       <span className={cn("flex min-w-0 flex-col", labelClassName)}>
         <span className="truncate text-sm font-bold text-sidebar-foreground">Tutorías</span>

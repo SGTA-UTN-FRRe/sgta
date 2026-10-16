@@ -24,4 +24,5 @@ export const screenshotRoutes: readonly ScreenshotRoute[] = [
   { slug: "tutor-schedule", path: "/tutor/schedule?date=2026-09-16", session: "tutor", readme: null },
   { slug: "tutor-hours", path: "/tutor/hours", session: "tutor", readme: null },
   { slug: "forbidden", path: "/forbidden", session: "forbidden", readme: null },
+  { slug: "not-found", path: "/_not-found", session: "none", readme: null },
 ];
