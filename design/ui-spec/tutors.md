@@ -39,7 +39,7 @@ Gestionar perfiles, carrera, materias y estado.
 ## Responsive exceptions
 
 - Medium: keep Tutor, Carrera, Materias, and Estado; `Beca` moves to the row detail sheet.
-- Compact: structured rows with the full name dominant and state and career visible; secondary actions move to a row menu named `Acciones para <Tutor>`. The form sheet and the confirmation dialogs become full height. The list shows every record without pagination, so it grows long with the registry.
+- Compact: structured rows with the full name dominant and state and career visible; the row menu named `Acciones para <Tutor>` sits beside the name and holds `Ver detalle`, `Editar`, and `Desactivar tutor` or `Reactivar`. The form sheet and the confirmation dialogs become full height. The list shows every record without pagination, so it grows long with the registry.
 
 ## States
 
@@ -71,11 +71,11 @@ Gestionar perfiles, carrera, materias y estado.
 
 ## Interaction: Add or edit a Tutor
 
-A right side sheet, full height in Compact, titled `Agregar tutor`, `Editar <Tutor>`, or `Detalle de <Tutor>`, with a visible `Cerrar panel de tutor` control and a footer holding `Cerrar` and the submit action (`Agregar tutor` or `Guardar cambios`, disabled until the form changes). The detail mode is read-only and offers `Ver movimientos` when the Tutor belongs to the open cycle. The sheet has these sections:
+A right side sheet, full height in Compact, titled `Agregar tutor`, `Editar <Tutor>`, or `Detalle de <Tutor>`, with an icon close control named `Cerrar panel de tutor` and a footer holding `Cerrar` and the submit action: `Agregar tutor`, or `Guardar cambios`, which stays disabled until the form changes. The detail mode is read-only and offers `Ver movimientos` when the Tutor belongs to the open cycle. The sheet has these sections:
 
 1. Identidad: `Nombre` (required), `Apellido (opcional)`, `Nombre preferido (opcional)`, `Identificador institucional (opcional)`.
 2. Contexto académico: `Carrera` (required) with its career badge. Changing the career clears the selected subjects.
-3. Materias: the subjects of the selected career as labeled checkboxes with a selection count. Inactive subjects stay visible, disabled, marked `Inactiva · se conserva como antecedente`.
+3. Materias: the subjects of the selected career as checkboxes, each before its label, with a selection count. Inactive subjects stay visible, disabled, marked `Inactiva · se conserva como antecedente`.
 4. Ciclo y beca: `Ciclo abierto` and `Referencia de beca (opcional)`; inactive references stay visible and disabled.
 5. Cuenta de acceso: `Correo de la cuenta habilitada (opcional)`.
 6. Estado: the current status badge; a new Tutor is created active and later changes use the row actions.
@@ -92,7 +92,7 @@ Validation:
 - A duplicate institutional identifier is prevented when present.
 - Duplicate subject assignments are prevented.
 
-Success closes the sheet, updates the list, and shows concise feedback. A server error shows a form banner and inline field errors and preserves valid input. Unsaved changes require confirmation before dismissing the sheet by the close control, `Cerrar`, or Escape; the confirmation is the shared alert dialog with the copy above and returns focus to the sheet's close control. Leaving the page by browser navigation or reload is not intercepted.
+Success closes the sheet, updates the list, and shows concise feedback. A server error shows a form banner and inline field errors and preserves valid input. Unsaved changes require confirmation before dismissing the sheet by the close control, `Cerrar`, or Escape; the confirmation is the shared alert dialog with the copy above and returns focus to the sheet's close control. Reloading or leaving the site with unsaved changes asks for the browser's confirmation.
 
 ## Interaction: Deactivate
 
@@ -101,7 +101,7 @@ Success closes the sheet, updates the list, and shows concise feedback. A server
 ## Accessibility
 
 - Table headers have semantic scope.
-- Row actions carry the Tutor's identity in their accessible names: `Editar <Tutor>`, `Ver materias de <Tutor>`, `Desactivar tutor <Tutor>` or `Reactivar <Tutor>`, and in Compact the menu `Acciones para <Tutor>`. The movements link in the detail sheet is named `Ver movimientos de <Tutor>`.
+- Row actions carry the Tutor's identity in their accessible names: `Editar <Tutor>`, `Ver materias de <Tutor>`, `Desactivar tutor <Tutor>` or `Reactivar <Tutor>`, and in Compact the menu `Acciones para <Tutor>`, whose `Ver detalle` replaces `Ver materias`. The movements link in the detail sheet is named `Ver movimientos de <Tutor>`.
 - The sheet is named and traps focus.
 - The status confirmation dialog returns focus to the triggering action.
 - Filter labels stay programmatically associated.

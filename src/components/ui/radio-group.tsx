@@ -20,23 +20,27 @@ function RadioGroup({
 
 function RadioGroupItem({
   className,
+  variant = "default",
+  children,
   ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Item>) {
+}: React.ComponentProps<typeof RadioGroupPrimitive.Item> & { variant?: "default" | "segment" }) {
   return (
     <RadioGroupPrimitive.Item
       data-slot="radio-group-item"
       className={cn(
-        "aspect-square relative size-5 shrink-0 max-md:before:absolute max-md:before:-inset-3 rounded-full border border-input bg-card text-primary shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20",
+        variant === "segment"
+          ? "min-h-11 rounded-full border border-input px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          : "aspect-square relative size-5 shrink-0 max-md:before:absolute max-md:before:-inset-3 rounded-full border border-input bg-card text-primary shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20",
         className,
       )}
       {...props}
     >
-      <RadioGroupPrimitive.Indicator
+      {variant === "segment" ? children : <RadioGroupPrimitive.Indicator
         data-slot="radio-group-indicator"
         className="relative flex items-center justify-center"
       >
         <CircleIcon aria-hidden="true" className="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 fill-primary" />
-      </RadioGroupPrimitive.Indicator>
+      </RadioGroupPrimitive.Indicator>}
     </RadioGroupPrimitive.Item>
   );
 }

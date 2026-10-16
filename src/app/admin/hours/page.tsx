@@ -67,7 +67,7 @@ function errorMessageFor(error: unknown) {
     return undefined;
   }
 
-  return "No se pudieron cargar las horas. Reintentar para volver a consultar los saldos.";
+  return "Reintentar para volver a consultar los saldos.";
 }
 
 export default async function AdminHoursPage() {
