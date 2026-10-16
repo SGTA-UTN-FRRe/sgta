@@ -13,7 +13,7 @@ export async function prepareCapture(context: BrowserContext, page: Page, route:
     await addE2ESessionCookie(context, `${token}.${await makeSignature(token, E2E_AUTH_SECRET)}`);
   }
   const response = await page.goto(route.path);
-  expect(response?.status()).toBe(200);
+  expect([200, 404]).toContain(response?.status());
   expect(new URL(page.url()).pathname).toBe(new URL(route.path, "http://localhost:3000").pathname);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);

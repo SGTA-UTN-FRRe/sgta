@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
-import { FaroIcon } from "@/shared/components/faro-icon";
+import { TutoriasMark } from "@/shared/components/tutorias-mark";
 import { cn } from "@/shared/utils";
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ export default function NotFound() {
         className="w-full max-w-lg rounded-lg border border-border bg-card px-6 py-10 text-center shadow-xs sm:px-10"
       >
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl border border-faro/40 bg-muted text-faro">
-          <FaroIcon className="h-10 w-10" />
+          <TutoriasMark className="h-10 w-10" />
         </div>
         <h1
           id="not-found-title"
