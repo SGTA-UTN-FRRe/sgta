@@ -50,14 +50,6 @@ export function formatTimeRange(startMinutes: number, endMinutes: number) {
   return `${formatTime(startMinutes)} a ${formatTime(endMinutes)}`;
 }
 
-export function formatSignedMinutes(minutes: number) {
-  const sign = minutes < 0 ? "-" : "+";
-  const absolute = Math.abs(minutes);
-  const hours = Math.floor(absolute / 60);
-  const remainder = absolute % 60;
-  return `${sign}${String(hours).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
-}
-
 export function getBalanceLabel(state: "current" | "owes") {
   return state === "current" ? "Al d\u00eda" : "Debe horas";
 }

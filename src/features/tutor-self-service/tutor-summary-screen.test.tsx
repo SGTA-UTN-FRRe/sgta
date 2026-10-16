@@ -13,11 +13,12 @@ describe("TutorSummaryScreen", () => {
     render(<TutorSummaryScreen data={tutorSelfServiceSummaryReady} />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Mi resumen" })).toBeInTheDocument();
-    expect(screen.getByText("-01:15")).toBeInTheDocument();
+    expect(screen.getByText("1 h 15 min")).toBeInTheDocument();
     expect(screen.getByText("Debe horas")).toBeInTheDocument();
     expect(screen.getByText(/Estado actual de Marina Benítez/)).toBeInTheDocument();
     expect(screen.getByText("Arquitectura de Computadoras")).toBeInTheDocument();
-    expect(screen.getByText("Materias asignadas.")).toBeInTheDocument();
+    expect(screen.getByText("Ingeniería en Sistemas de Información")).toBeInTheDocument();
+    expect(screen.getByText("1 materia asignada")).toBeInTheDocument();
     expect(screen.getByText("Beca de acompañamiento")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /administr/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /registrar|editar|revertir/i })).not.toBeInTheDocument();
@@ -27,7 +28,7 @@ describe("TutorSummaryScreen", () => {
     render(
       <TutorSummaryScreen data={tutorSelfServiceSummaryReady} state="loading" />,
     );
-    expect(screen.getByRole("status", { name: "Cargando resumen" })).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Cargando sección" })).toBeInTheDocument();
 
     cleanup();
     render(<TutorSummaryScreen data={tutorSelfServiceSummaryEmpty} state="empty" />);
@@ -40,6 +41,12 @@ describe("TutorSummaryScreen", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Completar la pertenencia al ciclo",
     );
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Completar la pertenencia al ciclo",
+      }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
 
     cleanup();
@@ -51,6 +58,12 @@ describe("TutorSummaryScreen", () => {
       />,
     );
     expect(screen.getByRole("alert")).toHaveTextContent("No se pudo cargar el resumen.");
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "No se pudo cargar el resumen.",
+      }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
   });
 });
