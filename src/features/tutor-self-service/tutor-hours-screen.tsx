@@ -4,6 +4,8 @@ import { Clock3, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { BalanceStatus } from "@/features/hours/balance-status";
 import { formatDuration } from "@/shared/format-duration";
 import type {
@@ -59,19 +61,19 @@ function HoursLoading() {
       className="space-y-6"
       role="status"
     >
-      <div className="h-9 w-48 animate-pulse rounded-sm bg-muted" />
-      <div className="h-36 animate-pulse rounded-md border border-border bg-card" />
-      <div className="space-y-3">
+      <span className="sr-only">Cargando horas</span>
+      <Skeleton aria-hidden="true" className="h-28 w-full rounded-xl" />
+      <div aria-hidden="true" className="space-y-3">
+        <Skeleton className="h-6 w-56 max-w-full" />
         {Array.from({ length: 3 }, (_, index) => (
-          <div
-            className="h-20 animate-pulse rounded-md border border-border bg-card"
-            key={index}
-          />
+          <Skeleton className="h-row w-full" key={index} />
         ))}
       </div>
     </div>
   );
 }
+
+const genericErrorMessage = "No se pudieron cargar las horas. Intentar nuevamente.";
 
 function HoursError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
@@ -82,7 +84,7 @@ function HoursError({ message, onRetry }: { message: string; onRetry: () => void
           Reintentar
         </Button>
       }
-      description={message}
+      description={message === genericErrorMessage ? undefined : message}
       headingLevel={2}
       title="No se pudieron cargar las horas"
       variant="error"
@@ -242,37 +244,43 @@ function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: 
 
   return (
     <>
-      <section className="mt-6 rounded-md border border-border bg-card p-5 shadow-xs sm:p-6" aria-labelledby="tutor-hours-balance">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-muted-foreground">Ciclo vigente</p>
-            <h2 className="mt-2 text-xl font-bold text-foreground" id="tutor-hours-balance">
-              {data.cycle.name}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {formatLongDate(data.cycle.startDate)} — {formatLongDate(data.cycle.endDate)}
-            </p>
-          </div>
-          <div className="sm:text-right">
-            <p className="text-sm font-semibold text-muted-foreground">Saldo del ciclo</p>
-            <div className="mt-1 flex sm:justify-end">
-              <BalanceStatus balance={data.balance} />
+      <Card>
+        <section aria-labelledby="tutor-hours-balance">
+          <CardContent className="grid gap-4 p-3 md:grid-cols-2 md:p-4">
+            <div>
+              <h2 className="font-display text-xl font-semibold" id="tutor-hours-balance">
+                Saldo del ciclo
+              </h2>
+              <div className="mt-3">
+                <BalanceStatus balance={data.balance} />
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+            <div className="min-w-0 border-t border-border pt-4 md:border-t-0 md:border-l md:pt-0 md:pl-4">
+              <p className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
+                Ciclo vigente
+              </p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{data.cycle.name}</p>
+              <p className="mt-1 text-sm tabular-nums text-muted-foreground">
+                <time dateTime={data.cycle.startDate}>{formatLongDate(data.cycle.startDate)}</time>
+                {" — "}
+                <time dateTime={data.cycle.endDate}>{formatLongDate(data.cycle.endDate)}</time>
+              </p>
+            </div>
+          </CardContent>
+        </section>
+      </Card>
 
-      <section aria-labelledby="tutor-hours-history" className="mt-6">
-        <div className="flex items-center gap-3">
-          <Clock3 aria-hidden="true" className="h-5 w-5 text-primary" />
-          <div>
-            <h2 className="text-lg font-bold text-foreground" id="tutor-hours-history">
+      <section aria-labelledby="tutor-hours-history" className="space-y-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Clock3 aria-hidden="true" className="size-5 shrink-0 text-primary" />
+            <h2 className="font-display text-xl font-semibold" id="tutor-hours-history">
               Historial de movimientos
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Movimientos del ciclo vigente, ordenados del más reciente al más antiguo.
-            </p>
           </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Movimientos del ciclo vigente, ordenados del más reciente al más antiguo.
+          </p>
         </div>
 
         <DataTable
@@ -290,9 +298,10 @@ function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: 
               <div className="min-w-0 space-y-1 py-3">
                 <p className="font-bold">{movement.category.name}</p>
                 <p className="text-xs font-normal text-muted-foreground">
-                  {getMovementDirectionLabel(movement.direction)} · {formatLongDate(movement.movementDate)}
+                  {getMovementDirectionLabel(movement.direction)} ·{" "}
+                  <time dateTime={movement.movementDate}>{formatLongDate(movement.movementDate)}</time>
                 </p>
-                <p className="hidden space-y-1 text-xs font-normal text-muted-foreground md:block xl:hidden">
+                <p className="hidden text-xs font-normal text-muted-foreground md:block xl:hidden">
                   {movement.note ?? "Sin nota"}
                 </p>
               </div>
@@ -316,7 +325,7 @@ export function TutorHoursScreen({
     initialState ?? deriveState(initialData),
   );
   const [errorMessage, setErrorMessage] = useState(
-    initialErrorMessage ?? "No se pudieron cargar las horas. Intentar nuevamente.",
+    initialErrorMessage ?? genericErrorMessage,
   );
 
   const retry = async () => {
@@ -334,7 +343,7 @@ export function TutorHoursScreen({
       setErrorMessage(
         error instanceof TutorSelfServiceRequestError
           ? getTutorSelfServiceErrorMessage(error.code)
-          : "No se pudieron cargar las horas. Intentar nuevamente.",
+          : genericErrorMessage,
       );
     }
   };

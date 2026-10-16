@@ -114,4 +114,29 @@ describe("TutorHoursScreen", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("No se pudieron cargar las horas.");
     expect(screen.getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
   });
+
+  it("states a load error once and keeps a specific reason as its description", () => {
+    render(<TutorHoursScreen data={null} state="error" />);
+    expect(
+      screen.getByRole("heading", { level: 2, name: "No se pudieron cargar las horas" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("No se pudieron cargar las horas. Intentar nuevamente."),
+    ).not.toBeInTheDocument();
+
+    cleanup();
+    render(
+      <TutorHoursScreen
+        data={null}
+        initialErrorMessage="La sesión expiró. Volver a iniciar sesión para continuar."
+        state="error"
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { level: 2, name: "No se pudieron cargar las horas" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("La sesión expiró. Volver a iniciar sesión para continuar."),
+    ).toBeInTheDocument();
+  });
 });
