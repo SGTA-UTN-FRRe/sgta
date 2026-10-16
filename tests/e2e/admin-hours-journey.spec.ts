@@ -149,18 +149,29 @@ test.describe("authenticated Admin hour operations", () => {
     const reversalButton = page.getByRole("button", {
       name: "Revertir movimiento de Lovelace, Ada del 01/01/2027",
     });
-    const originalRow = reversalButton.locator("xpath=ancestor::li");
+    const originalRow = reversalButton.locator("xpath=ancestor::tr");
     const originalMovementId = await originalRow.getAttribute("data-movement-id");
     expect(originalMovementId).not.toBeNull();
     await expect(originalRow).toHaveAttribute("data-reversal-state", "CONFIRMED");
+    await expectAccessibleOverlay(page, {
+      trigger: reversalButton,
+      overlay: page.getByRole("alertdialog", { name: "Revertir movimiento" }),
+    });
     await activateWithKeyboard(page, reversalButton);
 
-    const reversalDialog = page.getByRole("dialog", {
+    const reversalDialog = page.getByRole("alertdialog", {
       name: "Revertir movimiento",
     });
     await expect(
       reversalDialog.getByText(/el original permanecerá visible como revertido/i),
     ).toBeVisible();
+    await page.route("**/api/admin/hours/movements/*/reverse", (route) => route.fulfill({
+      status: 500, json: { error: "internal_server_error" },
+    }));
+    await reversalDialog.getByRole("button", { name: "Confirmar reversión" }).click();
+    await expect(reversalDialog.getByRole("alert")).toContainText("No se pudo completar la operación. Intentar nuevamente.");
+    await expect(reversalDialog.getByText("Lovelace, Ada", { exact: true })).toBeVisible();
+    await page.unroute("**/api/admin/hours/movements/*/reverse");
     await activateWithKeyboard(
       page,
       reversalDialog.getByRole("button", { name: "Confirmar reversión" }),
@@ -170,22 +181,37 @@ test.describe("authenticated Admin hour operations", () => {
       page.getByRole("status").filter({ hasText: "Reversión registrada" }),
     ).toBeVisible();
     const reversedRow = page.locator(
-      `li[data-movement-id="${originalMovementId}"]`,
+      `tr[data-movement-id="${originalMovementId}"]`,
     );
     await expect(reversedRow).toHaveAttribute("data-reversal-state", "REVERSED");
-    await expect(reversedRow.getByText("+01:30")).toBeVisible();
+    await expect(reversedRow.getByText("+1 h 30 min")).toBeVisible();
     await expect(
       reversedRow.getByRole("link", { name: "Ver reversión vinculada" }),
     ).toBeVisible();
 
     const reversalRow = page
-      .locator('li[data-reversal-state="REVERSAL"]')
+      .locator('tr[data-reversal-state="REVERSAL"]')
       .filter({ hasText: "Lovelace, Ada" });
     await expect(reversalRow).toHaveCount(1);
-    await expect(reversalRow.getByText("-01:30")).toBeVisible();
+    await expect(reversalRow.getByText("−1 h 30 min")).toBeVisible();
     await expect(
       reversalRow.getByRole("link", { name: "Ver movimiento original" }),
     ).toBeVisible();
+    for (const width of [390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const history = page.getByRole(width === 390 ? "list" : "table", { name: "Historial de movimientos" });
+      const original = history.locator(`[data-movement-id="${originalMovementId}"]`);
+      const link = original.getByRole("link", { name: "Ver reversión vinculada" });
+      await expect(link).toBeVisible();
+      const target = await link.getAttribute("href");
+      await expect(history.locator(`[id="${target!.slice(1)}"]`)).toContainText("−1 h 30 min");
+      await expect(original).toContainText("+1 h 30 min");
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expectAccessibleOverlay(page, {
+      trigger: page.getByRole("button", { name: /^Filtros/ }),
+      overlay: page.getByRole("dialog", { name: "Filtros" }),
+    });
     expect(accessibilityViolations, accessibilityViolations.join("\n\n")).toEqual([]);
   });
 });

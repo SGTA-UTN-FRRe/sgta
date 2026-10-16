@@ -30,6 +30,14 @@ for (const viewport of [
       await activateWithKeyboard(page, nav.getByRole("link", { name: label, exact: true }));
     }
 
+    async function expectMovementTutor(tutorId: string) {
+      if (viewport.layout === "compact") {
+        await activateWithKeyboard(page, page.getByRole("button", { name: /^Filtros/ }));
+      }
+      await expect(page.getByRole("combobox", { name: "Tutor", exact: true })).toHaveValue(tutorId);
+      if (viewport.layout === "compact") await page.keyboard.press("Escape");
+    }
+
     await page.goto("/admin/tutors");
     const tutorName = () => page.getByRole(viewport.layout === "compact" ? "list" : "table", { name: "Lista de tutores" }).getByRole("button", { name: "Lovelace, Ada", exact: true });
     await activateWithKeyboard(page, tutorName());
@@ -61,7 +69,7 @@ for (const viewport of [
     await activateWithKeyboard(page, tutorName());
     await activateWithKeyboard(page, page.getByRole("dialog").getByRole("link", { name: /^Ver movimientos de / }));
     await expect(page).toHaveURL(new RegExp(`/admin/hours/movements\\?cycleId=${E2E_CYCLE_ID}&tutorId=${E2E_PRIMARY_TUTOR_ID}$`));
-    await expect(page.getByRole("combobox", { name: "Tutor", exact: true })).toHaveValue(E2E_PRIMARY_TUTOR_ID);
+    await expectMovementTutor(E2E_PRIMARY_TUTOR_ID);
 
     await navigate("Horas");
     await activateWithKeyboard(page, page.getByRole("link", { name: "Ver tutor Hopper, Grace" }));
@@ -69,7 +77,7 @@ for (const viewport of [
     await expect(page.getByRole("button", { name: "Lovelace, Ada", exact: true })).toHaveCount(0);
     await activateWithKeyboard(page, page.getByRole(viewport.layout === "compact" ? "list" : "table", { name: "Lista de tutores" }).getByRole("button", { name: "Hopper, Grace", exact: true }));
     await activateWithKeyboard(page, page.getByRole("dialog").getByRole("link", { name: /^Ver movimientos de / }));
-    await expect(page.getByRole("combobox", { name: "Tutor", exact: true })).toHaveValue(E2E_SECONDARY_TUTOR_ID);
+    await expectMovementTutor(E2E_SECONDARY_TUTOR_ID);
 
     await page.goto(`/admin/reports?fromDate=2027-01-18&toDate=2027-01-18`);
     await activateWithKeyboard(page, page.getByRole("table", { name: "Guardias programadas por tutor" }).getByRole("link", { name: "Ver tutor Curie, Marie" }));

@@ -11,6 +11,7 @@ export interface SelectFilter {
   id: string;
   label: string;
   value: string;
+  disabled?: boolean;
   options: readonly { value: string; label: string }[];
   onChange: (value: string) => void;
 }
@@ -28,7 +29,7 @@ function FilterControl({ filter, compact = false }: { filter: SelectFilter; comp
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{filter.label}</Label>
-      <NativeSelect id={id} value={filter.value} onChange={(event) => filter.onChange(event.target.value)}>
+      <NativeSelect id={id} value={filter.value} disabled={filter.disabled} onChange={(event) => filter.onChange(event.target.value)}>
         {filter.options.map((option) => <NativeSelectOption key={option.value} value={option.value}>{option.label}</NativeSelectOption>)}
       </NativeSelect>
     </div>
