@@ -14,7 +14,10 @@ describe("TutorSummaryScreen", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Mi resumen" })).toBeInTheDocument();
     expect(screen.getByText("1 h 15 min")).toBeInTheDocument();
-    expect(screen.getByText("Debe horas")).toBeInTheDocument();
+    expect(screen.getByText("Debe horas").closest('[data-slot="status-badge"]')).toHaveAttribute(
+      "data-variant",
+      "danger",
+    );
     expect(screen.getByText(/Estado actual de Marina Benítez/)).toBeInTheDocument();
     expect(screen.getByText("Arquitectura de Computadoras")).toBeInTheDocument();
     expect(screen.getByText("Ingeniería en Sistemas de Información")).toBeInTheDocument();

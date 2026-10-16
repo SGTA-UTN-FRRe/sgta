@@ -10,6 +10,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { BalanceStatus } from "@/features/hours/balance-status";
 import type {
   TutorSelfServiceRequiredActionReason,
   TutorSelfServiceSummary,
@@ -18,7 +19,6 @@ import {
   formatLongDate,
   formatTime,
   formatTimeRange,
-  getBalanceLabel,
   getRequiredActionCopy,
   getTutorSelfServiceErrorMessage,
   focusTutorPageTitle,
@@ -30,7 +30,6 @@ import { PageHeader } from "@/shared/components/page-header";
 import { RouteLoadingState } from "@/shared/components/route-loading-state";
 import { StatusBadge } from "@/shared/components/status-badge";
 import { SystemState } from "@/shared/components/system-state";
-import { formatDuration } from "@/shared/format-duration";
 
 export type TutorSummaryScreenState =
   | "default"
@@ -128,12 +127,6 @@ function SummaryEmpty({ onRetry }: { onRetry: () => void }) {
 function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { state: "ready" }> }) {
   const nextDuty = data.nextDuty;
   const subjectCount = data.tutor.subjects.length;
-  const balanceVariant =
-    data.balance.signedBalanceMinutes === 0
-      ? "neutral"
-      : data.balance.state === "current"
-        ? "success"
-        : "warning";
 
   return (
     <>
@@ -147,14 +140,8 @@ function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { sta
                   Horas
                 </h2>
               </div>
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                <p className="font-display text-2xl font-semibold tabular-nums text-foreground">
-                  {formatDuration(data.balance.signedBalanceMinutes)}
-                </p>
-                <StatusBadge
-                  label={getBalanceLabel(data.balance.state)}
-                  variant={balanceVariant}
-                />
+              <div className="mt-3">
+                <BalanceStatus balance={data.balance} />
               </div>
             </CardContent>
           </section>
@@ -197,50 +184,52 @@ function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { sta
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
-        <section aria-labelledby="tutor-summary-subjects" className="min-w-0">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <div>
-              <div className="flex items-center gap-2">
-                <BookOpen aria-hidden="true" className="size-5 shrink-0 text-primary" />
-                <h2 className="font-display text-xl font-semibold" id="tutor-summary-subjects">
-                  Materias
-                </h2>
+        <Card className="min-w-0">
+          <section aria-labelledby="tutor-summary-subjects">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <div className="flex items-center gap-2">
+                  <BookOpen aria-hidden="true" className="size-5 shrink-0 text-primary" />
+                  <h2 className="font-display text-xl font-semibold" id="tutor-summary-subjects">
+                    Materias
+                  </h2>
+                </div>
+                {subjectCount > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {subjectCount === 1
+                      ? "1 materia asignada"
+                      : `${subjectCount} materias asignadas`}
+                  </p>
+                )}
               </div>
-            </div>
-            {subjectCount > 0 && (
-              <p className="text-sm text-muted-foreground">
-                {subjectCount === 1
-                  ? "1 materia asignada"
-                  : `${subjectCount} materias asignadas`}
-              </p>
-            )}
-          </div>
-          {subjectCount === 0 ? (
-            <EmptyState
-              className="py-2"
-              title="Todavía no hay materias asignadas."
-            />
-          ) : (
-            <ul
-              className="mt-4 divide-y divide-border border-y border-border"
-              data-testid="tutor-subject-list"
-            >
-              {data.tutor.subjects.map((subject) => (
-                <li
-                  className="flex min-h-row flex-col justify-center py-3 text-sm font-semibold text-foreground"
-                  key={subject.id}
+              {subjectCount === 0 ? (
+                <EmptyState
+                  className="py-2"
+                  title="Todavía no hay materias asignadas."
+                />
+              ) : (
+                <ul
+                  className="mt-3 divide-y divide-border border-t border-border"
+                  data-testid="tutor-subject-list"
                 >
-                  <span>{subject.name}</span>
-                  {subject.status === "INACTIVE" && (
-                    <span className="mt-1 block text-xs font-medium text-muted-foreground">
-                      Materia inactiva
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                  {data.tutor.subjects.map((subject) => (
+                    <li
+                      className="flex min-h-row flex-col justify-center py-3 text-sm font-semibold text-foreground"
+                      key={subject.id}
+                    >
+                      <span>{subject.name}</span>
+                      {subject.status === "INACTIVE" && (
+                        <span className="mt-1 block text-xs font-medium text-muted-foreground">
+                          Materia inactiva
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </section>
+        </Card>
 
         <Card>
           <section aria-labelledby="tutor-summary-cycle">
@@ -253,17 +242,21 @@ function SummaryContent({ data }: { data: Extract<TutorSelfServiceSummary, { sta
               </p>
               <dl className="mt-4 divide-y divide-border">
                 <div className="py-3 first:pt-0">
-                  <dt className="sr-only">Ciclo vigente</dt>
-                  <dd>
-                    <p className="font-semibold text-foreground">{data.cycle.name}</p>
+                  <dt className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
+                    Ciclo
+                  </dt>
+                  <dd className="mt-1">
+                    <p className="text-sm font-semibold text-foreground">{data.cycle.name}</p>
                     <p className="mt-1 text-sm tabular-nums text-muted-foreground">
                       {formatLongDate(data.cycle.startDate)} — {formatLongDate(data.cycle.endDate)}
                     </p>
                   </dd>
                 </div>
                 <div className="py-3">
-                  <dt className="text-sm font-semibold text-muted-foreground">Carrera</dt>
-                  <dd className="mt-1 break-words font-semibold text-foreground">
+                  <dt className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
+                    Carrera
+                  </dt>
+                  <dd className="mt-1 break-words text-sm font-semibold text-foreground">
                     {data.tutor.career.name}
                   </dd>
                 </div>
