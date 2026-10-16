@@ -134,6 +134,21 @@ describe("SettingsScreen", () => {
     ).toHaveLength(2);
   });
 
+  it("opens cycle history without a mutation and restores focus on dismissal", async () => {
+    const user = userEvent.setup();
+    render(<SettingsScreen currentCycle={currentCycle} cycles={[currentCycle, historicalCycle]} />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    const trigger = screen.getByRole("button", { name: "Historial de ciclos" });
+    await user.click(trigger);
+    const history = screen.getByRole("dialog", { name: "Historial de ciclos" });
+    expect(within(history).getByText("Abierto")).toBeInTheDocument();
+    expect(within(history).getByText("Cerrado")).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(trigger).toHaveFocus();
+  });
+
   it("creates a career through the protected reference API", async () => {
     const user = userEvent.setup();
     const createdCareer: SafeCareer = {
@@ -150,7 +165,7 @@ describe("SettingsScreen", () => {
     await user.click(screen.getByRole("button", { name: "Agregar carrera" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
+      expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
         "La carrera se creó correctamente.",
       ),
     );
@@ -175,7 +190,7 @@ describe("SettingsScreen", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(`/api/admin/settings/careers/${activeCareer.id}`, expect.objectContaining({
       method: "PATCH", body: JSON.stringify({ name: activeCareer.name, color: "VIOLET" }),
     })));
-    expect(await screen.findByRole("status")).toHaveTextContent("La carrera se actualizó correctamente.");
+    expect(await screen.findByRole("status", { name: "Resultado de configuración" })).toHaveTextContent("La carrera se actualizó correctamente.");
   });
 
   it("preserves career input and explains duplicate conflicts", async () => {
@@ -242,7 +257,7 @@ describe("SettingsScreen", () => {
     await user.click(screen.getByRole("button", { name: "Agregar categoría" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
+      expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
         "La categoría de horas se creó correctamente.",
       ),
     );
@@ -273,7 +288,7 @@ describe("SettingsScreen", () => {
     await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
+      expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
         "La categoría de horas se actualizó correctamente.",
       ),
     );
@@ -364,7 +379,7 @@ describe("SettingsScreen", () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
+      expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
         "La categoría de horas se inactivó y se conservaron sus movimientos.",
       ),
     );
@@ -404,7 +419,7 @@ describe("SettingsScreen", () => {
     await user.click(screen.getByRole("button", { name: "Agregar materia" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
+      expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
         "La materia se creó correctamente.",
       ),
     );
@@ -455,7 +470,7 @@ describe("SettingsScreen", () => {
     await user.click(screen.getByRole("button", { name: "Agregar referencia" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
+      expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
         "La referencia de beca se creó correctamente.",
       ),
     );
@@ -481,7 +496,7 @@ describe("SettingsScreen", () => {
     await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
+      expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
         "La referencia de beca se actualizó correctamente.",
       ),
     );
@@ -513,7 +528,7 @@ describe("SettingsScreen", () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
+      expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
         "La carrera se inactivó y se conservaron sus relaciones.",
       ),
     );
@@ -532,7 +547,7 @@ describe("SettingsScreen", () => {
       <SettingsScreen currentCycle={null} cycles={[]} initialState="loading" />,
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
       "Guardando cambios de configuración",
     );
 
@@ -579,7 +594,7 @@ describe("SettingsScreen", () => {
     await user.click(screen.getByRole("button", { name: "Crear ciclo" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
+      expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
         "El ciclo se creó correctamente.",
       ),
     );
@@ -638,7 +653,7 @@ describe("SettingsScreen", () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
+      expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
         "El ciclo se cerró correctamente.",
       ),
     );
@@ -647,7 +662,9 @@ describe("SettingsScreen", () => {
       expect.objectContaining({ method: "POST" }),
     );
     expect(screen.queryByRole("button", { name: "Cerrar ciclo" })).not.toBeInTheDocument();
-    expect(screen.getByText("Cerrado")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Historial de ciclos" }));
+    const history = screen.getByRole("dialog", { name: "Historial de ciclos" });
+    expect(within(history).getByText("Cerrado")).toBeInTheDocument();
   });
 
   it("maps API conflicts to actionable recovery copy", async () => {
