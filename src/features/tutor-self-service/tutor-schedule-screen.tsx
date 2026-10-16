@@ -39,6 +39,44 @@ export type TutorScheduleScreenState =
   | "error"
   | "required-action";
 
+type TutorScheduleData = Exclude<TutorSelfServiceSchedule, { state: "required-action" }>;
+type TutorScheduleAssignment = TutorScheduleData["days"][number]["assignments"][number];
+
+const weekdayFormatter = new Intl.DateTimeFormat("es-AR", {
+  timeZone: "UTC",
+  weekday: "long",
+});
+
+const dayMonthFormatter = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "long",
+  timeZone: "UTC",
+});
+
+function formatWeekday(date: string) {
+  return weekdayFormatter.format(new Date(`${date}T00:00:00Z`));
+}
+
+function formatDayMonth(date: string) {
+  return dayMonthFormatter.format(new Date(`${date}T00:00:00Z`));
+}
+
+/** Assignments from the next pending duty onward; earlier ones in the window already ended. */
+function getUpcomingAssignments(
+  assignments: TutorScheduleAssignment[],
+  nextDuty: TutorScheduleData["nextDuty"],
+) {
+  if (nextDuty === null) {
+    return [];
+  }
+
+  const nextIndex = assignments.findIndex(
+    (assignment) => assignment.id === nextDuty.id && assignment.date === nextDuty.date,
+  );
+
+  return nextIndex === -1 ? [] : assignments.slice(nextIndex);
+}
+
 export interface TutorScheduleScreenProps {
   data: TutorSelfServiceSchedule | null;
   initialDate?: string;
@@ -130,9 +168,10 @@ function ScheduleRequiredAction({
   );
 }
 
-function ScheduleEmpty({ onRetry }: { onRetry: () => void }) {
+function ScheduleEmpty({ className, onRetry }: { className?: string; onRetry: () => void }) {
   return (
     <EmptyState
+      className={className}
       description="Seleccionar otra fecha o consultar nuevamente cuando el ciclo tenga asignaciones."
       title="No hay guardias asignadas en el período actual."
       action={
@@ -145,14 +184,7 @@ function ScheduleEmpty({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function ScheduleAssignment({
-  assignment,
-}: {
-  assignment: Extract<
-    TutorSelfServiceSchedule,
-    { state: "ready" }
-  >["days"][number]["assignments"][number];
-}) {
+function ScheduleAssignment({ assignment }: { assignment: TutorScheduleAssignment }) {
   return (
     <li className="flex h-full flex-col rounded-md border border-border bg-card px-3 py-3 shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -211,17 +243,20 @@ function ScheduleContent({
   data,
   initialDate,
   onQuery,
+  onRetry,
 }: {
-  data: Extract<TutorSelfServiceSchedule, { state: "ready" }>;
+  data: TutorScheduleData;
   initialDate?: string;
   onQuery: (date: string) => Promise<void>;
+  onRetry: () => void;
 }) {
-  const defaultDate = initialDate ?? data.window.anchorDate;
+  const defaultDate = initialDate ?? data.window.anchorDate ?? "";
   const [selectedDate, setSelectedDate] = useState(defaultDate);
   const assignments = useMemo(
     () => data.days.flatMap((day) => day.assignments),
     [data.days],
   );
+  const upcomingAssignments = getUpcomingAssignments(assignments, data.nextDuty);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -245,6 +280,7 @@ function ScheduleContent({
                 max={data.cycle.endDate}
                 min={data.cycle.startDate}
                 onChange={(event) => setSelectedDate(event.target.value)}
+                required
                 type="date"
                 value={selectedDate}
               />
@@ -275,91 +311,104 @@ function ScheduleContent({
       </section>
 
       <section aria-labelledby="tutor-schedule-days" className="mt-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
           <div>
             <h2 className="text-lg font-bold text-foreground" id="tutor-schedule-days">
               Guardias del período
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Vista cronológica en móvil y semanal en pantallas amplias.
-            </p>
+            {data.window.startDate !== null && data.window.endDate !== null && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Del <time dateTime={data.window.startDate}>{formatDayMonth(data.window.startDate)}</time>{" "}
+                al <time dateTime={data.window.endDate}>{formatDayMonth(data.window.endDate)}</time>
+              </p>
+            )}
           </div>
-          <span className="hidden text-sm font-semibold text-muted-foreground sm:inline">
-            {assignments.length} {assignments.length === 1 ? "guardia" : "guardias"}
-          </span>
+          {assignments.length > 0 && (
+            <span className="text-sm font-semibold text-muted-foreground">
+              {assignments.length} {assignments.length === 1 ? "guardia" : "guardias"}
+            </span>
+          )}
         </div>
 
-        <ol
-          aria-label="Vista semanal de guardias"
-          className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7"
-          data-layout="schedule-day-list-week"
-        >
-          {data.days.map((day) => (
-            <li
-              className="min-w-0 rounded-md border border-border bg-background p-3"
-              data-date={day.date}
-              key={day.date}
-            >
-              <div className="border-b border-border pb-3">
-                <p className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
-                  {formatLongDate(day.date).split(" ")[0]}
-                </p>
-                <p className="mt-1 text-sm font-bold text-foreground">
-                  {formatLongDate(day.date)}
-                </p>
-              </div>
-              {day.assignments.length === 0 ? (
-                <p className="py-4 text-xs leading-5 text-muted-foreground">Sin guardias</p>
-              ) : (
-                <ul className="mt-3 space-y-2">
-                  {day.assignments.map((assignment) => (
-                    <ScheduleAssignment assignment={assignment} key={assignment.id} />
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ol>
+        {assignments.length === 0 ? (
+          <ScheduleEmpty className="mt-4" onRetry={onRetry} />
+        ) : (
+          <ol
+            aria-label="Vista semanal de guardias"
+            className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7"
+            data-layout="schedule-day-list-week"
+          >
+            {data.days.map((day) => (
+              <li
+                className="min-w-0 rounded-md border border-border bg-background p-3"
+                data-date={day.date}
+                key={day.date}
+              >
+                <div className={day.assignments.length > 0 ? "border-b border-border pb-3" : undefined}>
+                  <p className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
+                    {formatWeekday(day.date)}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-foreground">
+                    <time dateTime={day.date}>{formatDayMonth(day.date)}</time>
+                  </p>
+                </div>
+                {day.assignments.length === 0 ? (
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Sin guardias</p>
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {day.assignments.map((assignment) => (
+                      <ScheduleAssignment assignment={assignment} key={assignment.id} />
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
       </section>
 
-      <section aria-labelledby="tutor-schedule-upcoming" className="mt-6">
-        <h2 className="text-lg font-bold text-foreground" id="tutor-schedule-upcoming">
-          Próximas guardias
-        </h2>
-        <ol className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {assignments.length === 0 ? (
-            <li className="text-sm text-muted-foreground">No hay guardias próximas en esta consulta.</li>
+      {assignments.length > 0 && (
+        <section aria-labelledby="tutor-schedule-upcoming" className="mt-6">
+          <h2 className="text-lg font-bold text-foreground" id="tutor-schedule-upcoming">
+            Próximas guardias
+          </h2>
+          {upcomingAssignments.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              No hay guardias próximas en esta consulta.
+            </p>
           ) : (
-            assignments.map((assignment) => {
-              const modality = getModalityPresentation(assignment.modality);
+            <ol className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {upcomingAssignments.map((assignment) => {
+                const modality = getModalityPresentation(assignment.modality);
 
-              return (
-                <li
-                  className="rounded-md border border-border bg-card p-4 shadow-xs"
-                  key={`upcoming-${assignment.id}`}
-                >
-                  <p className="text-sm font-semibold text-foreground">
-                    {formatLongDate(assignment.date)}
-                  </p>
-                  <p className="mt-1 text-sm tabular-nums text-muted-foreground">
-                    {getAssignmentKindLabel(assignment.kind)} ·{" "}
-                    {formatTimeRange(assignment.startMinutes, assignment.endMinutes)}
-                    {modality && (
-                      <>
-                        {" · "}
-                        {modality.kind === "VIRTUAL" && (
-                          <Monitor aria-hidden="true" className="mr-1 inline size-3.5" />
-                        )}
-                        {modality.label}
-                      </>
-                    )}
-                  </p>
-                </li>
-              );
-            })
+                return (
+                  <li
+                    className="rounded-md border border-border bg-card p-4 shadow-xs"
+                    key={`upcoming-${assignment.date}-${assignment.id}`}
+                  >
+                    <p className="text-sm font-semibold text-foreground">
+                      <time dateTime={assignment.date}>{formatLongDate(assignment.date)}</time>
+                    </p>
+                    <p className="mt-1 text-sm tabular-nums text-muted-foreground">
+                      {getAssignmentKindLabel(assignment.kind)} ·{" "}
+                      {formatTimeRange(assignment.startMinutes, assignment.endMinutes)}
+                      {modality && (
+                        <>
+                          {" · "}
+                          {modality.kind === "VIRTUAL" && (
+                            <Monitor aria-hidden="true" className="mr-1 inline size-3.5" />
+                          )}
+                          {modality.label}
+                        </>
+                      )}
+                    </p>
+                  </li>
+                );
+              })}
+            </ol>
           )}
-        </ol>
-      </section>
+        </section>
+      )}
     </>
   );
 }
@@ -411,9 +460,18 @@ export function TutorScheduleScreen({
       {state === "required-action" && data?.state === "required-action" && (
         <ScheduleRequiredAction onRetry={() => query()} reason={data.reason} />
       )}
-      {state === "empty" && <ScheduleEmpty onRetry={() => query()} />}
-      {state === "default" && data?.state === "ready" && (
-        <ScheduleContent data={data} initialDate={initialDate} onQuery={query} />
+      {(state === "default" || state === "empty") &&
+        data !== null &&
+        data.state !== "required-action" && (
+          <ScheduleContent
+            data={data}
+            initialDate={initialDate}
+            onQuery={query}
+            onRetry={() => query()}
+          />
+        )}
+      {state === "empty" && (data === null || data.state === "required-action") && (
+        <ScheduleEmpty onRetry={() => query()} />
       )}
     </div>
   );

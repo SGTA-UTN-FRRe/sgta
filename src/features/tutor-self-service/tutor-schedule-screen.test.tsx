@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { TutorScheduleScreen } from "./tutor-schedule-screen";
@@ -56,6 +56,40 @@ describe("TutorScheduleScreen", () => {
     expect(
       screen.getByText("Recuperación · 16:00 a 18:00 · Virtual · Zoom"),
     ).toBeInTheDocument();
+  });
+
+  it("labels each day once and states the period range", () => {
+    render(<TutorScheduleScreen data={tutorSelfServiceScheduleReady} />);
+
+    const week = screen.getByRole("list", { name: "Vista semanal de guardias" });
+    expect(within(week).getByText("lunes")).toBeInTheDocument();
+    expect(within(week).queryByText(/lunes,/i)).not.toBeInTheDocument();
+    expect(
+      within(week).getByText("21 de septiembre", { selector: "time" }),
+    ).toHaveAttribute("dateTime", "2026-09-21");
+    expect(screen.getByText("1 guardia")).toBeInTheDocument();
+    expect(screen.getByText(/^Del/)).toHaveTextContent("Del 21 de septiembre al 27 de septiembre");
+  });
+
+  it("lists upcoming assignments from the next duty onward", () => {
+    render(
+      <TutorScheduleScreen data={{ ...tutorSelfServiceScheduleReady, nextDuty: null }} />,
+    );
+
+    expect(screen.getByText("16:00 a 18:00")).toBeInTheDocument();
+    expect(screen.getByText("No hay guardias próximas en esta consulta.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Guardia · 16:00 a 18:00 · Presencial · Aula 204"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the reference date available when the period is empty", () => {
+    render(<TutorScheduleScreen data={tutorSelfServiceScheduleEmpty} state="empty" />);
+
+    expect(screen.getByLabelText("Fecha de referencia")).toHaveValue("2026-09-21");
+    expect(screen.getByRole("button", { name: "Consultar" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Actualizar" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Próximas guardias" })).not.toBeInTheDocument();
   });
 
   it("exposes loading, empty, required-action, and error states", () => {
