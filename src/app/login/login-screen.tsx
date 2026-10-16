@@ -5,6 +5,7 @@ import {
   CircleAlert,
   LockKeyhole,
   LoaderCircle,
+  RotateCw,
   ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
@@ -29,7 +30,7 @@ export interface LoginScreenProps {
   onRetry?: () => void;
 }
 
-function FaroBeam() {
+function FaroIllustration() {
   return (
     <div
       aria-hidden="true"
@@ -149,6 +150,11 @@ export function LoginScreen({
 
   const isLoading = currentState === "loading";
   const isError = currentState === "error";
+  // Permission denial already states the recovery guidance in its status message.
+  const showsRecovery = currentState !== "permission-denied";
+  const statusDescriptionIds = showsRecovery
+    ? "login-status login-recovery login-access-note"
+    : "login-status login-access-note";
   const buttonLabel = isError ? "Reintentar" : data.ctaLabel;
 
   const startGoogleSignIn = () => {
@@ -180,19 +186,23 @@ export function LoginScreen({
       data-slot="login-screen"
       data-state={currentState}
     >
-      <div className="grid min-h-svh md:grid-cols-[minmax(18rem,0.82fr)_minmax(28rem,1.18fr)]">
+      <div className="flex min-h-svh flex-col md:grid md:grid-cols-[minmax(18rem,0.82fr)_minmax(28rem,1.18fr)]">
         <section
           aria-label="Identidad institucional"
-          className="relative isolate flex min-h-[18rem] overflow-hidden bg-brand-navy px-6 py-8 text-white sm:px-10 sm:py-10 md:min-h-full md:px-8 md:py-10 lg:px-12 lg:py-12"
+          className="relative isolate flex overflow-hidden bg-brand-navy px-6 py-6 text-white sm:px-10 sm:py-10 md:min-h-full md:px-8 md:py-10 lg:px-12 lg:py-12"
         >
-          <FaroBeam />
-          <div className="relative z-10 flex w-full flex-col justify-between gap-12">
+          <FaroIllustration />
+          <div className="relative z-overlay flex w-full flex-col justify-between gap-6 md:gap-12">
             <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="h-5 w-1 shrink-0 rounded-full bg-sidebar-marker"
+              />
               <span className="flex h-11 w-11 items-center justify-center rounded-md border border-white/20 bg-white/10 text-faro">
                 <TutoriasMark aria-hidden="true" className="h-7 w-7" />
               </span>
               <div>
-                <p className="text-sm font-bold tracking-[0.12em] text-white">
+                <p className="text-xs font-semibold uppercase tracking-eyebrow text-white">
                   SGTA
                 </p>
                 <p className="text-xs text-white">
@@ -202,19 +212,16 @@ export function LoginScreen({
             </div>
 
             <div className="max-w-lg lg:pb-10">
-              <p className="text-sm font-bold tracking-[0.08em] text-white">
-                {data.institutionalContext}
-              </p>
-              <h2 className="mt-4 max-w-md text-3xl font-extrabold tracking-[-0.035em] text-white sm:text-4xl lg:text-[2.75rem] lg:leading-[1.08]">
+              <h2 className="max-w-md font-display text-2xl font-semibold text-white lg:text-display">
                 Un espacio claro para acompañar cada trayectoria.
               </h2>
-              <p className="mt-5 max-w-md text-sm leading-7 text-white/75 sm:text-base">
+              <p className="mt-3 max-w-md text-sm leading-6 text-white/75 md:mt-5 md:leading-7 lg:text-base">
                 Organizar tutorías, horarios y horas con una mirada compartida
                 sobre el acompañamiento institucional.
               </p>
             </div>
 
-            <p className="text-xs font-medium tracking-[0.08em] text-white/60">
+            <p className="hidden text-xs font-semibold uppercase tracking-eyebrow text-white/60 md:block">
               Espacio institucional de trabajo
             </p>
           </div>
@@ -222,15 +229,15 @@ export function LoginScreen({
 
         <section
           aria-label="Acceso institucional"
-          className="flex min-w-0 items-center justify-center bg-background px-6 py-12 sm:px-10 sm:py-16 lg:px-16"
+          className="flex min-w-0 flex-1 items-center justify-center bg-background px-6 py-8 sm:px-10 sm:py-16 lg:px-16"
         >
           <div className="w-full max-w-[30rem]">
             <div className="mb-8">
-              <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-primary">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-eyebrow text-primary">
                 Acceso institucional
               </p>
               <h1
-                className="text-3xl font-extrabold tracking-[-0.035em] text-foreground sm:text-4xl"
+                className="font-display text-2xl font-semibold text-foreground md:text-title"
                 id="login-title"
               >
                 {data.title}
@@ -242,7 +249,7 @@ export function LoginScreen({
 
             <div
               aria-busy={isLoading}
-              aria-describedby="login-status login-recovery login-access-note"
+              aria-describedby={statusDescriptionIds}
               className="rounded-xl border border-border bg-card p-6 shadow-xs sm:p-8"
             >
               <LoginFeedback data={data} state={currentState} />
@@ -257,19 +264,21 @@ export function LoginScreen({
                 {isLoading ? (
                   <LoaderCircle aria-hidden="true" className="animate-spin" />
                 ) : isError ? (
-                  <CircleAlert aria-hidden="true" />
+                  <RotateCw aria-hidden="true" />
                 ) : (
                   <ArrowRight aria-hidden="true" />
                 )}
                 {buttonLabel}
               </Button>
 
-              <p
-                className="mt-5 text-center text-sm leading-6 text-muted-foreground"
-                id="login-recovery"
-              >
-                {data.recoveryText}
-              </p>
+              {showsRecovery ? (
+                <p
+                  className="mt-5 text-center text-sm leading-6 text-muted-foreground"
+                  id="login-recovery"
+                >
+                  {data.recoveryText}
+                </p>
+              ) : null}
             </div>
 
             <div
