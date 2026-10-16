@@ -30,8 +30,7 @@ export interface SubjectCoverageScreenProps {
 }
 
 const searchInputId = "subject-coverage-search";
-const defaultErrorMessage =
-  "No se pudo cargar la cobertura. Reintentar para volver a consultar las materias.";
+const defaultErrorMessage = "Reintentar para volver a consultar las materias.";
 
 function readInitialSearch() {
   if (typeof window === "undefined") {
@@ -189,26 +188,16 @@ export function SubjectCoverageScreen({
   }, []);
 
   const clearSearch = useCallback(() => setSearch(""), []);
-  const headerAction =
-    derivedState === "required-action" ? (
+  const canRefresh = derivedState !== "error" && derivedState !== "required-action";
+  const headerAction = (
+    <div className="flex flex-wrap items-center gap-2">
       <Link
         className={buttonVariants({ size: "sm", variant: "outline" })}
-        href="/admin/settings"
+        href="/admin/tutors"
       >
-        Configurar ciclo
+        Ver tutores
       </Link>
-    ) : derivedState === "error" ? (
-      <Button onClick={() => void refreshCoverage()} size="sm" type="button" variant="outline">
-        Reintentar
-      </Button>
-    ) : (
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          className={buttonVariants({ size: "sm", variant: "outline" })}
-          href="/admin/tutors"
-        >
-          Ver tutores
-        </Link>
+      {canRefresh && (
         <Button
           disabled={derivedState === "loading"}
           onClick={() => void refreshCoverage()}
@@ -219,8 +208,9 @@ export function SubjectCoverageScreen({
           <RefreshCw aria-hidden="true" className={derivedState === "loading" ? "animate-spin" : undefined} />
           Actualizar
         </Button>
-      </div>
-    );
+      )}
+    </div>
+  );
 
   return (
     <div data-slot="subject-coverage-screen" data-state={derivedState}>
@@ -262,7 +252,7 @@ export function SubjectCoverageScreen({
         />
       )}
 
-      {derivedState !== "error" && derivedState !== "required-action" && (
+      {canRefresh && (
         <>
           <fieldset className="mt-6 min-w-0" disabled={derivedState === "loading"}>
             <legend className="sr-only">Buscar cobertura</legend>
@@ -279,7 +269,7 @@ export function SubjectCoverageScreen({
           </fieldset>
 
           {derivedState === "loading" && (
-            <SubjectCoverageTable currentCycleName={coverage.currentCycle?.name ?? ""} loading subjects={[]} />
+            <SubjectCoverageTable loading subjects={[]} />
           )}
 
           {derivedState === "empty" && (
@@ -314,10 +304,7 @@ export function SubjectCoverageScreen({
               <p aria-live="polite" className="mt-4 text-sm text-muted-foreground">
                 Mostrando {filteredSubjects.length} {filteredSubjects.length === 1 ? "materia" : "materias"} con cobertura.
               </p>
-              <SubjectCoverageTable
-                currentCycleName={coverage.currentCycle.name}
-                subjects={filteredSubjects}
-              />
+              <SubjectCoverageTable subjects={filteredSubjects} />
             </>
           )}
         </>

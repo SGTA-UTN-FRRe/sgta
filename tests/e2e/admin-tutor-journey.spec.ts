@@ -157,10 +157,10 @@ test.describe("authenticated Admin tutor operations", () => {
         await expect(subjectList).toBeHidden();
         if (viewport.layout === "medium") {
           await expect(subjectTable.getByRole("columnheader", { name: "Tutores" })).toBeVisible();
-          await expect(subjectTable.getByRole("columnheader", { name: "Navegación" })).toBeHidden();
+          await expect(subjectTable.getByRole("columnheader", { name: "Cobertura activa" })).toBeHidden();
         } else {
           await expect(subjectTable.getByRole("columnheader", { name: "Cobertura activa" })).toBeVisible();
-          await expect(subjectTable.getByRole("columnheader", { name: "Navegación" })).toBeVisible();
+          await expect(subjectTable.getByRole("columnheader", { name: "Tutores" })).toBeHidden();
         }
       }
     }

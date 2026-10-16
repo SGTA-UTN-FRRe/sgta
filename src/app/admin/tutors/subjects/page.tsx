@@ -25,8 +25,7 @@ export default async function AdminTutorSubjectsPage() {
   try {
     coverage = await listSubjectCoverage(getDatabase());
   } catch {
-    loadError =
-      "No se pudo cargar la cobertura. Reintentar para volver a consultar las materias.";
+    loadError = "Reintentar para volver a consultar las materias.";
   }
 
   return (
