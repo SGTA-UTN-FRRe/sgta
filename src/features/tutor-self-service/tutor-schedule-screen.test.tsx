@@ -23,11 +23,39 @@ describe("TutorScheduleScreen", () => {
     expect(screen.getByLabelText("Fecha de referencia")).toHaveValue("2026-09-21");
     expect(screen.getByText("Plan Regular")).toBeInTheDocument();
     expect(screen.getByText("16:00 a 18:00")).toBeInTheDocument();
+    expect(screen.getByText("Presencial · Aula 204")).toBeInTheDocument();
+    expect(
+      screen.getByText("Guardia · 16:00 a 18:00 · Presencial · Aula 204"),
+    ).toBeInTheDocument();
 
     const layout = screen.getByRole("list", { name: "Vista semanal de guardias" });
     expect(layout).toHaveAttribute("data-layout", "schedule-day-list-week");
-    expect(layout.className).toContain("md:grid-cols-7");
+    expect(layout.className).toContain("md:grid-cols-2");
+    expect(layout.className).toContain("lg:grid-cols-4");
+    expect(layout.className).toContain("xl:grid-cols-7");
     expect(screen.queryByRole("button", { name: /editar|eliminar|revertir/i })).not.toBeInTheDocument();
+  });
+
+  it("shows the shared recovery cue and normalized virtual modality", () => {
+    const virtualRecoverySchedule = {
+      ...tutorSelfServiceScheduleReady,
+      days: tutorSelfServiceScheduleReady.days.map((day) => ({
+        ...day,
+        assignments: day.assignments.map((assignment) => ({
+          ...assignment,
+          kind: "RECOVERY" as const,
+          modality: "Zoom",
+        })),
+      })),
+    } satisfies typeof tutorSelfServiceScheduleReady;
+
+    render(<TutorScheduleScreen data={virtualRecoverySchedule} />);
+
+    expect(screen.getByText("Recuperación")).toBeInTheDocument();
+    expect(screen.getByText("Virtual · Zoom")).toBeInTheDocument();
+    expect(
+      screen.getByText("Recuperación · 16:00 a 18:00 · Virtual · Zoom"),
+    ).toBeInTheDocument();
   });
 
   it("exposes loading, empty, required-action, and error states", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Clock3, RefreshCw } from "lucide-react";
+import { CalendarDays, Clock3, Monitor, RefreshCw } from "lucide-react";
 import { type FormEvent, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -21,9 +21,16 @@ import {
   requestTutorSelfService,
   TutorSelfServiceRequestError,
 } from "./tutor-self-service-screen-utils";
+import { AssignmentCues } from "@/features/schedules/schedule-block";
 import { EmptyState } from "@/shared/components/empty-state";
+import { FormField } from "@/shared/components/form-field";
 import { PageHeader } from "@/shared/components/page-header";
 import { StatusBadge } from "@/shared/components/status-badge";
+import { SystemState } from "@/shared/components/system-state";
+import {
+  normalizeScheduleModality,
+  SCHEDULE_MODALITY_LABELS,
+} from "@/shared/schedule-modality";
 
 export type TutorScheduleScreenState =
   | "default"
@@ -69,7 +76,7 @@ function ScheduleLoading() {
     >
       <div className="h-9 w-56 animate-pulse rounded-sm bg-muted" />
       <div className="h-20 animate-pulse rounded-md border border-border bg-card" />
-      <div className="grid gap-3 md:grid-cols-7">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         {Array.from({ length: 7 }, (_, index) => (
           <div
             className="h-44 animate-pulse rounded-md border border-border bg-card"
@@ -83,18 +90,18 @@ function ScheduleLoading() {
 
 function ScheduleError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div
-      aria-live="assertive"
-      className="rounded-md border border-destructive/30 bg-muted/70 p-6"
-      role="alert"
-    >
-      <h2 className="text-base font-semibold text-foreground">No se pudo cargar el horario</h2>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{message}</p>
-      <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
-        <RefreshCw aria-hidden="true" />
-        Reintentar
-      </Button>
-    </div>
+    <SystemState
+      action={
+        <Button onClick={onRetry} type="button" variant="outline">
+          <RefreshCw aria-hidden="true" />
+          Reintentar
+        </Button>
+      }
+      description={message}
+      headingLevel={2}
+      title="No se pudo cargar el horario"
+      variant="error"
+    />
   );
 }
 
@@ -108,21 +115,18 @@ function ScheduleRequiredAction({
   const copy = getRequiredActionCopy(reason);
 
   return (
-    <div
-      aria-live="polite"
-      className="rounded-md border border-warning/30 bg-muted/70 p-6"
-      role="status"
-    >
-      <StatusBadge label="Acción requerida" variant="warning" />
-      <h2 className="mt-4 text-lg font-semibold text-foreground">{copy.title}</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-        {copy.description}
-      </p>
-      <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
-        <RefreshCw aria-hidden="true" />
-        Volver a consultar
-      </Button>
-    </div>
+    <SystemState
+      action={
+        <Button onClick={onRetry} type="button" variant="outline">
+          <RefreshCw aria-hidden="true" />
+          Volver a consultar
+        </Button>
+      }
+      description={copy.description}
+      headingLevel={2}
+      title={copy.title}
+      variant="required-action"
+    />
   );
 }
 
@@ -150,11 +154,12 @@ function ScheduleAssignment({
   >["days"][number]["assignments"][number];
 }) {
   return (
-    <li className="rounded-sm border border-border bg-card px-3 py-3 shadow-xs">
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.1em] text-primary">
-          {getAssignmentKindLabel(assignment.kind)}
+    <li className="flex h-full flex-col rounded-md border border-border bg-card px-3 py-3 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-semibold uppercase tracking-eyebrow text-primary">
+          Guardia
         </span>
+        <AssignmentCues assignment={assignment} conflict={false} />
         <Clock3 aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
       </div>
       <p className="mt-2 text-sm font-bold tabular-nums text-foreground">
@@ -162,10 +167,43 @@ function ScheduleAssignment({
           {formatTimeRange(assignment.startMinutes, assignment.endMinutes)}
         </time>
       </p>
-      {assignment.modality && (
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">{assignment.modality}</p>
-      )}
+      <ScheduleModality value={assignment.modality} />
     </li>
+  );
+}
+
+function getModalityPresentation(value: string | null) {
+  if (!value?.trim()) {
+    return null;
+  }
+
+  const kind = normalizeScheduleModality(value);
+  const label = SCHEDULE_MODALITY_LABELS[kind];
+  const details = value
+    .trim()
+    .replace(new RegExp("^" + label + "(?:\\s*[\\u00b7\\u2014-]\\s*|\\s+)?", "i"), "")
+    .trim();
+
+  return {
+    kind,
+    label: details ? label + " \u00b7 " + details : label,
+  };
+}
+
+function ScheduleModality({ value }: { value: string | null }) {
+  const modality = getModalityPresentation(value);
+
+  if (modality === null) {
+    return null;
+  }
+
+  return (
+    <p className="mt-2 inline-flex min-w-0 flex-wrap items-center gap-1.5 text-xs leading-5 text-muted-foreground">
+      {modality.kind === "VIRTUAL" && (
+        <Monitor aria-hidden="true" className="size-3.5 shrink-0" />
+      )}
+      <span>{modality.label}</span>
+    </p>
   );
 }
 
@@ -200,19 +238,17 @@ function ScheduleContent({
               {formatLongDate(data.cycle.startDate)} — {formatLongDate(data.cycle.endDate)}
             </p>
           </div>
-          <form className="flex flex-col gap-2 sm:flex-row sm:items-end" onSubmit={submit}>
-            <label className="text-sm font-medium text-foreground" htmlFor="tutor-schedule-date">
-              Fecha de referencia
+          <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={submit}>
+            <FormField id="tutor-schedule-date" label="Fecha de referencia">
               <Input
-                className="mt-1.5 sm:w-48"
-                id="tutor-schedule-date"
+                className="sm:w-48"
                 max={data.cycle.endDate}
                 min={data.cycle.startDate}
                 onChange={(event) => setSelectedDate(event.target.value)}
                 type="date"
                 value={selectedDate}
               />
-            </label>
+            </FormField>
             <Button type="submit">
               <CalendarDays aria-hidden="true" />
               Consultar
@@ -223,7 +259,7 @@ function ScheduleContent({
 
       <section
         aria-label="Contexto del horario"
-        className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-faro/30 bg-muted/60 px-4 py-3"
+        className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-border bg-muted/60 px-4 py-3"
       >
         <StatusBadge
           label={
@@ -255,7 +291,7 @@ function ScheduleContent({
 
         <ol
           aria-label="Vista semanal de guardias"
-          className="mt-4 grid gap-3 md:grid-cols-7"
+          className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7"
           data-layout="schedule-day-list-week"
         >
           {data.days.map((day) => (
@@ -265,7 +301,7 @@ function ScheduleContent({
               key={day.date}
             >
               <div className="border-b border-border pb-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                <p className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
                   {formatLongDate(day.date).split(" ")[0]}
                 </p>
                 <p className="mt-1 text-sm font-bold text-foreground">
@@ -294,17 +330,33 @@ function ScheduleContent({
           {assignments.length === 0 ? (
             <li className="text-sm text-muted-foreground">No hay guardias próximas en esta consulta.</li>
           ) : (
-            assignments.map((assignment) => (
-              <li
-                className="rounded-md border border-border bg-card p-4 shadow-xs"
-                key={`upcoming-${assignment.id}`}
-              >
-                <p className="text-sm font-semibold text-foreground">{formatLongDate(assignment.date)}</p>
-                <p className="mt-1 text-sm tabular-nums text-muted-foreground">
-                  {getAssignmentKindLabel(assignment.kind)} · {formatTimeRange(assignment.startMinutes, assignment.endMinutes)}
-                </p>
-              </li>
-            ))
+            assignments.map((assignment) => {
+              const modality = getModalityPresentation(assignment.modality);
+
+              return (
+                <li
+                  className="rounded-md border border-border bg-card p-4 shadow-xs"
+                  key={`upcoming-${assignment.id}`}
+                >
+                  <p className="text-sm font-semibold text-foreground">
+                    {formatLongDate(assignment.date)}
+                  </p>
+                  <p className="mt-1 text-sm tabular-nums text-muted-foreground">
+                    {getAssignmentKindLabel(assignment.kind)} ·{" "}
+                    {formatTimeRange(assignment.startMinutes, assignment.endMinutes)}
+                    {modality && (
+                      <>
+                        {" · "}
+                        {modality.kind === "VIRTUAL" && (
+                          <Monitor aria-hidden="true" className="mr-1 inline size-3.5" />
+                        )}
+                        {modality.label}
+                      </>
+                    )}
+                  </p>
+                </li>
+              );
+            })
           )}
         </ol>
       </section>
