@@ -186,13 +186,13 @@ export function LoginScreen({
           className="relative isolate flex min-h-[18rem] overflow-hidden bg-brand-navy px-6 py-8 text-white sm:px-10 sm:py-10 md:min-h-full md:px-8 md:py-10 lg:px-12 lg:py-12"
         >
           <FaroBeam />
-          <div className="relative z-10 flex w-full flex-col justify-between gap-12">
+          <div className="relative z-overlay flex w-full flex-col justify-between gap-12">
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-md border border-white/20 bg-white/10 text-faro">
                 <TutoriasMark aria-hidden="true" className="h-7 w-7" />
               </span>
               <div>
-                <p className="text-sm font-bold tracking-[0.12em] text-white">
+                <p className="text-xs font-semibold uppercase tracking-eyebrow text-white">
                   SGTA
                 </p>
                 <p className="text-xs text-white">
@@ -202,10 +202,10 @@ export function LoginScreen({
             </div>
 
             <div className="max-w-lg lg:pb-10">
-              <p className="text-sm font-bold tracking-[0.08em] text-white">
+              <p className="text-xs font-semibold uppercase tracking-eyebrow text-white">
                 {data.institutionalContext}
               </p>
-              <h2 className="mt-4 max-w-md text-3xl font-extrabold tracking-[-0.035em] text-white sm:text-4xl lg:text-[2.75rem] lg:leading-[1.08]">
+              <h2 className="mt-4 max-w-md font-display text-display font-semibold text-white">
                 Un espacio claro para acompañar cada trayectoria.
               </h2>
               <p className="mt-5 max-w-md text-sm leading-7 text-white/75 sm:text-base">
@@ -214,7 +214,7 @@ export function LoginScreen({
               </p>
             </div>
 
-            <p className="text-xs font-medium tracking-[0.08em] text-white/60">
+            <p className="text-xs font-semibold uppercase tracking-eyebrow text-white/60">
               Espacio institucional de trabajo
             </p>
           </div>
@@ -226,11 +226,11 @@ export function LoginScreen({
         >
           <div className="w-full max-w-[30rem]">
             <div className="mb-8">
-              <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-primary">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-eyebrow text-primary">
                 Acceso institucional
               </p>
               <h1
-                className="text-3xl font-extrabold tracking-[-0.035em] text-foreground sm:text-4xl"
+                className="font-display text-2xl font-semibold text-foreground md:text-title"
                 id="login-title"
               >
                 {data.title}

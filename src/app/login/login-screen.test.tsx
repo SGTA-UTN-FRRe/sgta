@@ -23,6 +23,23 @@ describe("LoginScreen", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       data.title,
     );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveClass(
+      "font-display",
+      "text-2xl",
+      "md:text-title",
+      "font-semibold",
+    );
+    expect(screen.getByRole("heading", { level: 2 })).toHaveClass(
+      "font-display",
+      "text-display",
+      "font-semibold",
+    );
+    expect(screen.getByText("Acceso institucional")).toHaveClass(
+      "text-xs",
+      "font-semibold",
+      "uppercase",
+      "tracking-eyebrow",
+    );
     expect(
       screen.getByRole("button", { name: data.ctaLabel }),
     ).toBeEnabled();
