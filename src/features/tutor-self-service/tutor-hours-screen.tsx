@@ -1,27 +1,30 @@
 "use client";
 
-import { ArrowDownLeft, ArrowUpRight, Clock3, RefreshCw } from "lucide-react";
+import { Clock3, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { BalanceStatus } from "@/features/hours/balance-status";
 import { formatDuration } from "@/shared/format-duration";
 import type {
+  TutorSelfServiceMovement,
   TutorSelfServiceHours,
   TutorSelfServiceRequiredActionReason,
 } from "./tutor-self-service-service";
 import {
   formatLongDate,
   focusTutorPageTitle,
-  getBalanceLabel,
   getMovementDirectionLabel,
   getRequiredActionCopy,
   getTutorSelfServiceErrorMessage,
   requestTutorSelfService,
   TutorSelfServiceRequestError,
 } from "./tutor-self-service-screen-utils";
+import { DataTable, type DataColumn } from "@/shared/components/data-table";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import { StatusBadge } from "@/shared/components/status-badge";
+import { SystemState } from "@/shared/components/system-state";
 
 export type TutorHoursScreenState =
   | "default"
@@ -72,18 +75,18 @@ function HoursLoading() {
 
 function HoursError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div
-      aria-live="assertive"
-      className="rounded-md border border-destructive/30 bg-muted/70 p-6"
-      role="alert"
-    >
-      <h2 className="text-base font-semibold text-foreground">No se pudieron cargar las horas</h2>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{message}</p>
-      <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
-        <RefreshCw aria-hidden="true" />
-        Reintentar
-      </Button>
-    </div>
+    <SystemState
+      action={
+        <Button onClick={onRetry} type="button" variant="outline">
+          <RefreshCw aria-hidden="true" />
+          Reintentar
+        </Button>
+      }
+      description={message}
+      headingLevel={2}
+      title="No se pudieron cargar las horas"
+      variant="error"
+    />
   );
 }
 
@@ -97,21 +100,23 @@ function HoursRequiredAction({
   const copy = getRequiredActionCopy(reason);
 
   return (
-    <div
-      aria-live="polite"
-      className="rounded-md border border-warning/30 bg-muted/70 p-6"
-      role="status"
-    >
-      <StatusBadge label="Acción requerida" variant="warning" />
-      <h2 className="mt-4 text-lg font-semibold text-foreground">{copy.title}</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-        {copy.description}
-      </p>
-      <Button className="mt-5" onClick={onRetry} type="button" variant="outline">
-        <RefreshCw aria-hidden="true" />
-        Volver a consultar
-      </Button>
-    </div>
+    <SystemState
+      action={
+        <Button onClick={onRetry} type="button" variant="outline">
+          <RefreshCw aria-hidden="true" />
+          Volver a consultar
+        </Button>
+      }
+      description={
+        <div className="space-y-2">
+          <StatusBadge label="Acción requerida" variant="warning" />
+          <p>{copy.description}</p>
+        </div>
+      }
+      headingLevel={2}
+      title={copy.title}
+      variant="required-action"
+    />
   );
 }
 
@@ -130,7 +135,111 @@ function HoursEmpty({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+function MovementRelationship({
+  movement,
+  visibleIds,
+}: {
+  movement: TutorSelfServiceMovement;
+  visibleIds: ReadonlySet<string>;
+}) {
+  const targetId =
+    movement.reversalState === "REVERSED"
+      ? movement.reversalMovementId
+      : movement.reversalOfMovementId;
+
+  if (targetId === null || !visibleIds.has(targetId)) {
+    return null;
+  }
+
+  const label =
+    movement.reversalState === "REVERSED"
+      ? "Ver reversión vinculada"
+      : "Ver movimiento original";
+
+  return (
+    <>
+      <a
+        className="hidden min-h-6 items-center text-xs text-link underline underline-offset-4 md:inline-flex"
+        href={`#tutor-movement-${targetId}-table`}
+      >
+        {label}
+      </a>
+      <a
+        className="inline-flex min-h-11 items-center text-xs text-link underline underline-offset-4 md:hidden"
+        href={`#tutor-movement-${targetId}-list`}
+      >
+        {label}
+      </a>
+    </>
+  );
+}
+
+function MovementStatus({
+  movement,
+  visibleIds,
+}: {
+  movement: TutorSelfServiceMovement;
+  visibleIds: ReadonlySet<string>;
+}) {
+  if (movement.reversalState === "CONFIRMED") {
+    return null;
+  }
+
+  return (
+    <div className="max-w-56 space-y-2">
+      <StatusBadge
+        label={
+          movement.reversalState === "REVERSED"
+            ? "Movimiento revertido"
+            : "Reversión registrada"
+        }
+        variant="neutral"
+      />
+      <MovementRelationship movement={movement} visibleIds={visibleIds} />
+    </div>
+  );
+}
+
 function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: "ready" }> }) {
+  const visibleIds = new Set(data.movements.map((movement) => movement.id));
+  const hasReversals = data.movements.some(
+    (movement) => movement.reversalState !== "CONFIRMED",
+  );
+  const columns: DataColumn<TutorSelfServiceMovement>[] = [
+    {
+      id: "duration",
+      header: "Duración",
+      numeric: true,
+      cell: (movement) => (
+        <p className="whitespace-nowrap py-3 font-bold">
+          {formatDuration(movement.signedDurationMinutes, { signed: true })}
+        </p>
+      ),
+    },
+    {
+      id: "note",
+      header: "Nota",
+      className: "hidden xl:table-cell",
+      compactClassName: "col-span-2",
+      cell: (movement) => (
+        <p className="max-w-56 break-words py-3 text-muted-foreground">
+          {movement.note ?? "Sin nota"}
+        </p>
+      ),
+    },
+  ];
+
+  if (hasReversals) {
+    columns.push({
+      id: "state",
+      header: "Estado",
+      compactClassName: "col-span-2",
+      cell: (movement) => (
+        <MovementStatus movement={movement} visibleIds={visibleIds} />
+      ),
+    });
+  }
+
   return (
     <>
       <section className="mt-6 rounded-md border border-border bg-card p-5 shadow-xs sm:p-6" aria-labelledby="tutor-hours-balance">
@@ -146,14 +255,9 @@ function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: 
           </div>
           <div className="sm:text-right">
             <p className="text-sm font-semibold text-muted-foreground">Saldo del ciclo</p>
-            <p className="mt-1 font-sans text-4xl font-extrabold tabular-nums text-foreground">
-              {formatDuration(data.balance.signedBalanceMinutes)}
-            </p>
-            <StatusBadge
-              className="mt-3"
-              label={getBalanceLabel(data.balance.state)}
-              variant={data.balance.state === "current" ? "success" : "warning"}
-            />
+            <div className="mt-1 flex sm:justify-end">
+              <BalanceStatus balance={data.balance} />
+            </div>
           </div>
         </div>
       </section>
@@ -171,66 +275,32 @@ function HoursContent({ data }: { data: Extract<TutorSelfServiceHours, { state: 
           </div>
         </div>
 
-        <ol
-          aria-label="Historial de movimientos"
-          className="mt-4 space-y-3"
-          data-layout="movement-history"
-        >
-          {data.movements.map((movement) => {
-            const isCredit = movement.direction === "CREDIT";
-
-            return (
-              <li
-                className="rounded-md border border-border bg-card p-4 shadow-xs sm:p-5"
-                key={movement.id}
-              >
-                <div className="flex items-start gap-3">
-                  <span
-                    aria-hidden="true"
-                    className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                      isCredit
-                        ? "bg-muted text-success"
-                        : "bg-muted text-warning"
-                    }`}
-                  >
-                    {isCredit ? (
-                      <ArrowUpRight className="h-4 w-4" />
-                    ) : (
-                      <ArrowDownLeft className="h-4 w-4" />
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                      <div>
-                        <p className="font-semibold text-foreground">{movement.category.name}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {getMovementDirectionLabel(movement.direction)} · {formatLongDate(movement.movementDate)}
-                        </p>
-                      </div>
-                      <p className="font-sans text-lg font-bold tabular-nums text-foreground">
-                        {formatDuration(movement.signedDurationMinutes, { signed: true })}
-                      </p>
-                    </div>
-                    {movement.note && (
-                      <p className="mt-3 text-sm leading-6 text-muted-foreground">{movement.note}</p>
-                    )}
-                    {movement.reversalState !== "CONFIRMED" && (
-                      <StatusBadge
-                        className="mt-3"
-                        label={
-                          movement.reversalState === "REVERSED"
-                            ? "Movimiento revertido"
-                            : "Reversión registrada"
-                        }
-                        variant="neutral"
-                      />
-                    )}
-                  </div>
-                </div>
-              </li>
-            );
+        <DataTable
+          columns={columns}
+          getRowKey={(movement) => movement.id}
+          getRowProps={(movement, layout) => ({
+            id: `tutor-movement-${movement.id}-${layout}`,
+            "data-movement-id": movement.id,
+            "data-reversal-state": movement.reversalState,
           })}
-        </ol>
+          identityColumn={{
+            id: "movement",
+            header: "Movimiento y fecha",
+            cell: (movement) => (
+              <div className="min-w-0 space-y-1 py-3">
+                <p className="font-bold">{movement.category.name}</p>
+                <p className="text-xs font-normal text-muted-foreground">
+                  {getMovementDirectionLabel(movement.direction)} · {formatLongDate(movement.movementDate)}
+                </p>
+                <p className="hidden space-y-1 text-xs font-normal text-muted-foreground md:block xl:hidden">
+                  {movement.note ?? "Sin nota"}
+                </p>
+              </div>
+            ),
+          }}
+          label="Historial de movimientos"
+          rows={data.movements}
+        />
       </section>
     </>
   );
