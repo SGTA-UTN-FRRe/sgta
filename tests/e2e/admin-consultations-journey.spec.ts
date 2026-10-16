@@ -338,24 +338,33 @@ test.describe("authenticated Admin consultation workflow", () => {
       expect(pageWidth, `Reportes overflows at ${viewport.width}px`).toBeLessThanOrEqual(
         viewport.width,
       );
+      if (viewport.width === 390) {
+        const trigger = page.getByRole("button", { name: /^Filtros/ });
+        const sheet = page.getByRole("dialog", { name: "Filtros" });
+        await expectAccessibleOverlay(page, { trigger, overlay: sheet });
+        await activateWithKeyboard(page, trigger);
+        await expect(sheet.getByLabel("Materia")).toHaveValue("33333333-3333-4333-8333-333333333333");
+        await selectWithKeyboard(page, sheet.getByRole("combobox", { name: "Modalidad" }), "UNSPECIFIED");
+        await activateWithKeyboard(page, sheet.getByRole("button", { name: "Aplicar filtros" }));
+        await expect(page).toHaveURL(/modality=UNSPECIFIED/);
+        await waitForHydration(page);
+        await expect(page.getByRole("heading", { name: "Demanda", exact: true })).toBeVisible();
+      }
     }
 
     await page.goto(
       "/admin/reports?fromDate=2026-01-01&toDate=2026-01-01",
     );
-    await expect(
-      page.getByRole("heading", {
-        level: 3,
-        name: "No hay datos para los filtros seleccionados.",
-      }),
-    ).toBeVisible();
+    await expect(page.locator('[data-slot="empty-state"]').getByRole("heading", {
+      level: 3, name: "No hay datos para los filtros seleccionados.",
+    })).toBeVisible();
     accessibilityViolations.push(
       ...(await collectSeriousAccessibilityViolations(
         page,
         "Reports empty-period state at Wide",
       )),
     );
-    await activateWithKeyboard(page, page.getByRole("link", { name: "Restablecer filtros" }));
+    await activateWithKeyboard(page, reportFilters.getByRole("link", { name: "Restablecer filtros" }));
     await expect(page).toHaveURL("http://localhost:3000/admin/reports");
 
     await page.goto(
