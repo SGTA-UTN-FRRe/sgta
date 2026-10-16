@@ -109,7 +109,7 @@ export default async function AdminHourMovementsPage({
       state = "error";
       stateDetail = errorState;
       initialErrorMessage =
-        "No se pudo cargar el historial. Reintentar para volver a consultar los movimientos.";
+        "Reintentar para volver a consultar los movimientos.";
     }
   }
 

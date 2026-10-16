@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow,
@@ -21,6 +21,8 @@ export interface DataTableProps<T> {
   identityColumn: DataColumn<T>;
   columns: readonly DataColumn<T>[];
   getRowKey: (row: T) => string;
+  /** Stable anchors and record metadata for each responsive representation. */
+  getRowProps?: (row: T, layout: "table" | "list") => HTMLAttributes<HTMLElement>;
   rowActions?: (row: T) => ReactNode;
   stickyHeader?: boolean;
   loading?: boolean;
@@ -32,7 +34,7 @@ export interface DataTableProps<T> {
 
 /** One row model drives both the comparison table and the Compact priority list. */
 export function DataTable<T>({
-  label, rows, identityColumn, columns, getRowKey, rowActions,
+  label, rows, identityColumn, columns, getRowKey, getRowProps, rowActions,
   stickyHeader = false, loading = false, loadingLabel = "Cargando registros", empty, error,
 }: DataTableProps<T>) {
   if (loading) {
@@ -63,7 +65,7 @@ export function DataTable<T>({
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={getRowKey(row)} className="h-row hover:bg-transparent">
+              <TableRow {...getRowProps?.(row, "table")} key={getRowKey(row)} className="h-row hover:bg-transparent">
                 <TableHead scope="row" className="whitespace-normal font-semibold">{identityColumn.cell(row)}</TableHead>
                 {columns.map((column) => (
                   <TableCell key={column.id} className={cn("py-0 whitespace-normal", column.numeric && "text-right tabular-nums", column.className)}>
@@ -82,7 +84,7 @@ export function DataTable<T>({
       </div>
       <ul aria-label={label} className="divide-y divide-border md:hidden">
         {rows.map((row) => (
-          <li key={getRowKey(row)} className="space-y-3 py-3">
+          <li {...getRowProps?.(row, "list")} key={getRowKey(row)} className="space-y-3 py-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 text-sm font-semibold">{identityColumn.cell(row)}</div>
               {rowActions && <div className="flex shrink-0 flex-wrap justify-end gap-2">{rowActions(row)}</div>}

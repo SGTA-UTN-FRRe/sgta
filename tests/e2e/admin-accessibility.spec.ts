@@ -29,7 +29,7 @@ const adminRoutes = [
   {
     path: `/admin/hours/movements?cycleId=${E2E_CYCLE_ID}&tutorId=${E2E_PRIMARY_TUTOR_ID}`,
     title: "Movimientos",
-    action: "Volver a Horas",
+    action: "Horas",
   },
   { path: "/admin/consultations", title: "Consultas", action: "Actualizar consultas" },
   { path: "/admin/reports", title: "Reportes", action: "Aplicar filtros" },
@@ -65,9 +65,11 @@ test.describe("Admin accessibility and responsive layouts", () => {
         await expect(pageTitle).toBeVisible();
 
         if (route.action !== undefined) {
-          const action = page.getByRole("button", { name: route.action }).or(
-            page.getByRole("link", { name: route.action }),
-          );
+          const action = route.title === "Movimientos"
+            ? page.getByRole("navigation", { name: "Migas de pan" }).getByRole("link", { name: route.action, exact: true })
+            : page.getByRole("button", { name: route.action }).or(
+              page.getByRole("link", { name: route.action }),
+            );
           await expect(action.first()).toBeVisible();
         }
 
