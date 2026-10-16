@@ -31,7 +31,8 @@ describe("LoginScreen", () => {
     );
     expect(screen.getByRole("heading", { level: 2 })).toHaveClass(
       "font-display",
-      "text-display",
+      "text-2xl",
+      "lg:text-display",
       "font-semibold",
     );
     expect(screen.getByText("Acceso institucional")).toHaveClass(
@@ -84,6 +85,7 @@ describe("LoginScreen", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       data.states.permissionDeniedDescription,
     );
+    expect(screen.getAllByText(data.recoveryText)).toHaveLength(1);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
