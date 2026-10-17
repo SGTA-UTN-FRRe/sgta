@@ -125,7 +125,7 @@ function HoursRequiredAction({
 function HoursEmpty({ onRetry }: { onRetry: () => void }) {
   return (
     <EmptyState
-      description="El balance aparecerá cuando se registre el primer movimiento del ciclo vigente."
+      description="El saldo aparecerá cuando se registre el primer movimiento del ciclo vigente."
       title="Todavía no hay movimientos registrados en este ciclo."
       action={
         <Button onClick={onRetry} type="button" variant="outline">

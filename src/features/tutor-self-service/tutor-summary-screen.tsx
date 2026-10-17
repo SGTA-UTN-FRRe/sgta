@@ -316,7 +316,7 @@ export function TutorSummaryScreen({
         description={
           data?.state === "ready"
             ? `Estado actual de ${data.tutor.displayName} y sus próximas guardias.`
-            : "Balance, materias y próximas guardias del ciclo vigente."
+            : "Saldo, materias y próximas guardias del ciclo vigente."
         }
         titleId="tutor-page-title"
         title="Mi resumen"

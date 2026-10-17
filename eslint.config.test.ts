@@ -63,14 +63,14 @@ describe("production fixture import restriction", () => {
   });
 });
 
-describe("raw interactive element warning", () => {
-  it("warns on each restricted element in a feature view", async () => {
+describe("raw interactive element restriction", () => {
+  it("reports an error on each restricted element in a feature view", async () => {
     const [result] = await eslint.lintText(rawInteractiveElements, {
       filePath: "src/features/example/raw.tsx",
     });
 
-    expect(result.errorCount).toBe(0);
-    expect(result.warningCount).toBe(5);
+    expect(result.errorCount).toBe(5);
+    expect(result.warningCount).toBe(0);
     expect(result.messages.map((message) => message.message)).toEqual(
       Array.from({ length: 5 }, () => rawElementMessage),
     );
@@ -98,8 +98,8 @@ export default function ExamplePage() {
   });
 });
 
-describe("arbitrary design value warning", () => {
-  it("warns in JSX className strings, cn arguments, and template literals", async () => {
+describe("arbitrary design value restriction", () => {
+  it("reports errors in JSX className strings, cn arguments, and template literals", async () => {
     const sources = [
       `export function ClassNames() {\n  return <>${arbitraryDesignClasses
         .map((className) => `<div className="${className}" />`)
@@ -116,13 +116,13 @@ describe("arbitrary design value warning", () => {
       const [result] = await eslint.lintText(source, {
         filePath: "src/features/example/design-values.tsx",
       });
-      const designWarnings = result.messages.filter(
+      const designErrors = result.messages.filter(
         (message) => message.message === designValueMessage,
       );
 
-      expect(designWarnings).toHaveLength(arbitraryDesignClasses.length);
-      expect(designWarnings.map((message) => message.severity)).toEqual(
-        Array.from({ length: arbitraryDesignClasses.length }, () => 1),
+      expect(designErrors).toHaveLength(arbitraryDesignClasses.length);
+      expect(designErrors.map((message) => message.severity)).toEqual(
+        Array.from({ length: arbitraryDesignClasses.length }, () => 2),
       );
     }
   });

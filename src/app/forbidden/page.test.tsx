@@ -22,7 +22,7 @@ it("offers sign-out beside the home link on the restricted-access page", async (
   render(<ForbiddenPage />);
 
   expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-    "No tienes permisos para esta sección",
+    "Esta cuenta no tiene permisos para esta sección",
   );
   expect(screen.getByRole("link", { name: "Volver al inicio" })).toHaveAttribute("href", "/");
   const button = screen.getByRole("button", { name: "Cerrar sesión" });

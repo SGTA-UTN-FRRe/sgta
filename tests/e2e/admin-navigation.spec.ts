@@ -8,7 +8,7 @@ import {
   E2E_PRIMARY_TUTOR_ID,
   E2E_SECONDARY_TUTOR_ID,
 } from "./e2e-test-data";
-import { activateWithKeyboard } from "./keyboard-helpers";
+import { activateWithKeyboard, expectAccessibleOverlay } from "./keyboard-helpers";
 import { addE2ESessionCookie } from "./session-cookie";
 
 for (const viewport of [
@@ -39,6 +39,12 @@ for (const viewport of [
     }
 
     await page.goto("/admin/tutors");
+    if (viewport.layout === "compact") {
+      await expectAccessibleOverlay(page, {
+        trigger: page.getByRole("button", { name: "Abrir navegación" }),
+        overlay: page.getByRole("dialog", { name: "Navegación de administración" }),
+      });
+    }
     const tutorName = () => page.getByRole(viewport.layout === "compact" ? "list" : "table", { name: "Lista de tutores" }).getByRole("button", { name: "Lovelace, Ada", exact: true });
     await activateWithKeyboard(page, tutorName());
     await expect(page.getByRole("dialog", { name: "Detalle de Lovelace, Ada" })).toBeVisible();

@@ -90,7 +90,7 @@ const eslintConfig = defineConfig([
     ignores: ["src/components/ui/**", "src/mocks/**", "**/*.test.{ts,tsx}"],
     rules: {
       "no-restricted-syntax": [
-        "warn",
+        "error",
         ...rawInteractiveElementNames.map((name) => ({
           selector: `JSXOpeningElement[name.type='JSXIdentifier'][name.name='${name}']`,
           message: rawInteractiveElementMessage,

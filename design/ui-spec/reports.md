@@ -9,7 +9,7 @@ Global rules, system states, and the route inventory live in [UI-SPEC](../UI-SPE
 ## Content order
 
 1. Page header.
-2. `Filtros` panel: the period as `Desde` and `Hasta`, then `Carrera` (`Todas las carreras`), `Materia` (`Todas las materias`), `Tutor` (`Todos los tutores`), and `Modalidad` (`Todas las modalidades`, `Sin especificar`, then recorded modalities); the helper line `El período incluye ambas fechas y admite hasta 366 días. Una materia elegida debe pertenecer a la carrera seleccionada.`; then `Aplicar filtros` and `Restablecer filtros`. A selected value missing from the loaded options stays selectable as `Selección actual`.
+2. `Filtros` panel: the period as `Desde` and `Hasta`, then `Carrera` (`Todas las carreras`), `Materia` (`Todas las materias`), `Tutor` (`Todos los tutores`), and `Modalidad` (`Todas las modalidades`, `Sin especificar`, then recorded modalities); the helper line `El período incluye ambas fechas y admite hasta 366 días. Una materia elegida debe pertenecer a la carrera seleccionada.`; then `Aplicar filtros` and `Limpiar filtros`. A selected value missing from the loaded options stays selectable as `Selección actual`.
 3. `Resumen`: `Período del <desde> al <hasta>` and four metrics: `Consultas`, `De materia`, `Generales`, and `Tutores activos`, each with a one-line scope caption. A metric whose source failed shows `—`.
 4. `Demanda`: six ranked tables, `Por carrera`, `Por materia`, `Por tutor`, `Por modalidad`, `Por etapa académica`, and `Evolución mensual`, each with its count column `Consultas`. Ranked groups show the first 50 by count with `Se muestran los primeros 50 resultados ordenados por cantidad.` when more exist.
 5. `Cobertura`: `Cobertura de materias` (covered / total subjects, the percentage when defined, and the open cycle) and `Guardias programadas` (`Ocurrencias`, `Tiempo programado`, a table by kind, `Ordinarias` and `Recuperatorias`, and a table by Tutor limited to 50 rows with a notice).
@@ -23,7 +23,7 @@ Each section and card names the filters that affect it and, for snapshots, the o
 Reportes
 Filtros
 [Desde] [Hasta] [Carrera] [Materia] [Tutor] [Modalidad]
-[Aplicar filtros] [Restablecer filtros]
+[Aplicar filtros] [Limpiar filtros]
 
 Resumen
 [Consultas] [De materia] [Generales] [Tutores activos]
@@ -52,7 +52,7 @@ Horas y actividades
 | --- | --- |
 | Default | Filters and every section. |
 | Loading | The Reportes skeleton, announced as `Cargando reportes`. |
-| Empty | When the period has no consultations, planned duties, movements, or activities: `No hay datos para los filtros seleccionados.` with `Los indicadores de estado actual, cuando están disponibles, siguen describiendo el ciclo vigente.` and `Restablecer filtros`, shown once after the summary. Summary, coverage, and balance snapshots stay visible. Inside sections, an empty demand reads `Sin consultas consolidadas para los filtros seleccionados.` and empty tables read `Sin consultas para este desglose.`, `Sin guardias programadas en el período.`, `Sin movimientos en el período.`, or `Sin actividades en el período.` as a single muted line. |
+| Empty | When the period has no consultations, planned duties, movements, or activities: `No hay datos para los filtros seleccionados.` with `Los indicadores de estado actual, cuando están disponibles, siguen describiendo el ciclo vigente.` and `Limpiar filtros`, shown once after the summary. Summary, coverage, and balance snapshots stay visible. Inside sections, an empty demand reads `Sin consultas consolidadas para los filtros seleccionados.` and empty tables read `Sin consultas para este desglose.`, `Sin guardias programadas en el período.`, `Sin movimientos en el período.`, or `Sin actividades en el período.` as a single muted line. |
 | Invalid filters | `No se pudieron aplicar los filtros` with one line per problem; the submitted values stay in the form and no report section renders. |
 | Error | `No se pudieron cargar los reportes` with `Los valores enviados se mantienen en el formulario. Reintentar la consulta para volver a cargar los reportes.` and `Reintentar`. |
 | Degraded | When one source or section fails, a `Carga parcial` notice reads `Una o más secciones no están disponibles; el resto conserva sus resultados.` with `Reintentar todas`; each failed section shows its own error and `Reintentar` (for example `No se pudo cargar la demanda de consultas`), and unaffected sections stay usable. When filter options fail, the panel shows `No se pudieron cargar todas las opciones de filtro.` with `Los resultados disponibles siguen visibles.` and keeps the selected values. |
@@ -66,7 +66,7 @@ Horas y actividades
 | Description | Consultar demanda, cobertura y movimientos a partir de registros consolidados. |
 | Primary action | None |
 | Apply filters | Aplicar filtros |
-| Reset filters | Restablecer filtros |
+| Clear filters | Limpiar filtros |
 | Invalid filters | No se pudieron aplicar los filtros |
 | Partial load | Carga parcial · Reintentar todas |
 | Empty | No hay datos para los filtros seleccionados. |
@@ -119,7 +119,7 @@ Filters:
 
 - are edited as a draft and applied together with `Aplicar filtros`, from the panel or the Compact `Filtros` sheet;
 - apply to the sections listed in Filter scope;
-- `Restablecer filtros` restores the documented default period;
+- `Limpiar filtros` removes every filter and restores the documented default period;
 - valid state is URL-backed and survives reload or sharing;
 - invalid or incomplete date ranges retain the submitted values and explain the correction needed.
 

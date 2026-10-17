@@ -148,7 +148,7 @@ export function ReportsScreen({
               className="min-h-0 py-6 sm:py-6"
               description="Los indicadores de estado actual, cuando están disponibles, siguen describiendo el ciclo vigente."
               title="No hay datos para los filtros seleccionados."
-              action={<Link className={buttonVariants({ variant: "outline" })} href="/admin/reports">Restablecer filtros</Link>}
+              action={<Link className={buttonVariants({ variant: "outline" })} href="/admin/reports">Limpiar filtros</Link>}
             />
           )}
 

@@ -60,6 +60,7 @@ function SheetContent({
     <SheetPortal>
       <SheetOverlay />
       <SheetPrimitive.Content
+        aria-modal="true"
         data-slot="sheet-content"
         data-size={size}
         className={cn(

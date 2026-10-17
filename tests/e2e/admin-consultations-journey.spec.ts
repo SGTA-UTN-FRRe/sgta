@@ -135,6 +135,10 @@ test.describe("authenticated Admin consultation workflow", () => {
       firstReview.getByRole("combobox", { name: "Materia" }),
       { label: "Algorithms" },
     );
+    await expectAccessibleOverlay(page, {
+      trigger: firstReview.getByRole("button", { name: "Cerrar detalle", exact: true }),
+      overlay: page.getByRole("alertdialog", { name: "¿Cerrar el detalle?" }),
+    });
     await activateWithKeyboard(page, firstReview.getByRole("button", { name: "Guardar revisión" }));
     await expect(firstReview.getByText("La consulta quedó consolidada.")).toBeVisible();
     await expectReducedMotion(firstReview);
@@ -364,7 +368,7 @@ test.describe("authenticated Admin consultation workflow", () => {
         "Reports empty-period state at Wide",
       )),
     );
-    await activateWithKeyboard(page, reportFilters.getByRole("link", { name: "Restablecer filtros" }));
+    await activateWithKeyboard(page, reportFilters.getByRole("link", { name: "Limpiar filtros" }));
     await expect(page).toHaveURL("http://localhost:3000/admin/reports");
 
     await page.goto(

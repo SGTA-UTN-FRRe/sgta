@@ -8,7 +8,7 @@ Global rules, system states, and the route inventory live in [UI-SPEC](../UI-SPE
 
 ## Content order
 
-1. Page header with `Estado actual de <Tutor display name> y sus próximas guardias.`; before the summary loads, or when it cannot be shown, the description reads `Balance, materias y próximas guardias del ciclo vigente.`
+1. Page header with `Estado actual de <Tutor display name> y sus próximas guardias.`; before the summary loads, or when it cannot be shown, the description reads `Saldo, materias y próximas guardias del ciclo vigente.`
 2. `Horas`: the current balance as BalanceStatus (as in [Horas](hours.md)), with `Al día` or `Debe horas` and the same status colors.
 3. `Próxima guardia`: the long date (for example `Viernes, 18 de septiembre de 2026`), the time range `16:00 a 20:00`, and the modality when one is recorded; or `No hay guardias próximas`.
 4. `Materias`: the assigned subjects with the count `1 materia asignada` or `<n> materias asignadas`; an inactive subject adds `Materia inactiva`; with no subjects, `Todavía no hay materias asignadas.`

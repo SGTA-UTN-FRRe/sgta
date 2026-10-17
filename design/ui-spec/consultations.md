@@ -10,7 +10,7 @@ Global rules, system states, and the route inventory live in [UI-SPEC](../UI-SPE
 
 1. Page header with the title, the description, and `Actualizar consultas`.
 2. Import status region `Estado de la importación`: the source status badge and its explanation, `Última actualización correcta: <fecha>` (`Sin registros` before the first successful import), and the counts `Pendientes de revisión` and `Filas con errores`. Import, refresh, and invalid-filter notices follow it.
-3. Filters: `Buscar consultas` (`Estudiante, carrera, tutor o tema`), `Estado`, `Carrera`, `Tutor`, `Fecha desde`, `Fecha hasta`, `Clasificación`, and `Sugerencia de materia`, the result count, and `Limpiar filtros` while a search or filter is active. In Compact, every filter except `Buscar consultas` moves into the shared `Filtros` sheet. Below the filters, `<n> consultas registradas · <n> pendientes de revisión` reports the canonical matches and the global pending count.
+3. Filters: `Buscar consultas` (`Estudiante, carrera, tutor o tema`), `Estado`, `Carrera`, `Tutor`, `Desde`, `Hasta`, `Clasificación`, and `Sugerencia de materia`, the result count, and `Limpiar filtros` while a search or filter is active. In Compact, every filter except `Buscar consultas` moves into the shared `Filtros` sheet. Below the filters, `<n> consultas registradas · <n> pendientes de revisión` reports the canonical matches and the global pending count.
 4. Pending review queue `Pendientes de revisión` with its total, the selection toolbar, and bulk actions. Each pending row shows its selection checkbox, student, status, date, career, Tutor, unresolved observations in plain language, classification, the suggested subject or `Sin sugerencia de materia`, and `Revisar a <Estudiante>`.
 5. Canonical list `Consultas registradas` with `Mostrando <a>–<b> de <n>`: Estudiante, Fecha, Tutor, Carrera, Tema, Clasificación (with the subject), and Estado, plus the row action `Ver detalle`. Pages hold 50 consultations and use `Anterior`, `Página <n>`, and `Siguiente`.
 6. Review and detail sheet.
@@ -36,7 +36,7 @@ Importar, revisar y consultar registros de atención académica.
 Estado de la importación  [Fuente actualizada]   Pendientes de revisión  n
 Última actualización correcta: ...                Filas con errores       n
 
-[Buscar consultas] [Estado] [Carrera] [Tutor] [Fecha desde] [Fecha hasta]
+[Buscar consultas] [Estado] [Carrera] [Tutor] [Desde] [Hasta]
 [Clasificación] [Sugerencia de materia]          n resultados  [Limpiar filtros]
 
 Pendientes de revisión                                            n en total
