@@ -17,6 +17,20 @@ part of the current runtime.
 - **Consultation curation:** import from a read-only Google Sheets source, review staging rows, and report from canonical records.
 - **Operational visibility:** review current-cycle context, schedule coverage, hour balances, movements, activities, and consultation demand.
 
+## Screenshots
+
+![Login view](docs/screenshots/login.png)
+
+![Admin overview](docs/screenshots/admin-overview.png)
+
+![Schedules view](docs/screenshots/schedules.png)
+
+![Hour balances view](docs/screenshots/hours.png)
+
+![Tutor summary](docs/screenshots/tutor-summary.png)
+
+Regenerate with `corepack pnpm screenshots` after a production build.
+
 ## Engineering highlights
 
 - **Server-side access control:** Better Auth identities are explicitly provisioned; protected routes and APIs enforce roles on the server.
