@@ -66,10 +66,12 @@ export function SubjectSection({
                 Administrar materias dentro de una carrera activa. Las relaciones históricas se conservan.
               </CardDescription>
             </div>
-            <StatusBadge
-              label={`${subjects.filter((subject) => subject.status === "ACTIVE").length} activas`}
-              variant="info"
-            />
+            <div className="shrink-0">
+              <StatusBadge
+                label={`${subjects.filter((subject) => subject.status === "ACTIVE").length} activas`}
+                variant="info"
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -151,13 +153,13 @@ export function SubjectSection({
                 {
                   id: "career", header: "Carrera", cell: (subject) => {
                     const career = careers.find((item) => item.id === subject.careerId);
-                    return <div className="flex flex-wrap items-center gap-2">{career && <CareerBadge name={career.name} color={career.color} size="sm" />}<span>{subject.careerName}</span>
+                    return <div className="flex flex-wrap items-center gap-2">{career && <CareerBadge name={career.name} color={career.color} size="sm" />}<span className="md:max-lg:hidden">{subject.careerName}</span>
                     </div>;
                   }
                 },
                 { id: "status", header: "Estado", cell: (subject) => <ReferenceStatusBadge status={subject.status} /> },
               ]}
-              rowActions={(subject) => <>
+              rowActions={(subject) => <div className="flex flex-nowrap items-center gap-2">
                 <Button
                   aria-label={`Editar materia ${subject.name}`}
                   disabled={disabled}
@@ -165,14 +167,14 @@ export function SubjectSection({
                   size="sm"
                   type="button"
                   variant="ghost"
-                ><Pencil aria-hidden="true" />Editar</Button>
+                ><Pencil aria-hidden="true" /><span className="md:max-lg:hidden">Editar</span></Button>
                 <ReferenceStatusAction
                   disabled={disabled}
                   entityLabel={`materia ${subject.name}`}
                   onClick={() => onStatusChange(subject)}
                   status={subject.status}
                 />
-              </>}
+              </div>}
             />
           )}
         </CardContent>

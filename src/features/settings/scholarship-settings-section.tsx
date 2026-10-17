@@ -53,10 +53,12 @@ export function ScholarshipSection({
                 Mantener tipos de referencia y datos conocidos. Esta información es orientativa y no certifica cumplimiento.
               </CardDescription>
             </div>
-            <StatusBadge
-              label={`${references.filter((reference) => reference.status === "ACTIVE").length} activas`}
-              variant="info"
-            />
+            <div className="shrink-0">
+              <StatusBadge
+                label={`${references.filter((reference) => reference.status === "ACTIVE").length} activas`}
+                variant="info"
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -101,7 +103,7 @@ export function ScholarshipSection({
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button disabled={disabled} size="sm" type="submit">
-                {editingReference === null ? "Agregar referencia" : "Guardar cambios"}
+                {editingReference === null ? "Agregar referencia de beca" : "Guardar cambios"}
               </Button>
               {editingReference !== null && (
                 <Button
@@ -132,7 +134,7 @@ export function ScholarshipSection({
                 { id: "notes", header: "Notas", cell: (reference) => reference.notes ?? "Sin notas" },
                 { id: "status", header: "Estado", cell: (reference) => <ReferenceStatusBadge status={reference.status} /> },
               ]}
-              rowActions={(reference) => <>
+              rowActions={(reference) => <div className="flex flex-nowrap items-center gap-2">
                 <Button
                   aria-label={`Editar referencia ${reference.type}`}
                   disabled={disabled}
@@ -140,14 +142,14 @@ export function ScholarshipSection({
                   size="sm"
                   type="button"
                   variant="ghost"
-                ><Pencil aria-hidden="true" />Editar</Button>
+                ><Pencil aria-hidden="true" /><span className="md:max-lg:hidden">Editar</span></Button>
                 <ReferenceStatusAction
                   disabled={disabled}
                   entityLabel={`referencia ${reference.type}`}
                   onClick={() => onStatusChange(reference)}
                   status={reference.status}
                 />
-              </>}
+              </div>}
             />
           )}
         </CardContent>

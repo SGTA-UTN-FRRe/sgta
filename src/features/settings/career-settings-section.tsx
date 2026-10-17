@@ -50,10 +50,12 @@ export function CareerSection({
                 Mantener las carreras disponibles para el contexto académico de los tutores.
               </CardDescription>
             </div>
-            <StatusBadge
-              label={`${careers.filter((career) => career.status === "ACTIVE").length} activas`}
-              variant="info"
-            />
+            <div className="shrink-0">
+              <StatusBadge
+                label={`${careers.filter((career) => career.status === "ACTIVE").length} activas`}
+                variant="info"
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -119,7 +121,7 @@ export function CareerSection({
                 },
                 { id: "status", header: "Estado", cell: (career) => <ReferenceStatusBadge status={career.status} /> },
               ]}
-              rowActions={(career) => <>
+              rowActions={(career) => <div className="flex flex-nowrap items-center gap-2">
                 <Button
                   aria-label={`Editar carrera ${career.name}`}
                   disabled={disabled}
@@ -127,14 +129,14 @@ export function CareerSection({
                   size="sm"
                   type="button"
                   variant="ghost"
-                ><Pencil aria-hidden="true" />Editar</Button>
+                ><Pencil aria-hidden="true" /><span className="md:max-lg:hidden">Editar</span></Button>
                 <ReferenceStatusAction
                   disabled={disabled}
                   entityLabel={`carrera ${career.name}`}
                   onClick={() => onStatusChange(career)}
                   status={career.status}
                 />
-              </>}
+              </div>}
             />
           )}
         </CardContent>

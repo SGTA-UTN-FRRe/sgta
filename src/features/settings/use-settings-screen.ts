@@ -18,6 +18,8 @@ import {
   EMPTY_SUBJECT_FORM,
   EMPTY_SCHOLARSHIP_FORM,
   EMPTY_HOUR_CATEGORY_FORM,
+  LOAD_ERROR_FEEDBACK,
+  type PendingOperation,
   SettingsRequestError,
   requestJson,
   getFeedbackMessage,
@@ -61,8 +63,10 @@ export function useSettingsScreen({
   const [feedback, setFeedback] = useState<Feedback | null>(
     initialErrorMessage === undefined
       ? null
-      : { kind: "error", message: initialErrorMessage },
+      : { ...LOAD_ERROR_FEEDBACK, message: initialErrorMessage },
   );
+  const [dataLoaded, setDataLoaded] = useState(initialErrorMessage === undefined);
+  const [pendingOperation, setPendingOperation] = useState<PendingOperation>("save");
   const [closeConfirmationOpen, setCloseConfirmationOpen] = useState(false);
   const closeCycleTriggerRef = useRef<HTMLButtonElement | null>(null);
   const closeCycleHistoryRef = useRef<HTMLElement | null>(null);
@@ -80,7 +84,9 @@ export function useSettingsScreen({
     action: () => Promise<T>,
     successMessage: string,
     onSuccess: (value: T) => void,
+    operation: PendingOperation = "save",
   ): Promise<boolean> => {
+    setPendingOperation(operation);
     setState("loading");
     setFeedback(null);
 
@@ -98,6 +104,7 @@ export function useSettingsScreen({
   };
 
   const refreshSettings = async () => {
+    setPendingOperation("refresh");
     setState("loading");
     setFeedback(null);
 
@@ -109,10 +116,17 @@ export function useSettingsScreen({
       setSubjects(sortSubjects(next.subjects));
       setScholarshipReferences(sortScholarshipReferences(next.scholarshipReferences));
       setHourCategories(sortByName(next.hourCategories));
+      setDataLoaded(true);
       setState("default");
     } catch (error) {
       setState("error");
-      setFeedback({ kind: "error", message: getFeedbackMessage(error) });
+      setFeedback({
+        ...LOAD_ERROR_FEEDBACK,
+        description:
+          error instanceof SettingsRequestError && error.code !== "internal_server_error"
+            ? getFeedbackMessage(error)
+            : LOAD_ERROR_FEEDBACK.description,
+      });
     }
   };
 
@@ -141,6 +155,7 @@ export function useSettingsScreen({
         ]);
         setCycleForm(EMPTY_CYCLE_FORM);
       },
+      "create-cycle",
     );
   };
 
@@ -472,6 +487,8 @@ export function useSettingsScreen({
     closeCycleTriggerRef,
     closeCycleHistoryRef,
     isLoading,
+    pendingOperation,
+    dataLoaded,
     screenState,
     updateStateForEditing,
     refreshSettings,

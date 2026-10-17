@@ -15,6 +15,18 @@ export type SettingsState =
 export type Feedback = {
   kind: "error" | "success";
   message: string;
+  description?: string;
+  /** Load failures offer a retry; save failures keep the form for correction. */
+  retry?: boolean;
+};
+
+export type PendingOperation = "refresh" | "save" | "create-cycle";
+
+export const LOAD_ERROR_FEEDBACK: Feedback = {
+  kind: "error",
+  message: "No se pudo cargar la configuración.",
+  description: "Reintentar para volver a consultar los datos.",
+  retry: true,
 };
 
 export type CycleForm = {
@@ -122,7 +134,7 @@ const dateFormatter = new Intl.DateTimeFormat("es-AR", {
 
 const settingsErrorMessages: Record<string, string> = {
   unauthorized: "La sesión expiró. Volver a iniciar sesión para continuar.",
-  forbidden: "No tienes permisos para administrar la configuración.",
+  forbidden: "La cuenta no tiene permisos para administrar la configuración.",
   invalid_request: "Revisar los datos ingresados antes de guardar.",
   invalid_date_range:
     "La fecha de finalización debe ser posterior o igual a la de inicio.",

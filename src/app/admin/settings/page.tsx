@@ -69,7 +69,7 @@ export default async function AdminSettingsPage() {
     };
   } catch {
     initialErrorMessage =
-      "No se pudo cargar la configuración. Reintentar para volver a consultar los datos.";
+      "No se pudo cargar la configuración.";
   }
 
   return (

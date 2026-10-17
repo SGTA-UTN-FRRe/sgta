@@ -169,6 +169,7 @@ describe("SettingsScreen", () => {
         "La carrera se creó correctamente.",
       ),
     );
+    expect(screen.queryByRole("button", { name: "Reintentar" })).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/settings/careers",
       expect.objectContaining({
@@ -254,7 +255,7 @@ describe("SettingsScreen", () => {
       screen.getByRole("combobox", { name: "Origen de actividad (opcional)" }),
       createdCategory.activityKind ?? "",
     );
-    await user.click(screen.getByRole("button", { name: "Agregar categoría" }));
+    await user.click(screen.getByRole("button", { name: "Agregar categoría de horas" }));
 
     await waitFor(() =>
       expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
@@ -316,7 +317,7 @@ describe("SettingsScreen", () => {
     expect(screen.getByText("Todavía no hay categorías de horas registradas.")).toBeInTheDocument();
     const input = screen.getByLabelText("Nombre de categoría");
     await user.type(input, "Tutoría individual");
-    await user.click(screen.getByRole("button", { name: "Agregar categoría" }));
+    await user.click(screen.getByRole("button", { name: "Agregar categoría de horas" }));
 
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent(
@@ -348,7 +349,7 @@ describe("SettingsScreen", () => {
     render(<SettingsScreen currentCycle={null} cycles={[]} />);
 
     await user.type(screen.getByLabelText("Nombre de categoría"), "Categoría inválida");
-    await user.click(screen.getByRole("button", { name: "Agregar categoría" }));
+    await user.click(screen.getByRole("button", { name: "Agregar categoría de horas" }));
 
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent(
@@ -467,7 +468,7 @@ describe("SettingsScreen", () => {
       String(createdReference.knownRequiredHours),
     );
     await user.type(screen.getByLabelText("Notas"), createdReference.notes ?? "");
-    await user.click(screen.getByRole("button", { name: "Agregar referencia" }));
+    await user.click(screen.getByRole("button", { name: "Agregar referencia de beca" }));
 
     await waitFor(() =>
       expect(screen.getByRole("status", { name: /Resultado de configuración|Guardando cambios de configuración/ })).toHaveTextContent(
@@ -575,6 +576,47 @@ describe("SettingsScreen", () => {
     );
     expect(screen.getByText(/Todavía no hay un ciclo abierto/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Crear ciclo" })).toBeEnabled();
+  });
+
+  it("offers cycle creation only while no cycle is open", () => {
+    render(<SettingsScreen currentCycle={currentCycle} cycles={[currentCycle]} />);
+
+    expect(screen.queryByRole("form", { name: "Crear ciclo" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Fecha de inicio")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Para crear un ciclo nuevo, primero cerrar el ciclo actual."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cerrar ciclo" })).toBeEnabled();
+  });
+
+  it("replaces the workspace with one retry when the first load fails", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation(async () =>
+      Response.json({ error: "internal_server_error" }, { status: 500 }),
+    );
+    render(
+      <SettingsScreen
+        currentCycle={null}
+        cycles={[]}
+        initialErrorMessage="No se pudo cargar la configuración."
+        initialState="error"
+      />,
+    );
+
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("No se pudo cargar la configuración.");
+    expect(alert).toHaveTextContent("Reintentar para volver a consultar los datos.");
+    expect(screen.queryByRole("heading", { name: "Ciclo actual" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Carreras" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Actualizar" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Reintentar" })).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: "Reintentar" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent("No se pudo cargar la configuración."),
+    );
+    expect(screen.queryByRole("heading", { name: "Ciclo actual" })).not.toBeInTheDocument();
   });
 
   it("creates a cycle and announces success", async () => {
@@ -688,5 +730,8 @@ describe("SettingsScreen", () => {
         "Ya existe un ciclo abierto.",
       ),
     );
+    expect(screen.getByLabelText("Nombre")).toHaveValue("Ciclo 2027");
+    expect(screen.queryByRole("button", { name: "Reintentar" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Actualizar" })).toBeEnabled();
   });
 });

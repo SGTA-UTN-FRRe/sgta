@@ -2,20 +2,27 @@ import type { ReactNode } from "react";
 import { CheckCircle2, Power } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/shared/components/status-badge";
-import { EmptyState } from "@/shared/components/empty-state";
 import { SystemState } from "@/shared/components/system-state";
 
 import { statusLabel, statusVariant, type Feedback } from "./settings-screen-utils";
 
 export function FeedbackBanner({
-  action,
   feedback,
+  retryAction,
 }: {
-  action?: ReactNode;
+  /** Offered only for load failures. */
+  retryAction: ReactNode;
   feedback: Feedback;
 }) {
   if (feedback.kind === "error") {
-    return <SystemState variant="error" title={feedback.message} action={action} />;
+    return (
+      <SystemState
+        variant="error"
+        title={feedback.message}
+        description={feedback.description}
+        action={feedback.retry ? retryAction : undefined}
+      />
+    );
   }
   return (
     <div
@@ -26,7 +33,6 @@ export function FeedbackBanner({
     >
       <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" aria-hidden="true" />
       <span>{feedback.message}</span>
-      {action}
     </div>
   );
 }
@@ -65,7 +71,5 @@ export function ReferenceStatusBadge({ status }: { status: "ACTIVE" | "INACTIVE"
 }
 
 export function EmptyReferenceList({ children }: { children: string; }) {
-  return (
-    <EmptyState title={children} />
-  );
+  return <p className="py-3 text-sm text-muted-foreground">{children}</p>;
 }

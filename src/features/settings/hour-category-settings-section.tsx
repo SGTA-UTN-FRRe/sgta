@@ -64,10 +64,12 @@ export function HourCategorySection({
                 Las categorías inactivas se conservan para consultar el historial.
               </CardDescription>
             </div>
-            <StatusBadge
-              label={`${categories.filter((category) => category.status === "ACTIVE").length} activas`}
-              variant="info"
-            />
+            <div className="shrink-0">
+              <StatusBadge
+                label={`${categories.filter((category) => category.status === "ACTIVE").length} activas`}
+                variant="info"
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -107,7 +109,7 @@ export function HourCategorySection({
               </FormField>
               <div className="flex flex-wrap gap-2">
                 <Button disabled={disabled} size="sm" type="submit">
-                  {editingCategory === null ? "Agregar categoría" : "Guardar cambios"}
+                  {editingCategory === null ? "Agregar categoría de horas" : "Guardar cambios"}
                 </Button>
                 {editingCategory !== null && (
                   <Button
@@ -136,7 +138,7 @@ export function HourCategorySection({
                 { id: "origin", header: "Origen de actividad", cell: (category) => hourActivityKindLabel(category.activityKind) },
                 { id: "status", header: "Estado", cell: (category) => <ReferenceStatusBadge status={category.status} /> },
               ]}
-              rowActions={(category) => <>
+              rowActions={(category) => <div className="flex flex-nowrap items-center gap-2">
                 <Button
                   aria-label={`Editar categoría ${category.name}`}
                   disabled={disabled}
@@ -144,14 +146,14 @@ export function HourCategorySection({
                   size="sm"
                   type="button"
                   variant="ghost"
-                ><Pencil aria-hidden="true" />Editar</Button>
+                ><Pencil aria-hidden="true" /><span className="md:max-lg:hidden">Editar</span></Button>
                 <ReferenceStatusAction
                   disabled={disabled}
                   entityLabel={`categoría ${category.name}`}
                   onClick={() => onStatusChange(category)}
                   status={category.status}
                 />
-              </>}
+              </div>}
             />
           )}
         </CardContent>
