@@ -179,8 +179,8 @@ with `corepack pnpm screenshots:review --grep schedules`.
 
 `screenshots` writes five 1440×900 viewport images to `docs/screenshots/`:
 `login.png`, `admin-overview.png`, `schedules.png`, `hours.png`, and
-`tutor-summary.png`. These are generated on demand; the initial publication waits
-until the listed views have been migrated. No pixel comparison runs in CI because
+`tutor-summary.png`. These images are committed and displayed in README; regenerate
+them when a listed view changes. No pixel comparison runs in CI because
 font rasterization differs between machines. On the same machine, compare SHA-256
 hashes from consecutive review runs to check reproducibility.
 
