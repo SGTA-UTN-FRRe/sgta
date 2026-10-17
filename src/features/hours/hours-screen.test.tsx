@@ -32,6 +32,9 @@ describe("HoursScreen", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Horas" })).toBeInTheDocument();
     expect(screen.getByText(data.description)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Registrar movimiento" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver movimientos" })).toHaveAttribute(
+      "href", "/admin/hours/movements",
+    );
     expect(screen.getByRole("searchbox", { name: "Buscar tutor" })).toHaveAttribute(
       "placeholder",
       data.searchPlaceholder,

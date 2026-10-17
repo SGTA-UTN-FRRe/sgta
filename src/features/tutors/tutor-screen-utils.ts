@@ -68,7 +68,7 @@ const tutorErrorMessages: Record<string, string> = {
   duplicate_subject_assignment:
     "No se puede asignar la misma materia m\\u00e1s de una vez.",
   unauthorized: "La sesión expiró. Volver a iniciar sesión para continuar.",
-  forbidden: "No tienes permisos para administrar tutores.",
+  forbidden: "La cuenta no tiene permisos para administrar tutores.",
   invalid_request: "Revisar los datos ingresados antes de guardar.",
   open_cycle_required: "Abrir un ciclo para incorporar un tutor al período actual.",
   cycle_required_for_membership_change:

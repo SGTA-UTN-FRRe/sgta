@@ -13,6 +13,7 @@ import { ActionLink, HoursNotice } from "./hours-notice";
 import { HistoryFilters } from "./movement-history-filters";
 import { MovementHistoryTable } from "./movement-history-table";
 import { ReversalDialog } from "./movement-reversal-dialog";
+import { movementHistoryHref } from "./hour-navigation";
 import {
   defaultStateDetails, formatMovementCount, formatOrigin, getErrorMessage,
   normalizeSearch, requestJson, sortMovements,
@@ -168,25 +169,10 @@ export function MovementHistoryScreen({
     nextTutorId: string,
     nextCategoryId: string,
   ) => {
-    const params = new URLSearchParams();
-
-    if (nextCycleId) {
-      params.set("cycleId", nextCycleId);
-    }
-
-    if (nextTutorId) {
-      params.set("tutorId", nextTutorId);
-    }
-
-    if (nextCategoryId) {
-      params.set("categoryId", nextCategoryId);
-    }
-
-    const query = params.toString();
     window.history.replaceState(
       null,
       "",
-      `/admin/hours/movements${query ? `?${query}` : ""}`,
+      movementHistoryHref(nextCycleId, nextTutorId, nextCategoryId),
     );
   }, []);
 
@@ -304,7 +290,7 @@ export function MovementHistoryScreen({
           <SystemState
             variant={screenState} title={stateDetail.title}
             description={requestError ?? stateDetail.description}
-            action={<ActionLink href={stateDetail.actionHref ?? "/admin/hours/movements"} label={stateDetail.actionLabel ?? "Reintentar"} />}
+            action={<ActionLink href={stateDetail.actionHref ?? movementHistoryHref()} label={stateDetail.actionLabel ?? "Reintentar"} />}
           />
         ) : (
           <div className="space-y-4 pt-6">

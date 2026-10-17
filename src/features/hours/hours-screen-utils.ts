@@ -62,7 +62,7 @@ const hoursErrorMessages: Record<string, string> = {
   activity_credit_required:
     "Las actividades y recuperaciones sólo pueden registrarse como crédito.",
   cycle_not_open: "El ciclo actual ya no está abierto para registrar movimientos.",
-  forbidden: "No tienes permisos para registrar movimientos de horas.",
+  forbidden: "La cuenta no tiene permisos para registrar movimientos de horas.",
   inactive_category: "La categoría seleccionada ya no está activa.",
   inactive_tutor: "Uno de los tutores seleccionados ya no está activo.",
   invalid_request: "Revisar los datos del movimiento antes de intentar nuevamente.",

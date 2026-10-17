@@ -14,6 +14,7 @@ import { HoursFilters } from "./hours-filters";
 import { BalanceList } from "./hours-table";
 import { MovementDialog } from "./movement-dialog";
 import { MovementHistorySheet } from "./movement-history-sheet";
+import { movementHistoryHref } from "./hour-navigation";
 import {
   applyMovementsToBalances, defaultStateDetails, filterBalances, firstMovementCategoryId,
   formatActivityKind, formatTutorCount, getHoursErrorMessage, historyByTutor, mergeHistory,
@@ -364,7 +365,7 @@ export function HoursScreen({
     );
   const headerSecondaryActions =
     screenState === "required-action" ? null : (
-      <ActionLink href="/admin/hours/movements" label="Ver movimientos" size="default" />
+      <ActionLink href={movementHistoryHref()} label="Ver movimientos" size="default" />
     );
 
   return (
