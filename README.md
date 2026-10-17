@@ -10,6 +10,11 @@ protected, read-only view of their own current-cycle summary, schedule, and
 hours. Formal scholarship certification and full production operations are not
 part of the current runtime.
 
+**Status:** the roadmap is paused while the Tutorias area confirms its needs.
+See [Functional status](docs/PROJECT.md#functional-status) for what works today
+and [Definition priorities](docs/DEVELOPMENT-ROADMAP.md#definition-priorities)
+for what must be defined before development resumes.
+
 ## Key capabilities
 
 - **Admin operations:** manage Tutors and academic relationships, schedule plans, cycle settings, and hour movements.

@@ -70,11 +70,33 @@ Tutor signs in with an enabled identity linked to a Tutor record
 - Cycle membership scopes operational records. Closing a cycle preserves its history and blocks further operational writes; a successor must be opened explicitly, with no automatic membership or hour transfer. See the [cycle service](../src/features/cycles/cycle-service.ts) and [integration coverage](../tests/integration/foundation.integration.test.ts).
 - "Materias" coverage is derived from canonical Tutor-subject relationships and current-cycle membership, restricted to active Tutors, subjects, and careers; it is not a separate editable total. See `listSubjectCoverage` in the [Tutor service](../src/features/tutors/tutor-service.ts).
 
+## Functional status
+
+State on 2026-10-16, when the [roadmap](DEVELOPMENT-ROADMAP.md#pause) paused.
+"Automated" means covered by unit, integration, or browser tests in CI. No area
+has been validated in daily use by the Tutorias area; that validation is the
+first [definition priority](DEVELOPMENT-ROADMAP.md#definition-priorities).
+
+| Area | Works today | Automated | Missing or unconfirmed |
+| --- | --- | --- | --- |
+| Access | Google sign-in for provisioned, enabled identities; role-aware redirect from `/`; sign-out in both shells; `/forbidden`. Identities are provisioned with `auth:bootstrap-admin` or the Admin-only `POST /api/admin/users`. | Unit, integration, E2E | No Admin screen to grant or remove access; no guard against disabling the last Admin; no scoped permissions; no Tutor profile view. |
+| Cycles | Create a cycle and close the current one from Configuración; closed cycles block operational writes and preserve history. | Unit, integration, E2E | No reopening. Pending negative balances do not carry into the next cycle. |
+| Tutors and catalogs | Tutor create, edit, enable and disable; academic relationships; derived subject coverage in Materias; careers with Admin-chosen colors, subjects, hour categories, and informational scholarship references in Configuración. | Unit, integration, E2E | Catalog rules (scholarships per cycle, aliases, subject scope) are not approved. |
+| Schedules | Regular and special plans per cycle with assignments, modality, conflict validation, week and day views, and coverage. | Unit, integration, E2E | One calendar only; no weekly changes over a base plan, configured opening hours, exports, or drag and drop. |
+| Hours | Movement-derived balances, individual and bulk movements, reversals, and movement history with filters. | Unit, integration, E2E | Absences are manual debits; no automation from schedules by design. |
+| Consultations | Import from the read-only Google Sheets source into staging, review, bulk actions, classification, and canonical records. | Unit, integration, E2E with a local source fixture | Import limits for a growing source, row reordering or deletion, and the data rules for student fields are not resolved. |
+| Reports | Demand, hours, and coverage views over canonical records with date filters. | Unit, integration | No CSV or print export; total definitions are not documented for users. |
+| Admin overview | Current-cycle context and pending attention items, such as import incidents or a missing cycle. | Unit, E2E | — |
+| Tutor self-service | Owner-scoped summary, effective schedule, and hours, read-only. | Unit, E2E | Not tested with Tutors on their phones. |
+| Interface | Every view composes `src/components/ui/` primitives and shared patterns; lint rejects raw controls and arbitrary design values; screenshot review at 390, 768, and 1440px. | Unit, E2E accessibility checks, lint | Light scheme only. No public page besides login. |
+| Operations | Presentation deployment on Vercel with Neon; initial-data import and verification commands; CI Gate on pull requests. | CI | No production environment, backups, restore drill, or maintainer handover. |
+
 ## Current limitations
 
 - Scholarship references are maintained, but formal scholarship certification is not implemented.
 - The runtime has no production cutover, backup, or operational migration workflow.
 - Consultation import requires the optional server-side Sheets configuration. Previously consolidated consultations remain available when the source is unavailable.
+- Closing a cycle does not carry pending negative balances into the next cycle; do not close a real operational cycle until the transition rule is implemented.
 
 ## Provenance
 

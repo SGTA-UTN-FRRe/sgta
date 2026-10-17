@@ -1,6 +1,6 @@
 ---
 mode: decision
-status: active
+status: paused
 ---
 
 # SGTA — Development roadmap
@@ -13,7 +13,55 @@ Complete a supportable first release of SGTA for the Tutorias area at UTN FRRe.
 The remaining work moves through workflow hardening, production readiness, and a
 controlled operational cutover.
 
-**Current phase:** Access and lifecycle
+**Current phase:** Access and lifecycle (paused before its work started)
+
+**Roadmap status:** Paused since 2026-10-16.
+
+## Pause
+
+The roadmap paused after the interface migration closed: every existing view
+composes the shared design system, matches its UI specification, and passed the
+screenshot review. No phase is in progress. The phases below remain the
+approved target, but none of their work has started; the implemented behavior
+is described in [Project › Functional status](PROJECT.md#functional-status).
+
+While paused:
+
+- Work arrives as GitHub issues in the SGTA project and stays issue-sized:
+  correcting and simplifying existing Hours, Consultations, and Reports
+  workflows, improving the Admin home, validating views with users, and the
+  public landing. An issue that needs a phase's scope waits for the roadmap
+  to resume.
+- Issue owners investigate, implement, test, and deliver reviewable pull
+  requests. They choose technical solutions within the agreed scope; the
+  supervisor reviews results and resolves business decisions or scope changes
+  from concrete proposals. Important needs beyond each correction are recorded
+  with priority, proposed scope, dependencies, and acceptance criteria.
+- Needs are confirmed with the Tutorias area before they become phase scope.
+  The list below orders what must be defined; it is not a task list.
+
+### Definition priorities
+
+Each item needs answers from the people who run Tutorias, not code. Record each
+answer as an approved decision in the phase it unblocks.
+
+| Priority | What must be defined or tested | Who answers | Unblocks |
+| --- | --- | --- | --- |
+| 1 | Walk every existing view with an Admin and a Tutor on desktop and phone; record what is wrong, missing, or unused. | Tutorias Admin and two Tutors | Every phase; confirms the current scope is right before adding more. |
+| 2 | Confirm the cycle transition rule (positive balances reset, negative balances carry forward), official cycle dates, and who closes a cycle. The current transition preserves history but does not carry pending negative balances into the next cycle. | Tutorias coordination | Access and lifecycle; required before closing a real cycle. |
+| 3 | Define who grants and removes access, how an account is linked to its Tutor record, and whether agenda managers need a scoped permission. Access today is provisioned only by an operator command or the Admin API. | Tutorias coordination | Access and lifecycle. |
+| 4 | Describe the real guard-planning process: calendars in use (office, events), weekly changes, opening hours, the coverage target, and how calendars are shared today. | The person who organizes the guards | Operational calendars. |
+| 5 | Confirm the consultation source format, participant counting, optional student surname, and how long student contact data may be kept. | Tutorias coordination and the source owner | Hours, consultations and reporting; Production readiness. |
+| 6 | List the reports the area actually delivers, to whom, in which format, and how each total is defined. | Tutorias coordination | Hours, consultations and reporting. |
+| 7 | Approve the academic catalog rules: scholarships per cycle, Admin-to-Tutor linkage, career and subject aliases, and subject scope. | Tutorias coordination | Academic workflows. |
+| 8 | Decide who maintains GETs and exams, and whether students need public access to the agenda, office hours, or contact channels. | Tutorias coordination | Academic agenda; future landing content. |
+| 9 | Name the production owner, hosting and Google Workspace accounts, and who maintains SGTA after the pilot. | Tutorias area and UTN FRRe | Production readiness; Cutover, pilot and first release. |
+
+### Resuming
+
+Resume when priorities 1 to 3 have recorded answers and a maintainer owns the
+next phase: update that phase with the confirmed decisions, set `status: active`
+in this file's front matter, and remove the pause markers above.
 
 ## Constraints
 
