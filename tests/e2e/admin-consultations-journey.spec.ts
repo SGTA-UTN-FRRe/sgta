@@ -364,7 +364,7 @@ test.describe("authenticated Admin consultation workflow", () => {
         "Reports empty-period state at Wide",
       )),
     );
-    await activateWithKeyboard(page, reportFilters.getByRole("link", { name: "Restablecer filtros" }));
+    await activateWithKeyboard(page, reportFilters.getByRole("link", { name: "Limpiar filtros" }));
     await expect(page).toHaveURL("http://localhost:3000/admin/reports");
 
     await page.goto(

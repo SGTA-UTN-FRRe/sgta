@@ -68,7 +68,7 @@ export function ReportFiltersForm({ filters, filterOptions, query, filterOptions
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Button type="submit">Aplicar filtros</Button>
-            <Link className={buttonVariants({ variant: "outline" })} href="/admin/reports">Restablecer filtros</Link>
+            <Link className={buttonVariants({ variant: "outline" })} href="/admin/reports">Limpiar filtros</Link>
           </div>
         </form>
       </CardContent>

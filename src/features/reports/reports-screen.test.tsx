@@ -192,7 +192,7 @@ describe("ReportsScreen", () => {
     const form = screen.getByRole("button", { name: "Aplicar filtros" }).closest("form");
     expect(form).toHaveAttribute("method", "get");
     expect(form).toHaveAttribute("action", "/admin/reports");
-    expect(screen.getByRole("link", { name: "Restablecer filtros" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Limpiar filtros" })).toHaveAttribute(
       "href",
       "/admin/reports",
     );

@@ -52,7 +52,7 @@ Recuperación de guardia
 | --- | --- |
 | Default | Balance panel and history. |
 | Loading | The route skeleton on navigation; `Reintentar`, `Actualizar`, and `Volver a consultar` show an in-place skeleton named `Cargando horas` and move focus to the page title. |
-| Empty | The balance panel and history are replaced by `Todavía no hay movimientos registrados en este ciclo.` with `El balance aparecerá cuando se registre el primer movimiento del ciclo vigente.` and `Actualizar`. |
+| Empty | The balance panel and history are replaced by `Todavía no hay movimientos registrados en este ciclo.` with `El saldo aparecerá cuando se registre el primer movimiento del ciclo vigente.` and `Actualizar`. |
 | Error | `No se pudieron cargar las horas` and `Reintentar`. When the request returns a specific reason, the description carries it (for example `La sesión expiró. Volver a iniciar sesión para continuar.`); otherwise the title stands alone. |
 | Required action | An `Acción requerida` status, a title, a description, and `Volver a consultar`; no link, because the Tutor cannot resolve the prerequisite. An unlinked account shows `Completar la vinculación de la cuenta` with `La cuenta todavía no está vinculada a un perfil de Tutor. Contactar a la administración de Tutorías para solicitar acceso.`; without an open administrative cycle, `No hay un ciclo vigente` with `No hay un ciclo administrativo abierto para mostrar información personal.`; a Tutor without membership in the current cycle, `Completar la pertenencia al ciclo` with `El perfil todavía no tiene una pertenencia configurada para el ciclo vigente.` |
 

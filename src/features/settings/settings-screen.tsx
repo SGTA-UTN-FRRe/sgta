@@ -91,7 +91,6 @@ export function SettingsScreen(props: SettingsScreenProps) {
             <Button
               disabled={isLoading}
               onClick={() => void refreshSettings()}
-              size="sm"
               type="button"
               variant="outline"
             >

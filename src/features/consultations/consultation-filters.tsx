@@ -28,7 +28,7 @@ export function ConsultationFiltersBar({ careers, tutors, filters, resultCount, 
     ]),
     select("careerId", "Carrera", [{ value: "", label: "Todas las carreras" }, ...careers.map((career) => ({ value: career.id, label: career.name }))]),
     select("tutorId", "Tutor", [{ value: "", label: "Todos los tutores" }, ...tutors.map((tutor) => ({ value: tutor.id, label: `${tutor.name}${tutor.status === "INACTIVE" ? " · Inactivo" : ""}` }))]),
-    date("fromDate", "Fecha desde"), date("toDate", "Fecha hasta"),
+    date("fromDate", "Desde"), date("toDate", "Hasta"),
     select("classification", "Clasificación", [
       { value: "", label: "Todas" }, { value: "SUBJECT", label: "Materia" },
       { value: "GENERAL", label: "General / Varias" }, { value: "PENDING_CLASSIFICATION", label: "Pendiente de clasificación" },

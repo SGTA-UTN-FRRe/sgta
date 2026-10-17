@@ -192,7 +192,7 @@ export function SubjectCoverageScreen({
   const headerAction = (
     <div className="flex flex-wrap items-center gap-2">
       <Link
-        className={buttonVariants({ size: "sm", variant: "outline" })}
+        className={buttonVariants({ variant: "outline" })}
         href="/admin/tutors"
       >
         Ver tutores
@@ -201,7 +201,6 @@ export function SubjectCoverageScreen({
         <Button
           disabled={derivedState === "loading"}
           onClick={() => void refreshCoverage()}
-          size="sm"
           type="button"
           variant="outline"
         >

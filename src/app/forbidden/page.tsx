@@ -30,11 +30,11 @@ export default function ForbiddenPage() {
           id="forbidden-title"
           className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
         >
-          No tienes permisos para esta sección
+          Esta cuenta no tiene permisos para esta sección
         </h1>
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-          Tu cuenta está habilitada en SGTA, pero necesita otro nivel de acceso
-          para continuar aquí.
+          La cuenta está habilitada en SGTA, pero necesita otro nivel de acceso
+          para continuar.
         </p>
         <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
