@@ -9,7 +9,7 @@ import {
 } from "./e2e-test-data";
 import { collectSeriousAccessibilityViolations } from "./accessibility-helpers";
 import { addE2ESessionCookie } from "./session-cookie";
-import { activateWithKeyboard, expectReducedMotion } from "./keyboard-helpers";
+import { activateWithKeyboard, expectAccessibleOverlay, expectReducedMotion } from "./keyboard-helpers";
 
 test("closes a cycle and opens a successor without transferring balance", async ({
   context,
@@ -39,6 +39,17 @@ test("closes a cycle and opens a successor without transferring balance", async 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/admin/settings");
   await expect(page.getByRole("heading", { name: "Ciclo actual" })).toBeVisible();
+  const historyTrigger = page.getByRole("button", { name: "Historial de ciclos" });
+  const historyDialog = page.getByRole("dialog", { name: "Historial de ciclos" });
+  const closeTrigger = page.getByRole("button", { name: "Cerrar ciclo", exact: true });
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expectAccessibleOverlay(page, { trigger: historyTrigger, overlay: historyDialog });
+    await expectAccessibleOverlay(page, {
+      trigger: closeTrigger,
+      overlay: page.getByRole("alertdialog", { name: "Confirmar cierre del ciclo" }),
+    });
+  }
   await activateWithKeyboard(
     page,
     page.getByRole("button", { name: "Cerrar ciclo", exact: true }),
@@ -66,14 +77,16 @@ test("closes a cycle and opens a successor without transferring balance", async 
   await expect(
     page.getByRole("status").filter({ hasText: "El ciclo se cerró correctamente" }),
   ).toBeVisible();
-  await expectReducedMotion(page.getByRole("status"));
+  await expectReducedMotion(page.getByRole("status", { name: "Resultado de configuración" }));
 
   await page.reload();
+  await activateWithKeyboard(page, historyTrigger);
   const cycleHistory = page.getByRole("list", { name: "Ciclos registrados" });
   const closedCycleRow = cycleHistory
     .locator("li")
     .filter({ hasText: initialWorkspace.currentCycle.name });
   await expect(closedCycleRow).toContainText("Cerrado");
+  await page.keyboard.press("Escape");
 
   const historicalMovementsResponse = await page.request.get(
     `/api/admin/hours/movements?cycleId=${E2E_CYCLE_ID}&tutorId=${E2E_PRIMARY_TUTOR_ID}&limit=200`,
@@ -160,6 +173,7 @@ test("closes a cycle and opens a successor without transferring balance", async 
   expect(successorMovementsResponse.status()).toBe(200);
   await expect(successorMovementsResponse.json()).resolves.toEqual({ movements: [] });
 
+  await activateWithKeyboard(page, historyTrigger);
   const successorCycleRow = cycleHistory
     .locator("li")
     .filter({ hasText: "2028" });
