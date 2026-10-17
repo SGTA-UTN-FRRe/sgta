@@ -16,6 +16,7 @@ import {
   type MovementHistoryScreenState,
 } from "@/features/hours/movement-history-screen";
 import type { HoursStateDetail } from "@/features/hours/hours-screen-types";
+import { movementHistoryHref } from "@/features/hours/hour-navigation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ const noCycleState: HoursStateDetail = {
 };
 
 const errorState: HoursStateDetail = {
-  actionHref: "/admin/hours/movements",
+  actionHref: movementHistoryHref(),
   actionLabel: "Reintentar",
   description:
     "Reintentar para volver a consultar el historial del ciclo.",

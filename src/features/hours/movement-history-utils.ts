@@ -3,6 +3,7 @@ import type { SafeHourMovement } from "./hour-service";
 import type { HoursStateDetail } from "./hours-screen-types";
 import type { MovementHistoryScreenState } from "./movement-history-screen";
 import type { StatusBadgeVariant } from "@/shared/components/status-badge";
+import { movementHistoryHref } from "./hour-navigation";
 
 export type ActivityKind = NonNullable<SafeHourMovement["category"]["activityKind"]>;
 export type DirectionFilter = "ALL" | SafeHourMovement["direction"];
@@ -35,7 +36,7 @@ export const defaultStateDetails: Partial<
     title: "Todavía no hay movimientos",
   },
   error: {
-    actionHref: "/admin/hours/movements",
+    actionHref: movementHistoryHref(),
     actionLabel: "Reintentar",
     description:
       "Reintentar para volver a consultar el historial del ciclo.",
@@ -61,7 +62,7 @@ export const defaultStateDetails: Partial<
 export const hoursErrorMessages: Record<string, string> = {
   cycle_not_found: "El ciclo seleccionado ya no está disponible.",
   cycle_not_open: "El ciclo ya no está abierto para crear una reversión.",
-  forbidden: "No tienes permisos para corregir movimientos de horas.",
+  forbidden: "La cuenta no tiene permisos para corregir movimientos de horas.",
   internal_server_error: "No se pudo completar la operación. Intentar nuevamente.",
   movement_already_reversed: "El movimiento ya tiene una reversión registrada.",
   movement_not_found: "El movimiento ya no está disponible en el historial.",

@@ -1,21 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, CalendarRange, CircleAlert, History, LayoutGrid, Plus } from "lucide-react";
+import { Archive, History, Plus } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CareerLegend } from "@/shared/components/career-legend";
 import { ConfirmationDialog } from "@/shared/components/confirmation-dialog";
 import { PageHeader } from "@/shared/components/page-header";
 import { SystemState } from "@/shared/components/system-state";
 
 import { AssignmentEditor, type AssignmentEditorTarget } from "./assignment-editor";
-import { ScheduleDayList, ScheduleDaySelector } from "./schedule-day-list";
-import { getScheduleGridRange } from "./schedule-layout";
-import { ScheduleMatrix } from "./schedule-matrix";
+import { ScheduleCalendar } from "./schedule-calendar";
 import { SchedulePlanBar } from "./schedule-plan-header";
 import { PlanEditorDialog, PlansArchiveSheet } from "./schedule-plan-dialogs";
 import type {
@@ -23,15 +18,8 @@ import type {
   SafeSchedulePlan,
   SafeScheduleWorkspace,
 } from "./schedule-service";
-import { ScheduleWeekGrid } from "./schedule-week-grid";
 import {
-  buildScheduleMatrix,
   deriveWorkspaceState,
-  formatAssignmentPerson,
-  getPlanDays,
-  withDisplayNames,
-  type CoverageSummary,
-  getScheduleCareers,
   getScheduleErrorMessage,
   requestJson,
   ScheduleRequestError,
@@ -41,6 +29,7 @@ import {
   type PlanDraft,
   type SchedulesScreenState,
 } from "./schedule-view-model";
+import { findVisible, getInitialPlanId, notifySaved, pageTitleId, returnFocus } from "./schedule-screen-utils";
 import { SchedulesLoadingState } from "./schedules-loading-state";
 
 export type { SchedulesScreenState } from "./schedule-view-model";
@@ -48,68 +37,6 @@ export type { SchedulesScreenState } from "./schedule-view-model";
 export interface SchedulesScreenProps {
   state?: SchedulesScreenState;
   workspace: SafeScheduleWorkspace | null;
-}
-
-const pageTitleId = "schedules-page-title";
-
-function getInitialPlanId(workspace: SafeScheduleWorkspace | null) {
-  return workspace?.selectedPlan?.status === "ACTIVE"
-    ? workspace.selectedPlan.id
-    : workspace?.plans.find((plan) => plan.status === "ACTIVE")?.id ?? "";
-}
-
-function notifySaved(description: string) {
-  toast.success("Cambios guardados", { description });
-}
-
-function describeAssignment(assignment: AssignmentView) {
-  return `${formatAssignmentPerson(assignment)}, ${assignment.dayName}, ${assignment.start} a ${assignment.end}`;
-}
-
-/** Discreet coverage key: the dots match the cell markers of the matrix. */
-function CoverageSummaryText({ summary }: { summary: CoverageSummary }) {
-  if (summary.uncovered === 0 && summary.minimal === 0) {
-    return (
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span aria-hidden="true" className="size-2 rounded-full bg-success" />
-        Cobertura presencial completa
-      </p>
-    );
-  }
-
-  return (
-    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-      {summary.uncovered > 0 && (
-        <span className="flex items-center gap-2">
-          <span aria-hidden="true" className="size-2 rounded-full border-2 border-warning bg-warning" />
-          {summary.uncovered} {summary.uncovered === 1 ? "franja" : "franjas"} sin presencial
-        </span>
-      )}
-      {summary.minimal > 0 && (
-        <span className="flex items-center gap-2">
-          <span aria-hidden="true" className="size-2 rounded-full border-2 border-warning" />
-          {summary.minimal} con un solo presencial
-        </span>
-      )}
-    </p>
-  );
-}
-
-/** Returns focus to an overlay's trigger, or to the page title when the trigger is gone. */
-function returnFocus(event: Event, trigger: HTMLElement | null) {
-  event.preventDefault();
-
-  if (trigger?.isConnected && !trigger.matches(":disabled")) {
-    trigger.focus();
-  } else {
-    document.getElementById(pageTitleId)?.focus();
-  }
-}
-
-function findVisible(selector: string) {
-  const elements = Array.from(document.querySelectorAll<HTMLElement>(selector));
-
-  return elements.find((element) => element.getClientRects().length > 0) ?? elements[0];
 }
 
 export function SchedulesScreen({
@@ -156,70 +83,6 @@ export function SchedulesScreen({
         : [],
     [selectedPlan, workspace],
   );
-  const displayAssignments = useMemo(() => withDisplayNames(planAssignments), [planAssignments]);
-  const planDays = useMemo(() => getPlanDays(planAssignments), [planAssignments]);
-  const currentDay = planDays.includes(selectedDay) ? selectedDay : planDays[0]!;
-  const gridRange = useMemo(() => getScheduleGridRange(planAssignments), [planAssignments]);
-  const careers = useMemo(() => getScheduleCareers(planAssignments), [planAssignments]);
-  const visibleAssignments = useMemo(
-    () =>
-      selectedCareers.length === 0
-        ? displayAssignments
-        : displayAssignments.filter((assignment) => selectedCareers.includes(assignment.careerName)),
-    [displayAssignments, selectedCareers],
-  );
-  const weekMatrix = useMemo(
-    () => buildScheduleMatrix(displayAssignments, visibleAssignments, planDays),
-    [displayAssignments, planDays, visibleAssignments],
-  );
-  const dayMatrix = useMemo(
-    () =>
-      buildScheduleMatrix(
-        displayAssignments.filter((assignment) => assignment.day === currentDay),
-        visibleAssignments.filter((assignment) => assignment.day === currentDay),
-        [currentDay],
-      ),
-    [currentDay, displayAssignments, visibleAssignments],
-  );
-  const conflictIds = useMemo(() => {
-    const ids = new Set<string>();
-
-    for (const conflict of workspace?.conflicts ?? []) {
-      ids.add(conflict.assignmentId);
-      for (const conflictingId of conflict.conflictingAssignmentIds) {
-        ids.add(conflictingId);
-      }
-    }
-
-    return ids;
-  }, [workspace?.conflicts]);
-  const conflictDescriptions = useMemo(() => {
-    const byId = new Map(planAssignments.map((assignment) => [assignment.id, assignment]));
-
-    const describedPairs = new Set<string>();
-
-    return (workspace?.conflicts ?? []).flatMap((conflict) => {
-      const assignment = byId.get(conflict.assignmentId);
-      const pairKey = [conflict.assignmentId, ...conflict.conflictingAssignmentIds].sort().join("|");
-
-      if (!assignment || describedPairs.has(pairKey)) {
-        return [];
-      }
-
-      describedPairs.add(pairKey);
-
-      const others = conflict.conflictingAssignmentIds
-        .map((id) => byId.get(id))
-        .filter((other): other is AssignmentView => other !== undefined);
-
-      return [
-        others.length > 0
-          ? `${describeAssignment(assignment)} se superpone con ${others.map(describeAssignment).join(" y ")}.`
-          : `${describeAssignment(assignment)} tiene un conflicto de horario.`,
-      ];
-    });
-  }, [planAssignments, workspace?.conflicts]);
-
   const loadWorkspace = useCallback(
     async (planId?: string) => {
       if (!workspace) {
@@ -668,132 +531,18 @@ export function SchedulesScreen({
             {showGridLoading ? (
               <SchedulesLoadingState />
             ) : (
-              <>
-                {conflictDescriptions.length > 0 && (
-                  <div
-                    className="flex flex-col gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm shadow-xs sm:flex-row sm:items-start sm:gap-3"
-                    role="alert"
-                  >
-                    <div className="flex min-w-0 flex-1 gap-3">
-                      <CircleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-destructive" />
-                      <div className="min-w-0 space-y-1">
-                        <p className="font-semibold">Hay asignaciones superpuestas</p>
-                        <ul className="space-y-0.5 text-muted-foreground">
-                          {conflictDescriptions.map((description) => (
-                            <li key={description}>{description}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                    <Button
-                      className="self-start max-sm:ml-8"
-                      onClick={(event) => {
-                        const firstConflict = planAssignments.find((assignment) => conflictIds.has(assignment.id));
-                        if (firstConflict) {
-                          openEditEditor(firstConflict, event.currentTarget);
-                        }
-                      }}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      Revisar conflicto
-                    </Button>
-                  </div>
-                )}
-
-                {planAssignments.length === 0 ? (
-                  <SystemState
-                    description="Agregar una asignación para comenzar a organizar las guardias."
-                    title="Este horario todavía no tiene asignaciones."
-                    variant="empty"
-                  />
-                ) : (
-                  <section aria-label="Calendario del plan" className="space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <ToggleGroup
-                        aria-label="Vista del calendario"
-                        className="gap-1 rounded-full border border-border bg-card p-1"
-                        onValueChange={(value) => {
-                          if (value === "matrix" || value === "blocks") {
-                            setCalendarView(value);
-                          }
-                        }}
-                        size="sm"
-                        type="single"
-                        value={calendarView}
-                      >
-                        <ToggleGroupItem className="px-3" value="matrix">
-                          <LayoutGrid aria-hidden="true" />
-                          Matriz
-                        </ToggleGroupItem>
-                        <ToggleGroupItem className="px-3" value="blocks">
-                          <CalendarRange aria-hidden="true" />
-                          Bloques
-                        </ToggleGroupItem>
-                      </ToggleGroup>
-                      {calendarView === "matrix" && <CoverageSummaryText summary={weekMatrix.summary} />}
-                    </div>
-                    <CareerLegend
-                      careers={careers.map((career) => ({ ...career, id: career.name }))}
-                      onSelectedCareerIdsChange={setSelectedCareers}
-                      selectedCareerIds={selectedCareers}
-                      size="sm"
-                      summary={`Mostrando ${visibleAssignments.length} de ${planAssignments.length} asignaciones`}
-                    />
-                    <div className="md:hidden">
-                      <ScheduleDaySelector days={planDays} onSelectDay={setSelectedDay} selectedDay={currentDay} />
-                    </div>
-                    {calendarView === "matrix" ? (
-                      <>
-                        <div className="hidden overflow-hidden rounded-xl border border-border bg-card shadow-xs md:block">
-                          <ScheduleMatrix
-                            conflictIds={conflictIds}
-                            days={planDays}
-                            label="Matriz semanal"
-                            onEdit={openEditEditor}
-                            rows={weekMatrix.rows}
-                            selectedAssignmentId={isEditorOpen ? selectedAssignmentId : null}
-                          />
-                        </div>
-                        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs md:hidden">
-                          <ScheduleMatrix
-                            conflictIds={conflictIds}
-                            days={[currentDay]}
-                            label="Matriz del día"
-                            onEdit={openEditEditor}
-                            rows={dayMatrix.rows}
-                            selectedAssignmentId={isEditorOpen ? selectedAssignmentId : null}
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="hidden md:block">
-                          <ScheduleWeekGrid
-                            assignments={visibleAssignments}
-                            conflictIds={conflictIds}
-                            days={planDays}
-                            label="Grilla semanal"
-                            onEdit={openEditEditor}
-                            range={gridRange}
-                            selectedAssignmentId={isEditorOpen ? selectedAssignmentId : null}
-                          />
-                        </div>
-                        <div className="md:hidden">
-                          <ScheduleDayList
-                            assignments={visibleAssignments}
-                            conflictIds={conflictIds}
-                            onEdit={openEditEditor}
-                            selectedAssignmentId={isEditorOpen ? selectedAssignmentId : null}
-                            selectedDay={currentDay}
-                          />
-                        </div>
-                      </>
-                    )}
-                  </section>
-                )}
-              </>
+              <ScheduleCalendar
+                calendarView={calendarView}
+                conflicts={workspace.conflicts}
+                onCalendarViewChange={setCalendarView}
+                onEdit={openEditEditor}
+                onSelectedCareersChange={setSelectedCareers}
+                onSelectedDayChange={setSelectedDay}
+                planAssignments={planAssignments}
+                selectedAssignmentId={isEditorOpen ? selectedAssignmentId : null}
+                selectedCareers={selectedCareers}
+                selectedDay={selectedDay}
+              />
             )}
           </>
         )}
