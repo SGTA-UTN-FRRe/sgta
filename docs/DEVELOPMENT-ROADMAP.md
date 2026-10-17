@@ -10,11 +10,10 @@ status: active
 ## Objective
 
 Complete a supportable first release of SGTA for the Tutorias area at UTN FRRe.
-The remaining work redesigns the existing interface on a shared design system,
-then moves through workflow hardening, production readiness, and a controlled
-operational cutover.
+The remaining work moves through workflow hardening, production readiness, and a
+controlled operational cutover.
 
-**Current phase:** Interface migration
+**Current phase:** Access and lifecycle
 
 ## Constraints
 
@@ -30,60 +29,13 @@ operational cutover.
 
 | Phase | Outcome | Depends on |
 | --- | --- | --- |
-| Interface migration | Move every existing view onto the design system and publish reproducible README screenshots. | None |
-| Access and lifecycle | Complete controlled Tutor access and safe account and cycle lifecycle behavior. | Interface migration |
-| Academic workflows | Improve Tutor discovery and academic relationship visibility. | Interface migration |
-| Operational calendars | Plan office and event calendars week by week from a permanent base, and publish them as shareable images and documents. | Interface migration |
+| Access and lifecycle | Complete controlled Tutor access and safe account and cycle lifecycle behavior. | None |
+| Academic workflows | Improve Tutor discovery and academic relationship visibility. | None |
+| Operational calendars | Plan office and event calendars week by week from a permanent base, and publish them as shareable images and documents. | None |
 | Hours, consultations and reporting | Make consultation imports resilient and deliver complete, explainable operational outputs. | Access and lifecycle; Academic workflows |
 | Academic agenda | Publish support classes (GETs) and exam dates with delegated management. | Access and lifecycle; Operational calendars |
 | Production readiness | Establish production services, secure operations, and proven recovery. | Access and lifecycle; Hours, consultations and reporting; Operational calendars; Academic agenda |
 | Cutover, pilot and first release | Migrate validated data, prove operation with users, and complete maintainer handover. | Production readiness |
-
-## Phase: Interface migration
-
-### Objective
-
-Every existing view uses the design system consistently, overlays are
-accessible primitives, and README screenshots can be regenerated from
-deterministic demo data.
-
-### In scope
-
-- Migrate the remaining views in priority order: Admin operating views, Tutor
-  views, and Login, then Materias and Configuración. Deliver one view at a time
-  with before and after screenshots.
-- Replace hand-built modal regions with dialog, alert dialog, and sheet
-  primitives, and replace raw controls and arbitrary values with primitives,
-  shared patterns, and tokens.
-- Split oversized screen modules along the shared patterns without changing
-  behavior.
-- Make filters, movement links, and label conventions consistent across related
-  views.
-- Reconcile each view's UI specification with its delivered content and states.
-- Apply the shared duration format, compact system states, and career colors in
-  every view that shows durations, empty states, or careers.
-- Add a Screenshots command and README screenshots for the views marked in the
-  UI specification's README column.
-- Run a final screenshot review across all views and raise the raw-element lint
-  rule to error.
-
-### Out of scope
-
-- New views or domain behavior.
-- A dark color scheme.
-- Changes to hour-accounting rules.
-
-### Exit criteria
-
-- The raw-element lint rule runs at error level with no violations.
-- Components outside `src/components/ui/` use no arbitrary color, radius,
-  shadow, font, type-size, tracking, or layering values.
-- Every overlay uses a primitive with focus entry, containment, Escape dismissal,
-  and focus return, verified by browser accessibility checks.
-- Every view passes the screenshot review in Constraints.
-- README screenshots regenerate from deterministic demo data with a documented
-  Screenshots command.
-- Existing browser journeys pass without behavior changes.
 
 ## Phase: Access and lifecycle
 

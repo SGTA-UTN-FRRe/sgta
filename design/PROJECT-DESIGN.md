@@ -62,7 +62,7 @@ Language selects copy; locale formats dates and numbers; register sets tone, pro
 - Icons: Lucide outline icons with stroke width 2, normally `size-4` for controls or `size-5` for supporting context. Icons normally accompany labels; icon-only actions require accessible names and tooltips when meaning is not universal. Do not mix icon families except official brand marks.
 - Imagery: institutional brand marks only; no decorative dashboard imagery or invented promotional content.
 - Accessibility: WCAG 2.2 AA; text contrast at least 4.5:1, meaningful boundaries and focus at least 3:1; visible keyboard focus, logical order, named controls, 44px touch targets in Compact, and usable content at 200% zoom. Focus uses `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`; the global fallback is a 2px ring-colored outline with 2px offset.
-- Number formatting: durations are `1 h 30 min`, zero is `0 min`, and signs appear only for movements. Zero never uses a status color. Existing views adopt the duration formatter during their interface migration.
+- Number formatting: durations are `1 h 30 min`, zero is `0 min`, and signs appear only for movements. Zero never uses a status color.
 
 ## Product anti-patterns
 
@@ -302,4 +302,4 @@ Tailwind defaults: `sm` 640px, `md` 768px, `lg` 1024px, `xl` 1280px, and `2xl` 1
 | Medium | 768px to < 1024px | `w-sidebar-rail` navigation with tooltips; priority data columns; `px-6` | Top bar with navigation pills and account menu; `px-6` |
 | Wide | >= 1024px | Expanded `w-sidebar` light navigation and full tables; `px-8` | Brand left, navigation pills, account menu right; `px-8` |
 
-Content uses `max-w-page`. Tutor destinations are `Mi resumen`, `Mi horario`, and `Mis horas`, with an ink active pill. Dialogs use `max-w-dialog` or `max-w-dialog-wide`. Shared shell and view adoption follow the interface specification; this registry does not claim every existing view already meets the target rules.
+Content uses `max-w-page`. Tutor destinations are `Mi resumen`, `Mi horario`, and `Mis horas`, with an ink active pill. Dialogs use `max-w-dialog` or `max-w-dialog-wide`.

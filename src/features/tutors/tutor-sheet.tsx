@@ -203,7 +203,7 @@ export function TutorSheet({
   return (
     <>
     <Sheet open={open} onOpenChange={(next) => { if (!next) attemptClose(); }}>
-      <SheetContent aria-modal="true" showCloseButton={false} onOpenAutoFocus={(event) => {
+      <SheetContent showCloseButton={false} onOpenAutoFocus={(event) => {
         event.preventDefault();
         closeButtonRef.current?.focus();
       }} onCloseAutoFocus={(event) => event.preventDefault()}>

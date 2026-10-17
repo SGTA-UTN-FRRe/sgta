@@ -67,12 +67,12 @@ Production TypeScript and TSX files under `src/` must not import fixtures from
 fixtures.
 
 Raw `button`, `input`, `select`, `textarea`, and `dialog` elements in TSX views
-trigger ESLint warnings. Compose primitives from `src/components/ui/` instead.
+trigger ESLint errors. Compose primitives from `src/components/ui/` instead.
 The primitive and mock directories and `*.test.ts` and `*.test.tsx` files are
-exempt from these UI warnings.
+exempt from these UI restrictions.
 
 Arbitrary color, radius, shadow, font, type-size, line-height, tracking, and
-layering utilities also trigger warnings outside `src/components/ui/`. Use
+layering utilities also trigger errors outside `src/components/ui/`. Use
 registered design tokens instead. Arbitrary layout values such as
 `grid-cols-[1fr_auto]`, `min-w-[40rem]`, and `w-[40rem]`, along with state
 variants such as `data-[state=open]:`, remain allowed.

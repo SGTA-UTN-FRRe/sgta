@@ -41,6 +41,15 @@ test.describe("authenticated Admin schedule planning", () => {
       overlay: page.getByRole("dialog", { name: "Crear plan de horario" }),
     });
 
+    await expectAccessibleOverlay(page, {
+      trigger: page.getByRole("button", { name: "Archivo de planes", exact: true }),
+      overlay: page.getByRole("dialog", { name: "Archivo de planes" }),
+    });
+    await expectAccessibleOverlay(page, {
+      trigger: page.getByRole("button", { name: "Archivar plan", exact: true }),
+      overlay: page.getByRole("alertdialog", { name: "¿Archivar este plan?" }),
+    });
+
     const planSelector = page.getByRole("group", { name: "Planes de horario" });
     const specialPlan = planSelector.getByRole("button", {
       name: /Special week 2027/,
@@ -60,6 +69,12 @@ test.describe("authenticated Admin schedule planning", () => {
       timeout: 15_000,
     });
 
+    await expectAccessibleOverlay(page, {
+      trigger: page.getByRole("table", { name: "Matriz semanal" }).getByRole("button", {
+        name: "Curie, Marie, Computer Science, lunes, 10:00 a 12:00",
+      }).first(),
+      overlay: page.getByRole("dialog", { name: "Editar asignación" }),
+    });
     await activateWithKeyboard(
       page,
       page
@@ -93,6 +108,10 @@ test.describe("authenticated Admin schedule planning", () => {
     await signInAdmin(context);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/admin/schedules?cycleId=${E2E_CYCLE_ID}&date=${scheduleDate}`);
+    await expectAccessibleOverlay(page, {
+      trigger: page.getByRole("button", { name: "Agregar asignación", exact: true }),
+      overlay: page.getByRole("dialog", { name: "Nueva asignación" }),
+    });
     await activateWithKeyboard(page, page.getByRole("button", { name: "Agregar asignación", exact: true }));
     const editor = page.getByRole("dialog", { name: "Nueva asignación" });
     const modality = editor.getByLabel("Modalidad");

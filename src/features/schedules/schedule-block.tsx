@@ -185,7 +185,7 @@ export function ScheduleBlock({
     width: `calc(${100 / layout.laneCount}% - 0.25rem)`,
   };
   const className = cn(
-    "absolute z-10 overflow-hidden rounded-sm border shadow-xs",
+    "absolute z-sticky overflow-hidden rounded-sm border shadow-xs",
     oneLineRow
       ? "flex flex-row items-center gap-1 px-1.5 py-0.5"
       : oneLine
