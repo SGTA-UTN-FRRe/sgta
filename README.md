@@ -10,10 +10,10 @@ protected, read-only view of their own current-cycle summary, schedule, and
 hours. Formal scholarship certification and full production operations are not
 part of the current runtime.
 
-**Status:** the roadmap is paused while the Tutorias area confirms its needs.
-See [Functional status](docs/PROJECT.md#functional-status) for what works today
-and [Definition priorities](docs/DEVELOPMENT-ROADMAP.md#definition-priorities)
-for what must be defined before development resumes.
+**Status:** development centers on the complete flow of Tutorias information, from
+capture to export. See [Functional status](docs/PROJECT.md#functional-status) for
+what works today and the [Development roadmap](docs/DEVELOPMENT-ROADMAP.md#current-focus)
+for the current focus.
 
 ## Key capabilities
 

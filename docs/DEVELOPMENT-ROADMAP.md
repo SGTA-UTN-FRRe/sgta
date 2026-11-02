@@ -1,6 +1,6 @@
 ---
 mode: decision
-status: paused
+status: active
 ---
 
 # SGTA — Development roadmap
@@ -9,36 +9,59 @@ status: paused
 
 ## Objective
 
-Complete a supportable first release of SGTA for the Tutorias area at UTN FRRe.
-The remaining work moves through workflow hardening, production readiness, and a
-controlled operational cutover.
+Deliver the complete flow of Tutorias information, from capture to export,
+because the area's reports depend on it. Everything else is deferred until the
+project needs it.
 
-**Current phase:** Access and lifecycle (paused before its work started)
+**Current phase:** Data definition
 
-**Roadmap status:** Paused since 2026-10-16.
+**Roadmap status:** Active since 2026-11-02, after a pause that began on
+2026-10-16.
 
-## Pause
+## Current focus
 
-The roadmap paused after the interface migration closed: every existing view
-composes the shared design system, matches its UI specification, and passed the
-screenshot review. No phase is in progress. The phases below remain the
-approved target, but none of their work has started; the implemented behavior
-is described in [Project › Functional status](PROJECT.md#functional-status).
+The interface migration closed before the pause: every existing view composes
+the shared design system, matches its UI specification, and passed the
+screenshot review. The implemented behavior is described in
+[Project › Functional status](PROJECT.md#functional-status).
 
-While paused:
+The phases run in the order of the table below. Work outside the flow waits in
+[Deferred](#deferred) until a confirmed need brings it back.
 
-- Work arrives as GitHub issues in the SGTA project and stays issue-sized:
-  correcting and simplifying existing Hours, Consultations, and Reports
-  workflows, improving the Admin home, validating views with users, and the
-  public landing. An issue that needs a phase's scope waits for the roadmap
-  to resume.
-- Issue owners investigate, implement, test, and deliver reviewable pull
-  requests. They choose technical solutions within the agreed scope; the
-  supervisor reviews results and resolves business decisions or scope changes
-  from concrete proposals. Important needs beyond each correction are recorded
-  with priority, proposed scope, dependencies, and acceptance criteria.
-- Needs are confirmed with the Tutorias area before they become phase scope.
-  The list below orders what must be defined; it is not a task list.
+- One maintainer develops SGTA and delivers through pull requests. Work is
+  planned from this roadmap, without a project board.
+- Tutorias has no prescribed report structure and no formal roles. The project
+  owner decides the data flow and presents it to coordination, which approves or
+  corrects it. A correction updates the affected phase.
+
+### Data decisions
+
+These decisions apply to every phase of the data flow:
+
+- **Records:** an attention is one Tutor intervention on one matter; an activity
+  is organized for several people; a participation is one identified student at
+  a GET; a student links those records.
+- **Figures:** registered consultations, people served, attendance at
+  activities, and identified students have published definitions and are never
+  added together.
+- **Identity:** the student form requires DNI and accepts an optional legajo.
+  Matching is deterministic: a matching identifier with a compatible surname
+  links records, a conflict goes to review, and a name alone never links them.
+- **Per-record values:** career and academic condition belong to each record,
+  not to the student.
+- **Subjects:** one subject catalog, where a subject can belong to several
+  careers. It lists tutored subjects plus Seminario Universitario and Otra.
+- **GETs:** each modality is its own GET, with its own responsible Tutors and
+  declared attendance. While forms are in use, responses join a GET by subject,
+  date, and modality; an ambiguous join keeps the participation without a
+  specific GET and changes no figure.
+- **Review:** clean rows consolidate automatically, only genuine exceptions need
+  review, and a record in review still counts.
+- **Sources:** forms and sheets are read-only for SGTA. Corrections happen in
+  SGTA, and a new import never overwrites them.
+- **Access for now:** the people who administer data are Admins with individual
+  accounts, and other team members keep the Tutor role, which is the one with
+  self-service views. Role design comes last.
 
 ### Definition priorities
 
@@ -47,28 +70,18 @@ answer as an approved decision in the phase it unblocks.
 
 | Priority | What must be defined or tested | Who answers | Unblocks |
 | --- | --- | --- | --- |
-| 1 | Walk every existing view with an Admin and a Tutor on desktop and phone; record what is wrong, missing, or unused. | Tutorias Admin and two Tutors | Every phase; confirms the current scope is right before adding more. |
-| 2 | Confirm the cycle transition rule (positive balances reset, negative balances carry forward), official cycle dates, and who closes a cycle. The current transition preserves history but does not carry pending negative balances into the next cycle. | Tutorias coordination | Access and lifecycle; required before closing a real cycle. |
-| 3 | Define who grants and removes access, how an account is linked to its Tutor record, and whether agenda managers need a scoped permission. Access today is provisioned only by an operator command or the Admin API. | Tutorias coordination | Access and lifecycle. |
-| 4 | Describe the real guard-planning process: calendars in use (office, events), weekly changes, opening hours, the coverage target, and how calendars are shared today. | The person who organizes the guards | Operational calendars. |
-| 5 | Confirm the consultation source format, participant counting, optional student surname, and how long student contact data may be kept. | Tutorias coordination and the source owner | Hours, consultations and reporting; Production readiness. |
-| 6 | List the reports the area actually delivers, to whom, in which format, and how each total is defined. | Tutorias coordination | Hours, consultations and reporting. |
-| 7 | Approve the academic catalog rules: scholarships per cycle, Admin-to-Tutor linkage, career and subject aliases, and subject scope. | Tutorias coordination | Academic workflows. |
-| 8 | Decide who maintains GETs and exams, and whether students need public access to the agenda, office hours, or contact channels. | Tutorias coordination | Academic agenda; future landing content. |
-| 9 | Name the production owner, hosting and Google Workspace accounts, and who maintains SGTA after the pilot. | Tutorias area and UTN FRRe | Production readiness; Cutover, pilot and first release. |
-
-### Resuming
-
-Resume when priorities 1 to 3 have recorded answers and a maintainer owns the
-next phase: update that phase with the confirmed decisions, set `status: active`
-in this file's front matter, and remove the pause markers above.
+| 1 | Walk Consultas and Reportes with an Admin on desktop and phone; record what is wrong, missing, or unused. | Tutorias Admin | Data intake; Reports and export. |
+| 2 | Name the production owner, hosting and Google Workspace accounts, and who maintains SGTA. | Tutorias area and UTN FRRe | Production readiness. |
+| 3 | Confirm whether a legajo identifies one person or can vary by career. DNI remains the main key meanwhile. | Tutorias coordination | Data intake refinement; not blocking. |
 
 ## Constraints
 
 - Browser journeys must use a fixed test date independent of wall-clock time before 2027-01-01.
 - Separately review major dependency updates before adoption and record compatibility evidence; automation configuration does not establish review approval.
-- The first release excludes attendance tracking and duty-occurrence records; absences remain manual hour movements.
+- The first release excludes Tutor attendance tracking and duty-occurrence records; absences remain manual hour movements.
 - The first release retains informational scholarship references and excludes formal scholarship certification.
+- Before the first release, define the personal-data notice and retention period for student data, with institutional advice. Forms start without a notice until then.
+- Before closing a real cycle, resolve the cycle transition: closing today preserves history but does not carry pending negative balances into the next cycle.
 - The first release ships a single light color scheme.
 - Every visible change composes primitives from `src/components/ui/` and tokens registered in the project design, and passes a screenshot review at 390, 768, and 1440px with no open Blocking or Major findings before its phase exits.
 - View content order, states, and copy are specified in the view's UI specification when its phase is planned; a pattern needed by two or more views joins the shared design system instead of being rebuilt locally.
@@ -77,235 +90,98 @@ in this file's front matter, and remove the pause markers above.
 
 | Phase | Outcome | Depends on |
 | --- | --- | --- |
-| Access and lifecycle | Complete controlled Tutor access and safe account and cycle lifecycle behavior. | None |
-| Academic workflows | Improve Tutor discovery and academic relationship visibility. | None |
-| Operational calendars | Plan office and event calendars week by week from a permanent base, and publish them as shareable images and documents. | None |
-| Hours, consultations and reporting | Make consultation imports resilient and deliver complete, explainable operational outputs. | Access and lifecycle; Academic workflows |
-| Academic agenda | Publish support classes (GETs) and exam dates with delegated management. | Access and lifecycle; Operational calendars |
-| Production readiness | Establish production services, secure operations, and proven recovery. | Access and lifecycle; Hours, consultations and reporting; Operational calendars; Academic agenda |
-| Cutover, pilot and first release | Migrate validated data, prove operation with users, and complete maintainer handover. | Production readiness |
+| Data definition | Three forms capture consistent data with the fields SGTA will use. | None |
+| Data intake | SGTA reads the forms' sheets, normalizes them, and reviews only exceptions. | Data definition |
+| Production readiness | Establish production services, secure operations, and proven recovery, so identified data can be loaded. | Data intake |
+| Activities | GETs and other activities, with participations, are visible in SGTA. | Data intake |
+| Reports and export | Generate the annual and follow-up reports and export them. | Data intake; Activities |
+| 2026 migration | Normalize and load the 2026 history without blocking any other phase. | Data intake; Activities |
+| In-app registration | Activities and quick consultations move into SGTA and replace their forms. | Activities; Production readiness |
 
-## Phase: Access and lifecycle
-
-### Objective
-
-Let Admins manage application access safely and make account and cycle state
-understandable to the people who use it.
-
-### In scope
-
-- Provide protected Admin workflows to enable and disable Tutor access and
-  maintain the link between an application identity and its Tutor record.
-- Prevent actions that would leave the application without an enabled Admin.
-- Make sign-out and session expiration clear across Admin and Tutor surfaces;
-  provide a read-only Tutor profile and signed-in Admin user context.
-- Complete missing confirmations for account and cycle lifecycle actions,
-  including authorized reopening with audit and preserved history.
-- Implement the approved hour transition between cycles: when a new cycle
-  starts, accumulated positive balances reset to zero and pending negative
-  balances carry forward, recorded as auditable movements so balances stay
-  movement-derived, with a controlled way to correct or revert a mistaken
-  closing. Today closing a cycle only changes its status and every balance of
-  the next cycle starts from zero, so pending negative hours are lost; this
-  must be corrected before cycle closing is used in production.
-- Grant scoped permissions (for example, managing one agenda) without general
-  Admin rights, for the Academic agenda phase.
-
-### Out of scope
-
-- Public registration, password-based sign-in, or access to another Tutor's
-  profile.
-- Formal scholarship decisions at cycle changes.
-
-### Exit criteria
-
-- Admin access changes are validated and authorized on the server and cannot
-  disable or demote the last enabled Admin.
-- Tutor reads remain owner-scoped, including profile and lifecycle context.
-- Sign-out and expired-session paths recover safely across protected pages and
-  APIs, including 12-hour expiration.
-- Tutors can read only their own profile; Admin surfaces expose the signed-in
-  user's context. Account and cycle lifecycle confirmations cover the affected
-  actions before mutation.
-- Cycle actions reject writes to closed cycles; only the most recently closed
-  cycle can be reopened. Server authorization, confirmation, historical
-  preservation, and an audit record are verified.
-- Starting a new cycle resets positive balances and carries negative balances
-  forward through auditable movements; a mistaken closing can be corrected
-  without losing history.
-- Scoped permissions are enforced on the server and grant no Admin access
-  beyond their scope.
-
-## Phase: Academic workflows
+## Phase: Data definition
 
 ### Objective
 
-Make academic relationships easier to find, understand, and maintain using
-cycle-aware canonical data.
+Capture consistent data from the start of 2027, using forms with the same fields
+SGTA will use, so quality data accumulates before the application absorbs it.
 
 ### In scope
 
-- Improve Admin Tutor discovery by academic relationship and schedule
-  availability.
-- Keep Tutor subject relationships visible in the relevant list and detail
-  states.
-- Review data-model changes against approved institutional decisions on
-  scholarship cardinality per cycle, Admin-to-Tutor linkage, career and subject
-  aliases, and global or career-specific subject scope before implementing schema
-  changes or including them in a production migration.
+- Present the operating proposal to coordination for approval or correction:
+  records, figures, fields, report structure, and daily procedures.
+- Prepare official catalogs for careers, subjects, Tutors, channels, orientation
+  reasons, and activity types.
+- Build three Google Forms owned by an area account, with closed options and DNI
+  format validation:
+  - a student form that registers a consultation or GET attendance;
+  - Tutor quick registration;
+  - Activities, to plan a GET, record its result, or record another activity.
+- Close the current form and daily sheet when the new forms open, keeping their
+  data unchanged for the report in progress and the later migration.
 
 ### Out of scope
 
-- Attendance recording or automatic hour movements derived from schedule
-  assignments.
-- Unvalidated catalog or scholarship rules.
+- Application code.
+- The 2026 report, which keeps its current process.
+- Institutional sign-off on the personal-data notice and retention period.
 
 ### Exit criteria
 
-- Admins can find Tutors by the supported academic and availability criteria;
-  results remain correct for regular and effective special plans.
-- Tutor academic relationships are visible in compact and wide layouts without
-  creating a second source of truth.
-- Scholarship relationships per cycle, Admin-to-Tutor linkage, aliases, and
-  subject scope each have an approved institutional decision before schema
-  implementation. Any resulting schema change has a migration and isolated
-  integration coverage; proposed models do not substitute for approval.
+- The forms are in use, with a target of 2026-11-15, and November and December
+  serve as a low-volume test.
+- A test response for every form path reaches its sheet, and every option
+  matches its catalog.
+- Options are adjusted from the test and frozen before the 2027 intake.
 
-## Phase: Operational calendars
+## Phase: Data intake
 
 ### Objective
 
-Let the person who organizes the guards plan office and event calendars week by
-week without destroying a permanent base, see coverage at a glance, and publish
-each calendar in a form that is clearly better than the spreadsheets shared
-today.
+Read the real forms' sheets, so clean data reaches canonical records without
+manual work and Admins review only genuine exceptions. The current import has
+only run on a rewritten copy of the source; on the live sheet, every row would
+land in review.
 
 ### In scope
 
-- Multiple calendars, such as the office and each extraordinary event, managed
-  by the same Admin, selected with tabs or a selector, each with its own plans.
-  Events can span several weeks and include Saturdays and Sundays. Assignment
-  conflicts are validated per Tutor across calendars, so a Tutor can serve in
-  the office and at an event when the times are compatible.
-- Weekly planning on top of a permanent base: changes for one dated week
-  (additions, moves, removals, absences, and recoveries) never modify the base,
-  and `Restablecer semana` discards only that week's changes. Schedule data
-  never creates or deletes hour movements.
-- Configured opening hours per calendar and day, replacing the hours inferred
-  from assignments, and a configurable coverage target (two in-person Tutors by
-  default) that warns without blocking.
-- Export each calendar for a chosen period (a working week, or an event range
-  with weekends) as a PNG optimized for messaging apps and as a PDF, from a
-  dedicated presentation layout with full display names, career colors and
-  legend, modality, and coverage. The PNG dependency is approved.
-- Drag and drop in the matrix to move assignments between days and hours, with
-  server validation and the form edit kept as the equivalent path.
-- Filters by modality and activity type where they improve reading.
-- Keep regular plans attached to administrative cycles: each semester starts
-  with the Tutors' habitual recurring schedule as its regular plan, weekly
-  adjustments (absences, changes, recoveries, coverage) apply on top of it, and
-  a new semester may set a new habitual schedule. Schedule planning and the
-  hour-accounting closing share the cycle period but stay separate
-  responsibilities: closing a cycle never edits plans, and plan changes never
-  create hour movements.
+- Read the three sheets through a source registry that replaces the single-source
+  environment configuration, using incremental or paginated intake. Validate
+  row and payload limits and execution duration against the deployment function
+  limit, while preserving idempotency, review, and canonical history.
+- Identify each response with a stable key that does not depend on its row:
+  timestamp, person or Tutor identifier, and subject. Evaluate Forms API response
+  IDs as an alternative. Reconcile reordered and deleted source rows.
+- Store a per-source value map, so resolving one unrecognized value applies to
+  every matching row, including career codes.
+- Consolidate clean rows automatically and route exceptions to the existing
+  review flow.
+- Allow audited corrections to canonical consultations that a new import cannot
+  overwrite.
+- Change the consultation model: optional student name, career, and Tutor;
+  consultation type, orientation reason, channel, origin, and people served; a
+  consultation classified as Otra without a catalog subject.
+- Replace career-owned subjects with one subject catalog and careers per subject,
+  including Tutor coverage and report filters.
+- Add student identity with DNI, legajo, deterministic matching, identifier
+  correction, and a reversible merge.
+- Document date interpretation and spreadsheet locale for each source.
 
 ### Out of scope
 
-- Attendance recording or automatic hour movements derived from schedules.
-- Academic agenda content (GETs and exams).
+- Writing to any source.
+- Activity views, which belong to the Activities phase.
+- Loading identified data before Production readiness exits.
 
 ### Exit criteria
 
-- Office and event calendars coexist, are selected without losing context, and
-  each validates conflicts per Tutor across calendars.
-- A week can be changed and restored without altering the base plan or any
-  hour movement, verified by integration tests.
-- Coverage uses configured opening hours and the coverage target, and its
-  indicators pass the screenshot review without dominating the calendar.
-- PNG and PDF exports render every assignment of the chosen calendar and period
-  with full names and the career legend, stay legible at phone width, and
-  are verified by automated checks.
-- Drag and drop and the keyboard or form alternative produce the same validated
-  result.
-
-## Phase: Hours, consultations and reporting
-
-### Objective
-
-Keep operational records traceable as source volume grows and make requested
-outputs complete and safe to share.
-
-### In scope
-
-- Make consultation synchronization resilient to source growth and row changes:
-  validate row/payload limits, incremental or paginated intake, row reordering/deletion
-  reconciliation, and execution duration against the deployment function limit,
-  while preserving idempotency, review, and canonical history.
-- Obtain approved institutional decisions on optional student surname and
-  supported consultation sources and participant-count models before schema
-  changes. Validate source mappings and date interpretation before adoption.
-- Provide complete filtered report exports in CSV and print-ready form with
-  locale-aware formatting and formula-injection protection.
-- Document and test report count semantics so consultation totals are not
-  confused with counts of unique people.
-- Preserve movement-derived balances and explicit reversal history.
-- Provide Tutor search in hour operations and consistent product labels for
-  debit/credit movements while preserving signed ledger semantics.
-
-### Out of scope
-
-- Writing to the consultation source.
-- Student-level identity in operational reports or automatic scholarship
-  certification.
-
-### Exit criteria
-
-- Import tests cover approved row/payload limits, incremental or paginated intake,
-  and reordered or deleted source rows without silently duplicating or losing
-  canonical consultations. Measured duration fits the deployment function limit;
-  source outages leave reviewed history available.
-- Optional student surname, source support, and participant-count semantics
-  have approved institutional decisions before schema implementation.
-- Exports contain every row allowed by the applied filters and safely encode
-  user-controlled values.
-- Report totals have documented definitions, accessible alternatives, and no
-  unsupported academic or scholarship claims.
-- Hour balances remain reconstructable from signed movements and reversals.
-- Tutor search finds the intended hour-operation targets, and "Resta" / "Suma"
-  labels correspond to debit/credit movements without changing balances or
-  reversal behavior.
-
-## Phase: Academic agenda
-
-### Objective
-
-Give Tutors and students one reliable place to consult support classes (GETs)
-and upcoming exams, maintained by the people responsible for them.
-
-### In scope
-
-- GETs: weekly or extraordinary support classes with subject, responsible
-  Tutor, date, time, place, topic, and participant count, optionally related to
-  an upcoming exam. GETs and exams are distinct records.
-- Exams: midterms, make-up exams, finals, and entry-course evaluations,
-  associated with subjects or careers.
-- Delegated management through the scoped permissions from Access and
-  lifecycle, without a new global role.
-- An agenda section within Horarios, with distinct views for GETs and exams,
-  reusing the calendar components.
-- `GETs de la semana` and `Próximos exámenes` (next 7 to 14 days) on Inicio.
-
-### Out of scope
-
-- Student registration, attendance, or grades.
-- Synchronizing official academic calendars from external systems.
-
-### Exit criteria
-
-- Delegated managers can maintain only the agenda content their permission
-  covers, verified on the server.
-- GETs and exams are listed, filtered, and related without being merged, and
-  Inicio shows the weekly GETs and upcoming exams with correct date windows.
+- Tests with fixtures shaped like the real forms cover row and payload limits,
+  incremental intake, and reordered or deleted rows without silently duplicating
+  or losing canonical records. Measured duration fits the deployment function
+  limit, and source outages leave reviewed history available.
+- Only genuine exceptions reach review, and a record in review still counts.
+- A correction survives a new import; a conflicting source change goes to review.
+- Student matching covers every association rule, including conflicts and
+  name-only coincidences, verified by integration tests.
 
 ## Phase: Production readiness
 
@@ -327,7 +203,7 @@ operated, monitored, and recovered by authorized maintainers.
 
 ### Out of scope
 
-- Loading real operational data or beginning the Tutor pilot.
+- Loading real hour, schedule, or Tutor records, or beginning the Tutor pilot.
 - Committing production credentials, personal records, or backup artifacts.
 
 ### Exit criteria
@@ -341,59 +217,175 @@ operated, monitored, and recovered by authorized maintainers.
   read-only production source.
 - A backup is encrypted and retained outside the application database, and a
   restore drill recovers a verified database.
-- Approved retention rules cover student contact data; error reporting is
-  exercised without exposing credentials or personal records.
+- Error reporting is exercised without exposing credentials or personal records.
+- Identified data from the new forms loads into production only after the restore
+  drill passes; until then, it stays in the sheets.
 - The runbook explains provisioning, migrations, secret rotation, monitoring,
   recovery, and maintainer responsibilities without relying on local-only
   planning files.
 
-## Phase: Cutover, pilot and first release
+## Phase: Activities
 
 ### Objective
 
-Move validated operational data into production, prove the main workflows with
-the Tutorias team, and complete a maintainable first release.
+Make GETs and other activities visible in SGTA with their attendance, because
+they move the largest volume of people the area serves and appear in its reports.
 
 ### In scope
 
-- Validate source data before cutover: mappings, dates, catalog completeness,
-  Tutor names and identity fields, activity history, and recess/vacation plans.
-- Reconcile migrated Tutors, academic relationships, cycles, hour balances,
-  schedules, and consultation history against approved source records.
-- Agree on cutover timing, go/no-go checks, abort criteria, and the transition
-  away from the duplicate operational spreadsheet workflow.
-- Define the parallel operating period and final spreadsheet cutoff, validate
-  official cycle dates, and decide cycle closure and opening timing for the pilot.
-- Run an Admin and Tutor pilot, fix defects that block the approved scope, and
-  provide concise user and Admin guidance.
-- Complete maintainer handover and tag the first stable release.
+- Add an activity record, separate from the hour-ledger `activity` origin: type,
+  subject, topic, date, modality, place, responsible Tutors, status, declared
+  attendance, and observations.
+- Import the Activities form, joining a plan and a result by subject, date, and
+  modality, and treating a result with no plan as a valid GET.
+- Add participations from the student form, keyed by person, subject, date, and
+  modality, with a nullable link to one GET. A response can link up to two days
+  after its GET if only one GET matches.
+- Provide an Admin view of activities and programmed GETs with no result, and
+  show the pending ones as attention items on Inicio.
+- Give the hour-ledger activities and the new activities distinct product labels.
 
 ### Out of scope
 
-- New product verticals or formal scholarship certification.
-- Expanding migration scope beyond validated records and the approved first
-  release.
+- Creating or editing activities in SGTA, which belongs to In-app registration.
+- Automatic hour movements. An activity may link to an hour origin later only as
+  an explicit Admin action.
+- Tutor attendance tracking.
 
 ### Exit criteria
 
-- Pre-cutover validation records source mappings and date rules, catalog and
-  Tutor identity completeness, historical activity treatment, and recess plans;
-  unresolved exceptions block adoption of the affected data.
-- Migrated records and derived balances reconcile to the approved source
-  evidence, with exceptions reviewed by the responsible Admin.
-- The pilot completes the main Admin operating loop and Tutor self-service
-  without unresolved release-blocking defects.
-- Cutover and abort procedures are exercised or reviewed against a documented
-  recovery path.
-- The parallel operating period, final cutoff, official cycle dates, and pilot
-  cycle transition have approved decisions and reconciled balances at cutover.
-- User guidance, operator runbook, and maintainer handover are complete, and the
-  first stable release is tagged.
+- Plans, results, and participations import idempotently; two GETs on the same
+  subject, date, and modality remain ambiguous without changing any figure.
+- A participation with no matching GET and duplicate results reach review.
+- Declared attendance and registered participations stay separate and are never
+  forced to match.
+
+## Phase: Reports and export
+
+### Objective
+
+Let the area generate its reports at any time from reviewed records, with every
+figure defined and traceable.
+
+### In scope
+
+- An annual report with aggregated data only: the four figures; consultations by
+  frequency, type, subject, career, modality, channel, condition, and orientation
+  reason; GETs held and cancelled, with attendance; other activities by type;
+  identified students; and definitions. Each report states its period, cutoff,
+  generation date, filters, and pending reviews. A period starts the day after the
+  previous cutoff; the proposed cutoff is October 31.
+- An internal follow-up report with DNI: a view per student, a view per student
+  and subject, and a chronological record found by DNI or name. Declared results
+  can be added as annotations identified as declared information.
+- PDF for the annual report, and Excel and CSV for both. Exports use locale-aware
+  formatting and formula-injection protection. Excel needs dependency approval.
+- Keep the current Reportes view as the operational report.
+- Document and test count semantics, so consultation totals are not confused with
+  counts of unique people.
+
+### Out of scope
+
+- Causal claims, academic records, grade integration, or verified results.
+- Automatic scholarship certification.
+
+### Exit criteria
+
+- Coordination approves or corrects the structure using data from the new forms.
+- Exports contain every row allowed by the applied filters and safely encode
+  user-controlled values.
+- Report totals have documented definitions, accessible alternatives, and no
+  unsupported academic or scholarship claims.
+- Only authorized users can generate the follow-up report, verified on the server,
+  and the annual report contains no personal identifiers.
+
+## Phase: 2026 migration
+
+### Objective
+
+Bring the 2026 history into SGTA once the system works. This phase has no deadline
+and never blocks another phase.
+
+### In scope
+
+- Load the 2026 form as unidentified consultations.
+- Deduplicate the daily sheet's rows without a source against the form, and review
+  only those that do not match.
+- Load the daily sheet's Instagram rows with their counts, flagging aggregated
+  rows.
+- Load GETs, events, workshops, and trainings from the annual schedule with their
+  recorded attendance, leaving out team meetings.
+- Explain the difference between the previously reported 907 and the new figures,
+  since 907 counted people rather than consultations.
+
+### Out of scope
+
+- Requiring fields that were never collected.
+
+### Exit criteria
+
+- Every source reconciles to its row counts, without duplicating the form.
+- Migrated records are identified by origin, and 2026 and 2027 figures are not
+  presented as directly comparable.
+
+## Phase: In-app registration
+
+### Objective
+
+Move activities and quick consultations into SGTA, so Tutors stop using the two
+internal forms. Those forms are a bridge that records data in the expected format.
+
+### In scope
+
+- Create, edit, reschedule, cancel, and record the result of a GET or other
+  activity, keeping change history. Deleting is limited to records created by
+  mistake with no participations, and it leaves an audit record.
+- Generate each GET's identifier and QR, with its code already filled in, so
+  participations join it directly and students stop choosing the subject.
+- Register a quick consultation with the same fields as its form, in few steps on
+  a phone, with the Tutor taken from the session.
+- Create canonical consultations directly, without a staging row. Today
+  `consultation.staging_id` is required.
+- Add one server-enforced write rule: a Tutor registers their own consultations and
+  manages activities they are responsible for, while Admins can operate on all of
+  them. This is an exception to read-only Tutor self-service.
+- Close each form the day its function moves into SGTA. Records loaded earlier
+  remain, and a GET planned by form can be closed in SGTA.
+
+### Out of scope
+
+- The student form, which remains because students do not sign in to SGTA.
+- Role design or scoped permissions beyond the write rule above.
+
+### Exit criteria
+
+- Tutors can write only their own consultations and activities, verified on the
+  server, and every change leaves an audit record.
+- Forms and in-app records produce the same figures, with no record entered in both
+  places after a function's cutover.
+- The quick consultation and activity flows pass a test with Tutors on their phones.
+
+## Deferred
+
+These outcomes are not planned. Each returns as a phase only when a confirmed need
+brings it back, with its scope reviewed against the data flow as it then exists.
+Their earlier scope and exit criteria remain available with
+`git show eab17f4:docs/DEVELOPMENT-ROADMAP.md`.
+
+| Outcome | Scope when last defined | Needs first |
+| --- | --- | --- |
+| Access and lifecycle | Access screens, last-Admin guard, Tutor profile, cycle reopening and hour transition, scoped permissions. | Who grants access and how accounts link to Tutors; the cycle transition rule, official dates, and who closes a cycle. |
+| Academic workflows | Tutor discovery by academic relationship and availability. | Scholarships per cycle and Admin-to-Tutor linkage. |
+| Operational calendars | Office and event calendars, weekly changes over a permanent base, opening hours, and PNG and PDF exports. | The real guard-planning process. |
+| Hour operations | Tutor search in hour operations and consistent movement labels. | A walk of the Hours view with its users. |
+| Academic agenda | Published GETs and exams; GETs reuse the records of the Activities phase. | Who maintains exams, and whether students need public access. |
+| Public landing and Admin home | A public page and a daily-operation Inicio. | A confirmed need after the data flow works. |
+| Cutover, pilot and first release | Migrate operational data, run a pilot, and hand over maintenance. | The data flow, and the outcomes above that the first release requires. |
 
 ## Maintenance
 
 When a phase completes, move **Current phase** to the next phase and delete the
 completed phase's section and table row; Git history keeps them. Update
 sequencing when a real dependency or validated institutional requirement
-changes. Decompose complex work in a local execution plan without turning this
+changes, and move work in or out of Deferred when its need changes. Decompose complex work in a local execution plan without turning this
 roadmap into an issue tracker.

@@ -72,10 +72,10 @@ Tutor signs in with an enabled identity linked to a Tutor record
 
 ## Functional status
 
-State on 2026-10-16, when the [roadmap](DEVELOPMENT-ROADMAP.md#pause) paused.
+State on 2026-10-16, before the data flow work in the [roadmap](DEVELOPMENT-ROADMAP.md#current-focus) began.
 "Automated" means covered by unit, integration, or browser tests in CI. No area
-has been validated in daily use by the Tutorias area; that validation is the
-first [definition priority](DEVELOPMENT-ROADMAP.md#definition-priorities).
+has been validated in daily use by the Tutorias area; validating Consultas and
+Reportes is the first [definition priority](DEVELOPMENT-ROADMAP.md#definition-priorities).
 
 | Area | Works today | Automated | Missing or unconfirmed |
 | --- | --- | --- | --- |
