@@ -34,7 +34,7 @@ Choose the language by artifact, never by the language of the conversation or th
 | Artifact | Language |
 | --- | --- |
 | Product UI and user-visible messages (labels, errors, metadata, emails) | Spanish, neutral institutional register per `design/PROJECT-DESIGN.md` › Voice |
-| GitHub issues (title, body, comments), issue forms, GitHub Project items and fields | Spanish |
+| GitHub issues (title, body, comments) and issue forms | Spanish |
 | Roadmap, implementation plans, execution packets | English |
 | Development documentation: `README.md`, `docs/`, `design/`, `SECURITY.md`, `AGENTS.md`, `CLAUDE.md`, skills | English |
 | Code, identifiers, comments, tests, fixtures, files, directories, route segments | English |
@@ -78,9 +78,9 @@ A skill owns its procedure and output format. Do not duplicate those procedures 
 ## Delegation
 
 - **Issue language:** Spanish (see Language policy).
-- **Tracker:** GitHub Project #1 owned by `SGTA-UTN-FRRe`.
+- **Tracker:** none. One maintainer develops SGTA, working from the roadmap and local execution plans.
 
-Delegation is optional. Mark a plan task `Delegable: yes` only when a teammate can complete it from the issue alone and no other task depends on it. Use `delegate-task` or the Task issue form; the skill owns issue drafting and creation. Create an issue or add it to the project only when explicitly requested. If an issue does not match the repository or its next step is unclear, comment on the issue and wait; sending the comment requires authorization from the user or the invoked delegation skill.
+Delegation is inactive until the user says teammates are back. When it resumes, mark a plan task `Delegable: yes` only when a teammate can complete it from the issue alone and no other task depends on it. Use `delegate-task` or the Task issue form; the skill owns issue drafting and creation. Create an issue only when explicitly requested. If an issue does not match the repository or its next step is unclear, comment on the issue and wait; sending the comment requires authorization from the user or the invoked delegation skill.
 
 ## Sources of truth
 
